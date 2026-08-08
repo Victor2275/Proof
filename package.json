@@ -10,6 +10,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@capacitor/android": "^8.5.0",
+    "@capacitor/camera": "^8.2.2",
+    "@capacitor/core": "^8.5.0",
+    "@capacitor/preferences": "^8.0.1",
     "@uiw/react-md-editor": "^4.1.1",
     "class-variance-authority": "^0.7.1",
     "cloudinary": "^2.10.0",
@@ -23,6 +27,7 @@
     "tailwind-merge": "^3.6.0"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.5.0",
     "@tailwindcss/postcss": "^4.3.3",
     "@types/diff": "^7.0.2",
     "@types/node": "^24.13.2",
