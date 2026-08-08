@@ -49,6 +49,8 @@ export interface Recipe {
   versionNumber?: number;
   isLatestVersion?: boolean;
   commitMessage?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface BakeLog {

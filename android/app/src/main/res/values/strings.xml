@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Digital Cookbook</string>
+    <string name="title_activity_main">Digital Cookbook</string>
+    <string name="package_name">com.victor.recipes</string>
+    <string name="custom_url_scheme">com.victor.recipes</string>
+</resources>

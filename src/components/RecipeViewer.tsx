@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { api, type Recipe, type Component } from '../lib/api';
-import { Edit, Bookmark } from 'lucide-react';
+import { api, type Recipe } from '../lib/api';
+import { Edit } from 'lucide-react';
 import { renderWithTimers } from '../utils/timerParser';
 
 export default function RecipeViewer() {

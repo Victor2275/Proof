@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { api, type Recipe, type Component } from '../lib/api';
-import { ArrowLeft, Trash2, Save, Plus, X, GripVertical, Loader2, Download, Check } from 'lucide-react';
+import { ArrowLeft, Trash2, Save, Plus, X, GripVertical, Loader2, Download, Check, Image as ImageIcon } from 'lucide-react';
 import * as Diff from 'diff';
+import { Capacitor } from '@capacitor/core';
+import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 
 export default function RecipeEditor() {
   const { id } = useParams<{ id: string }>();
@@ -161,20 +163,41 @@ export default function RecipeEditor() {
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    if (!files.length) return;
+    if (!e.target.files?.length) return;
     setUploading(true);
     try {
-      const newUrls = await Promise.all(
-        files.map(async file => {
-          const { imageUrl } = await api.uploadImage(file);
-          return imageUrl;
-        })
-      );
-      setRecipe(prev => ({ ...prev, imageUrls: [...(prev.imageUrls || []), ...newUrls] }));
-    } catch (err) {
-      console.error(err);
-      alert('Failed to upload images');
+      const urls = await Promise.all(Array.from(e.target.files).map(async (file) => {
+        const { imageUrl } = await api.uploadImage(file);
+        return imageUrl;
+      }));
+      setRecipe({ ...recipe, imageUrls: [...(recipe.imageUrls || []), ...urls] });
+    } catch (err: any) {
+      alert(err.message || 'Upload failed');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleNativeImageUpload = async () => {
+    try {
+      const photo = await Camera.getPhoto({
+        resultType: CameraResultType.Uri,
+        source: CameraSource.Prompt,
+        quality: 90
+      });
+      
+      if (photo.webPath) {
+        setUploading(true);
+        // Fetch the blob from the capacitor webPath
+        const response = await fetch(photo.webPath);
+        const blob = await response.blob();
+        const file = new File([blob], `photo_${Date.now()}.${photo.format || 'jpg'}`, { type: `image/${photo.format || 'jpeg'}` });
+        
+        const { imageUrl } = await api.uploadImage(file);
+        setRecipe(prev => ({ ...prev, imageUrls: [...(prev.imageUrls || []), imageUrl] }));
+      }
+    } catch (err: any) {
+      console.error("Camera error:", err);
     } finally {
       setUploading(false);
     }
@@ -384,15 +407,27 @@ export default function RecipeEditor() {
                 </div>
               )}
               <div className="flex-1 space-y-3">
-                <input 
-                  type="file" 
-                  accept="image/*"
-                  multiple
-                  onChange={handleImageUpload}
-                  disabled={uploading}
-                  className="block w-full text-sm text-ink-muted file:mr-4 file:py-2.5 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-border-subtle file:text-ink hover:file:opacity-80 transition-all cursor-pointer focus:outline-none" 
-                />
-                <p className="text-xs text-ink-muted opacity-70">JPEG, PNG, WEBP. Max 20MB per file. You can select multiple files.</p>
+                {Capacitor.isNativePlatform() ? (
+                  <button 
+                    type="button" 
+                    onClick={handleNativeImageUpload}
+                    disabled={uploading}
+                    className="w-full bg-border-subtle text-ink px-4 py-2.5 rounded-md text-sm font-semibold hover:opacity-80 transition-all flex items-center justify-center gap-2"
+                  >
+                    <ImageIcon className="w-5 h-5" /> 
+                    {uploading ? 'Uploading...' : 'Take Photo / Choose Gallery'}
+                  </button>
+                ) : (
+                  <input 
+                    type="file" 
+                    accept="image/*"
+                    multiple
+                    onChange={handleImageUpload}
+                    disabled={uploading}
+                    className="block w-full text-sm text-ink-muted file:mr-4 file:py-2.5 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-border-subtle file:text-ink hover:file:opacity-80 transition-all cursor-pointer focus:outline-none" 
+                  />
+                )}
+                <p className="text-xs text-ink-muted opacity-70">JPEG, PNG, WEBP. Max 20MB per file.</p>
                 {uploading && <p className="text-sm font-medium text-green-600 animate-pulse">Uploading...</p>}
               </div>
             </div>

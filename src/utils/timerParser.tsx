@@ -1,4 +1,3 @@
-import React from 'react';
 import { Clock } from 'lucide-react';
 
 export const renderWithTimers = (text: string, title = "Timer") => {
