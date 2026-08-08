@@ -246,7 +246,7 @@ app.post('/api/ai-restructure', requireAdmin, async (req, res) => {
     });
 
     const prompt = `You are an expert culinary assistant. I am giving you unstructured recipe text. 
-Please restructure and format it perfectly into the following JSON structure. If information is missing, make your best guess or leave it empty/default. Return ONLY the JSON object.
+Please restructure and format it perfectly into the following JSON structure. If information is missing, make your best guess or leave it empty/default. Return ONLY the JSON object. If there are properties/notes in the ingredients that may make sense, such as possible substitutions or alternate measurements, leave them. Your job is to make the recipe readable while retaining all necessary information for a recipe that may be helpful.
 {
   "title": "String (extract or invent a good title)",
   "description": "String (brief summary)",

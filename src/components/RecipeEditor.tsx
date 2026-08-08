@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { api, type Recipe, type Component } from '../lib/api';
-import { Plus, Trash2, Save, ArrowLeft, GripVertical, Loader2, Download } from 'lucide-react';
+import { ArrowLeft, Trash2, Save, Plus, X, GripVertical, Loader2, Download, Check } from 'lucide-react';
+import * as Diff from 'diff';
 
 export default function RecipeEditor() {
   const { id } = useParams<{ id: string }>();
@@ -15,7 +16,7 @@ export default function RecipeEditor() {
   
   // AI State
   const [isRestructuring, setIsRestructuring] = useState(false);
-  const [isAiRestructured, setIsAiRestructured] = useState(false);
+  const [proposedRecipe, setProposedRecipe] = useState<Partial<Recipe> | null>(null);
   const [aiError, setAiError] = useState('');
   const [saveError, setSaveError] = useState('');
   
@@ -61,7 +62,7 @@ export default function RecipeEditor() {
     const [removed] = newInst.splice(draggedInstructionIdx, 1);
     newInst.splice(dropIdx, 0, removed);
     setRecipe({ ...recipe, instructions: newInst });
-    setDraggedInstructionIdx(null);
+    setDraggedIngredientIdx(null);
   };
 
   useEffect(() => {
@@ -139,8 +140,7 @@ export default function RecipeEditor() {
     setIsRestructuring(true);
     setAiError('');
     try {
-      // Combine all current text into a single string for the AI to understand the current state
-      const rawText = `
+      const recipeText = `
         Title: ${recipe.title}
         Description: ${recipe.description}
         Prep: ${recipe.prepTime}, Cook: ${recipe.cookTime}, Servings: ${recipe.servings}
@@ -150,18 +150,9 @@ export default function RecipeEditor() {
         Lab Notes / Raw Text: ${recipe.labNotes}
       `;
       
-      const aiData = await api.restructureRecipe(rawText);
-      
-      setRecipe(prev => ({ 
-        ...prev, 
-        ...aiData,
-        // Ensure arrays exist if AI omitted them
-        ingredients: aiData.ingredients || prev.ingredients,
-        instructions: aiData.instructions || prev.instructions,
-        tags: aiData.tags || prev.tags
-      }));
+      const aiData = await api.restructureRecipe(recipeText);
+      setProposedRecipe(aiData);
       setHighlightMissing(false);
-      setIsAiRestructured(true);
     } catch (err: any) {
       setAiError(err.message || 'AI Restructure failed.');
     } finally {
@@ -283,10 +274,54 @@ export default function RecipeEditor() {
         </div>
       )}
 
-      {isAiRestructured && (
-        <div className="bg-purple-500/10 border border-purple-500/30 text-purple-700 dark:text-purple-300 p-4 rounded-xl mb-8 font-medium flex items-center justify-between shadow-sm">
-          <span className="flex items-center gap-2">✨ AI has restructured your recipe! The modified fields are highlighted below. Please review the changes.</span>
-          <button type="button" onClick={() => setIsAiRestructured(false)} className="text-sm font-bold uppercase tracking-wider hover:opacity-70">Dismiss</button>
+      {proposedRecipe && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-paper rounded-xl w-full max-w-4xl shadow-2xl border border-border-subtle flex flex-col max-h-[90vh]">
+            <div className="p-6 border-b border-border-subtle flex justify-between items-center bg-purple-500/10">
+              <div>
+                <h2 className="text-xl font-bold text-purple-700 dark:text-purple-300 flex items-center gap-2">✨ AI Proposed Changes</h2>
+                <p className="text-sm text-ink-muted">Review the Git-style diff below before accepting.</p>
+              </div>
+              <button type="button" onClick={() => setProposedRecipe(null)} className="text-ink-muted hover:text-ink"><X className="w-5 h-5"/></button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto flex-1 font-mono text-sm bg-black/5 dark:bg-white/5 m-6 rounded-lg">
+              <pre className="whitespace-pre-wrap">
+                {Diff.diffLines(
+                  JSON.stringify({
+                    title: recipe.title, description: recipe.description, prepTime: recipe.prepTime, cookTime: recipe.cookTime, servings: recipe.servings, tags: recipe.tags, ingredients: recipe.ingredients, instructions: recipe.instructions
+                  }, null, 2), 
+                  JSON.stringify({
+                    title: proposedRecipe.title || recipe.title, description: proposedRecipe.description || recipe.description, prepTime: proposedRecipe.prepTime || recipe.prepTime, cookTime: proposedRecipe.cookTime || recipe.cookTime, servings: proposedRecipe.servings || recipe.servings, tags: proposedRecipe.tags || recipe.tags, ingredients: proposedRecipe.ingredients || recipe.ingredients, instructions: proposedRecipe.instructions || recipe.instructions
+                  }, null, 2)
+                ).map((part, idx) => (
+                  <span key={idx} className={part.added ? 'bg-green-500/20 text-green-700 dark:text-green-400 block px-2' : part.removed ? 'bg-red-500/20 text-red-700 dark:text-red-400 block line-through opacity-70 px-2' : 'block text-ink-muted px-2'}>
+                    {part.added ? '+' : part.removed ? '-' : ' '} {part.value.replace(/\n$/, '')}
+                  </span>
+                ))}
+              </pre>
+            </div>
+
+            <div className="p-6 border-t border-border-subtle flex justify-end gap-3 bg-black/5 dark:bg-white/5 rounded-b-xl">
+              <button type="button" onClick={() => setProposedRecipe(null)} className="px-4 py-2 font-medium hover:bg-black/10 dark:hover:bg-white/10 rounded-md transition-colors">Reject</button>
+              <button 
+                type="button"
+                onClick={() => {
+                  setRecipe(prev => ({ 
+                    ...prev, 
+                    ...proposedRecipe, 
+                    ingredients: proposedRecipe.ingredients || prev.ingredients, 
+                    instructions: proposedRecipe.instructions || prev.instructions, 
+                    tags: proposedRecipe.tags || prev.tags 
+                  }));
+                  setProposedRecipe(null);
+                }} 
+                className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-md font-medium shadow-sm transition-colors flex items-center gap-2"
+              >
+                <Check className="w-4 h-4" /> Accept Changes
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -319,7 +354,7 @@ export default function RecipeEditor() {
       )}
 
       {/* Basic Info */}
-      <div className={`space-y-6 p-4 -mx-4 rounded-xl border-2 transition-colors ${isAiRestructured ? 'border-purple-400 bg-purple-500/5' : 'border-transparent'}`}>
+      <div className="space-y-6">
         <h2 className="text-xl font-bold uppercase tracking-wider border-l-4 border-ink pl-3">Basic Information</h2>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -395,7 +430,7 @@ export default function RecipeEditor() {
       </div>
 
       {/* Ingredients */}
-      <div className={`space-y-6 pt-6 border-t ${highlightMissing && recipe.ingredients.length === 0 ? 'border-red-500 border-2 rounded-lg p-4' : isAiRestructured ? 'border-purple-400 bg-purple-500/5 border-2 p-4 -mx-4 rounded-xl' : 'border-border-subtle'}`}>
+      <div className={`space-y-6 pt-6 border-t ${highlightMissing && recipe.ingredients.length === 0 ? 'border-red-500 border-2 rounded-lg p-4' : 'border-border-subtle'}`}>
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-bold uppercase tracking-wider border-l-4 border-ink pl-3">Ingredients</h2>
           <button type="button" onClick={() => setRecipe({ ...recipe, ingredients: [...recipe.ingredients, { name: '', quantity: 0, unit: '' }] })} className="text-sm border border-border-subtle px-3 py-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/5 flex items-center gap-1.5 font-medium transition-colors">
@@ -428,14 +463,14 @@ export default function RecipeEditor() {
       </div>
 
       {/* Instructions */}
-      <div className={`space-y-6 pt-6 border-t ${highlightMissing && recipe.instructions.length === 0 ? 'border-red-500 border-2 rounded-lg p-4' : isAiRestructured ? 'border-purple-400 bg-purple-500/5 border-2 p-4 -mx-4 rounded-xl' : 'border-border-subtle'}`}>
+      <div className={`space-y-6 pt-6 border-t ${highlightMissing && recipe.instructions.length === 0 ? 'border-red-500 border-2 rounded-lg p-4' : 'border-border-subtle'}`}>
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-bold uppercase tracking-wider border-l-4 border-ink pl-3">Instructions</h2>
           <button type="button" onClick={() => setRecipe({ ...recipe, instructions: [...recipe.instructions, ''] })} className="text-sm border border-border-subtle px-3 py-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/5 flex items-center gap-1.5 font-medium transition-colors">
             <Plus className="w-4 h-4" /> Add Step
           </button>
         </div>
-        <div className={`space-y-4 border rounded-md p-4 transition-colors ${isAiRestructured ? 'border-purple-400 ring-1 ring-purple-400/50 bg-purple-500/5' : 'border-border-subtle'}`}>
+        <div className="space-y-4 border rounded-md p-4 border-border-subtle">
           {recipe.instructions.map((step, i) => (
             <div 
               key={i} 
