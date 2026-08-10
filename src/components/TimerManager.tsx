@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Play, Pause, X, Bell } from 'lucide-react';
+import { Haptics, ImpactStyle } from '@capacitor/haptics';
 
 export interface Timer {
   id: string;
@@ -16,6 +17,8 @@ export default function TimerManager() {
   });
 
   const [now, setNow] = useState(Date.now());
+  const [pendingTimer, setPendingTimer] = useState<{ durationSecs: number, name: string } | null>(null);
+  const [isFlashing, setIsFlashing] = useState(false);
 
   useEffect(() => {
     localStorage.setItem('baking-timers', JSON.stringify(timers));
@@ -32,9 +35,22 @@ export default function TimerManager() {
           const audio = new Audio('/alarm.mp3'); // We'll assume this file exists or browser handles it
           audio.play().catch(e => console.error("Audio play failed:", e));
           
-          if (Notification.permission === 'granted') {
+          if ('Notification' in window && Notification.permission === 'granted') {
             new Notification(`Timer Finished!`, { body: `${t.name} has finished.` });
           }
+
+          // Aggressive Haptics
+          try {
+            Haptics.impact({ style: ImpactStyle.Heavy });
+            setTimeout(() => Haptics.impact({ style: ImpactStyle.Heavy }), 200);
+            setTimeout(() => Haptics.impact({ style: ImpactStyle.Heavy }), 400);
+            setTimeout(() => Haptics.impact({ style: ImpactStyle.Heavy }), 600);
+          } catch(e) {}
+
+          // Screen flash
+          setIsFlashing(true);
+          setTimeout(() => setIsFlashing(false), 1500);
+
           return { ...t, hasRung: true };
         }
         return t;
@@ -44,25 +60,30 @@ export default function TimerManager() {
   }, [timers]);
 
   useEffect(() => {
-    if (Notification.permission === 'default') {
+    if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission();
     }
 
     const handleAddTimer = (e: any) => {
       const { durationSecs, name } = e.detail;
-      const newTimer: Timer = {
-        id: Math.random().toString(36).substr(2, 9),
-        name,
-        endTime: Date.now() + durationSecs * 1000,
-        remainingMs: durationSecs * 1000,
-        hasRung: false
-      };
-      setTimers(prev => [...prev, newTimer]);
+      setPendingTimer({ durationSecs, name });
     };
 
     window.addEventListener('add-timer', handleAddTimer);
     return () => window.removeEventListener('add-timer', handleAddTimer);
   }, []);
+
+  const confirmAddTimer = (durationSecs: number, name: string) => {
+    const newTimer: Timer = {
+      id: Math.random().toString(36).substr(2, 9),
+      name,
+      endTime: Date.now() + durationSecs * 1000,
+      remainingMs: durationSecs * 1000,
+      hasRung: false
+    };
+    setTimers(prev => [...prev, newTimer]);
+    setPendingTimer(null);
+  };
 
   const togglePause = (id: string) => {
     setTimers(prev => prev.map(t => {
@@ -98,38 +119,63 @@ export default function TimerManager() {
     return isNegative ? `+${res}` : res;
   };
 
-  if (timers.length === 0) return null;
+  if (timers.length === 0 && !pendingTimer) return null;
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-h-[80vh] overflow-y-auto w-72">
-      {timers.map(t => {
-        let currentRemaining = t.remainingMs;
-        if (t.endTime !== null) {
-          currentRemaining = t.endTime - now;
-        }
+    <>
+      <div className="fixed top-16 right-4 md:top-auto md:bottom-4 z-50 flex flex-col gap-2 max-h-[80vh] overflow-y-auto w-72">
+        {timers.map(t => {
+          let currentRemaining = t.remainingMs;
+          if (t.endTime !== null) {
+            currentRemaining = t.endTime - now;
+          }
 
-        const isNegative = currentRemaining < 0;
+          const isNegative = currentRemaining < 0;
 
-        return (
-          <div key={t.id} className={`p-3 rounded-lg shadow-xl border flex flex-col gap-2 ${isNegative ? 'bg-red-500 text-white border-red-600 animate-pulse' : 'bg-paper text-ink border-border-subtle'}`}>
-            <div className="flex justify-between items-center">
-              <span className="font-bold text-sm truncate pr-2">{t.name}</span>
-              <button onClick={() => removeTimer(t.id)} className="hover:opacity-70"><X className="w-4 h-4" /></button>
-            </div>
-            
-            <div className="flex items-center justify-between">
-              <span className="font-mono text-xl font-bold tracking-wider">
-                {formatTime(currentRemaining)}
-              </span>
+          return (
+            <div key={t.id} className={`p-3 rounded-lg shadow-xl border flex flex-col gap-2 ${isNegative ? 'bg-red-500 text-white border-red-600 animate-pulse' : 'bg-paper text-ink border-border-subtle'}`}>
+              <div className="flex justify-between items-center">
+                <span className="font-bold text-sm truncate pr-2">{t.name}</span>
+                <button onClick={() => removeTimer(t.id)} className="hover:opacity-70"><X className="w-4 h-4" /></button>
+              </div>
               
-              <button onClick={() => togglePause(t.id)} className={`p-2 rounded-full ${isNegative ? 'hover:bg-black/20' : 'hover:bg-black/5 dark:hover:bg-white/5'}`}>
-                {t.endTime === null ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
+              <div className="flex items-center justify-between">
+                <span className="font-mono text-xl font-bold tracking-wider">
+                  {formatTime(currentRemaining)}
+                </span>
+                
+                <button onClick={() => togglePause(t.id)} className={`p-2 rounded-full ${isNegative ? 'hover:bg-black/20' : 'hover:bg-black/5 dark:hover:bg-white/5'}`}>
+                  {t.endTime === null ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
+                </button>
+              </div>
+              {isNegative && <div className="text-xs font-bold uppercase tracking-widest text-center mt-1 flex items-center justify-center gap-1"><Bell className="w-3 h-3" /> Overtime</div>}
+            </div>
+          );
+        })}
+      </div>
+
+      {isFlashing && (
+        <div className="fixed inset-0 z-[9999] bg-ink/30 dark:bg-paper/30 pointer-events-none animate-pulse transition-opacity duration-300" />
+      )}
+
+      {pendingTimer && (
+        <div className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-end md:items-center justify-center p-0 md:p-4 animate-in slide-in-from-bottom md:slide-in-from-bottom-4">
+          <div className="bg-paper w-full md:max-w-sm md:rounded-2xl rounded-t-3xl shadow-2xl p-6 pb-safe">
+            <h3 className="text-xl font-bold mb-2">Start Timer</h3>
+            <p className="text-ink-muted mb-6">
+              Start a timer for <strong className="text-ink">{pendingTimer.name}</strong> ({formatTime(pendingTimer.durationSecs * 1000)})?
+            </p>
+            <div className="flex gap-3">
+              <button onClick={() => setPendingTimer(null)} className="flex-1 py-3 font-medium hover:bg-black/5 dark:hover:bg-white/5 rounded-xl transition-colors">
+                Cancel
+              </button>
+              <button onClick={() => confirmAddTimer(pendingTimer.durationSecs, pendingTimer.name)} className="flex-1 bg-ink text-paper py-3 font-bold rounded-xl hover:opacity-90 transition-opacity">
+                Start
               </button>
             </div>
-            {isNegative && <div className="text-xs font-bold uppercase tracking-widest text-center mt-1 flex items-center justify-center gap-1"><Bell className="w-3 h-3" /> Overtime</div>}
           </div>
-        );
-      })}
-    </div>
+        </div>
+      )}
+    </>
   );
 }

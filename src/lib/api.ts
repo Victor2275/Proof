@@ -45,6 +45,7 @@ export interface Recipe {
   ingredients: Component[];
   instructions: string[];
   labNotes?: string;
+  folder?: string;
   parentRecipeId?: string | null;
   versionNumber?: number;
   isLatestVersion?: boolean;
@@ -57,16 +58,47 @@ export interface BakeLog {
   _id?: string;
   recipeId: string | { _id: string, title: string };
   date: string;
-  temperature: string;
-  humidity: string;
+  isPersonalBest?: boolean;
   notes: string;
   imageUrls: string[];
 }
 
+export interface PantryItem {
+  _id?: string;
+  name: string;
+  createdAt?: string;
+}
+
 export const api = {
-  getRecipes: async (search?: string): Promise<Recipe[]> => {
-    const query = search ? `?search=${encodeURIComponent(search)}` : '';
-    const res = await fetch(`${API_URL}/recipes${query}`);
+  getRecipes: async (search?: string) => {
+    const url = search ? `${API_URL}/recipes?search=${encodeURIComponent(search)}` : `${API_URL}/recipes`;
+    const res = await fetch(url, { headers: getHeaders() });
+    return handleResponse(res);
+  },
+  
+  getAllBakeLogs: async () => {
+    const res = await fetch(`${API_URL}/bakelogs`, { headers: getHeaders() });
+    return handleResponse(res);
+  },
+
+  // Pantry
+  getPantry: async (): Promise<PantryItem[]> => {
+    const res = await fetch(`${API_URL}/pantry`, { headers: getHeaders() });
+    return handleResponse(res);
+  },
+  addPantryItem: async (item: Partial<PantryItem>): Promise<PantryItem> => {
+    const res = await fetch(`${API_URL}/pantry`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(item),
+    });
+    return handleResponse(res);
+  },
+  deletePantryItem: async (id: string) => {
+    const res = await fetch(`${API_URL}/pantry/${id}`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+    });
     return handleResponse(res);
   },
   getRecipe: async (id: string): Promise<Recipe> => {
@@ -112,6 +144,15 @@ export const api = {
       method: 'POST',
       headers: getHeaders(true),
       body: formData,
+    });
+    return handleResponse(res);
+  },
+
+  analyzeImage: async (imageUrl: string): Promise<{ tags: string[] }> => {
+    const res = await fetch(`${API_URL}/analyze-image`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ imageUrl }),
     });
     return handleResponse(res);
   },
@@ -170,6 +211,22 @@ export const api = {
   getBakeLogs: async (): Promise<BakeLog[]> => {
     const res = await fetch(`${API_URL}/bakelogs`);
     if (!res.ok) throw new Error('Failed to fetch bakelogs');
+    return res.json();
+  },
+
+  getRecipeBakeLogs: async (recipeId: string): Promise<BakeLog[]> => {
+    const res = await fetch(`${API_URL}/recipes/${recipeId}/bakelogs`);
+    if (!res.ok) throw new Error('Failed to fetch recipe bakelogs');
+    return res.json();
+  },
+
+  updateBakeLog: async (id: string, updates: Partial<BakeLog>): Promise<BakeLog> => {
+    const res = await fetch(`${API_URL}/bakelogs/${id}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(updates),
+    });
+    if (!res.ok) throw new Error('Failed to update bake log');
     return res.json();
   },
 

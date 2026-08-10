@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { api, type Recipe, type Component } from '../lib/api';
-import { ArrowLeft, Trash2, Save, Plus, X, GripVertical, Loader2, Download, Check, Image as ImageIcon } from 'lucide-react';
+import { ArrowLeft, Trash2, Save, Plus, X, GripVertical, Loader2, Download, Check, Image as ImageIcon, ArrowUp, ArrowDown } from 'lucide-react';
+import ReactCrop, { type Crop, type PixelCrop } from 'react-image-crop';
+import 'react-image-crop/dist/ReactCrop.css';
 import * as Diff from 'diff';
 import { Capacitor } from '@capacitor/core';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
@@ -15,6 +17,13 @@ export default function RecipeEditor() {
   const [extracting, setExtracting] = useState(false);
   const [extractError, setExtractError] = useState('');
   const [highlightMissing, setHighlightMissing] = useState(false);
+  const [showExtract, setShowExtract] = useState(false);
+  
+  // Cropping State
+  const [cropImageSrc, setCropImageSrc] = useState('');
+  const [crop, setCrop] = useState<Crop>();
+  const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
+  const imageRef = useRef<HTMLImageElement>(null);
   
   // AI State
   const [isRestructuring, setIsRestructuring] = useState(false);
@@ -162,18 +171,51 @@ export default function RecipeEditor() {
     }
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files?.length) return;
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const reader = new FileReader();
+      reader.addEventListener('load', () => {
+        setCropImageSrc(reader.result?.toString() || '');
+        setCrop(undefined); // Reset crop state
+      });
+      reader.readAsDataURL(e.target.files[0]);
+    }
+  };
+
+  const executeCropAndUpload = async () => {
+    if (!completedCrop || !imageRef.current) return;
     setUploading(true);
     try {
-      const urls = await Promise.all(Array.from(e.target.files).map(async (file) => {
+      const canvas = document.createElement('canvas');
+      const scaleX = imageRef.current.naturalWidth / imageRef.current.width;
+      const scaleY = imageRef.current.naturalHeight / imageRef.current.height;
+      canvas.width = completedCrop.width;
+      canvas.height = completedCrop.height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      
+      ctx.drawImage(
+        imageRef.current,
+        completedCrop.x * scaleX,
+        completedCrop.y * scaleY,
+        completedCrop.width * scaleX,
+        completedCrop.height * scaleY,
+        0,
+        0,
+        completedCrop.width,
+        completedCrop.height
+      );
+
+      canvas.toBlob(async (blob) => {
+        if (!blob) return;
+        const file = new File([blob], 'cropped.jpg', { type: 'image/jpeg' });
         const { imageUrl } = await api.uploadImage(file);
-        return imageUrl;
-      }));
-      setRecipe({ ...recipe, imageUrls: [...(recipe.imageUrls || []), ...urls] });
+        setRecipe({ ...recipe, imageUrls: [...(recipe.imageUrls || []), imageUrl] });
+        setCropImageSrc('');
+        setUploading(false);
+      }, 'image/jpeg', 0.95);
     } catch (err: any) {
-      alert(err.message || 'Upload failed');
-    } finally {
+      alert(err.message || 'Crop/Upload failed');
       setUploading(false);
     }
   };
@@ -226,8 +268,8 @@ export default function RecipeEditor() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-4xl mx-auto space-y-10 pb-20">
-      <div className="flex items-center justify-between pb-6 border-b border-border-subtle">
+    <form onSubmit={handleSubmit} className="max-w-4xl mx-auto space-y-10 pb-20 relative">
+      <div className="sticky top-0 z-40 bg-paper/95 backdrop-blur-sm flex flex-wrap items-center justify-between py-4 border-b border-border-subtle mb-6 -mx-4 px-4 md:mx-0 md:px-0">
         <button type="button" onClick={() => navigate(-1)} className="inline-flex items-center text-sm font-medium text-ink-muted hover:text-ink transition-colors">
           <ArrowLeft className="w-4 h-4 mr-1.5" /> Cancel & Back
         </button>
@@ -298,9 +340,9 @@ export default function RecipeEditor() {
       )}
 
       {proposedRecipe && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-paper rounded-xl w-full max-w-4xl shadow-2xl border border-border-subtle flex flex-col max-h-[90vh]">
-            <div className="p-6 border-b border-border-subtle flex justify-between items-center bg-purple-500/10">
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-0 md:p-4">
+          <div className="bg-paper w-full h-full md:rounded-xl md:max-w-4xl shadow-2xl border-none md:border md:border-border-subtle flex flex-col md:max-h-[90vh]">
+            <div className="p-4 md:p-6 border-b border-border-subtle flex justify-between items-center bg-purple-500/10">
               <div>
                 <h2 className="text-xl font-bold text-purple-700 dark:text-purple-300 flex items-center gap-2">✨ AI Proposed Changes</h2>
                 <p className="text-sm text-ink-muted">Review the Git-style diff below before accepting.</p>
@@ -349,29 +391,36 @@ export default function RecipeEditor() {
       )}
 
       {!id && (
-        <div className="bg-sidebar p-6 rounded-xl border border-border-subtle shadow-sm mb-8">
-          <h2 className="text-lg font-bold mb-2 flex items-center gap-2"><Download className="w-5 h-5"/> Import from URL</h2>
-          <p className="text-ink-muted text-sm mb-4">Paste a link from a food blog or recipe site to automatically fill out this form.</p>
-          <div className="flex flex-col sm:flex-row gap-3">
-            <input 
-              type="url" 
-              placeholder="https://www.allrecipes.com/..."
-              value={extractUrl}
-              onChange={(e) => setExtractUrl(e.target.value)}
-              disabled={extracting}
-              className="flex-1 px-3 py-2 border border-border-subtle bg-paper rounded-lg focus:outline-none focus:ring-2 focus:ring-ink"
-            />
-            <button 
-              type="button"
-              onClick={handleExtract}
-              disabled={extracting || !extractUrl}
-              className="bg-ink text-paper px-6 py-2 rounded-lg font-medium hover:opacity-90 flex items-center justify-center gap-2 disabled:opacity-50"
-            >
-              {extracting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Extract'}
-            </button>
-          </div>
-          {extractError && (
-            <p className="text-red-500 text-sm mt-2 font-medium">{extractError}</p>
+        <div className="mb-8">
+          <button type="button" onClick={() => setShowExtract(!showExtract)} className="flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-ink-muted hover:text-ink transition-colors mb-2">
+            <Download className="w-4 h-4" /> Import from URL {showExtract ? '(Close)' : ''}
+          </button>
+          
+          {showExtract && (
+            <div className="bg-sidebar p-6 rounded-xl border border-border-subtle shadow-sm animate-in slide-in-from-top-2">
+              <p className="text-ink-muted text-sm mb-4">Paste a link from a food blog or recipe site to automatically fill out this form.</p>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <input 
+                  type="url" 
+                  placeholder="https://www.allrecipes.com/..."
+                  value={extractUrl}
+                  onChange={(e) => setExtractUrl(e.target.value)}
+                  disabled={extracting}
+                  className="flex-1 px-3 py-2 border border-border-subtle bg-paper rounded-lg focus:outline-none focus:ring-2 focus:ring-ink"
+                />
+                <button 
+                  type="button"
+                  onClick={handleExtract}
+                  disabled={extracting || !extractUrl}
+                  className="bg-ink text-paper px-6 py-2 rounded-lg font-medium hover:opacity-90 flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {extracting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Extract'}
+                </button>
+              </div>
+              {extractError && (
+                <p className="text-red-500 text-sm mt-2 font-medium">{extractError}</p>
+              )}
+            </div>
           )}
         </div>
       )}
@@ -412,10 +461,9 @@ export default function RecipeEditor() {
                     type="button" 
                     onClick={handleNativeImageUpload}
                     disabled={uploading}
-                    className="w-full bg-border-subtle text-ink px-4 py-2.5 rounded-md text-sm font-semibold hover:opacity-80 transition-all flex items-center justify-center gap-2"
+                    className="w-16 h-16 bg-border-subtle text-ink rounded-xl font-semibold hover:opacity-80 transition-all flex items-center justify-center shrink-0 shadow-sm"
                   >
-                    <ImageIcon className="w-5 h-5" /> 
-                    {uploading ? 'Uploading...' : 'Take Photo / Choose Gallery'}
+                    {uploading ? <Loader2 className="w-6 h-6 animate-spin" /> : <ImageIcon className="w-8 h-8" />}
                   </button>
                 ) : (
                   <input 
@@ -427,7 +475,7 @@ export default function RecipeEditor() {
                     className="block w-full text-sm text-ink-muted file:mr-4 file:py-2.5 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-border-subtle file:text-ink hover:file:opacity-80 transition-all cursor-pointer focus:outline-none" 
                   />
                 )}
-                <p className="text-xs text-ink-muted opacity-70">JPEG, PNG, WEBP. Max 20MB per file.</p>
+                <p className="text-xs text-ink-muted opacity-70 mt-2">JPEG, PNG, WEBP. Max 20MB per file.</p>
                 {uploading && <p className="text-sm font-medium text-green-600 animate-pulse">Uploading...</p>}
               </div>
             </div>
@@ -435,16 +483,16 @@ export default function RecipeEditor() {
 
           <div>
             <label className="block text-sm font-medium mb-1.5 text-ink-muted">Prep Time (mins)</label>
-            <input type="number" value={recipe.prepTime} onChange={e => setRecipe({...recipe, prepTime: e.target.value})} className={`w-full bg-black/5 dark:bg-white/5 border ${highlightMissing && !recipe.prepTime ? 'border-red-500 shadow-[0_0_0_1px_rgba(239,68,68,1)]' : 'border-border-subtle'} rounded-md p-2.5 focus:outline-none focus:ring-1 focus:ring-ink`} placeholder="30" />
+            <input type="number" inputMode="decimal" value={recipe.prepTime} onChange={e => setRecipe({...recipe, prepTime: e.target.value})} className={`w-full bg-black/5 dark:bg-white/5 border ${highlightMissing && !recipe.prepTime ? 'border-red-500 shadow-[0_0_0_1px_rgba(239,68,68,1)]' : 'border-border-subtle'} rounded-md p-2.5 focus:outline-none focus:ring-1 focus:ring-ink`} placeholder="30" />
           </div>
           <div>
             <label className="block text-sm font-medium mb-1.5 text-ink-muted">Cook Time (mins)</label>
-            <input type="number" value={recipe.cookTime} onChange={e => setRecipe({...recipe, cookTime: e.target.value})} className={`w-full bg-black/5 dark:bg-white/5 border ${highlightMissing && !recipe.cookTime ? 'border-red-500 shadow-[0_0_0_1px_rgba(239,68,68,1)]' : 'border-border-subtle'} rounded-md p-2.5 focus:outline-none focus:ring-1 focus:ring-ink`} placeholder="60" />
+            <input type="number" inputMode="decimal" value={recipe.cookTime} onChange={e => setRecipe({...recipe, cookTime: e.target.value})} className={`w-full bg-black/5 dark:bg-white/5 border ${highlightMissing && !recipe.cookTime ? 'border-red-500 shadow-[0_0_0_1px_rgba(239,68,68,1)]' : 'border-border-subtle'} rounded-md p-2.5 focus:outline-none focus:ring-1 focus:ring-ink`} placeholder="60" />
           </div>
 
           <div>
             <label className="block text-sm font-medium mb-1.5 text-ink-muted">Servings</label>
-            <input type="number" value={recipe.servings || ''} onChange={e => setRecipe({...recipe, servings: parseInt(e.target.value)})} className={`w-full bg-black/5 dark:bg-white/5 border ${highlightMissing && !recipe.servings ? 'border-red-500 shadow-[0_0_0_1px_rgba(239,68,68,1)]' : 'border-border-subtle'} rounded-md p-2.5 focus:outline-none focus:ring-1 focus:ring-ink`} placeholder="4" />
+            <input type="number" inputMode="decimal" value={recipe.servings || ''} onChange={e => setRecipe({...recipe, servings: parseInt(e.target.value)})} className={`w-full bg-black/5 dark:bg-white/5 border ${highlightMissing && !recipe.servings ? 'border-red-500 shadow-[0_0_0_1px_rgba(239,68,68,1)]' : 'border-border-subtle'} rounded-md p-2.5 focus:outline-none focus:ring-1 focus:ring-ink`} placeholder="4" />
           </div>
           <div className="flex gap-4">
             <div className="flex-1">
@@ -458,8 +506,25 @@ export default function RecipeEditor() {
           </div>
 
           <div className="md:col-span-2">
-            <label className="block text-sm font-medium mb-1.5 text-ink-muted">Tags (comma separated)</label>
-            <input type="text" value={recipe.tags.join(', ')} onChange={e => setRecipe({...recipe, tags: e.target.value.split(',').map(t=>t.trim()).filter(Boolean)})} className="w-full bg-black/5 dark:bg-white/5 border border-border-subtle rounded-md p-2.5 focus:outline-none focus:ring-1 focus:ring-ink" placeholder="e.g. Baking, Bread, Experimental" />
+            <label className="block text-sm font-medium mb-1.5 text-ink-muted">Tags (Press enter to add)</label>
+            <input type="text" onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                const val = e.currentTarget.value.trim();
+                if (val && !recipe.tags.includes(val)) {
+                  setRecipe({...recipe, tags: [...recipe.tags, val]});
+                }
+                e.currentTarget.value = '';
+              }
+            }} className="w-full bg-black/5 dark:bg-white/5 border border-border-subtle rounded-md p-2.5 focus:outline-none focus:ring-1 focus:ring-ink mb-2" placeholder="e.g. Baking, Bread, Experimental" />
+            <div className="flex flex-wrap gap-2">
+              {recipe.tags.map(tag => (
+                <span key={tag} className="flex items-center gap-1 bg-black/10 dark:bg-white/10 px-3 py-1 rounded-full text-sm font-medium">
+                  {tag}
+                  <button type="button" onClick={() => setRecipe({...recipe, tags: recipe.tags.filter(t => t !== tag)})} className="hover:text-red-500"><X className="w-3 h-3"/></button>
+                </span>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -481,17 +546,26 @@ export default function RecipeEditor() {
               onDragOver={(e) => e.preventDefault()}
               onDrop={(e) => handleIngredientDrop(e, i)}
               onDragEnd={() => setDraggedIngredientIdx(null)}
-              className={`flex gap-3 items-center group p-2 border-b border-dashed border-border-subtle hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-move ${draggedIngredientIdx === i ? 'opacity-50' : ''}`}
+              className={`flex flex-col md:flex-row gap-2 md:items-center group p-3 border-b border-dashed border-border-subtle hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-move md:cursor-move ${draggedIngredientIdx === i ? 'opacity-50' : ''}`}
             >
-              <GripVertical className="w-5 h-5 text-ink-muted/30" />
-              <input required type="number" step="any" value={ing.quantity || ''} onChange={e => updateIngredient(i, 'quantity', parseFloat(e.target.value))} placeholder="Qty" className="w-20 bg-transparent border-0 focus:ring-1 focus:ring-ink p-2 rounded text-center cursor-text" />
-              <div className="w-px h-6 bg-border-subtle"></div>
-              <input required type="text" value={ing.unit} onChange={e => updateIngredient(i, 'unit', e.target.value)} placeholder="Unit" className="w-24 bg-transparent border-0 focus:ring-1 focus:ring-ink p-2 rounded text-center cursor-text" />
-              <div className="w-px h-6 bg-border-subtle"></div>
-              <input required type="text" value={ing.name} onChange={e => updateIngredient(i, 'name', e.target.value)} placeholder="Ingredient Name" className="flex-1 bg-transparent border-0 focus:ring-1 focus:ring-ink p-2 rounded cursor-text" />
-              <button type="button" onClick={() => removeIngredient(i)} className="p-2 text-ink-muted/50 hover:text-red-500 rounded-md transition-colors">
-                <Trash2 className="w-4 h-4" />
-              </button>
+              <div className="flex justify-between md:block items-center w-full md:w-auto">
+                <GripVertical className="hidden md:block w-5 h-5 text-ink-muted/30" />
+                <div className="flex md:hidden gap-2">
+                  <button type="button" onClick={() => { if(i>0) { const a=[...recipe.ingredients]; [a[i-1],a[i]]=[a[i],a[i-1]]; setRecipe({...recipe,ingredients:a}) } }} className="p-1 hover:bg-black/10 rounded"><ArrowUp className="w-4 h-4"/></button>
+                  <button type="button" onClick={() => { if(i<recipe.ingredients.length-1) { const a=[...recipe.ingredients]; [a[i+1],a[i]]=[a[i],a[i+1]]; setRecipe({...recipe,ingredients:a}) } }} className="p-1 hover:bg-black/10 rounded"><ArrowDown className="w-4 h-4"/></button>
+                </div>
+                <button type="button" onClick={() => removeIngredient(i)} className="md:hidden p-2 text-red-500 rounded-md bg-red-500/10"><Trash2 className="w-4 h-4" /></button>
+              </div>
+              <div className="flex gap-2 w-full">
+                <input required type="number" inputMode="decimal" step="any" value={ing.quantity || ''} onChange={e => updateIngredient(i, 'quantity', parseFloat(e.target.value))} placeholder="Qty" className="w-20 bg-black/5 dark:bg-white/5 md:bg-transparent border-0 focus:ring-1 focus:ring-ink p-2 rounded text-center cursor-text" />
+                <div className="hidden md:block w-px h-6 bg-border-subtle"></div>
+                <input required type="text" value={ing.unit} onChange={e => updateIngredient(i, 'unit', e.target.value)} placeholder="Unit" className="w-24 bg-black/5 dark:bg-white/5 md:bg-transparent border-0 focus:ring-1 focus:ring-ink p-2 rounded text-center cursor-text" />
+                <div className="hidden md:block w-px h-6 bg-border-subtle"></div>
+                <input required type="text" value={ing.name} onChange={e => updateIngredient(i, 'name', e.target.value)} placeholder="Ingredient Name" className="flex-1 bg-black/5 dark:bg-white/5 md:bg-transparent border-0 focus:ring-1 focus:ring-ink p-2 rounded cursor-text" />
+                <button type="button" onClick={() => removeIngredient(i)} className="hidden md:block p-2 text-ink-muted/50 hover:text-red-500 rounded-md transition-colors">
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           ))}
         </div>
@@ -514,14 +588,25 @@ export default function RecipeEditor() {
               onDragOver={(e) => e.preventDefault()}
               onDrop={(e) => handleInstructionDrop(e, i)}
               onDragEnd={() => setDraggedInstructionIdx(null)}
-              className={`flex gap-3 items-start group cursor-move hover:bg-black/5 dark:hover:bg-white/5 p-2 rounded-lg transition-colors ${draggedInstructionIdx === i ? 'opacity-50' : ''}`}
+              className={`flex flex-col md:flex-row gap-3 md:items-start group md:cursor-move hover:bg-black/5 dark:hover:bg-white/5 p-3 rounded-lg transition-colors border-b md:border-0 border-dashed border-border-subtle ${draggedInstructionIdx === i ? 'opacity-50' : ''}`}
             >
-              <GripVertical className="w-5 h-5 text-ink-muted/30 mt-3" />
-              <span className="mt-3 text-ink-muted font-bold w-6 text-right">{i+1}.</span>
-              <textarea required value={step} onChange={e => updateInstruction(i, e.target.value)} placeholder="Describe step..." className="flex-1 bg-black/5 dark:bg-white/5 border border-border-subtle rounded-md p-3 min-h-[80px] focus:outline-none focus:ring-1 focus:ring-ink resize-y cursor-text" />
-              <button type="button" onClick={() => removeInstruction(i)} className="p-2.5 text-ink-muted/50 hover:text-red-500 rounded-md transition-colors mt-1">
-                <Trash2 className="w-4 h-4" />
-              </button>
+              <div className="flex justify-between items-center w-full md:w-auto md:mt-3">
+                <GripVertical className="hidden md:block w-5 h-5 text-ink-muted/30" />
+                <span className="hidden md:block text-ink-muted font-bold w-6 text-right">{i+1}.</span>
+                <div className="flex md:hidden items-center gap-2">
+                  <span className="font-bold mr-2 text-ink-muted">Step {i+1}</span>
+                  <button type="button" onClick={() => { if(i>0) { const a=[...recipe.instructions]; [a[i-1],a[i]]=[a[i],a[i-1]]; setRecipe({...recipe,instructions:a}) } }} className="p-1.5 bg-black/5 dark:bg-white/5 rounded-md"><ArrowUp className="w-4 h-4"/></button>
+                  <button type="button" onClick={() => { if(i<recipe.instructions.length-1) { const a=[...recipe.instructions]; [a[i+1],a[i]]=[a[i],a[i+1]]; setRecipe({...recipe,instructions:a}) } }} className="p-1.5 bg-black/5 dark:bg-white/5 rounded-md"><ArrowDown className="w-4 h-4"/></button>
+                </div>
+                <button type="button" onClick={() => removeInstruction(i)} className="md:hidden p-2 text-red-500 rounded-md bg-red-500/10"><Trash2 className="w-4 h-4" /></button>
+              </div>
+              
+              <div className="flex-1 w-full flex gap-2">
+                <textarea required value={step} onChange={e => updateInstruction(i, e.target.value)} placeholder="Describe step..." className="flex-1 bg-black/5 dark:bg-white/5 md:bg-transparent border md:border-0 border-border-subtle rounded-md p-3 min-h-[80px] focus:outline-none focus:ring-1 focus:ring-ink resize-y cursor-text" />
+                <button type="button" onClick={() => removeInstruction(i)} className="hidden md:block p-2.5 text-ink-muted/50 hover:text-red-500 rounded-md transition-colors mt-1">
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           ))}
         </div>
@@ -538,6 +623,46 @@ export default function RecipeEditor() {
           placeholder="*Tweak:* Used rosemary instead of thyme." 
         />
       </div>
+      {/* Cropping Modal */}
+      {cropImageSrc && (
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+          <div className="bg-paper p-6 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+            <h3 className="text-xl font-bold mb-4 uppercase tracking-wider">Crop Image</h3>
+            <div className="flex justify-center mb-6 overflow-hidden max-h-[50vh] bg-black/5 dark:bg-white/5 rounded-xl">
+              <ReactCrop
+                crop={crop}
+                onChange={(_, percentCrop) => setCrop(percentCrop)}
+                onComplete={(c) => setCompletedCrop(c)}
+                aspect={1}
+              >
+                <img 
+                  ref={imageRef} 
+                  src={cropImageSrc} 
+                  alt="Crop me" 
+                  className="max-h-[50vh] w-auto object-contain"
+                />
+              </ReactCrop>
+            </div>
+            <div className="flex justify-end gap-3">
+              <button 
+                type="button" 
+                onClick={() => setCropImageSrc('')} 
+                className="px-6 py-3 font-medium text-ink-muted hover:bg-black/5 dark:hover:bg-white/5 rounded-xl transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                type="button" 
+                onClick={executeCropAndUpload}
+                disabled={!completedCrop || uploading}
+                className="px-6 py-3 font-bold bg-ink text-paper rounded-xl hover:opacity-90 transition-opacity flex items-center gap-2 disabled:opacity-50"
+              >
+                {uploading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Crop & Upload'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </form>
   );
 }

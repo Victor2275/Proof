@@ -13,6 +13,9 @@ import * as cheerio from 'cheerio';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { Note } from './models/Note.js';
 import { BakeLog } from './models/BakeLog.js';
+import { Pantry } from './models/Pantry.js';
+import cron from 'node-cron';
+import fs from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -90,11 +93,45 @@ mongoose.connect(MONGO_URI)
 
 // Routes
 
-// Image upload route
 app.post('/api/upload', requireAdmin, upload.single('image'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No image file uploaded' });
   // req.file.path contains the cloudinary URL when using CloudinaryStorage
   res.status(201).json({ imageUrl: req.file.path });
+});
+
+// AI Photo Tagging (Mocked)
+app.post('/api/analyze-image', requireAdmin, async (req, res) => {
+  const { imageUrl } = req.body;
+  if (!imageUrl) return res.status(400).json({ error: 'Image URL required' });
+
+  try {
+    // Fetch the image as a buffer
+    const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+    const buffer = Buffer.from(response.data, 'binary');
+
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+    const prompt = "Analyze this baking photo. Return a JSON array of 4-5 relevant descriptive hashtags (e.g. ['#sourdough', '#crumb', '#overproofed']). Return ONLY the JSON array, nothing else.";
+
+    const image = {
+      inlineData: {
+        data: buffer.toString("base64"),
+        mimeType: "image/jpeg",
+      },
+    };
+
+    const result = await model.generateContent([prompt, image]);
+    const responseText = result.response.text();
+
+    // Parse the JSON array from the response
+    const tags = JSON.parse(responseText.replace(/```json/g, '').replace(/```/g, '').trim());
+
+    res.json({ tags });
+  } catch (err) {
+    console.error("Gemini Error:", err);
+    res.status(500).json({ error: 'Failed to analyze image' });
+  }
 });
 
 // Recipe URL extraction route
@@ -471,9 +508,90 @@ app.delete('/api/bakelogs/:id', async (req, res) => {
   try {
     const log = await BakeLog.findByIdAndDelete(req.params.id);
     if (!log) return res.status(404).json({ error: 'Log not found' });
-    res.json({ message: 'Log deleted' });
+    res.json({ message: 'BakeLog deleted successfully' });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// Pantry endpoints
+app.get('/api/pantry', async (req, res) => {
+  try {
+    const items = await Pantry.find().sort({ createdAt: -1 });
+    res.json(items);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/pantry', requireAdmin, async (req, res) => {
+  try {
+    const item = new Pantry(req.body);
+    await item.save();
+    res.status(201).json(item);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.delete('/api/pantry/:id', requireAdmin, async (req, res) => {
+  try {
+    const item = await Pantry.findByIdAndDelete(req.params.id);
+    if (!item) return res.status(404).json({ error: 'Item not found' });
+    res.json({ message: 'Item deleted' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// JSON Backup endpoint
+app.get('/api/backup', requireAdmin, async (req, res) => {
+  try {
+    const recipes = await Recipe.find({});
+    const notes = await Note.find({});
+    const bakeLogs = await BakeLog.find({});
+    const pantry = await Pantry.find({});
+    const backup = {
+      timestamp: new Date().toISOString(),
+      data: {
+        recipes,
+        notes,
+        bakeLogs,
+        pantry
+      }
+    };
+    res.setHeader('Content-disposition', 'attachment; filename=culinary-lab-backup.json');
+    res.setHeader('Content-type', 'application/json');
+    res.send(JSON.stringify(backup, null, 2));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Automated Daily Backups
+cron.schedule('0 2 * * *', async () => {
+  try {
+    console.log('Running automated daily backup...');
+    const recipes = await Recipe.find({});
+    const notes = await Note.find({});
+    const bakeLogs = await BakeLog.find({});
+    const pantry = await Pantry.find({});
+
+    const backup = {
+      timestamp: new Date().toISOString(),
+      data: { recipes, notes, bakeLogs, pantry }
+    };
+
+    const backupsDir = path.join(__dirname, 'backups');
+    if (!fs.existsSync(backupsDir)) {
+      fs.mkdirSync(backupsDir);
+    }
+
+    const filename = `backup-${new Date().toISOString().split('T')[0]}.json`;
+    fs.writeFileSync(path.join(backupsDir, filename), JSON.stringify(backup, null, 2));
+    console.log(`Automated backup saved to ${filename}`);
+  } catch (err) {
+    console.error('Failed to run automated backup:', err);
   }
 });
 

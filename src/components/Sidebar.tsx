@@ -1,47 +1,37 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Book, PlusCircle, Lightbulb, Moon, Sun, Image } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Book, PlusCircle, Lightbulb, Image, Settings as SettingsIcon, BarChart3, Box } from 'lucide-react';
 
-export default function Sidebar() {
+export default function Sidebar({ className = "", onAdminRequired }: { className?: string, onAdminRequired?: () => void }) {
   const location = useLocation();
-  const [darkMode, setDarkMode] = useState(false);
 
-  useEffect(() => {
-    if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-      setDarkMode(true);
-      document.documentElement.classList.add('dark');
+  const handleNewRecipe = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (localStorage.getItem('adminToken')) {
+      window.location.href = '/new';
     } else {
-      setDarkMode(false);
-      document.documentElement.classList.remove('dark');
-    }
-  }, []);
-
-  const toggleDarkMode = () => {
-    if (darkMode) {
-      document.documentElement.classList.remove('dark');
-      localStorage.theme = 'light';
-      setDarkMode(false);
-    } else {
-      document.documentElement.classList.add('dark');
-      localStorage.theme = 'dark';
-      setDarkMode(true);
+      onAdminRequired?.();
     }
   };
 
   const navItems = [
     { name: 'My Cookbook', path: '/', icon: Book },
     { name: 'Gallery', path: '/gallery', icon: Image },
-    { name: 'New Recipe', path: '/recipe/new', icon: PlusCircle },
+    { name: 'Analytics', path: '/analytics', icon: BarChart3 },
+    { name: 'Pantry', path: '/pantry', icon: Box },
     { name: 'General Notes', path: '/notes', icon: Lightbulb },
+    { name: 'Settings', path: '/settings', icon: SettingsIcon },
   ];
 
   return (
-    <aside className="w-64 bg-sidebar h-screen flex flex-col fixed left-0 top-0 border-r border-border-subtle z-20">
-      <div className="p-6 font-bold text-xl tracking-tight">Culinary Lab</div>
+    <aside className={`w-64 bg-sidebar h-screen flex flex-col fixed left-0 top-0 border-r border-border-subtle z-20 ${className}`}>
+      <div className="p-6 flex items-center gap-3">
+        <img src="/logo.png" alt="Logo" className="w-10 h-10 object-contain" />
+        <span className="font-bold text-xl tracking-tight">Culinary Lab</span>
+      </div>
 
       <nav className="flex-1 px-4 space-y-1">
         {navItems.map((item) => {
-          const isActive = location.pathname === item.path || (item.path === '/recipe/new' && location.pathname.startsWith('/recipe/new')) || (item.path === '/recipe/new' && location.pathname.includes('/edit'));
+          const isActive = location.pathname === item.path;
           const Icon = item.icon;
           return (
             <Link
@@ -53,21 +43,22 @@ export default function Sidebar() {
                 }`}
             >
               <Icon className="w-4 h-4 opacity-70" />
-              {item.name} {isActive && item.name === 'New Recipe' && '(active)'}
+              {item.name}
             </Link>
           );
         })}
+        
+        <div className="pt-4">
+          <a
+            href="/new"
+            onClick={handleNewRecipe}
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-sm transition-colors text-ink-muted hover:bg-black/5 dark:hover:bg-white/5`}
+          >
+            <PlusCircle className="w-4 h-4 opacity-70" />
+            New Recipe
+          </a>
+        </div>
       </nav>
-
-      <div className="p-4 border-t border-border-subtle">
-        <button
-          onClick={toggleDarkMode}
-          className="flex items-center gap-3 px-3 py-2.5 w-full rounded-md text-sm text-ink-muted hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
-        >
-          {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-          {darkMode ? 'Light Mode' : 'Dark Mode'}
-        </button>
-      </div>
     </aside>
   );
 }

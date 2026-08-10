@@ -10,17 +10,14 @@ const bakeLogSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   },
-  temperature: {
-    type: String,
-    default: ''
-  },
-  humidity: {
-    type: String,
-    default: ''
-  },
+
   notes: {
     type: String,
     default: ''
+  },
+  isPersonalBest: {
+    type: Boolean,
+    default: false
   },
   imageUrls: {
     type: [String],

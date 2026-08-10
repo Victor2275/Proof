@@ -5,10 +5,16 @@ import Dashboard from './components/Dashboard';
 import RecipeViewer from './components/RecipeViewer';
 import RecipeEditor from './components/RecipeEditor';
 import Gallery from './components/Gallery';
+import Analytics from './components/Analytics';
+
 import GeneralNotes from './components/GeneralNotes';
 import BakingMode from './components/BakingMode';
+import Settings from './components/Settings';
+import Pantry from './components/Pantry';
 import TimerManager from './components/TimerManager';
+import BottomNav from './components/BottomNav';
 import { api } from './lib/api';
+import { AnimatePresence, motion } from 'framer-motion';
 
 function AuthModal({ onClose, onSuccess }: { onClose: () => void, onSuccess: () => void }) {
   const [pin, setPin] = useState('');
@@ -35,20 +41,45 @@ function AuthModal({ onClose, onSuccess }: { onClose: () => void, onSuccess: () 
       <form onSubmit={handleSubmit} className="bg-paper rounded-xl w-full max-w-sm shadow-2xl border border-border-subtle p-6">
         <h2 className="text-xl font-bold mb-2">Admin Access Required</h2>
         <p className="text-sm text-ink-muted mb-4">Please enter the PIN to perform this action.</p>
-        <input 
-          type="password" 
-          value={pin}
-          onChange={(e) => setPin(e.target.value)}
-          placeholder="Enter PIN"
-          className="w-full bg-black/5 dark:bg-white/5 border border-border-subtle rounded-md p-3 mb-4 focus:outline-none focus:ring-2 focus:ring-ink text-center font-mono text-xl tracking-widest"
-          autoFocus
-        />
-        {error && <p className="text-red-500 text-sm mb-4 text-center font-medium">{error}</p>}
+        <div className="mb-6">
+          <input 
+            type="password" 
+            value={pin}
+            onChange={(e) => setPin(e.target.value)}
+            placeholder="Enter PIN"
+            className="w-full bg-black/5 dark:bg-white/5 border border-border-subtle rounded-md p-3 mb-2 focus:outline-none focus:ring-2 focus:ring-ink text-center font-mono text-xl tracking-widest hidden md:block"
+            autoFocus
+          />
+          <div className="md:hidden grid grid-cols-3 gap-2">
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 'C', 0, '<'].map((key) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => {
+                  if (key === 'C') setPin('');
+                  else if (key === '<') setPin(pin.slice(0, -1));
+                  else setPin(pin + key);
+                }}
+                className="bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-xl font-medium rounded-md py-4 transition-colors"
+              >
+                {key}
+              </button>
+            ))}
+          </div>
+          <div className="md:hidden text-center mt-4 tracking-[0.5em] text-2xl font-mono h-8">
+            {pin.replace(/./g, '•')}
+          </div>
+        </div>
         <div className="flex gap-3">
-          <button type="button" onClick={onClose} className="flex-1 py-2 font-medium hover:bg-black/5 dark:hover:bg-white/5 rounded-md">Cancel</button>
-          <button type="submit" disabled={loading} className="flex-1 bg-ink text-paper py-2 font-medium rounded-md hover:opacity-90">{loading ? 'Verifying...' : 'Submit'}</button>
+          <button type="button" onClick={onClose} className="flex-1 py-3 font-medium hover:bg-black/5 dark:hover:bg-white/5 rounded-xl transition-colors">Cancel</button>
+          <button type="submit" disabled={loading} className="flex-1 bg-ink text-paper py-3 font-bold rounded-xl hover:opacity-90 transition-opacity">{loading ? 'Verifying...' : 'Submit'}</button>
         </div>
       </form>
+      {error && (
+        <div className="fixed bottom-24 md:bottom-10 left-1/2 -translate-x-1/2 bg-red-600 text-white px-6 py-3 rounded-full shadow-2xl font-bold animate-in slide-in-from-bottom-5 z-[200]">
+          {error}
+        </div>
+      )}
     </div>
   );
 }
@@ -56,6 +87,20 @@ function AuthModal({ onClose, onSuccess }: { onClose: () => void, onSuccess: () 
 function App() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const [autoHideSidebar, setAutoHideSidebar] = useState(() => localStorage.getItem('autoHideSidebar') === 'true');
+
+  useEffect(() => {
+    const handleSettingsChange = () => {
+      setAutoHideSidebar(localStorage.getItem('autoHideSidebar') === 'true');
+      document.documentElement.setAttribute('data-font', localStorage.getItem('fontFamily') || 'sans');
+    };
+    
+    // Initial font setup
+    document.documentElement.setAttribute('data-font', localStorage.getItem('fontFamily') || 'sans');
+    
+    window.addEventListener('settings-changed', handleSettingsChange);
+    return () => window.removeEventListener('settings-changed', handleSettingsChange);
+  }, []);
 
   useEffect(() => {
     const handleAuthReq = () => setShowAuthModal(true);
@@ -80,33 +125,51 @@ function App() {
           Offline Mode: You are viewing cached recipes. Changes will not be saved until you reconnect.
         </div>
       )}
-      <div className={`flex min-h-screen ${isOffline ? 'pt-6' : ''}`}>
-        <Sidebar />
-        
+      <div className={`flex h-screen bg-paper text-ink overflow-hidden selection:bg-ink selection:text-paper ${isOffline ? 'pt-6' : ''}`}>
+        <Sidebar onAdminRequired={() => setShowAuthModal(true)} className={`hidden md:flex ${autoHideSidebar ? 'group -translate-x-[95%] hover:-translate-x-0 transition-transform duration-300 shadow-2xl z-50' : ''}`} />
+        <main className={`flex-1 overflow-y-auto overscroll-y-auto w-full relative pb-20 md:pb-8 pt-4 md:pt-8 px-4 md:px-8 transition-all duration-300 ${autoHideSidebar ? 'md:ml-[3%]' : 'md:ml-64'}`}>
+          <AnimatePresence mode="wait">
+            <Routes>
+              <Route path="/" element={<PageTransition><Dashboard /></PageTransition>} />
+              <Route path="/settings" element={<PageTransition><Settings /></PageTransition>} />
+              <Route path="/analytics" element={<PageTransition><Analytics /></PageTransition>} />
+              <Route path="/pantry" element={<PageTransition><Pantry /></PageTransition>} />
+              <Route path="/recipe/:id/bake" element={<PageTransition><BakingMode /></PageTransition>} />
+              <Route path="/recipe/:id" element={<PageTransition><RecipeViewer /></PageTransition>} />
+              <Route path="/new" element={<PageTransition><RecipeEditor /></PageTransition>} />
+              <Route path="/edit/:id" element={<PageTransition><RecipeEditor /></PageTransition>} />
+              <Route path="/gallery" element={<PageTransition><Gallery /></PageTransition>} />
+              <Route path="/notes" element={<PageTransition><GeneralNotes /></PageTransition>} />
+            </Routes>
+          </AnimatePresence>
+        </main>
+        <BottomNav />
+        <TimerManager />
         {showAuthModal && (
           <AuthModal 
             onClose={() => setShowAuthModal(false)} 
             onSuccess={() => {
               setShowAuthModal(false);
-              window.location.reload();
+              window.dispatchEvent(new Event('auth-success'));
             }} 
           />
         )}
-
-        <main className="flex-1 ml-64 p-8 md:p-12 max-w-6xl">
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/recipe/new" element={<RecipeEditor />} />
-            <Route path="/recipe/:id" element={<RecipeViewer />} />
-            <Route path="/recipe/:id/edit" element={<RecipeEditor />} />
-            <Route path="/bake/:id" element={<BakingMode />} />
-            <Route path="/gallery" element={<Gallery />} />
-            <Route path="/notes" element={<GeneralNotes />} />
-          </Routes>
-        </main>
       </div>
-      <TimerManager />
     </Router>
+  );
+}
+
+function PageTransition({ children }: { children: React.ReactNode }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      transition={{ duration: 0.2 }}
+      className="h-full"
+    >
+      {children}
+    </motion.div>
   );
 }
 

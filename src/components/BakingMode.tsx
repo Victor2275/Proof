@@ -1,8 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api, type Recipe, type Component } from '../lib/api';
+import { saveLocalBakeLog } from '../lib/localDB';
 import { X, ChevronLeft, ChevronRight, Check, Upload, Loader2, List } from 'lucide-react';
 import { renderWithTimers } from '../utils/timerParser';
+import { Haptics, ImpactStyle } from '@capacitor/haptics';
+import { Capacitor } from '@capacitor/core';
+import 'regenerator-runtime/runtime';
+import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 
 export default function BakingMode() {
   const { id } = useParams<{ id: string }>();
@@ -17,11 +22,36 @@ export default function BakingMode() {
 
   // Finish Modal State
   const [showFinishModal, setShowFinishModal] = useState(false);
-  const [temp, setTemp] = useState('');
-  const [humidity, setHumidity] = useState('');
+
   const [notes, setNotes] = useState('');
-  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [savingLog, setSavingLog] = useState(false);
+
+  // Voice Commands
+  const { listening, browserSupportsSpeechRecognition } = useSpeechRecognition({
+    commands: [
+      {
+        command: ['next', 'next step', 'forward'],
+        callback: () => handleNextStep()
+      },
+      {
+        command: ['back', 'previous', 'previous step'],
+        callback: () => handlePrevStep()
+      },
+      {
+        command: ['finish', 'done', 'complete'],
+        callback: () => setShowFinishModal(true)
+      }
+    ]
+  });
+
+  const toggleMic = () => {
+    if (listening) {
+      SpeechRecognition.stopListening();
+    } else {
+      SpeechRecognition.startListening({ continuous: true });
+    }
+  };
 
   useEffect(() => {
     if (id) {
@@ -50,23 +80,51 @@ export default function BakingMode() {
     };
   }, []);
 
+  const handleNextStep = async () => {
+    if (recipe && currentStep < recipe.instructions.length) {
+      setCurrentStep(prev => prev + 1);
+      if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Light });
+    }
+  };
+
+  const handlePrevStep = async () => {
+    if (currentStep > 0) {
+      setCurrentStep(prev => prev - 1);
+      if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Light });
+    }
+  };
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (showFinishModal) return;
       if (e.key === 'Escape') navigate(`/recipe/${id}`);
       
       if (viewMode === 'focus') {
-        if (e.key === 'ArrowRight' && recipe && currentStep < recipe.instructions.length) {
-          setCurrentStep(prev => prev + 1);
-        }
-        if (e.key === 'ArrowLeft' && currentStep > 0) {
-          setCurrentStep(prev => prev - 1);
-        }
+        if (e.key === 'ArrowRight') handleNextStep();
+        if (e.key === 'ArrowLeft') handlePrevStep();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [currentStep, recipe, navigate, id, showFinishModal, viewMode]);
+
+  const touchStartX = useRef<number | null>(null);
+  const touchEndX = useRef<number | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.targetTouches[0].clientX;
+  };
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchEndX.current = e.targetTouches[0].clientX;
+  };
+  const handleTouchEnd = () => {
+    if (!touchStartX.current || !touchEndX.current) return;
+    const distance = touchStartX.current - touchEndX.current;
+    if (distance > 50) handleNextStep(); // Swipe left -> Next
+    else if (distance < -50) handlePrevStep(); // Swipe right -> Prev
+    touchStartX.current = null;
+    touchEndX.current = null;
+  };
 
   const getSmartIngredients = (stepText: string): Component[] => {
     if (!recipe) return [];
@@ -83,25 +141,40 @@ export default function BakingMode() {
     e.preventDefault();
     setSavingLog(true);
     try {
-      let imageUrls: string[] = [];
-      if (imageFile) {
-        const uploadRes = await api.uploadImage(imageFile);
-        imageUrls.push(uploadRes.imageUrl);
+      if (!localStorage.getItem('adminToken')) {
+        await saveLocalBakeLog({ recipeId: id!, notes, imageUrls: [] }, imageFiles);
+      } else {
+        const imageUrls = [];
+        if (imageFiles.length > 0) {
+          const uploadPromises = imageFiles.map(async (file) => {
+            const formData = new FormData();
+            formData.append('image', file);
+            const uploadRes = await fetch(`${api.API_URL.replace('/api', '/api/upload')}`, {
+              method: 'POST',
+              headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` },
+              body: formData
+            });
+            if (!uploadRes.ok) throw new Error('Image upload failed');
+            const { imageUrl } = await uploadRes.json();
+            return imageUrl;
+          });
+          imageUrls.push(...await Promise.all(uploadPromises));
+        }
+
+        const res = await fetch(`${api.API_URL.replace('/api', '')}/api/bakelogs`, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+          },
+          body: JSON.stringify({
+            recipeId: id,
+            notes,
+            imageUrls
+          })
+        });
+        if (!res.ok) throw new Error('Failed to log bake');
       }
-
-      await fetch('http://localhost:3001/api/bakelogs', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          recipeId: id,
-          temperature: temp,
-          humidity,
-          notes,
-          imageUrls
-        })
-      });
-
-      // Navigate back to the recipe page
       navigate(`/recipe/${id}`);
     } catch (err) {
       console.error(err);
@@ -128,12 +201,27 @@ export default function BakingMode() {
       </div>
       
       {/* Top Header */}
-      <div className="w-full px-6 py-4 flex justify-between items-center max-w-5xl shrink-0">
-        <button onClick={() => setShowIngredients(!showIngredients)} className="p-3 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors flex items-center gap-2">
-          <List className="w-6 h-6" /> <span className="font-medium hidden sm:inline">Ingredients</span>
+      <div className="w-full flex items-center justify-between p-6 z-10 relative">
+        <button 
+          onClick={() => setShowIngredients(!showIngredients)}
+          className={`px-5 py-2.5 rounded-full border transition-all font-bold uppercase tracking-widest text-sm flex items-center gap-2 ${showIngredients ? 'bg-ink text-paper border-ink' : 'border-border-subtle hover:bg-black/5 dark:hover:bg-white/5'}`}
+        >
+          <List className="w-5 h-5" /> Ingredients
         </button>
         
         <div className="flex items-center gap-4">
+          {browserSupportsSpeechRecognition && (
+            <button 
+              onClick={toggleMic}
+              className={`p-2 rounded-full border transition-colors ${listening ? 'bg-red-500 text-white border-red-500' : 'border-border-subtle hover:bg-black/5 dark:hover:bg-white/5 text-ink-muted'}`}
+              title="Toggle Voice Commands (Next, Back, Finish)"
+            >
+              <div className="flex items-center gap-2 px-2 text-sm font-bold uppercase tracking-widest">
+                <div className={`w-2 h-2 rounded-full ${listening ? 'bg-white animate-pulse' : 'bg-red-500'}`} />
+                MIC
+              </div>
+            </button>
+          )}
           <button 
             onClick={() => setViewMode(prev => prev === 'focus' ? 'all' : 'focus')}
             className="px-4 py-1.5 rounded-full border border-border-subtle hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-sm font-bold uppercase tracking-wide"
@@ -151,7 +239,12 @@ export default function BakingMode() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col items-center w-full max-w-4xl px-8 md:px-12 pb-20 relative overflow-y-auto">
+      <div 
+        className="flex-1 flex flex-col items-center w-full max-w-4xl px-8 md:px-12 pb-20 relative overflow-y-auto"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
         {viewMode === 'focus' ? (
           <div className="w-full flex-1 flex flex-col justify-center items-center">
             <div className="text-3xl md:text-5xl font-medium leading-relaxed md:leading-normal text-center transition-all duration-300">
@@ -200,7 +293,7 @@ export default function BakingMode() {
       {viewMode === 'focus' && (
         <>
           <button 
-            onClick={() => setCurrentStep(prev => Math.max(0, prev - 1))}
+            onClick={handlePrevStep}
             disabled={currentStep === 0}
             className="absolute left-4 top-1/2 -translate-y-1/2 p-4 rounded-full bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 disabled:opacity-0 transition-all"
           >
@@ -208,7 +301,7 @@ export default function BakingMode() {
           </button>
           
           <button 
-            onClick={() => setCurrentStep(prev => Math.min(recipe.instructions.length, prev + 1))}
+            onClick={handleNextStep}
             disabled={currentStep === recipe.instructions.length}
             className="absolute right-4 top-1/2 -translate-y-1/2 p-4 rounded-full bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 disabled:opacity-0 transition-all"
           >
@@ -253,29 +346,18 @@ export default function BakingMode() {
             </div>
             
             <form onSubmit={handleFinishSubmit} className="p-6 space-y-6 overflow-y-auto">
-              <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-bold mb-2">Kitchen Temp</label>
-                  <input type="text" value={temp} onChange={e => setTemp(e.target.value)} className="w-full border border-border-subtle rounded-md p-3 bg-black/5 dark:bg-white/5 focus:ring-1 focus:ring-ink focus:outline-none" placeholder="e.g. 72°F" />
-                </div>
-                <div>
-                  <label className="block text-sm font-bold mb-2">Humidity</label>
-                  <input type="text" value={humidity} onChange={e => setHumidity(e.target.value)} className="w-full border border-border-subtle rounded-md p-3 bg-black/5 dark:bg-white/5 focus:ring-1 focus:ring-ink focus:outline-none" placeholder="e.g. 45%" />
-                </div>
-              </div>
-
               <div>
                 <label className="block text-sm font-bold mb-2">Bake Notes</label>
                 <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={4} className="w-full border border-border-subtle rounded-md p-3 bg-black/5 dark:bg-white/5 focus:ring-1 focus:ring-ink focus:outline-none resize-none" placeholder="How did it turn out? What would you change next time?"></textarea>
               </div>
 
               <div>
-                <label className="block text-sm font-bold mb-2">Photo</label>
+                <label className="block text-sm font-bold mb-2">Photos</label>
                 <div className="border-2 border-dashed border-border-subtle rounded-lg p-8 flex flex-col items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 transition-colors cursor-pointer relative">
-                  <input type="file" accept="image/*" onChange={e => setImageFile(e.target.files?.[0] || null)} className="absolute inset-0 opacity-0 cursor-pointer" />
+                  <input type="file" multiple accept="image/*" onChange={e => setImageFiles(Array.from(e.target.files || []))} className="absolute inset-0 opacity-0 cursor-pointer" />
                   <Upload className="w-8 h-8 text-ink-muted mb-2" />
                   <span className="text-sm font-medium text-ink-muted">
-                    {imageFile ? imageFile.name : 'Upload Photo'}
+                    {imageFiles.length > 0 ? `${imageFiles.length} photo(s) selected` : 'Upload Photos'}
                   </span>
                 </div>
               </div>

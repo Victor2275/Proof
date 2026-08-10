@@ -24,6 +24,10 @@ const recipeSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  folder: {
+    type: String,
+    default: 'Uncategorized'
+  },
   // Versioning Fields
   parentRecipeId: {
     type: mongoose.Schema.Types.ObjectId,

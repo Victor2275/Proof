@@ -87,8 +87,7 @@ export default function Gallery() {
                       <h3 className="font-bold text-xl drop-shadow-md mb-2">{recipeTitle}</h3>
                       <div className="flex items-center gap-4 text-xs font-medium text-white/80">
                         <span className="flex items-center gap-1"><Calendar className="w-3 h-3"/> {dateStr}</span>
-                        {log.temperature && <span className="flex items-center gap-1"><Thermometer className="w-3 h-3"/> {log.temperature}</span>}
-                        {log.humidity && <span className="flex items-center gap-1"><Droplets className="w-3 h-3"/> {log.humidity}</span>}
+
                       </div>
                     </div>
                     
