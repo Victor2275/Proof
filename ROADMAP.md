@@ -33,6 +33,13 @@ This document tracks all planned features and their implementation status across
 - [x] Pantry Barcode Scanner: Use `html5-qrcode` to scan product barcodes and fetch names from the Open Food Facts API directly into the Smart Pantry.
 - [x] AI Photo Tagging: Let Gemini 1.5 Flash auto-suggest tags (`#sourdough`, `#overproofed`) when saving a new bake log photo.
 - [x] Drag-and-Drop Dashboard: Let user organize recipe cards into categorized folders using `@dnd-kit/core`.
-- [ ] Before & After Photo Slider: Create an interactive `react-compare-slider` for BakeLogs to compare the raw dough vs baked bread.
+- [ ] Before & After Photo Slider: Create an interactive photo comparison slider for BakeLogs to compare the raw dough vs baked bread.
 - [ ] Live Timer Sync: Implement Socket.io so if a 40-minute timer is started on the iPad in the kitchen, it syncs to the iPhone in the living room.
 - [ ] Offline PWA: Use Workbox/Service Workers to cache all recipes and images so the cookbook works in the kitchen without Wi-Fi.
+
+## Phase 4: Production & Advanced Features (Active)
+- [ ] **Grocery List Generator**: Convert missing/checked ingredients into a grocery list exportable to Apple Reminders, Google Keep, and text export.
+- [ ] **Interactive Before & After Photo Comparison Slider**: Interactive dual-photo slider in Bake Logs (raw vs baked bread).
+- [ ] **Automated Free Backups & Maintenance**: Daily `node-cron` job for JSON database dumps and Cloudinary orphan cleanup.
+- [ ] **Realtime Multi-Device Timer Sync**: Socket.io sync for active timers across devices.
+

@@ -35,6 +35,7 @@ export default function RecipeEditor() {
   const [showCommitModal, setShowCommitModal] = useState(false);
   const [commitMessage, setCommitMessage] = useState('');
   const [recipe, setRecipe] = useState<Omit<Recipe, '_id'>>(() => {
+    console.log("INITIALIZING RECIPE STATE", location.state);
     if (location.state?.recipe) {
       return location.state.recipe;
     }
@@ -52,6 +53,9 @@ export default function RecipeEditor() {
       labNotes: ''
     };
   });
+  
+  console.log("CURRENT RECIPE:", recipe);
+  console.log("USE PARAMS ID:", id);
 
   const [draggedIngredientIdx, setDraggedIngredientIdx] = useState<number | null>(null);
   const [draggedInstructionIdx, setDraggedInstructionIdx] = useState<number | null>(null);

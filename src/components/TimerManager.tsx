@@ -32,9 +32,15 @@ export default function TimerManager() {
       setTimers(prev => prev.map(t => {
         if (t.endTime !== null && !t.hasRung && Date.now() >= t.endTime) {
           // Play sound
-          const audio = new Audio('/alarm.mp3'); // We'll assume this file exists or browser handles it
+          const audio = new Audio('/alarm.mp3');
           audio.play().catch(e => console.error("Audio play failed:", e));
           
+          // Audio Voice Announcement (Speech Synthesis)
+          if (window.speechSynthesis && localStorage.getItem('audioAnnouncementsEnabled') !== 'false') {
+            const msg = new SpeechSynthesisUtterance(`${t.name} timer has completed.`);
+            window.speechSynthesis.speak(msg);
+          }
+
           if ('Notification' in window && Notification.permission === 'granted') {
             new Notification(`Timer Finished!`, { body: `${t.name} has finished.` });
           }

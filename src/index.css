@@ -47,6 +47,14 @@
     --ink-muted: #a8a29e;
     --border-subtle: #44403c;
   }
+
+  .oled {
+    --sidebar-bg: #000000;
+    --paper-bg: #000000;
+    --ink: #ffffff;
+    --ink-muted: #888888;
+    --border-subtle: #222222;
+  }
 }
 
 body {

@@ -7,6 +7,7 @@ import RecipeEditor from './components/RecipeEditor';
 import Gallery from './components/Gallery';
 import Analytics from './components/Analytics';
 
+import GroceryList from './components/GroceryList';
 import GeneralNotes from './components/GeneralNotes';
 import BakingMode from './components/BakingMode';
 import Settings from './components/Settings';
@@ -134,6 +135,7 @@ function App() {
               <Route path="/settings" element={<PageTransition><Settings /></PageTransition>} />
               <Route path="/analytics" element={<PageTransition><Analytics /></PageTransition>} />
               <Route path="/pantry" element={<PageTransition><Pantry /></PageTransition>} />
+              <Route path="/grocery" element={<PageTransition><GroceryList /></PageTransition>} />
               <Route path="/recipe/:id/bake" element={<PageTransition><BakingMode /></PageTransition>} />
               <Route path="/recipe/:id" element={<PageTransition><RecipeViewer /></PageTransition>} />
               <Route path="/new" element={<PageTransition><RecipeEditor /></PageTransition>} />

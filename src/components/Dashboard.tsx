@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api, type Recipe } from '../lib/api';
-import { Search, Clock, ChevronRight, Shuffle, LayoutGrid, List, Filter, Folder } from 'lucide-react';
+import { Search, Clock, Shuffle, LayoutGrid, List, Filter, Folder } from 'lucide-react';
 import Fuse from 'fuse.js';
 import { DndContext, useDraggable, useDroppable } from '@dnd-kit/core';
 import type { DragEndEvent } from '@dnd-kit/core';

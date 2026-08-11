@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { api, type Recipe, type Component } from '../lib/api';
+import { api, API_URL, type Recipe, type Component } from '../lib/api';
 import { saveLocalBakeLog } from '../lib/localDB';
 import { X, ChevronLeft, ChevronRight, Check, Upload, Loader2, List } from 'lucide-react';
 import { renderWithTimers } from '../utils/timerParser';
@@ -149,7 +149,7 @@ export default function BakingMode() {
           const uploadPromises = imageFiles.map(async (file) => {
             const formData = new FormData();
             formData.append('image', file);
-            const uploadRes = await fetch(`${api.API_URL.replace('/api', '/api/upload')}`, {
+            const uploadRes = await fetch(`${API_URL.replace('/api', '/api/upload')}`, {
               method: 'POST',
               headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` },
               body: formData
@@ -161,7 +161,7 @@ export default function BakingMode() {
           imageUrls.push(...await Promise.all(uploadPromises));
         }
 
-        const res = await fetch(`${api.API_URL.replace('/api', '')}/api/bakelogs`, {
+        const res = await fetch(`${API_URL.replace('/api', '')}/api/bakelogs`, {
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',

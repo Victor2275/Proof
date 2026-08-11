@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { api, type BakeLog } from '../lib/api';
-import { Calendar, Thermometer, Droplets } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 
 export default function Gallery() {
   const [logs, setLogs] = useState<BakeLog[]>([]);

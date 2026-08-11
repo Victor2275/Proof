@@ -35,7 +35,7 @@ export default function Pantry() {
         } catch (err) {
           setError('Failed to fetch product data.');
         }
-      }, (err) => {
+      }, () => {
         // Ignored
       });
       return () => {

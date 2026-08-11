@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Book, PlusCircle, Lightbulb, Image, Settings as SettingsIcon, BarChart3, Box } from 'lucide-react';
+import { Book, PlusCircle, Lightbulb, Image, Settings as SettingsIcon, BarChart3, Box, ShoppingBag } from 'lucide-react';
 
 export default function Sidebar({ className = "", onAdminRequired }: { className?: string, onAdminRequired?: () => void }) {
   const location = useLocation();
@@ -18,6 +18,7 @@ export default function Sidebar({ className = "", onAdminRequired }: { className
     { name: 'Gallery', path: '/gallery', icon: Image },
     { name: 'Analytics', path: '/analytics', icon: BarChart3 },
     { name: 'Pantry', path: '/pantry', icon: Box },
+    { name: 'Grocery List', path: '/grocery', icon: ShoppingBag },
     { name: 'General Notes', path: '/notes', icon: Lightbulb },
     { name: 'Settings', path: '/settings', icon: SettingsIcon },
   ];

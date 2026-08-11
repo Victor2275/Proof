@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Moon, Sun, Smartphone, Database, Download } from 'lucide-react';
-import { api } from '../lib/api';
+import { API_URL } from '../lib/api';
 
 export default function Settings() {
-  const [theme, setTheme] = useState<'light' | 'dark' | 'system'>(() => localStorage.getItem('theme') as any || 'system');
+  const [theme, setTheme] = useState<'light' | 'dark' | 'oled' | 'system'>(() => localStorage.getItem('theme') as any || 'system');
   const [haptics, setHaptics] = useState(() => localStorage.getItem('hapticsEnabled') !== 'false');
   const [fontFamily, setFontFamily] = useState(() => localStorage.getItem('fontFamily') || 'sans');
   const [defaultBakersMath, setDefaultBakersMath] = useState(() => localStorage.getItem('defaultBakersMath') === 'true');
@@ -16,6 +16,7 @@ export default function Settings() {
   useEffect(() => {
     if (theme === 'system') {
       localStorage.removeItem('theme');
+      document.documentElement.classList.remove('oled');
       if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
         document.documentElement.classList.add('dark');
       } else {
@@ -24,9 +25,13 @@ export default function Settings() {
     } else {
       localStorage.setItem('theme', theme);
       if (theme === 'dark') {
+        document.documentElement.classList.remove('oled');
         document.documentElement.classList.add('dark');
-      } else {
+      } else if (theme === 'oled') {
         document.documentElement.classList.remove('dark');
+        document.documentElement.classList.add('oled');
+      } else {
+        document.documentElement.classList.remove('dark', 'oled');
       }
     }
   }, [theme]);
@@ -83,6 +88,12 @@ export default function Settings() {
               className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-medium transition-all border ${theme === 'dark' ? 'bg-ink text-paper border-ink shadow-md' : 'bg-paper text-ink border-border-subtle hover:bg-black/5 dark:hover:bg-white/5'}`}
             >
               <Moon className="w-4 h-4"/> Dark
+            </button>
+            <button 
+              onClick={() => setTheme('oled')}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-medium transition-all border ${theme === 'oled' ? 'bg-black text-white border-white shadow-md' : 'bg-paper text-ink border-border-subtle hover:bg-black/5 dark:hover:bg-white/5'}`}
+            >
+              <Moon className="w-4 h-4 text-purple-400"/> OLED Black
             </button>
             <button 
               onClick={() => setTheme('system')}
@@ -201,7 +212,7 @@ export default function Settings() {
                       alert('Admin access required for backup.');
                       return;
                     }
-                    const res = await fetch(`${api.API_URL.replace('/api', '')}/api/backup`, {
+                    const res = await fetch(`${API_URL.replace('/api', '')}/api/backup`, {
                       headers: { 'Authorization': `Bearer ${token}` }
                     });
                     if (!res.ok) throw new Error('Backup failed');

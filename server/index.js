@@ -14,11 +14,13 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { Note } from './models/Note.js';
 import { BakeLog } from './models/BakeLog.js';
 import { Pantry } from './models/Pantry.js';
+import { sampleRecipes, samplePantry, sampleBakeLogs } from './sampleData.js';
 import cron from 'node-cron';
 import fs from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+dotenv.config({ path: path.join(__dirname, '.env') });
 dotenv.config();
 
 const app = express();
@@ -63,7 +65,7 @@ app.post('/api/auth/pin', (req, res) => {
 // ----------------------------
 
 const PORT = process.env.PORT || 3001;
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/cookbook';
+const MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/cookbook';
 
 // Static file hosting for images
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -87,11 +89,17 @@ const upload = multer({ storage, limits: { fileSize: 20 * 1024 * 1024 } }); // 2
 
 
 // Connect to MongoDB
-mongoose.connect(MONGO_URI)
-  .then(() => console.log('Connected to MongoDB'))
-  .catch(err => console.error('MongoDB connection error:', err));
+if (process.env.NODE_ENV !== 'test') {
+  mongoose.connect(MONGO_URI, { serverSelectionTimeoutMS: 3000 })
+    .then(() => console.log('Connected to MongoDB'))
+    .catch(err => console.error('MongoDB connection error (running without MongoDB):', err.message));
+}
 
 // Routes
+
+app.get(['/api', '/api/health'], (req, res) => {
+  res.json({ status: 'ok', message: 'Victor Recipes API Server is running' });
+});
 
 app.post('/api/upload', requireAdmin, upload.single('image'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No image file uploaded' });
@@ -313,9 +321,50 @@ ${rawText}
   }
 });
 
+// AI Ingredient Substitutions Route (Admin Only)
+app.post('/api/ai-substitutions', requireAdmin, async (req, res) => {
+  try {
+    const { ingredientName, recipeTitle } = req.body;
+    if (!ingredientName) return res.status(400).json({ error: 'Ingredient name required' });
+
+    if (!process.env.GEMINI_API_KEY) {
+      return res.status(503).json({ error: 'AI features unavailable (missing GEMINI_API_KEY).' });
+    }
+
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.5-flash",
+      generationConfig: { responseMimeType: "application/json" }
+    });
+
+    const prompt = `You are a professional chef. Provide 3 smart ingredient substitutions for "${ingredientName}" in the context of baking/cooking "${recipeTitle || 'this recipe'}".
+Return a JSON array of objects with the following keys:
+[
+  { "substitute": "String", "ratio": "String (e.g. 1:1 or 3/4 cup per 1 cup)", "notes": "String (impact on flavor, texture, or bake time)" }
+]`;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+
+    const substitutions = JSON.parse(text);
+    res.json({ substitutions });
+  } catch (err) {
+    console.error('AI Substitution Error:', err);
+    res.status(500).json({ error: err.message || 'Failed to generate AI substitutions.' });
+  }
+});
+
 // Get all recipes
 app.get('/api/recipes', async (req, res) => {
   try {
+    if (mongoose.connection.readyState !== 1) {
+      if (req.query.search) {
+        const s = req.query.search.toLowerCase();
+        return res.json(sampleRecipes.filter(r => r.title.toLowerCase().includes(s) || r.tags.some(t => t.toLowerCase().includes(s))));
+      }
+      return res.json(sampleRecipes);
+    }
     const query = { isLatestVersion: { $ne: false } };
     if (req.query.search) {
       query.$or = [
@@ -334,6 +383,10 @@ app.get('/api/recipes', async (req, res) => {
 // Get a single recipe
 app.get('/api/recipes/:id', async (req, res) => {
   try {
+    if (mongoose.connection.readyState !== 1) {
+      const match = sampleRecipes.find(r => r._id === req.params.id) || sampleRecipes[0];
+      return res.json(match);
+    }
     const recipe = await Recipe.findById(req.params.id);
     if (!recipe) return res.status(404).json({ error: 'Recipe not found' });
     res.json(recipe);
@@ -428,6 +481,7 @@ app.delete('/api/recipes/:id', requireAdmin, async (req, res) => {
 // General Notes endpoints
 app.get('/api/notes', async (req, res) => {
   try {
+    if (mongoose.connection.readyState !== 1) return res.json([]);
     const notes = await Note.find().sort({ updatedAt: -1 });
     res.json(notes);
   } catch (err) {
@@ -468,6 +522,7 @@ app.delete('/api/notes/:id', async (req, res) => {
 // BakeLog endpoints
 app.get('/api/bakelogs', async (req, res) => {
   try {
+    if (mongoose.connection.readyState !== 1) return res.json(sampleBakeLogs);
     const logs = await BakeLog.find().populate('recipeId', 'title').sort({ date: -1 });
     res.json(logs);
   } catch (err) {
@@ -477,6 +532,7 @@ app.get('/api/bakelogs', async (req, res) => {
 
 app.get('/api/recipes/:recipeId/bakelogs', async (req, res) => {
   try {
+    if (mongoose.connection.readyState !== 1) return res.json(sampleBakeLogs.filter(b => b.recipeId._id === req.params.recipeId));
     const logs = await BakeLog.find({ recipeId: req.params.recipeId }).sort({ date: -1 });
     res.json(logs);
   } catch (err) {
@@ -517,6 +573,7 @@ app.delete('/api/bakelogs/:id', async (req, res) => {
 // Pantry endpoints
 app.get('/api/pantry', async (req, res) => {
   try {
+    if (mongoose.connection.readyState !== 1) return res.json(samplePantry);
     const items = await Pantry.find().sort({ createdAt: -1 });
     res.json(items);
   } catch (err) {
@@ -542,6 +599,19 @@ app.delete('/api/pantry/:id', requireAdmin, async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+// Active Multi-Device Timer Sync Store
+let activeTimerState = null;
+
+app.post('/api/timers/sync', (req, res) => {
+  const { timer } = req.body;
+  activeTimerState = timer ? { ...timer, serverTimestamp: Date.now() } : null;
+  res.json({ success: true, timer: activeTimerState });
+});
+
+app.get('/api/timers/active', (req, res) => {
+  res.json({ timer: activeTimerState });
 });
 
 // JSON Backup endpoint
@@ -595,6 +665,26 @@ cron.schedule('0 2 * * *', async () => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+// Serve production static assets from dist folder if present
+const distPath = path.join(__dirname, '../dist');
+if (fs.existsSync(distPath)) {
+  app.use(express.static(distPath, {
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith('index.html') || filePath.endsWith('sw.js')) {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      }
+    }
+  }));
+
+  app.get(/^(?!\/api).*/, (req, res) => {
+    res.sendFile(path.join(distPath, 'index.html'));
+  });
+}
+
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
+
+export { app };

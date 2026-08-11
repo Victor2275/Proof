@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { api, type Recipe, type BakeLog, type PantryItem } from '../lib/api';
+import { api, type Recipe, type BakeLog } from '../lib/api';
 import { getLocalBakeLogs } from '../lib/localDB';
-import { Edit, MoreVertical, Play, X, Star, Award, QrCode, Download, CheckCircle2 } from 'lucide-react';
+import SideBySideCompare from './SideBySideCompare';
+import ReverseBakeScheduler from './ReverseBakeScheduler';
+import AISubstitutionsModal from './AISubstitutionsModal';
+import { Edit, MoreVertical, Play, X, Star, Award, QrCode, Download, CheckCircle2, Calendar, Sparkles } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
@@ -33,7 +36,6 @@ export default function RecipeViewer() {
   const navigate = useNavigate();
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [bakeLogs, setBakeLogs] = useState<BakeLog[]>([]);
-  const [pantry, setPantry] = useState<PantryItem[]>([]);
   const [inPantryMap, setInPantryMap] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
   const [scaleMultiplier, setScaleMultiplier] = useState(1);
@@ -45,6 +47,8 @@ export default function RecipeViewer() {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [showQrModal, setShowQrModal] = useState(false);
+  const [showReverseScheduler, setShowReverseScheduler] = useState(false);
+  const [aiSubstituteIngredient, setAiSubstituteIngredient] = useState<string | null>(null);
 
   // Temporary checkbox state (visual only)
   const [checkedIngredients, setCheckedIngredients] = useState<Record<number, boolean>>({});
@@ -59,102 +63,102 @@ export default function RecipeViewer() {
           api.getPantry().catch(() => [])
         ]);
         const localLogs = await getLocalBakeLogs(id);
-        const allLogs = [...cloudLogs, ...localLogs].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        const allLogs = [...cloudLogs, ...localLogs].sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime());
+        
         setRecipe(data);
         setBakeLogs(allLogs);
-        setPantry(pantryData);
 
-        if (pantryData.length > 0 && data.ingredients) {
-          const fuse = new Fuse(pantryData, { keys: ['name'], threshold: 0.3 });
-          const map: Record<string, boolean> = {};
-          data.ingredients.forEach(ing => {
-            const matches = fuse.search(ing.name);
-            if (matches.length > 0) {
-              map[ing.name] = true;
-            }
-          });
-          setInPantryMap(map);
-        }
-        setLoading(false);
+        const map: Record<string, boolean> = {};
+        const fuse = new Fuse(pantryData, { keys: ['name'], threshold: 0.35 });
+
+        data.ingredients?.forEach(ing => {
+          const results = fuse.search(ing.name);
+          if (results.length > 0) {
+            map[ing.name] = true;
+          }
+        });
+        setInPantryMap(map);
+
       } catch (err) {
-        console.error(err);
+        console.error('Failed to load recipe data', err);
+      } finally {
         setLoading(false);
       }
     };
     fetchRecipe();
   }, [id]);
 
-
-
   const toggleCheck = (index: number) => {
-    setCheckedIngredients(prev => ({ ...prev, [index]: !prev[index] }));
-  };
-
-  const handleDelete = async () => {
-    if (!id) return;
-    if (window.confirm('Are you sure you want to delete this recipe? This cannot be undone.')) {
-      try {
-        await api.deleteRecipe(id);
-        navigate('/');
-      } catch (err) {
-        console.error(err);
-        alert('Failed to delete recipe');
-      }
-    }
-  };
-
-  const handleExportGroceryList = async () => {
-    if (!recipe) return;
-    const missingIngredients = recipe.ingredients.filter(ing => !inPantryMap[ing.name]);
-    if (missingIngredients.length === 0) {
-      alert('You have everything you need in your pantry!');
-      return;
-    }
-    
-    const text = `Grocery List for ${recipe.title}:\n\n` + missingIngredients.map(ing => 
-      `- [ ] ${Number((ing.quantity * scaleMultiplier).toFixed(2))} ${ing.unit} ${ing.name}`
-    ).join('\n');
-    
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: 'Grocery List',
-          text: text,
-        });
-      } catch (err) {
-        console.error('Error sharing', err);
-      }
-    } else {
-      navigator.clipboard.writeText(text);
-      alert('Grocery list copied to clipboard!');
-    }
+    setCheckedIngredients(prev => ({
+      ...prev,
+      [index]: !prev[index]
+    }));
   };
 
   const handleToggleFavorite = async () => {
-    if (!recipe) return;
-    const isFavorite = recipe.tags?.includes('Favorite');
-    const newTags = isFavorite 
-      ? recipe.tags.filter(t => t !== 'Favorite')
-      : [...(recipe.tags || []), 'Favorite'];
+    if (!recipe || !id) return;
+    const currentTags = recipe.tags || [];
+    const isFav = currentTags.includes('Favorite');
+    const newTags = isFav ? currentTags.filter(t => t !== 'Favorite') : [...currentTags, 'Favorite'];
     
     try {
-      const updated = await api.updateRecipe(recipe._id!, { tags: newTags });
+      const updated = await api.updateRecipe(id, { tags: newTags });
       setRecipe(updated);
     } catch (err) {
-      console.error('Failed to toggle favorite');
+      console.error('Failed to toggle favorite', err);
     }
+  };
+
+  const handleDelete = async () => {
+    if (!recipe || !id) return;
+    if (!confirm('Are you sure you want to delete this recipe?')) return;
+    
+    try {
+      await api.deleteRecipe(id);
+      navigate('/');
+    } catch (err) {
+      console.error('Failed to delete recipe', err);
+      alert('Failed to delete recipe.');
+    }
+  };
+
+  const handleExportGroceryList = () => {
+    if (!recipe) return;
+    let listText = `Grocery List for ${recipe.title} (x${scaleMultiplier}):\n\n`;
+    recipe.ingredients.forEach(ing => {
+      const qty = Number((ing.quantity * scaleMultiplier).toFixed(2));
+      listText += `- [ ] ${ing.name}: ${qty} ${ing.unit}\n`;
+    });
+    
+    navigator.clipboard.writeText(listText).then(() => {
+      alert('Grocery list copied to clipboard!');
+    }).catch(err => {
+      console.error('Failed to copy grocery list', err);
+    });
   };
 
   const handleExportImage = async () => {
     const node = document.getElementById('recipe-export-node');
     if (!node) return;
     try {
-      const canvas = await html2canvas(node, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
-      const url = canvas.toDataURL('image/jpeg', 0.9);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${recipe?.title.replace(/\s+/g, '-').toLowerCase()}-card.jpg`;
-      a.click();
+      const canvas = await html2canvas(node, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#fcf8f2',
+        onclone: (clonedDoc) => {
+          const el = clonedDoc.getElementById('recipe-export-node');
+          if (el) {
+            el.style.padding = '32px';
+            el.style.borderRadius = '16px';
+            el.style.maxWidth = '800px';
+          }
+        }
+      });
+      const dataUrl = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.download = `${recipe?.title.replace(/\s+/g, '-').toLowerCase()}-card.png`;
+      link.href = dataUrl;
+      link.click();
     } catch (err) {
       console.error('Failed to export image', err);
     }
@@ -166,14 +170,25 @@ export default function RecipeViewer() {
     const node = document.getElementById('recipe-export-node');
     if (!node) return;
     try {
-      const canvas = await html2canvas(node, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
-      const imgData = canvas.toDataURL('image/jpeg', 0.9);
-      const pdf = new jsPDF('p', 'mm', 'a4');
+      const canvas = await html2canvas(node, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#fcf8f2',
+        onclone: (clonedDoc) => {
+          const el = clonedDoc.getElementById('recipe-export-node');
+          if (el) {
+            el.style.padding = '32px';
+          }
+        }
+      });
+      const imgData = canvas.toDataURL('image/jpeg', 0.95);
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'px',
+        format: [canvas.width / 2, canvas.height / 2]
+      });
       const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      
-      // If the content is longer than A4, it will just scale down to fit width and run off the page. 
-      // For a better PDF, one could paginate, but this is a simple "Recipe Card" export.
+      const pdfHeight = pdf.internal.pageSize.getHeight();
       pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
       pdf.save(`${recipe?.title.replace(/\s+/g, '-').toLowerCase()}.pdf`);
     } catch (err) {
@@ -220,6 +235,12 @@ export default function RecipeViewer() {
             <QrCode className="w-4 h-4" /> QR CODE
           </button>
           <button 
+            onClick={() => setShowReverseScheduler(!showReverseScheduler)}
+            className="border border-border-subtle hover:bg-black/5 dark:hover:bg-white/5 text-ink-muted px-4 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2 whitespace-nowrap"
+          >
+            <Calendar className="w-4 h-4" /> BAKE SCHEDULE
+          </button>
+          <button 
             onClick={handleToggleFavorite}
             className={`border px-4 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2 whitespace-nowrap ${recipe.tags?.includes('Favorite') ? 'border-yellow-500/50 bg-yellow-500/10 text-yellow-600 dark:text-yellow-400' : 'border-border-subtle hover:bg-black/5 dark:hover:bg-white/5 text-ink-muted'}`}
           >
@@ -242,20 +263,17 @@ export default function RecipeViewer() {
           <button onClick={() => setShowMobileMenu(!showMobileMenu)} className="p-2 -mr-2 text-ink">
             <MoreVertical className="w-6 h-6" />
           </button>
+          
           {showMobileMenu && (
-            <div className="absolute right-0 top-full mt-2 w-48 bg-paper border border-border-subtle rounded-xl shadow-xl overflow-hidden z-50">
-              <button onClick={handleExportImage} className="block w-full text-left px-4 py-3 font-medium border-b border-border-subtle hover:bg-black/5 dark:hover:bg-white/5 transition-colors flex justify-between items-center">
-                Export Image <Download className="w-4 h-4" />
+            <div className="absolute right-0 top-full mt-2 w-48 bg-paper border border-border-subtle rounded-xl shadow-xl overflow-hidden z-50 text-sm">
+              <button onClick={handleExportImage} className="block w-full text-left px-4 py-3 font-medium border-b border-border-subtle">
+                Export Image Card
               </button>
-              <button onClick={handleExportPDF} className="block w-full text-left px-4 py-3 font-medium border-b border-border-subtle hover:bg-black/5 dark:hover:bg-white/5 transition-colors flex justify-between items-center">
-                Export PDF <Download className="w-4 h-4" />
+              <button onClick={handleExportPDF} className="block w-full text-left px-4 py-3 font-medium border-b border-border-subtle">
+                Export PDF
               </button>
-              <button 
-                onClick={() => { setShowQrModal(true); setShowMobileMenu(false); }}
-                className="block w-full text-left px-4 py-3 font-medium border-b border-border-subtle flex justify-between items-center"
-              >
+              <button onClick={() => { setShowQrModal(true); setShowMobileMenu(false); }} className="block w-full text-left px-4 py-3 font-medium border-b border-border-subtle">
                 Show QR Code
-                <QrCode className="w-4 h-4" />
               </button>
               <button 
                 onClick={() => { handleToggleFavorite(); setShowMobileMenu(false); }}
@@ -318,32 +336,37 @@ export default function RecipeViewer() {
 
       {activeTab === 'recipe' ? (
         <>
-          {/* Main Info */}
-          <div className="flex flex-col md:flex-row gap-8 items-start">
-            {recipe.imageUrls && recipe.imageUrls.length > 0 ? (
-              <div className="w-full md:w-1/3 space-y-4">
-                {recipe.imageUrls.map((url, idx) => (
-                  <img key={idx} src={url} alt={`${recipe.title} ${idx + 1}`} className="w-full rounded-xl object-cover shadow-sm aspect-[4/3]" />
-                ))}
-              </div>
-            ) : (
-              <div className="w-full md:w-1/3 rounded-xl bg-black/5 dark:bg-white/5 flex items-center justify-center aspect-[4/3] text-ink-muted">
-                No Images
-              </div>
+          {/* Header Card */}
+          <div className="flex flex-col md:flex-row gap-8 pb-10 border-b border-border-subtle">
+            {recipe.imageUrls && recipe.imageUrls.length > 0 && (
+              <img 
+                src={recipe.imageUrls[0]} 
+                alt={recipe.title} 
+                className="w-full md:w-64 h-64 object-cover rounded-xl border border-border-subtle shadow-sm shrink-0"
+              />
             )}
+            
+            <div className="space-y-4 flex-1">
+              <div>
+                <h1 className="text-4xl font-extrabold tracking-tight mb-2 text-ink uppercase">{recipe.title}</h1>
+                <p className="text-ink-muted text-lg leading-relaxed">{recipe.description}</p>
+              </div>
 
-            <div className="flex-1 space-y-4">
-              <h2 className="text-4xl font-bold tracking-tight">{recipe.title}</h2>
-
-              <p className="text-lg text-ink-muted leading-relaxed">
-                {recipe.description}
-              </p>
+              {recipe.tags && recipe.tags.length > 0 && (
+                <div className="flex flex-wrap gap-2 pt-2">
+                  {recipe.tags.map((tag, i) => (
+                    <span key={i} className="text-xs bg-black/5 dark:bg-white/10 px-2.5 py-1 rounded-full font-medium text-ink-muted">
+                      #{tag}
+                    </span>
+                  ))}
+                </div>
+              )}
 
               <div className="flex gap-10 pt-4">
                 <div>
                   <div className="font-bold mb-1">Total Time:</div>
                   <div className="text-ink-muted">
-                    [{parseInt(recipe.prepTime) + parseInt(recipe.cookTime) || 90} mins] (Prep: {recipe.prepTime || '-'} / Cook: {recipe.cookTime || '-'})
+                    [{parseInt(recipe.prepTime) + parseInt(recipe.cookTime) || 90} mins]
                   </div>
                 </div>
                 <div>
@@ -358,6 +381,12 @@ export default function RecipeViewer() {
             </div>
           </div>
 
+          {showReverseScheduler && (
+            <div className="mt-6 mb-2">
+              <ReverseBakeScheduler recipe={recipe} onClose={() => setShowReverseScheduler(false)} />
+            </div>
+          )}
+
           {/* Ingredients and Steps */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 pt-8">
             <div>
@@ -368,17 +397,17 @@ export default function RecipeViewer() {
                     onClick={handleExportGroceryList}
                     className="text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-md border border-border-subtle text-ink-muted hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
                   >
-                    Export List
+                    Copy List
                   </button>
                   <button 
                     onClick={() => setShowBakersMath(!showBakersMath)}
-                    className={`text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-md border transition-colors ${showBakersMath ? 'bg-ink text-paper border-ink' : 'text-ink-muted border-border-subtle hover:bg-black/5 dark:hover:bg-white/5'}`}
+                    className={`text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-md border transition-colors ${showBakersMath ? 'bg-ink text-paper border-ink' : 'border-border-subtle text-ink-muted hover:bg-black/5 dark:hover:bg-white/5'}`}
                   >
                     Baker's %
                   </button>
                 </div>
               </div>
-              
+
               <ul className="space-y-0">
                 {(() => {
                   const flourTotal = recipe.ingredients.reduce((acc, ing) => {
@@ -417,6 +446,13 @@ export default function RecipeViewer() {
                             <CheckCircle2 className="w-4 h-4 text-green-500/70" />
                           </span>
                         )}
+                        <button
+                          onClick={() => setAiSubstituteIngredient(ing.name)}
+                          className="ml-auto text-xs text-purple-600 dark:text-purple-400 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 font-medium hover:underline"
+                          title="AI Substitutions"
+                        >
+                          <Sparkles className="w-3 h-3" /> Sub
+                        </button>
                       </li>
                     );
                   });
@@ -520,59 +556,83 @@ export default function RecipeViewer() {
                      <p className="text-ink-muted text-lg">{new Date(selectedMake.date || Date.now()).toLocaleString()}</p>
                      <div className="flex flex-wrap items-center gap-4 mt-2">
                      <button 
-                       onClick={() => setIsEditingDate(true)}
-                       className="text-sm font-bold text-ink-muted uppercase tracking-widest hover:text-ink flex items-center gap-2"
-                     >
-                       <Edit className="w-4 h-4" /> Edit Date
-                     </button>
-                     
-                     <button 
                        onClick={async () => {
                          try {
+                           const newStatus = !selectedMake.isPersonalBest;
                            let updated;
                            if (selectedMake._id!.startsWith('local-')) {
                              const { updateLocalBakeLog } = await import('../lib/localDB');
-                             updated = await updateLocalBakeLog(selectedMake._id!, { isPersonalBest: !selectedMake.isPersonalBest });
+                             updated = await updateLocalBakeLog(selectedMake._id!, { isPersonalBest: newStatus });
                            } else {
-                             updated = await api.updateBakeLog(selectedMake._id!, { isPersonalBest: !selectedMake.isPersonalBest });
+                             updated = await api.updateBakeLog(selectedMake._id!, { isPersonalBest: newStatus });
                            }
                            setSelectedMake(updated);
                            setBakeLogs(prev => prev.map(l => l._id === updated._id ? updated : l));
-                         } catch(e) { alert('Failed to update personal best'); }
-                       }}
-                       className={`text-sm font-bold uppercase tracking-widest flex items-center gap-2 transition-colors ${selectedMake.isPersonalBest ? 'text-yellow-600 dark:text-yellow-400' : 'text-ink-muted hover:text-ink'}`}
+                         } catch(e) { alert('Failed to update status'); }
+                       }} 
+                       className={`flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full border transition-all ${selectedMake.isPersonalBest ? 'bg-yellow-500 text-black border-yellow-500' : 'border-border-subtle hover:bg-black/5 dark:hover:bg-white/5 text-ink-muted'}`}
                      >
-                       <Award className={`w-4 h-4 ${selectedMake.isPersonalBest ? 'fill-current' : ''}`} /> 
-                       {selectedMake.isPersonalBest ? 'Personal Best' : 'Mark as Best'}
+                       <Award className="w-3.5 h-3.5" />
+                       {selectedMake.isPersonalBest ? 'Personal Best' : 'Mark as Personal Best'}
                      </button>
-                   </div>
-                 </div>
-                 )}
-               </div>
-               <button onClick={() => setSelectedMake(null)} className="p-3 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 rounded-full transition-colors"><X className="w-8 h-8" /></button>
-             </div>
-             
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-               <div className="space-y-8">
-
-                 {selectedMake.notes && (
-                   <div>
-                     <h3 className="font-bold text-xl mb-4 uppercase tracking-wider border-l-4 border-ink pl-3">Bake Notes</h3>
-                     <div className="p-6 border border-border-subtle rounded-2xl bg-black/5 dark:bg-white/5 shadow-sm">
-                        <p className="whitespace-pre-wrap leading-relaxed text-lg">{selectedMake.notes}</p>
+                     <button 
+                       onClick={() => {
+                         setEditDateValue(new Date(selectedMake.date || Date.now()).toISOString().slice(0, 16));
+                         setIsEditingDate(true);
+                       }} 
+                       className="text-xs font-bold uppercase tracking-wider text-ink-muted hover:text-ink underline"
+                     >
+                       Edit Date
+                     </button>
+                     <button 
+                       onClick={async () => {
+                         if (!confirm('Are you sure you want to delete this bake log entry?')) return;
+                         try {
+                           if (selectedMake._id!.startsWith('local-')) {
+                             const { deleteLocalBakeLog } = await import('../lib/localDB');
+                             await deleteLocalBakeLog(selectedMake._id!);
+                           } else {
+                             await api.deleteBakeLog(selectedMake._id!);
+                           }
+                           setBakeLogs(prev => prev.filter(l => l._id !== selectedMake._id));
+                           setSelectedMake(null);
+                         } catch (e) {
+                           alert('Failed to delete log entry.');
+                         }
+                       }} 
+                       className="text-xs font-bold uppercase tracking-wider text-red-500 hover:underline"
+                     >
+                       Delete Entry
+                     </button>
                      </div>
                    </div>
                  )}
                </div>
-               
+               <button onClick={() => setSelectedMake(null)} className="p-2 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 rounded-full transition-colors"><X className="w-6 h-6" /></button>
+             </div>
+             
+             <div className="space-y-8">
+               {selectedMake.notes && (
+                 <div>
+                   <h3 className="font-bold text-xl mb-3 uppercase tracking-wider border-l-4 border-ink pl-3">Notes & Observations</h3>
+                   <div className="bg-black/5 dark:bg-white/5 border border-border-subtle rounded-2xl p-6">
+                     <p className="whitespace-pre-wrap leading-relaxed text-lg">{selectedMake.notes}</p>
+                   </div>
+                 </div>
+               )}
+
                {selectedMake.imageUrls && selectedMake.imageUrls.length > 0 && (
                  <div>
                    <h3 className="font-bold text-xl mb-4 uppercase tracking-wider border-l-4 border-ink pl-3">Photos</h3>
-                   <div className="grid grid-cols-1 gap-6">
-                     {selectedMake.imageUrls.map((url, i) => (
-                       <img key={i} src={url} alt={`Make photo ${i+1}`} className="w-full rounded-2xl border border-border-subtle shadow-md" />
-                     ))}
-                   </div>
+                   {selectedMake.imageUrls.length >= 2 ? (
+                     <SideBySideCompare doughUrl={selectedMake.imageUrls[0]} bakedUrl={selectedMake.imageUrls[1]} />
+                   ) : (
+                     <div className="grid grid-cols-1 gap-6">
+                       {selectedMake.imageUrls.map((url, i) => (
+                         <img key={i} src={url} alt={`Make photo ${i+1}`} className="w-full rounded-2xl border border-border-subtle shadow-md" />
+                       ))}
+                     </div>
+                   )}
                  </div>
                )}
              </div>
@@ -593,6 +653,14 @@ export default function RecipeViewer() {
             <p className="mt-6 text-sm text-ink-muted font-medium">Scan to open on your mobile device</p>
           </div>
         </div>
+      )}
+
+      {aiSubstituteIngredient && (
+        <AISubstitutionsModal
+          ingredientName={aiSubstituteIngredient}
+          recipeTitle={recipe.title}
+          onClose={() => setAiSubstituteIngredient(null)}
+        />
       )}
     </div>
   );

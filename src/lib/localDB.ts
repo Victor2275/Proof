@@ -76,3 +76,14 @@ export const updateLocalBakeLog = async (id: string, updates: Partial<BakeLog>):
     getReq.onerror = () => reject(getReq.error);
   });
 };
+
+export const deleteLocalBakeLog = async (id: string): Promise<void> => {
+  const db = await initDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    const store = tx.objectStore(STORE_NAME);
+    const request = store.delete(id);
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+  });
+};

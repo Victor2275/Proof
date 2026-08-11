@@ -71,20 +71,55 @@ export interface PantryItem {
 
 export const api = {
   getRecipes: async (search?: string) => {
-    const url = search ? `${API_URL}/recipes?search=${encodeURIComponent(search)}` : `${API_URL}/recipes`;
-    const res = await fetch(url, { headers: getHeaders() });
-    return handleResponse(res);
+    try {
+      const url = search ? `${API_URL}/recipes?search=${encodeURIComponent(search)}` : `${API_URL}/recipes`;
+      const res = await fetch(url, { headers: getHeaders() });
+      const data = await handleResponse(res);
+      if (!search && Array.isArray(data)) {
+        localStorage.setItem('cached_recipes', JSON.stringify(data));
+      }
+      return data;
+    } catch (err) {
+      console.warn('Backend server unreachable, trying offline local cache:', err);
+      const cached = localStorage.getItem('cached_recipes');
+      if (cached) {
+        try { return JSON.parse(cached); } catch {}
+      }
+      return [];
+    }
   },
   
   getAllBakeLogs: async () => {
-    const res = await fetch(`${API_URL}/bakelogs`, { headers: getHeaders() });
-    return handleResponse(res);
+    try {
+      const res = await fetch(`${API_URL}/bakelogs`, { headers: getHeaders() });
+      const data = await handleResponse(res);
+      localStorage.setItem('cached_bakelogs', JSON.stringify(data));
+      return data;
+    } catch (err) {
+      console.warn('Backend server unreachable, trying offline local cache:', err);
+      const cached = localStorage.getItem('cached_bakelogs');
+      if (cached) {
+        try { return JSON.parse(cached); } catch {}
+      }
+      return [];
+    }
   },
 
   // Pantry
   getPantry: async (): Promise<PantryItem[]> => {
-    const res = await fetch(`${API_URL}/pantry`, { headers: getHeaders() });
-    return handleResponse(res);
+    try {
+      const res = await fetch(`${API_URL}/pantry`, { headers: getHeaders() });
+      const data = await handleResponse(res);
+      localStorage.setItem('cached_pantry', JSON.stringify(data));
+      return data;
+    } catch (err) {
+      console.warn('Backend server unreachable, trying offline local cache:', err);
+      const cached = localStorage.getItem('cached_pantry');
+      if (cached) {
+        try { return JSON.parse(cached); } catch {}
+      }
+      return [];
+    }
   },
   addPantryItem: async (item: Partial<PantryItem>): Promise<PantryItem> => {
     const res = await fetch(`${API_URL}/pantry`, {
@@ -230,6 +265,14 @@ export const api = {
     return res.json();
   },
 
+  deleteBakeLog: async (id: string): Promise<{ message: string }> => {
+    const res = await fetch(`${API_URL}/bakelogs/${id}`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+    });
+    return handleResponse(res);
+  },
+
   restructureRecipe: async (rawText: string): Promise<Partial<Recipe>> => {
     const res = await fetch(`${API_URL}/ai-restructure`, {
       method: 'POST',
@@ -244,6 +287,29 @@ export const api = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ pin })
+    });
+    return handleResponse(res);
+  },
+
+  syncTimer: async (timer: any) => {
+    const res = await fetch(`${API_URL}/timers/sync`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ timer })
+    });
+    return handleResponse(res);
+  },
+
+  getActiveTimer: async () => {
+    const res = await fetch(`${API_URL}/timers/active`);
+    return handleResponse(res);
+  },
+
+  getAISubstitutions: async (ingredientName: string, recipeTitle?: string): Promise<{ substitutions: { substitute: string, ratio: string, notes: string }[] }> => {
+    const res = await fetch(`${API_URL}/ai-substitutions`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ ingredientName, recipeTitle })
     });
     return handleResponse(res);
   }
