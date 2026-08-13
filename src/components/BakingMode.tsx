@@ -297,14 +297,6 @@ export default function BakingMode() {
     touchEndX.current = null;
   };
 
-  const handleTouchEnd = () => {
-    if (!touchStartX.current || !touchEndX.current) return;
-    const distance = touchStartX.current - touchEndX.current;
-    if (distance > 50) handleNextStep(); // Swipe left -> Next
-    else if (distance < -50) handlePrevStep(); // Swipe right -> Prev
-    touchStartX.current = null;
-    touchEndX.current = null;
-  };
 
   const handleFinishSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

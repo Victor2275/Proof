@@ -1,4 +1,5 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { act } from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import BakingMode from './BakingMode';
@@ -161,14 +162,18 @@ describe('BakingMode Component', () => {
     expect(helpCmd).toBeDefined();
     
     // Trigger help command
-    helpCmd.callback();
+    act(() => {
+      helpCmd.callback();
+    });
     
     // Check if Voice Commands modal opened
     expect(screen.getByText('Voice Commands')).toBeInTheDocument();
     
     // Check close command
     const closeCmd = registeredCommands.find(c => c.command.includes('close'));
-    closeCmd.callback();
+    act(() => {
+      closeCmd.callback();
+    });
     
     expect(screen.queryByText('Voice Commands')).not.toBeInTheDocument();
   });
