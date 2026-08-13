@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { api, type Recipe, type Component } from '../lib/api';
-import { ArrowLeft, Trash2, Save, Plus, X, GripVertical, Loader2, Download, Check, Image as ImageIcon, ArrowUp, ArrowDown } from 'lucide-react';
+import { ArrowLeft, Trash2, Save, Plus, X, GripVertical, Loader2, Download, Check, Image as ImageIcon, ArrowUp, ArrowDown, Link as LinkIcon } from 'lucide-react';
 import ReactCrop, { type Crop, type PixelCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 import * as Diff from 'diff';
@@ -50,6 +50,7 @@ export default function RecipeEditor() {
       tags: [],
       ingredients: [],
       instructions: [],
+      instructionLinks: [],
       labNotes: ''
     };
   });
@@ -59,6 +60,14 @@ export default function RecipeEditor() {
 
   const [draggedIngredientIdx, setDraggedIngredientIdx] = useState<number | null>(null);
   const [draggedInstructionIdx, setDraggedInstructionIdx] = useState<number | null>(null);
+
+  // Sub-Recipe Linking State
+  const [availableRecipes, setAvailableRecipes] = useState<Recipe[]>([]);
+  const [linkingStepIdx, setLinkingStepIdx] = useState<number | null>(null);
+
+  useEffect(() => {
+    api.getRecipes().then(setAvailableRecipes).catch(console.error);
+  }, []);
 
   const handleIngredientDrop = (e: React.DragEvent, dropIdx: number) => {
     e.preventDefault();
@@ -268,7 +277,23 @@ export default function RecipeEditor() {
   const removeInstruction = (index: number) => {
     const newInst = [...recipe.instructions];
     newInst.splice(index, 1);
-    setRecipe({ ...recipe, instructions: newInst });
+    const newLinks = (recipe.instructionLinks || [])
+      .filter(l => l.stepIndex !== index)
+      .map(l => l.stepIndex > index ? { ...l, stepIndex: l.stepIndex - 1 } : l);
+    setRecipe({ ...recipe, instructions: newInst, instructionLinks: newLinks });
+  };
+
+  const attachSubRecipe = (recipeId: string, recipeTitle: string) => {
+    if (linkingStepIdx === null) return;
+    const newLinks = [...(recipe.instructionLinks || [])];
+    newLinks.push({ stepIndex: linkingStepIdx, recipeId, recipeTitle });
+    setRecipe({ ...recipe, instructionLinks: newLinks });
+    setLinkingStepIdx(null);
+  };
+
+  const removeSubRecipe = (stepIndex: number, recipeId: string) => {
+    const newLinks = (recipe.instructionLinks || []).filter(l => !(l.stepIndex === stepIndex && l.recipeId === recipeId));
+    setRecipe({ ...recipe, instructionLinks: newLinks });
   };
 
   return (
@@ -389,6 +414,29 @@ export default function RecipeEditor() {
               >
                 <Check className="w-4 h-4" /> Accept Changes
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sub-Recipe Selection Modal */}
+      {linkingStepIdx !== null && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-paper rounded-xl w-full max-w-md shadow-2xl border border-border-subtle p-6 flex flex-col max-h-[80vh]">
+            <h2 className="text-xl font-bold mb-4 flex items-center gap-2"><LinkIcon className="w-5 h-5"/> Link Sub-Recipe</h2>
+            <div className="flex-1 overflow-y-auto space-y-2">
+              {availableRecipes.filter(r => r._id !== id).map(r => (
+                <button
+                  key={r._id}
+                  onClick={() => attachSubRecipe(r._id!, r.title)}
+                  className="w-full text-left p-3 rounded-lg border border-border-subtle hover:bg-black/5 dark:hover:bg-white/5 transition-colors font-medium"
+                >
+                  {r.title}
+                </button>
+              ))}
+            </div>
+            <div className="mt-6 flex justify-end">
+              <button type="button" onClick={() => setLinkingStepIdx(null)} className="px-4 py-2 font-medium hover:bg-black/5 dark:hover:bg-white/5 rounded-md">Cancel</button>
             </div>
           </div>
         </div>
@@ -605,11 +653,26 @@ export default function RecipeEditor() {
                 <button type="button" onClick={() => removeInstruction(i)} className="md:hidden p-2 text-red-500 rounded-md bg-red-500/10"><Trash2 className="w-4 h-4" /></button>
               </div>
               
-              <div className="flex-1 w-full flex gap-2">
-                <textarea required value={step} onChange={e => updateInstruction(i, e.target.value)} placeholder="Describe step..." className="flex-1 bg-black/5 dark:bg-white/5 md:bg-transparent border md:border-0 border-border-subtle rounded-md p-3 min-h-[80px] focus:outline-none focus:ring-1 focus:ring-ink resize-y cursor-text" />
-                <button type="button" onClick={() => removeInstruction(i)} className="hidden md:block p-2.5 text-ink-muted/50 hover:text-red-500 rounded-md transition-colors mt-1">
-                  <Trash2 className="w-4 h-4" />
-                </button>
+              <div className="flex-1 w-full flex flex-col gap-2">
+                <div className="flex gap-2">
+                  <textarea required value={step} onChange={e => updateInstruction(i, e.target.value)} placeholder="Describe step..." className="flex-1 bg-black/5 dark:bg-white/5 md:bg-transparent border md:border-0 border-border-subtle rounded-md p-3 min-h-[80px] focus:outline-none focus:ring-1 focus:ring-ink resize-y cursor-text" />
+                  <button type="button" onClick={() => removeInstruction(i)} className="hidden md:block p-2.5 text-ink-muted/50 hover:text-red-500 rounded-md transition-colors mt-1">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+                
+                {/* Linked Recipes */}
+                <div className="flex flex-wrap gap-2 items-center px-1">
+                  {(recipe.instructionLinks || []).filter(l => l.stepIndex === i).map((link, lidx) => (
+                    <span key={lidx} className="flex items-center gap-1 bg-black/5 dark:bg-white/5 border border-border-subtle px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
+                      <LinkIcon className="w-3 h-3" /> {link.recipeTitle}
+                      <button type="button" onClick={() => removeSubRecipe(i, link.recipeId)} className="ml-1 hover:text-red-500"><X className="w-3 h-3"/></button>
+                    </span>
+                  ))}
+                  <button type="button" onClick={() => setLinkingStepIdx(i)} className="text-xs font-bold uppercase tracking-wider text-ink-muted hover:text-ink flex items-center gap-1 transition-colors">
+                    <Plus className="w-3 h-3" /> Link Recipe
+                  </button>
+                </div>
               </div>
             </div>
           ))}

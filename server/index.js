@@ -1,4 +1,6 @@
 import express from 'express';
+import http from 'http';
+import { Server } from 'socket.io';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -24,6 +26,13 @@ dotenv.config({ path: path.join(__dirname, '.env') });
 dotenv.config();
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: '*',
+  }
+});
+
 app.use(cors());
 app.use(express.json());
 
@@ -601,17 +610,33 @@ app.delete('/api/pantry/:id', requireAdmin, async (req, res) => {
   }
 });
 
-// Active Multi-Device Timer Sync Store
-let activeTimerState = null;
+// Active Multi-Device Timer Sync Store (Memory)
+let globalTimers = [];
 
-app.post('/api/timers/sync', (req, res) => {
-  const { timer } = req.body;
-  activeTimerState = timer ? { ...timer, serverTimestamp: Date.now() } : null;
-  res.json({ success: true, timer: activeTimerState });
-});
+io.on('connection', (socket) => {
+  console.log('Client connected to Socket.io');
+  
+  // Send current state to newly connected client
+  socket.emit('timers:sync', globalTimers);
 
-app.get('/api/timers/active', (req, res) => {
-  res.json({ timer: activeTimerState });
+  socket.on('timer:add', (timer) => {
+    globalTimers.push(timer);
+    io.emit('timers:sync', globalTimers);
+  });
+
+  socket.on('timer:update', (timerUpdate) => {
+    globalTimers = globalTimers.map(t => t.id === timerUpdate.id ? { ...t, ...timerUpdate } : t);
+    io.emit('timers:sync', globalTimers);
+  });
+
+  socket.on('timer:remove', (id) => {
+    globalTimers = globalTimers.filter(t => t.id !== id);
+    io.emit('timers:sync', globalTimers);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('Client disconnected');
+  });
 });
 
 // JSON Backup endpoint
@@ -638,10 +663,10 @@ app.get('/api/backup', requireAdmin, async (req, res) => {
   }
 });
 
-// Automated Daily Backups
+// Automated Daily Backups & Cloudinary Cleanup
 cron.schedule('0 2 * * *', async () => {
   try {
-    console.log('Running automated daily backup...');
+    console.log('Running automated daily backup & maintenance...');
     const recipes = await Recipe.find({});
     const notes = await Note.find({});
     const bakeLogs = await BakeLog.find({});
@@ -660,8 +685,45 @@ cron.schedule('0 2 * * *', async () => {
     const filename = `backup-${new Date().toISOString().split('T')[0]}.json`;
     fs.writeFileSync(path.join(backupsDir, filename), JSON.stringify(backup, null, 2));
     console.log(`Automated backup saved to ${filename}`);
+
+    // Cloudinary Orphan Cleanup
+    if (process.env.CLOUDINARY_API_KEY) {
+      console.log('Starting Cloudinary Orphan Cleanup...');
+      // Get all referenced images in the database
+      const referencedImages = new Set();
+      
+      recipes.forEach(r => {
+        if (r.imageUrls) r.imageUrls.forEach(url => referencedImages.add(url));
+      });
+      bakeLogs.forEach(log => {
+        if (log.imageUrls) log.imageUrls.forEach(url => referencedImages.add(url));
+      });
+
+      // Get all images in the Cloudinary cookbook folder
+      let nextCursor = null;
+      let deletedCount = 0;
+      do {
+        const result = await cloudinary.api.resources({
+          type: 'upload',
+          prefix: 'cookbook/',
+          max_results: 500,
+          next_cursor: nextCursor
+        });
+
+        for (const resource of result.resources) {
+          if (!referencedImages.has(resource.secure_url) && !referencedImages.has(resource.url)) {
+            await cloudinary.api.delete_resources([resource.public_id]);
+            deletedCount++;
+          }
+        }
+        nextCursor = result.next_cursor;
+      } while (nextCursor);
+
+      console.log(`Cloudinary maintenance complete. Deleted ${deletedCount} orphaned images.`);
+    }
+
   } catch (err) {
-    console.error('Failed to run automated backup:', err);
+    console.error('Failed to run automated backup/maintenance:', err);
   }
 });
 
@@ -682,9 +744,9 @@ if (fs.existsSync(distPath)) {
 }
 
 if (process.env.NODE_ENV !== 'test') {
-  app.listen(PORT, '0.0.0.0', () => {
+  server.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on port ${PORT}`);
   });
 }
 
-export { app };
+export { app, server, io };

@@ -5,23 +5,25 @@ import { getLocalBakeLogs } from '../lib/localDB';
 import SideBySideCompare from './SideBySideCompare';
 import ReverseBakeScheduler from './ReverseBakeScheduler';
 import AISubstitutionsModal from './AISubstitutionsModal';
-import { Edit, MoreVertical, Play, X, Star, Award, QrCode, Download, CheckCircle2, Calendar, Sparkles } from 'lucide-react';
+import InstagramExporter from './InstagramExporter';
+import BakeLogsGrid from './BakeLogsGrid';
+import { Edit, MoreVertical, Play, X, Star, Award, QrCode, Download, CheckCircle2, Calendar, Sparkles, Instagram } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import Fuse from 'fuse.js';
 import { renderWithTimers } from '../utils/timerParser';
 
-function ExpandableInstruction({ text, index }: { text: string, index: number }) {
+function ExpandableInstruction({ text = '', index }: { text: string, index: number }) {
   const [expanded, setExpanded] = useState(false);
-  const isLong = text.length > 150;
+  const isLong = (text || '').length > 150;
 
   return (
     <li className="flex gap-4">
       <span className="font-medium text-ink-muted min-w-[20px]">{index + 1}.</span>
       <div className="flex-1">
         <p className={`leading-relaxed ${!expanded && isLong ? 'line-clamp-3' : ''}`}>
-          {renderWithTimers(text, `Step ${index + 1}`)}
+          {renderWithTimers(text || '', `Step ${index + 1}`)}
         </p>
         {!expanded && isLong && (
           <button onClick={() => setExpanded(true)} className="text-ink font-bold text-sm mt-1 underline">Read more</button>
@@ -48,6 +50,7 @@ export default function RecipeViewer() {
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [showQrModal, setShowQrModal] = useState(false);
   const [showReverseScheduler, setShowReverseScheduler] = useState(false);
+  const [showInstagramExporter, setShowInstagramExporter] = useState(false);
   const [aiSubstituteIngredient, setAiSubstituteIngredient] = useState<string | null>(null);
 
   // Temporary checkbox state (visual only)
@@ -71,10 +74,10 @@ export default function RecipeViewer() {
         const map: Record<string, boolean> = {};
         const fuse = new Fuse(pantryData, { keys: ['name'], threshold: 0.35 });
 
-        data.ingredients?.forEach(ing => {
-          const results = fuse.search(ing.name);
+        (data.ingredients || []).forEach(ing => {
+          const results = fuse.search(ing.name || '');
           if (results.length > 0) {
-            map[ing.name] = true;
+            map[ing.name || ''] = true;
           }
         });
         setInPantryMap(map);
@@ -125,7 +128,7 @@ export default function RecipeViewer() {
   const handleExportGroceryList = () => {
     if (!recipe) return;
     let listText = `Grocery List for ${recipe.title} (x${scaleMultiplier}):\n\n`;
-    recipe.ingredients.forEach(ing => {
+    (recipe.ingredients || []).forEach(ing => {
       const qty = Number((ing.quantity * scaleMultiplier).toFixed(2));
       listText += `- [ ] ${ing.name}: ${qty} ${ing.unit}\n`;
     });
@@ -218,7 +221,10 @@ export default function RecipeViewer() {
           </button>
           
           {showExportMenu && (
-            <div className="absolute top-full left-0 mt-2 w-48 bg-paper border border-border-subtle rounded-xl shadow-xl overflow-hidden z-50">
+            <div className="absolute top-full left-0 mt-2 w-56 bg-paper border border-border-subtle rounded-xl shadow-xl overflow-hidden z-50">
+              <button onClick={() => { setShowInstagramExporter(true); setShowExportMenu(false); }} className="block w-full text-left px-4 py-3 font-medium border-b border-border-subtle hover:bg-black/5 dark:hover:bg-white/5 transition-colors flex items-center gap-2">
+                <Instagram className="w-4 h-4 text-pink-500" /> Export for Instagram
+              </button>
               <button onClick={handleExportImage} className="block w-full text-left px-4 py-3 font-medium border-b border-border-subtle hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
                 Export Image Card
               </button>
@@ -265,7 +271,10 @@ export default function RecipeViewer() {
           </button>
           
           {showMobileMenu && (
-            <div className="absolute right-0 top-full mt-2 w-48 bg-paper border border-border-subtle rounded-xl shadow-xl overflow-hidden z-50 text-sm">
+            <div className="absolute right-0 top-full mt-2 w-56 bg-paper border border-border-subtle rounded-xl shadow-xl overflow-hidden z-50 text-sm">
+              <button onClick={() => { setShowInstagramExporter(true); setShowMobileMenu(false); }} className="block w-full text-left px-4 py-3 font-medium border-b border-border-subtle flex items-center gap-2">
+                <Instagram className="w-4 h-4 text-pink-500" /> Export for Instagram
+              </button>
               <button onClick={handleExportImage} className="block w-full text-left px-4 py-3 font-medium border-b border-border-subtle">
                 Export Image Card
               </button>
@@ -410,11 +419,11 @@ export default function RecipeViewer() {
 
               <ul className="space-y-0">
                 {(() => {
-                  const flourTotal = recipe.ingredients.reduce((acc, ing) => {
-                    return ing.name.toLowerCase().includes('flour') ? acc + ing.quantity : acc;
+                  const flourTotal = (recipe.ingredients || []).reduce((acc, ing) => {
+                    return (ing.name || '').toLowerCase().includes('flour') ? acc + (ing.quantity || 0) : acc;
                   }, 0);
 
-                  return recipe.ingredients.map((ing, i) => {
+                  return (recipe.ingredients || []).map((ing, i) => {
                     let pct = '';
                     if (showBakersMath && flourTotal > 0) {
                       pct = ((ing.quantity / flourTotal) * 100).toFixed(1) + '%';
@@ -463,7 +472,7 @@ export default function RecipeViewer() {
             <div>
               <h3 className="font-bold text-lg mb-6 uppercase tracking-wider">Steps / Directions</h3>
               <ol className="space-y-6">
-                {recipe.instructions.map((step, i) => (
+                {(recipe.instructions || []).map((step, i) => (
                   <ExpandableInstruction key={i} text={step} index={i} />
                 ))}
               </ol>
@@ -485,28 +494,14 @@ export default function RecipeViewer() {
         </>
       ) : (
         <div className="space-y-6">
-          <h2 className="text-2xl font-bold uppercase tracking-widest border-b border-border-subtle pb-4">Previous Makes</h2>
+          <div className="flex justify-between items-center border-b border-border-subtle pb-4">
+            <h2 className="text-2xl font-bold uppercase tracking-widest">Previous Makes</h2>
+          </div>
           
-          {bakeLogs.length === 0 ? (
-             <div className="text-ink-muted text-center py-10">You haven't logged any bakes for this recipe yet.</div>
-          ) : (
-            bakeLogs.map((log, idx) => (
-              <div key={log._id} className="p-6 rounded-xl border border-border-subtle bg-paper shadow-sm cursor-pointer hover:border-ink transition-colors group" onClick={() => { setSelectedMake(log); setIsEditingDate(false); }}>
-                <div className="flex flex-col">
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-xl font-bold group-hover:text-ink-muted transition-colors">Make #{bakeLogs.length - idx}</h3>
-                    {log.isPersonalBest && <Award className="w-5 h-5 text-yellow-500 fill-yellow-500" />}
-                  </div>
-                  <p className="text-sm text-ink-muted">{new Date(log.date || Date.now()).toLocaleDateString()}</p>
-                </div>
-                {log.notes || (log.imageUrls && log.imageUrls.length > 0) ? (
-                   <p className="text-sm font-medium text-ink underline group-hover:no-underline">View Details</p>
-                ) : (
-                   <p className="text-sm text-ink-muted italic">No details logged</p>
-                )}
-              </div>
-            ))
-          )}
+          <BakeLogsGrid 
+            logs={bakeLogs} 
+            onSelect={(log) => { setSelectedMake(log); setIsEditingDate(false); }} 
+          />
         </div>
       )}
       {/* Sticky FAB for Mobile */}
@@ -661,6 +656,10 @@ export default function RecipeViewer() {
           recipeTitle={recipe.title}
           onClose={() => setAiSubstituteIngredient(null)}
         />
+      )}
+
+      {showInstagramExporter && (
+        <InstagramExporter recipe={recipe} onClose={() => setShowInstagramExporter(false)} />
       )}
     </div>
   );

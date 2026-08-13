@@ -44,6 +44,7 @@ export interface Recipe {
   tags: string[];
   ingredients: Component[];
   instructions: string[];
+  instructionLinks?: { stepIndex: number; recipeId: string; recipeTitle: string }[];
   labNotes?: string;
   folder?: string;
   parentRecipeId?: string | null;

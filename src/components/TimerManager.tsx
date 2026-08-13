@@ -1,41 +1,44 @@
 import { useState, useEffect } from 'react';
 import { Play, Pause, X, Bell } from 'lucide-react';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
+import { io } from 'socket.io-client';
+import { API_URL } from '../lib/api';
 
 export interface Timer {
   id: string;
   name: string;
-  endTime: number | null; // null if paused
-  remainingMs: number; // amount left if paused, or used for negative tracking
+  endTime: number | null;
+  remainingMs: number;
   hasRung: boolean;
 }
 
-export default function TimerManager() {
-  const [timers, setTimers] = useState<Timer[]>(() => {
-    const saved = localStorage.getItem('baking-timers');
-    return saved ? JSON.parse(saved) : [];
-  });
+const socketUrl = API_URL.replace('/api', '');
+const socket = io(socketUrl);
 
+export default function TimerManager() {
+  const [timers, setTimers] = useState<Timer[]>([]);
   const [now, setNow] = useState(Date.now());
   const [pendingTimer, setPendingTimer] = useState<{ durationSecs: number, name: string } | null>(null);
   const [isFlashing, setIsFlashing] = useState(false);
 
   useEffect(() => {
-    localStorage.setItem('baking-timers', JSON.stringify(timers));
-  }, [timers]);
+    socket.on('timers:sync', (serverTimers: Timer[]) => {
+      setTimers(serverTimers);
+    });
+    return () => {
+      socket.off('timers:sync');
+    };
+  }, []);
 
   useEffect(() => {
     const interval = setInterval(() => {
       setNow(Date.now());
       
-      // Check for alarms
       setTimers(prev => prev.map(t => {
         if (t.endTime !== null && !t.hasRung && Date.now() >= t.endTime) {
-          // Play sound
           const audio = new Audio('/alarm.mp3');
           audio.play().catch(e => console.error("Audio play failed:", e));
           
-          // Audio Voice Announcement (Speech Synthesis)
           if (window.speechSynthesis && localStorage.getItem('audioAnnouncementsEnabled') !== 'false') {
             const msg = new SpeechSynthesisUtterance(`${t.name} timer has completed.`);
             window.speechSynthesis.speak(msg);
@@ -45,7 +48,6 @@ export default function TimerManager() {
             new Notification(`Timer Finished!`, { body: `${t.name} has finished.` });
           }
 
-          // Aggressive Haptics
           try {
             Haptics.impact({ style: ImpactStyle.Heavy });
             setTimeout(() => Haptics.impact({ style: ImpactStyle.Heavy }), 200);
@@ -53,17 +55,18 @@ export default function TimerManager() {
             setTimeout(() => Haptics.impact({ style: ImpactStyle.Heavy }), 600);
           } catch(e) {}
 
-          // Screen flash
           setIsFlashing(true);
           setTimeout(() => setIsFlashing(false), 1500);
 
-          return { ...t, hasRung: true };
+          const updatedTimer = { ...t, hasRung: true };
+          socket.emit('timer:update', updatedTimer);
+          return updatedTimer;
         }
         return t;
       }));
     }, 1000);
     return () => clearInterval(interval);
-  }, [timers]);
+  }, []);
 
   useEffect(() => {
     if ('Notification' in window && Notification.permission === 'default') {
@@ -71,12 +74,24 @@ export default function TimerManager() {
     }
 
     const handleAddTimer = (e: any) => {
-      const { durationSecs, name } = e.detail;
-      setPendingTimer({ durationSecs, name });
+      const { durationSecs, name, forceStart } = e.detail;
+      if (forceStart) {
+        confirmAddTimer(durationSecs, name);
+      } else {
+        setPendingTimer({ durationSecs, name });
+      }
+    };
+
+    const handleStopAlarms = () => {
+      setTimers(prev => prev.filter(t => t.remainingMs >= 0 && (t.endTime === null || t.endTime >= Date.now())));
     };
 
     window.addEventListener('add-timer', handleAddTimer);
-    return () => window.removeEventListener('add-timer', handleAddTimer);
+    window.addEventListener('stop-alarms', handleStopAlarms);
+    return () => {
+      window.removeEventListener('add-timer', handleAddTimer);
+      window.removeEventListener('stop-alarms', handleStopAlarms);
+    };
   }, []);
 
   const confirmAddTimer = (durationSecs: number, name: string) => {
@@ -87,28 +102,26 @@ export default function TimerManager() {
       remainingMs: durationSecs * 1000,
       hasRung: false
     };
-    setTimers(prev => [...prev, newTimer]);
+    socket.emit('timer:add', newTimer);
     setPendingTimer(null);
   };
 
   const togglePause = (id: string) => {
-    setTimers(prev => prev.map(t => {
-      if (t.id === id) {
-        if (t.endTime !== null) {
-          // Pause it
-          const rem = t.endTime - Date.now();
-          return { ...t, endTime: null, remainingMs: rem };
-        } else {
-          // Resume it
-          return { ...t, endTime: Date.now() + t.remainingMs };
-        }
-      }
-      return t;
-    }));
+    const t = timers.find(x => x.id === id);
+    if (!t) return;
+    
+    let updatedTimer;
+    if (t.endTime !== null) {
+      const rem = t.endTime - Date.now();
+      updatedTimer = { ...t, endTime: null, remainingMs: rem };
+    } else {
+      updatedTimer = { ...t, endTime: Date.now() + t.remainingMs };
+    }
+    socket.emit('timer:update', updatedTimer);
   };
 
   const removeTimer = (id: string) => {
-    setTimers(prev => prev.filter(t => t.id !== id));
+    socket.emit('timer:remove', id);
   };
 
   const formatTime = (ms: number) => {

@@ -20,6 +20,11 @@ const recipeSchema = new mongoose.Schema({
     type: [String],
     required: true
   },
+  instructionLinks: [{
+    stepIndex: { type: Number, required: true },
+    recipeId: { type: mongoose.Schema.Types.ObjectId, ref: 'Recipe', required: true },
+    recipeTitle: { type: String, required: true }
+  }],
   labNotes: {
     type: String,
     default: ''

@@ -24,22 +24,30 @@ This document tracks all planned features and their implementation status across
 - [x] **Compact / Dense List View:** Toggle to strip away large images and display recipes in a tight, vertical list.
 - [x] **Baking Analytics Dashboard:** Calendar view, total hours spent baking, most used ingredients, and iteration graphs.
 - [x] **Smart Pantry System:** "Pantry" tab, highlight missing ingredients, and substitutions database.
-- [ ] **Grocery List Generation:** Convert missing/checked ingredients into a grocery list exportable to Apple Reminders, Google Keep, and OurGroceries.
-- [ ] **Server Maintenance:** Script to clear orphaned/unused photos to ensure free tier storage.
-- [ ] **Automated Free Backups:** Cron job to backup JSON database daily.
+- [x] **Grocery List Generation:** Convert missing/checked ingredients into a grocery list exportable to Apple Reminders, Google Keep, and OurGroceries.
+- [x] **Server Maintenance:** Script to clear orphaned/unused photos to ensure free tier storage.
+- [x] **Automated Free Backups:** Cron job to backup JSON database daily.
 
 ## 🔴 Phase 3: Advanced Integrations & Native Tech (ONGOING)
 - [x] Voice Commands: Use `react-speech-recognition` in Baking Mode to say "Next Step" or "Back" when hands are messy.
 - [x] Pantry Barcode Scanner: Use `html5-qrcode` to scan product barcodes and fetch names from the Open Food Facts API directly into the Smart Pantry.
 - [x] AI Photo Tagging: Let Gemini 1.5 Flash auto-suggest tags (`#sourdough`, `#overproofed`) when saving a new bake log photo.
 - [x] Drag-and-Drop Dashboard: Let user organize recipe cards into categorized folders using `@dnd-kit/core`.
-- [ ] Before & After Photo Slider: Create an interactive photo comparison slider for BakeLogs to compare the raw dough vs baked bread.
-- [ ] Live Timer Sync: Implement Socket.io so if a 40-minute timer is started on the iPad in the kitchen, it syncs to the iPhone in the living room.
-- [ ] Offline PWA: Use Workbox/Service Workers to cache all recipes and images so the cookbook works in the kitchen without Wi-Fi.
+- [x] Before & After Photo Slider: Create an interactive photo comparison slider for BakeLogs to compare the raw dough vs baked bread.
+- [x] Live Timer Sync: Implement Socket.io so if a 40-minute timer is started on the iPad in the kitchen, it syncs to the iPhone in the living room.
+- [x] Offline PWA: Use Workbox/Service Workers to cache all recipes and images so the cookbook works in the kitchen without Wi-Fi.
 
 ## Phase 4: Production & Advanced Features (Active)
-- [ ] **Grocery List Generator**: Convert missing/checked ingredients into a grocery list exportable to Apple Reminders, Google Keep, and text export.
-- [ ] **Interactive Before & After Photo Comparison Slider**: Interactive dual-photo slider in Bake Logs (raw vs baked bread).
-- [ ] **Automated Free Backups & Maintenance**: Daily `node-cron` job for JSON database dumps and Cloudinary orphan cleanup.
-- [ ] **Realtime Multi-Device Timer Sync**: Socket.io sync for active timers across devices.
+- [x] **Grocery List Generator**: Convert missing/checked ingredients into a grocery list exportable to Apple Reminders, Google Keep, and text export.
+- [x] **Interactive Before & After Photo Comparison Slider**: Interactive dual-photo slider in Bake Logs (raw vs baked bread).
+- [x] **Automated Free Backups & Maintenance**: Daily `node-cron` job for JSON database dumps and Cloudinary orphan cleanup.
+- [x] **Realtime Multi-Device Timer Sync**: Socket.io sync for active timers across devices.
 
+## Phase 5: The "Black & Gold" Mobile-First Vision
+Based on the updated vision questionnaire, focusing on high-speed data entry, sharing, and true mobile app feel.
+
+- [x] **Nested Sub-Recipe Drawers**: Implement a bottom-sheet UI for sub-recipes (like frosting) that slides over the main recipe and returns upon completion.
+- [x] **Automated Instagram Recipe Exporter**: Engine to export the "Best Version" to a perfect square image with Black & Gold styling, modern typography, and optional app logo.
+- [x] **Visual-First Bake Logs Grid**: Simplify the Bake Log view to a grid of square photos. Tapping flips the photo to reveal the dictated note.
+- [x] **Flour-Proof Voice Dictation (Context-Aware)**: Add a persistent microphone button to dictate notes directly into the Bake Log, parsing mentioned ingredients automatically.
+- [x] **Zero-Touch Bluetooth Scale Integration**: Connect to standard Bluetooth kitchen scales to auto-advance to the next step when the target weight is reached.

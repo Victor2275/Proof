@@ -2,8 +2,10 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api, API_URL, type Recipe, type Component } from '../lib/api';
 import { saveLocalBakeLog } from '../lib/localDB';
-import { X, ChevronLeft, ChevronRight, Check, Upload, Loader2, List } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Check, Upload, Loader2, List, Link as LinkIcon, Mic, MicOff, Bluetooth } from 'lucide-react';
 import { renderWithTimers } from '../utils/timerParser';
+import { scaleService, type WeightMeasurement } from '../lib/bluetoothScale';
+import RecipeDrawer from './RecipeDrawer';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { Capacitor } from '@capacitor/core';
 import 'regenerator-runtime/runtime';
@@ -20,15 +22,24 @@ export default function BakingMode() {
   const [viewMode, setViewMode] = useState<'focus' | 'all'>('focus');
   const [checkedIngredients, setCheckedIngredients] = useState<Record<number, boolean>>({});
 
+  // Sub-recipe Drawer State
+  const [openSubRecipeId, setOpenSubRecipeId] = useState<string | null>(null);
+
   // Finish Modal State
   const [showFinishModal, setShowFinishModal] = useState(false);
+  const [showVoiceHelp, setShowVoiceHelp] = useState(false);
+
+  // Bluetooth Scale State
+  const [scaleConnected, setScaleConnected] = useState(false);
+  const [scaleWeight, setScaleWeight] = useState<WeightMeasurement | null>(null);
 
   const [notes, setNotes] = useState('');
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [savingLog, setSavingLog] = useState(false);
+  const [isDictating, setIsDictating] = useState(false);
 
   // Voice Commands
-  const { listening, browserSupportsSpeechRecognition } = useSpeechRecognition({
+  const { listening, browserSupportsSpeechRecognition, transcript, resetTranscript } = useSpeechRecognition({
     commands: [
       {
         command: ['next', 'next step', 'forward'],
@@ -40,7 +51,91 @@ export default function BakingMode() {
       },
       {
         command: ['finish', 'done', 'complete'],
-        callback: () => setShowFinishModal(true)
+        callback: () => {
+          if (window.confirm("Are you sure you want to finish the recipe and log this bake?")) {
+            setShowFinishModal(true);
+          }
+        }
+      },
+      {
+        command: ['read', 'repeat', 'read step', 'read that'],
+        callback: () => {
+          if (recipe && recipe.instructions[currentStep]) {
+            const msg = new SpeechSynthesisUtterance(recipe.instructions[currentStep]);
+            window.speechSynthesis.speak(msg);
+          }
+        }
+      },
+      {
+        command: ['ingredients', 'read ingredients', 'what do i need'],
+        callback: () => {
+          if (recipe && recipe.instructions[currentStep]) {
+            const ings = getSmartIngredients(recipe.instructions[currentStep]);
+            if (ings.length > 0) {
+              const text = "You need: " + ings.map(i => `${i.quantity} ${i.unit} of ${i.name}`).join(", ");
+              const msg = new SpeechSynthesisUtterance(text);
+              window.speechSynthesis.speak(msg);
+            } else {
+              window.speechSynthesis.speak(new SpeechSynthesisUtterance("No specific ingredients required for this step."));
+            }
+          }
+        }
+      },
+      {
+        command: ['start timer', 'start'],
+        callback: () => {
+          if (recipe && recipe.instructions[currentStep]) {
+            const step = recipe.instructions[currentStep];
+            // Naive timer parsing for voice: find first "X min" or "X hour"
+            const minMatch = step.match(/(\d+)\s*(?:min|minute)/i);
+            const hrMatch = step.match(/(\d+)\s*(?:hr|hour)/i);
+            let totalSecs = 0;
+            if (minMatch) totalSecs += parseInt(minMatch[1]) * 60;
+            if (hrMatch) totalSecs += parseInt(hrMatch[1]) * 3600;
+            if (totalSecs > 0) {
+              window.dispatchEvent(new CustomEvent('add-timer', { detail: { durationSecs: totalSecs, name: 'Voice Timer', forceStart: true } }));
+              window.speechSynthesis.speak(new SpeechSynthesisUtterance("Timer started."));
+            } else {
+              window.speechSynthesis.speak(new SpeechSynthesisUtterance("I didn't find a timer in this step."));
+            }
+          }
+        }
+      },
+      {
+        command: ['quiet', 'quite', 'stop timer', 'stop'],
+        callback: () => {
+          window.dispatchEvent(new Event('stop-alarms'));
+        }
+      },
+      {
+        command: ['show all', 'focus mode', 'toggle view'],
+        callback: () => {
+          setViewMode(prev => prev === 'focus' ? 'all' : 'focus');
+        }
+      },
+      {
+        command: ['up', 'scroll up'],
+        callback: () => {
+          // React state closure issue: this might not have the latest viewMode, but we can just scroll anyway.
+          window.scrollBy({ top: -500, behavior: 'smooth' });
+        }
+      },
+      {
+        command: ['down', 'scroll down'],
+        callback: () => {
+          window.scrollBy({ top: 500, behavior: 'smooth' });
+        }
+      },
+      {
+        command: ['help', 'voice commands'],
+        callback: () => setShowVoiceHelp(true)
+      },
+      {
+        command: ['close'],
+        callback: () => {
+          setShowVoiceHelp(false);
+          setShowFinishModal(false);
+        }
       }
     ]
   });
@@ -52,6 +147,38 @@ export default function BakingMode() {
       SpeechRecognition.startListening({ continuous: true });
     }
   };
+
+  const toggleDictation = () => {
+    if (isDictating) {
+      SpeechRecognition.stopListening();
+      setIsDictating(false);
+      
+      // Parse context-aware ingredients
+      if (recipe) {
+        let newNotes = notes;
+        recipe.ingredients.forEach(ing => {
+          if (ing.name.length > 2) {
+            const regex = new RegExp(`\\b${ing.name}\\b`, 'gi');
+            newNotes = newNotes.replace(regex, `**${ing.name}**`);
+          }
+        });
+        setNotes(newNotes);
+      }
+    } else {
+      resetTranscript();
+      SpeechRecognition.startListening({ continuous: true });
+      setIsDictating(true);
+    }
+  };
+
+  useEffect(() => {
+    if (isDictating && transcript) {
+      setNotes(prev => {
+        const base = prev.replace(/ \(Dictating: .*\)/, '');
+        return `${base} (Dictating: ${transcript})`;
+      });
+    }
+  }, [transcript, isDictating]);
 
   useEffect(() => {
     if (id) {
@@ -77,8 +204,25 @@ export default function BakingMode() {
       if (wakeLock.current) {
         wakeLock.current.release();
       }
+      scaleService.disconnect();
     };
   }, []);
+
+  const connectScale = async () => {
+    try {
+      await scaleService.connect();
+      setScaleConnected(true);
+      scaleService.onWeightChange((measurement) => {
+        setScaleWeight(measurement);
+      });
+      scaleService.onDisconnect(() => {
+        setScaleConnected(false);
+        setScaleWeight(null);
+      });
+    } catch (err) {
+      alert('Failed to connect to scale. Ensure Bluetooth is enabled and the site has permissions.');
+    }
+  };
 
   const handleNextStep = async () => {
     if (recipe && currentStep < recipe.instructions.length) {
@@ -93,6 +237,33 @@ export default function BakingMode() {
       if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Light });
     }
   };
+
+  const getSmartIngredients = (stepText: string): Component[] => {
+    if (!recipe) return [];
+    const textLower = stepText.toLowerCase();
+    return recipe.ingredients.filter(ing => {
+      const ingNameLower = ing.name.toLowerCase();
+      const words = ingNameLower.split(' ').filter(w => w.length > 2);
+      return words.some(w => textLower.includes(w));
+    });
+  };
+
+  useEffect(() => {
+    if (scaleWeight && recipe && currentStep < recipe.instructions.length) {
+      const stepText = recipe.instructions[currentStep];
+      const smartIngs = getSmartIngredients(stepText);
+      const targetWeight = smartIngs.reduce((sum, ing) => sum + (ing.quantity || 0), 0);
+      
+      if (targetWeight > 0) {
+        // Assume grams for simplicity for the generic implementation
+        // Auto-advance if weight is within 5% of target
+        const threshold = targetWeight * 0.95;
+        if (scaleWeight.weight >= threshold) {
+          handleNextStep();
+        }
+      }
+    }
+  }, [scaleWeight, currentStep, recipe]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -126,15 +297,13 @@ export default function BakingMode() {
     touchEndX.current = null;
   };
 
-  const getSmartIngredients = (stepText: string): Component[] => {
-    if (!recipe) return [];
-    const textLower = stepText.toLowerCase();
-    return recipe.ingredients.filter(ing => {
-      const ingNameLower = ing.name.toLowerCase();
-      // split ingredient name into words to check if any significant word is in the text
-      const words = ingNameLower.split(' ').filter(w => w.length > 2);
-      return words.some(w => textLower.includes(w));
-    });
+  const handleTouchEnd = () => {
+    if (!touchStartX.current || !touchEndX.current) return;
+    const distance = touchStartX.current - touchEndX.current;
+    if (distance > 50) handleNextStep(); // Swipe left -> Next
+    else if (distance < -50) handlePrevStep(); // Swipe right -> Prev
+    touchStartX.current = null;
+    touchEndX.current = null;
   };
 
   const handleFinishSubmit = async (e: React.FormEvent) => {
@@ -201,25 +370,33 @@ export default function BakingMode() {
       </div>
       
       {/* Top Header */}
-      <div className="w-full flex items-center justify-between p-6 z-10 relative">
-        <button 
-          onClick={() => setShowIngredients(!showIngredients)}
-          className={`px-5 py-2.5 rounded-full border transition-all font-bold uppercase tracking-widest text-sm flex items-center gap-2 ${showIngredients ? 'bg-ink text-paper border-ink' : 'border-border-subtle hover:bg-black/5 dark:hover:bg-white/5'}`}
-        >
-          <List className="w-5 h-5" /> Ingredients
-        </button>
-        
+      <div className="w-full flex justify-between items-center p-4 border-b border-border-subtle bg-paper/95 backdrop-blur-sm z-30 sticky top-0">
+        <div className="flex items-center gap-3">
+          <button onClick={() => navigate(`/recipe/${id}`)} className="p-2 bg-black/5 dark:bg-white/5 rounded-full hover:bg-black/10 dark:hover:bg-white/10 transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+          <h1 className="font-bold uppercase tracking-wider text-sm truncate">{recipe.title}</h1>
+        </div>
         <div className="flex items-center gap-4">
+          <button onClick={connectScale} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-colors ${scaleConnected ? 'bg-blue-500/20 text-blue-600 border border-blue-500/50' : 'bg-black/5 dark:bg-white/5 border border-border-subtle hover:bg-black/10'}`}>
+            <Bluetooth className={`w-3.5 h-3.5 ${scaleConnected ? 'animate-pulse' : ''}`} />
+            {scaleWeight ? `${scaleWeight.weight}${scaleWeight.unit}` : (scaleConnected ? 'Connected' : 'Scale')}
+          </button>
+          
+          <button 
+            onClick={() => setShowIngredients(!showIngredients)}
+            className={`px-5 py-1.5 rounded-full border transition-all font-bold uppercase tracking-widest text-sm flex items-center gap-2 ${showIngredients ? 'bg-ink text-paper border-ink' : 'border-border-subtle hover:bg-black/5 dark:hover:bg-white/5'}`}
+          >
+            <List className="w-4 h-4" /> Ingredients
+          </button>
+
           {browserSupportsSpeechRecognition && (
             <button 
               onClick={toggleMic}
-              className={`p-2 rounded-full border transition-colors ${listening ? 'bg-red-500 text-white border-red-500' : 'border-border-subtle hover:bg-black/5 dark:hover:bg-white/5 text-ink-muted'}`}
+              className={`p-2 rounded-full border transition-colors ${listening ? 'bg-red-500 text-white border-red-500 animate-pulse' : 'border-border-subtle hover:bg-black/5 dark:hover:bg-white/5 text-ink-muted'}`}
               title="Toggle Voice Commands (Next, Back, Finish)"
             >
-              <div className="flex items-center gap-2 px-2 text-sm font-bold uppercase tracking-widest">
-                <div className={`w-2 h-2 rounded-full ${listening ? 'bg-white animate-pulse' : 'bg-red-500'}`} />
-                MIC
-              </div>
+              <Mic className="w-4 h-4" />
             </button>
           )}
           <button 
@@ -250,6 +427,20 @@ export default function BakingMode() {
             <div className="text-3xl md:text-5xl font-medium leading-relaxed md:leading-normal text-center transition-all duration-300">
               {isFinished ? stepText : renderWithTimers(stepText, `Step ${currentStep + 1}`)}
             </div>
+            
+            {!isFinished && recipe.instructionLinks && recipe.instructionLinks.find(l => l.stepIndex === currentStep) && (
+              <div className="mt-8 flex justify-center">
+                {recipe.instructionLinks.filter(l => l.stepIndex === currentStep).map((link, idx) => (
+                  <button 
+                    key={idx}
+                    onClick={() => setOpenSubRecipeId(link.recipeId)}
+                    className="flex items-center gap-2 px-6 py-3 bg-black/5 dark:bg-white/5 border border-border-subtle rounded-full font-bold uppercase tracking-widest text-sm hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+                  >
+                    <LinkIcon className="w-4 h-4" /> Open Sub-Recipe: {link.recipeTitle}
+                  </button>
+                ))}
+              </div>
+            )}
 
             {!isFinished && smartIngredients.length > 0 && (
               <div className="mt-12 bg-black/5 dark:bg-white/5 p-6 rounded-xl border border-border-subtle w-full max-w-2xl">
@@ -273,12 +464,30 @@ export default function BakingMode() {
           </div>
         ) : (
           <div className="w-full py-8 space-y-12">
-            {recipe.instructions.map((step, idx) => (
-              <div key={idx} className="flex gap-6">
-                <span className="text-3xl font-black text-ink-muted/30">{idx + 1}.</span>
-                <div className="text-2xl md:text-3xl font-medium leading-relaxed">{renderWithTimers(step, `Step ${idx+1}`)}</div>
-              </div>
-            ))}
+            {recipe.instructions.map((step, idx) => {
+              const links = recipe.instructionLinks ? recipe.instructionLinks.filter(l => l.stepIndex === idx) : [];
+              return (
+                <div key={idx} className="flex gap-6 flex-col sm:flex-row">
+                  <div className="flex gap-6 flex-1">
+                    <span className="text-3xl font-black text-ink-muted/30">{idx + 1}.</span>
+                    <div className="text-2xl md:text-3xl font-medium leading-relaxed">{renderWithTimers(step, `Step ${idx+1}`)}</div>
+                  </div>
+                  {links.length > 0 && (
+                    <div className="sm:ml-12 mt-4 sm:mt-0 flex flex-col gap-2 justify-start items-start">
+                      {links.map((link, lidx) => (
+                        <button
+                          key={lidx}
+                          onClick={() => setOpenSubRecipeId(link.recipeId)}
+                          className="flex items-center gap-2 px-4 py-2 bg-black/5 dark:bg-white/5 border border-border-subtle rounded-full font-bold uppercase tracking-wider text-xs hover:bg-black/10 dark:hover:bg-white/10 transition-colors whitespace-nowrap"
+                        >
+                          <LinkIcon className="w-4 h-4" /> {link.recipeTitle}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
             
             <div className="pt-12 border-t border-border-subtle flex justify-center">
               <button onClick={() => setShowFinishModal(true)} className="bg-ink text-paper px-10 py-4 rounded-xl font-bold text-xl hover:opacity-90 transition-opacity shadow-lg flex items-center gap-3">
@@ -347,7 +556,19 @@ export default function BakingMode() {
             
             <form onSubmit={handleFinishSubmit} className="p-6 space-y-6 overflow-y-auto">
               <div>
-                <label className="block text-sm font-bold mb-2">Bake Notes</label>
+                <div className="flex justify-between items-center mb-2">
+                  <label className="block text-sm font-bold">Bake Notes</label>
+                  {browserSupportsSpeechRecognition && (
+                    <button 
+                      type="button"
+                      onClick={toggleDictation}
+                      className={`flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-full transition-colors ${isDictating ? 'bg-red-500/20 text-red-500 border border-red-500/50 animate-pulse' : 'bg-black/5 dark:bg-white/5 border border-border-subtle hover:bg-black/10'}`}
+                    >
+                      {isDictating ? <Mic className="w-3.5 h-3.5" /> : <MicOff className="w-3.5 h-3.5" />}
+                      {isDictating ? 'Listening...' : 'Dictate'}
+                    </button>
+                  )}
+                </div>
                 <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={4} className="w-full border border-border-subtle rounded-md p-3 bg-black/5 dark:bg-white/5 focus:ring-1 focus:ring-ink focus:outline-none resize-none" placeholder="How did it turn out? What would you change next time?"></textarea>
               </div>
 
@@ -369,6 +590,37 @@ export default function BakingMode() {
           </div>
         </div>
       )}
+
+      {/* Voice Help Modal */}
+      {showVoiceHelp && (
+        <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-paper rounded-2xl w-full max-w-sm shadow-2xl border border-border-subtle p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold uppercase tracking-wider">Voice Commands</h2>
+              <button onClick={() => setShowVoiceHelp(false)}><X className="w-5 h-5 text-ink-muted hover:text-ink" /></button>
+            </div>
+            <ul className="space-y-3 text-sm">
+              <li><strong className="text-ink">"Next" / "Back"</strong> - Navigate steps</li>
+              <li><strong className="text-ink">"Read"</strong> - Reads current step aloud</li>
+              <li><strong className="text-ink">"Ingredients"</strong> - Reads ingredients for current step</li>
+              <li><strong className="text-ink">"Start timer"</strong> - Starts the first timer found in the step</li>
+              <li><strong className="text-ink">"Quiet"</strong> - Stops any ringing alarms</li>
+              <li><strong className="text-ink">"Show all"</strong> - Toggles Focus Mode / Show All</li>
+              <li><strong className="text-ink">"Up" / "Down"</strong> - Scrolls the page</li>
+              <li><strong className="text-ink">"Finish"</strong> - Opens the Bake Log modal</li>
+              <li><strong className="text-ink">"Close"</strong> - Closes open popups</li>
+            </ul>
+          </div>
+        </div>
+      )}
+
+      {/* Recipe Drawer Overlay */}
+      <RecipeDrawer 
+        isOpen={!!openSubRecipeId} 
+        onClose={() => setOpenSubRecipeId(null)} 
+        recipeId={openSubRecipeId || ''} 
+      />
+
     </div>
   );
 }

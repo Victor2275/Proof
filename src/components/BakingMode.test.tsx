@@ -23,16 +23,24 @@ vi.mock('react-router-dom', async () => {
   };
 });
 
+let registeredCommands: any[] = [];
 vi.mock('react-speech-recognition', () => {
   return {
     default: {
       startListening: vi.fn(),
       stopListening: vi.fn(),
     },
-    useSpeechRecognition: () => ({
-      listening: false,
-      browserSupportsSpeechRecognition: true
-    })
+    useSpeechRecognition: (options: any) => {
+      if (options?.commands) {
+        registeredCommands = options.commands;
+      }
+      return {
+        listening: false,
+        browserSupportsSpeechRecognition: true,
+        transcript: '',
+        resetTranscript: vi.fn()
+      };
+    }
   };
 });
 
@@ -62,6 +70,8 @@ const mockRecipe = {
 describe('BakingMode Component', () => {
   beforeEach(() => {
     vi.mocked(api.getRecipe).mockResolvedValue(mockRecipe as any);
+    registeredCommands = [];
+    window.confirm = vi.fn().mockReturnValue(true);
   });
 
   it('renders Focus Mode by default and shows first step', async () => {
@@ -138,5 +148,28 @@ describe('BakingMode Component', () => {
     fireEvent.click(micBtn);
     
     expect(SpeechRecognition.startListening).toHaveBeenCalledWith({ continuous: true });
+  });
+
+  it('registers advanced voice commands including read, timer, and help', async () => {
+    render(<MemoryRouter><BakingMode /></MemoryRouter>);
+    await waitFor(() => expect(screen.getByText('Step 1: Mix')).toBeDefined());
+
+    expect(registeredCommands.length).toBeGreaterThan(5);
+    
+    // Check that 'help' command exists and triggers modal
+    const helpCmd = registeredCommands.find(c => c.command.includes('help'));
+    expect(helpCmd).toBeDefined();
+    
+    // Trigger help command
+    helpCmd.callback();
+    
+    // Check if Voice Commands modal opened
+    expect(screen.getByText('Voice Commands')).toBeInTheDocument();
+    
+    // Check close command
+    const closeCmd = registeredCommands.find(c => c.command.includes('close'));
+    closeCmd.callback();
+    
+    expect(screen.queryByText('Voice Commands')).not.toBeInTheDocument();
   });
 });

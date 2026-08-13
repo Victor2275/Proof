@@ -7,6 +7,7 @@ import { api } from '../lib/api';
 vi.mock('../lib/api', () => ({
   api: {
     getRecipe: vi.fn(),
+    getRecipes: vi.fn().mockResolvedValue([]),
     createRecipe: vi.fn(),
     updateRecipe: vi.fn(),
     extractRecipe: vi.fn()
@@ -82,5 +83,33 @@ describe('RecipeEditor Component', () => {
       const titleInput = screen.getByPlaceholderText(/72-Hour Sourdough/i) as HTMLInputElement;
       expect(titleInput.value).toBe('Extracted Title');
     });
+  });
+
+  it('allows linking a sub-recipe to an instruction step', async () => {
+    vi.mocked(api.getRecipes).mockResolvedValue([
+      { _id: 'rec1', title: 'Frosting', description: '', imageUrls: [], servings: 4, prepTime: '', cookTime: '', tags: [], ingredients: [], instructions: [] },
+    ]);
+    render(<MemoryRouter><RecipeEditor /></MemoryRouter>);
+    
+    // Add instruction
+    const addInstBtn = screen.getByText('Add Step');
+    fireEvent.click(addInstBtn);
+    
+    // Find the Link Recipe button
+    const linkBtn = await screen.findByText('Link Recipe');
+    expect(linkBtn).toBeInTheDocument();
+    
+    // Click Link Recipe
+    fireEvent.click(linkBtn);
+    
+    // Modal should open with recipes
+    const frostingBtn = await screen.findByText('Frosting');
+    expect(frostingBtn).toBeInTheDocument();
+    
+    // Select Frosting
+    fireEvent.click(frostingBtn);
+    
+    // The linked recipe badge should now be visible
+    expect(await screen.findByText('Frosting')).toBeInTheDocument();
   });
 });
