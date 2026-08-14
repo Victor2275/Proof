@@ -1,7 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import BakeLogsGrid from './BakeLogsGrid';
-import { BakeLog } from '../lib/api';
+import type { BakeLog } from '../lib/api';
 
 describe('BakeLogsGrid', () => {
   const mockLogs: BakeLog[] = [
@@ -48,5 +48,16 @@ describe('BakeLogsGrid', () => {
     // Since it's flipped now, a second click should trigger onSelect
     fireEvent.click(make2);
     expect(handleSelect).toHaveBeenCalledWith(mockLogs[0]);
+  });
+
+  it('calls onExportInstagram when Export to Instagram button is clicked', () => {
+    const handleExportInstagram = vi.fn();
+    render(<BakeLogsGrid logs={mockLogs} onSelect={vi.fn()} onExportInstagram={handleExportInstagram} />);
+    
+    const exportButtons = screen.getAllByRole('button', { name: /export to instagram/i });
+    expect(exportButtons.length).toBe(2);
+    
+    fireEvent.click(exportButtons[0]);
+    expect(handleExportInstagram).toHaveBeenCalledWith(mockLogs[0]);
   });
 });

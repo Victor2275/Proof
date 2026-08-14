@@ -108,7 +108,7 @@ export default function Dashboard() {
         <div className="flex items-center gap-3 w-full md:w-auto justify-between">
           <div className="flex items-center gap-3">
             <img src="/logo.png" alt="Logo" className="w-10 h-10 object-contain md:hidden" />
-            <h1 className="text-3xl font-bold tracking-tight uppercase">My Cookbook</h1>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight uppercase">My Cookbook</h1>
           </div>
           {recipes.length > 0 && (
             <button 
@@ -134,7 +134,7 @@ export default function Dashboard() {
               <Shuffle className="w-4 h-4" /> Inspire Me
             </button>
           )}
-        <div className="relative w-full md:w-80">
+        <div className="relative w-full md:w-80 flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-muted" />
           <input 
             type="text" 
@@ -206,7 +206,7 @@ export default function Dashboard() {
               <DraggableRecipeCard key={recipe._id} recipe={recipe}>
                 <Link 
                   to={`/recipe/${recipe._id}`}
-                  className={`group block bg-sidebar border border-border-subtle rounded-xl overflow-hidden hover:border-ink/30 transition-all ${viewMode === 'list' ? 'flex items-center p-4 gap-6' : 'flex flex-col h-full'}`}
+                  className={`group block bg-sidebar border border-border-subtle rounded-xl overflow-hidden hover:border-ink/30 transition-all ${viewMode === 'list' ? 'flex flex-col sm:flex-row sm:items-center p-4 gap-4 sm:gap-6' : 'flex flex-col h-full'}`}
                 >
                   {/* Image rendering based on viewMode */}
                   {viewMode === 'grid' && (
@@ -226,7 +226,7 @@ export default function Dashboard() {
                     </div>
                   )}
                   
-                  <div className={`p-5 ${viewMode === 'list' ? 'flex-1 p-0 flex justify-between items-center' : 'flex-1 flex flex-col'}`}>
+                  <div className={`p-5 ${viewMode === 'list' ? 'flex-1 p-0 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2' : 'flex-1 flex flex-col'}`}>
                     <div>
                       <h2 className="text-xl font-bold tracking-tight mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{recipe.title}</h2>
                       {viewMode === 'grid' && <p className="text-ink-muted text-sm line-clamp-2 mb-4 leading-relaxed flex-1">{recipe.description}</p>}

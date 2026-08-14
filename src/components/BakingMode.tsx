@@ -302,8 +302,10 @@ export default function BakingMode() {
     e.preventDefault();
     setSavingLog(true);
     try {
+      let newLogId: string | null = null;
       if (!localStorage.getItem('adminToken')) {
-        await saveLocalBakeLog({ recipeId: id!, notes, imageUrls: [] }, imageFiles);
+        const savedLog = await saveLocalBakeLog({ recipeId: id!, notes, imageUrls: [] }, imageFiles);
+        newLogId = savedLog._id || null;
       } else {
         const imageUrls = [];
         if (imageFiles.length > 0) {
@@ -335,8 +337,15 @@ export default function BakingMode() {
           })
         });
         if (!res.ok) throw new Error('Failed to log bake');
+        const createdLog = await res.json();
+        newLogId = createdLog._id;
       }
-      navigate(`/recipe/${id}`);
+      
+      if (newLogId) {
+        navigate(`/recipe/${id}?makeId=${newLogId}&export=instagram`);
+      } else {
+        navigate(`/recipe/${id}`);
+      }
     } catch (err) {
       console.error(err);
       alert('Failed to save bake log');

@@ -1,7 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import InstagramExporter from './InstagramExporter';
-import { Recipe } from '../lib/api';
+import type { Recipe } from '../lib/api';
 
 vi.mock('html2canvas', () => ({
   default: vi.fn().mockResolvedValue({
@@ -19,6 +19,7 @@ describe('InstagramExporter', () => {
     tags: ['bread', 'test'],
     ingredients: [{ name: 'Flour', quantity: 500, unit: 'g' }],
     instructions: ['Mix', 'Bake'],
+    imageUrls: ['https://example.com/img.jpg'],
   };
 
   it('renders the carousel view by default', () => {
@@ -30,7 +31,7 @@ describe('InstagramExporter', () => {
 
   it('switches to single post mode', () => {
     render(<InstagramExporter recipe={mockRecipe} onClose={vi.fn()} />);
-    const singleBtn = screen.getByText(/Single Post/i);
+    const singleBtn = screen.getByText(/Single Polaroid Only/i);
     fireEvent.click(singleBtn);
     
     // Ingredients should no longer be rendered as a header

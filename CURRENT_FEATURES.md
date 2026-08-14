@@ -49,12 +49,13 @@ This document exhaustively tracks every capability, component, and technical int
 - **Image Architecture**: Images are captured via `@capacitor/camera` (or file upload) and stored on Cloudinary (via `multer-storage-cloudinary`).
 - **Export Engine**:
   - `jspdf` and `html2canvas` generate beautiful printable PDFs and square recipe cards.
-  - **Automated Instagram Recipe Exporter**: Exports the recipe to a Black & Gold styled 1080x1080 square image (or 3-post carousel) using `html2canvas`.
+  - **Automated Instagram Recipe Exporter**: Exports the recipe to a Black & Gold styled 1080x1080 square image (or 3-post carousel) using `html2canvas`. Supports exporting a specific Bake Log directly from its card, using the log's photo as the hero image and its notes as the description.
   - `qrcode.react` creates scannable deep-links.
 
 ## 6. UI/UX Foundation
 - **Stack**: React, Vite, Tailwind CSS (`@tailwindcss/postcss`).
 - **Sanitization**: `rehype-sanitize` ensures user-generated markdown is safe from XSS.
 - **Drag & Drop**: `@dnd-kit/core` powers drag-and-drop mechanics across the dashboard for organizing folders.
-- **Animations**: `framer-motion` handles fluid component mounting/unmounting transitions.
 - **Icons**: Standardized clean iconography via `lucide-react`.
+- **Fault Resilience & Crash Protection**: `ErrorBoundary.tsx` wraps the routing tree to catch unhandled rendering exceptions, preventing white-screen crashes and presenting diagnostic stack traces with graceful recovery navigation.
+

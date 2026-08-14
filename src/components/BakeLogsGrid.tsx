@@ -1,14 +1,34 @@
 import { useState } from 'react';
 import { type BakeLog } from '../lib/api';
 import { Award, CameraOff } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
+
+function Instagram({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
+      <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+      <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
+    </svg>
+  );
+}
 
 interface BakeLogsGridProps {
   logs: BakeLog[];
   onSelect: (log: BakeLog) => void;
+  onExportInstagram?: (log: BakeLog) => void;
 }
 
-export default function BakeLogsGrid({ logs, onSelect }: BakeLogsGridProps) {
+export default function BakeLogsGrid({ logs, onSelect, onExportInstagram }: BakeLogsGridProps) {
   const [flippedLogId, setFlippedLogId] = useState<string | null>(null);
 
   if (logs.length === 0) {
@@ -26,7 +46,7 @@ export default function BakeLogsGrid({ logs, onSelect }: BakeLogsGridProps) {
             key={log._id} 
             className="relative aspect-square cursor-pointer group"
             style={{ perspective: '1000px' }}
-            onClick={(e) => {
+            onClick={() => {
               if (isFlipped) {
                 // If it's already flipped, clicking it opens the details modal
                 onSelect(log);
@@ -73,8 +93,23 @@ export default function BakeLogsGrid({ logs, onSelect }: BakeLogsGridProps) {
                     {log.notes || <span className="italic text-ink-muted">No notes recorded for this bake.</span>}
                   </p>
                 </div>
-                <div className="text-xs font-bold uppercase tracking-wider text-ink flex items-center justify-center border-t border-border-subtle pt-3 hover:underline">
-                  Tap to View Details
+                
+                <div className="flex flex-col gap-2 border-t border-border-subtle pt-3">
+                  {onExportInstagram && (
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onExportInstagram(log);
+                      }}
+                      className="flex items-center justify-center gap-1.5 text-xs font-bold uppercase tracking-wider text-pink-600 hover:text-pink-500 hover:underline mb-1"
+                    >
+                      <Instagram className="w-3.5 h-3.5" />
+                      Export to Instagram
+                    </button>
+                  )}
+                  <div className="text-xs font-bold uppercase tracking-wider text-ink flex items-center justify-center hover:underline">
+                    Tap to View Details
+                  </div>
                 </div>
               </div>
             </motion.div>

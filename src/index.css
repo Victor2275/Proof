@@ -79,6 +79,18 @@ button {
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+  
+  /* Capacitor Safe Area Utils */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 20px);
+  }
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 20px);
+  }
+  .px-safe {
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+  }
 }
 
 @media print {

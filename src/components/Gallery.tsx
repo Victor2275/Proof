@@ -71,7 +71,7 @@ export default function Gallery() {
               return (
                 <Link 
                   key={`${log._id}-${idx}`} 
-                  to={`/recipe/${recipeIdStr}`}
+                  to={`/recipe/${recipeIdStr}?makeId=${log._id}`}
                   className="group relative rounded-xl overflow-hidden aspect-square bg-black/5 dark:bg-white/5 border border-border-subtle shadow-sm"
                 >
                   <img 

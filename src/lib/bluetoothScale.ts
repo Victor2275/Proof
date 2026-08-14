@@ -1,3 +1,5 @@
+/// <reference types="web-bluetooth" />
+
 // A generic Web Bluetooth implementation for smart kitchen scales
 // Uses the standard GATT Weight Scale service (0x181D)
 

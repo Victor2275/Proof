@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { api, type Recipe, type BakeLog } from '../lib/api';
 import { getLocalBakeLogs } from '../lib/localDB';
 import SideBySideCompare from './SideBySideCompare';
@@ -7,12 +7,31 @@ import ReverseBakeScheduler from './ReverseBakeScheduler';
 import AISubstitutionsModal from './AISubstitutionsModal';
 import InstagramExporter from './InstagramExporter';
 import BakeLogsGrid from './BakeLogsGrid';
-import { Edit, MoreVertical, Play, X, Star, Award, QrCode, Download, CheckCircle2, Calendar, Sparkles, Instagram } from 'lucide-react';
+import { Edit, MoreVertical, Play, X, Star, Award, QrCode, Download, CheckCircle2, Calendar, Sparkles } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import Fuse from 'fuse.js';
 import { renderWithTimers } from '../utils/timerParser';
+
+function Instagram({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
+      <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+      <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
+    </svg>
+  );
+}
 
 function ExpandableInstruction({ text = '', index }: { text: string, index: number }) {
   const [expanded, setExpanded] = useState(false);
@@ -36,6 +55,7 @@ function ExpandableInstruction({ text = '', index }: { text: string, index: numb
 export default function RecipeViewer() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [bakeLogs, setBakeLogs] = useState<BakeLog[]>([]);
   const [inPantryMap, setInPantryMap] = useState<Record<string, boolean>>({});
@@ -51,6 +71,7 @@ export default function RecipeViewer() {
   const [showQrModal, setShowQrModal] = useState(false);
   const [showReverseScheduler, setShowReverseScheduler] = useState(false);
   const [showInstagramExporter, setShowInstagramExporter] = useState(false);
+  const [instagramExportBakeLog, setInstagramExportBakeLog] = useState<BakeLog | undefined>(undefined);
   const [aiSubstituteIngredient, setAiSubstituteIngredient] = useState<string | null>(null);
 
   // Temporary checkbox state (visual only)
@@ -90,6 +111,33 @@ export default function RecipeViewer() {
     };
     fetchRecipe();
   }, [id]);
+
+  useEffect(() => {
+    if (bakeLogs.length > 0) {
+      const searchParams = new URLSearchParams(location.search);
+      const makeIdParam = searchParams.get('makeId');
+      const exportParam = searchParams.get('export');
+
+      if (makeIdParam) {
+        const foundMake = bakeLogs.find(l => l._id === makeIdParam);
+        if (foundMake && foundMake._id !== selectedMake?._id) {
+          setSelectedMake(foundMake);
+          if (exportParam === 'instagram') {
+            setInstagramExportBakeLog(foundMake);
+            setShowInstagramExporter(true);
+          }
+        }
+      } else if (selectedMake) {
+        // If query param is gone but state is still there (like going back)
+        setSelectedMake(null);
+      }
+    }
+  }, [location.search, bakeLogs]);
+
+  const handleCloseMakeDetails = () => {
+    setSelectedMake(null);
+    navigate(`/recipe/${id}`, { replace: true });
+  };
 
   const toggleCheck = (index: number) => {
     setCheckedIngredients(prev => ({
@@ -222,7 +270,7 @@ export default function RecipeViewer() {
           
           {showExportMenu && (
             <div className="absolute top-full left-0 mt-2 w-56 bg-paper border border-border-subtle rounded-xl shadow-xl overflow-hidden z-50">
-              <button onClick={() => { setShowInstagramExporter(true); setShowExportMenu(false); }} className="block w-full text-left px-4 py-3 font-medium border-b border-border-subtle hover:bg-black/5 dark:hover:bg-white/5 transition-colors flex items-center gap-2">
+              <button onClick={() => { setShowInstagramExporter(true); setInstagramExportBakeLog(undefined); setShowExportMenu(false); }} className="block w-full text-left px-4 py-3 font-medium border-b border-border-subtle hover:bg-black/5 dark:hover:bg-white/5 transition-colors flex items-center gap-2">
                 <Instagram className="w-4 h-4 text-pink-500" /> Export for Instagram
               </button>
               <button onClick={handleExportImage} className="block w-full text-left px-4 py-3 font-medium border-b border-border-subtle hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
@@ -272,7 +320,7 @@ export default function RecipeViewer() {
           
           {showMobileMenu && (
             <div className="absolute right-0 top-full mt-2 w-56 bg-paper border border-border-subtle rounded-xl shadow-xl overflow-hidden z-50 text-sm">
-              <button onClick={() => { setShowInstagramExporter(true); setShowMobileMenu(false); }} className="block w-full text-left px-4 py-3 font-medium border-b border-border-subtle flex items-center gap-2">
+              <button onClick={() => { setShowInstagramExporter(true); setInstagramExportBakeLog(undefined); setShowMobileMenu(false); }} className="block w-full text-left px-4 py-3 font-medium border-b border-border-subtle flex items-center gap-2">
                 <Instagram className="w-4 h-4 text-pink-500" /> Export for Instagram
               </button>
               <button onClick={handleExportImage} className="block w-full text-left px-4 py-3 font-medium border-b border-border-subtle">
@@ -357,7 +405,7 @@ export default function RecipeViewer() {
             
             <div className="space-y-4 flex-1">
               <div>
-                <h1 className="text-4xl font-extrabold tracking-tight mb-2 text-ink uppercase">{recipe.title}</h1>
+                <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-2 text-ink uppercase">{recipe.title}</h1>
                 <p className="text-ink-muted text-lg leading-relaxed">{recipe.description}</p>
               </div>
 
@@ -371,7 +419,7 @@ export default function RecipeViewer() {
                 </div>
               )}
 
-              <div className="flex gap-10 pt-4">
+              <div className="flex flex-wrap gap-6 md:gap-10 pt-4">
                 <div>
                   <div className="font-bold mb-1">Total Time:</div>
                   <div className="text-ink-muted">
@@ -500,14 +548,18 @@ export default function RecipeViewer() {
           
           <BakeLogsGrid 
             logs={bakeLogs} 
-            onSelect={(log) => { setSelectedMake(log); setIsEditingDate(false); }} 
+            onSelect={(log) => { setSelectedMake(log); setIsEditingDate(false); }}
+            onExportInstagram={(log) => {
+              setInstagramExportBakeLog(log);
+              setShowInstagramExporter(true);
+            }}
           />
         </div>
       )}
       {/* Sticky FAB for Mobile */}
       <Link 
         to={`/recipe/${recipe._id}/bake`} 
-        className="md:hidden fixed bottom-24 right-4 bg-ink text-paper w-14 h-14 rounded-full shadow-2xl flex items-center justify-center z-40 transition-transform hover:scale-105 active:scale-95"
+        className="md:hidden fixed bottom-[calc(env(safe-area-inset-bottom,0px)+80px)] right-4 bg-ink text-paper w-14 h-14 rounded-full shadow-2xl flex items-center justify-center z-40 transition-transform hover:scale-105 active:scale-95"
       >
         <Play className="w-6 h-6 ml-1" fill="currentColor" />
       </Link>
@@ -590,7 +642,7 @@ export default function RecipeViewer() {
                              await api.deleteBakeLog(selectedMake._id!);
                            }
                            setBakeLogs(prev => prev.filter(l => l._id !== selectedMake._id));
-                           setSelectedMake(null);
+                           handleCloseMakeDetails();
                          } catch (e) {
                            alert('Failed to delete log entry.');
                          }
@@ -599,11 +651,21 @@ export default function RecipeViewer() {
                      >
                        Delete Entry
                      </button>
+                     <button 
+                       onClick={() => {
+                         setInstagramExportBakeLog(selectedMake);
+                         setShowInstagramExporter(true);
+                       }}
+                       className="flex items-center gap-1 text-xs font-bold uppercase tracking-wider text-pink-600 hover:text-pink-500 hover:underline"
+                     >
+                       <Instagram className="w-3.5 h-3.5" />
+                       Export to Instagram
+                     </button>
                      </div>
                    </div>
                  )}
                </div>
-               <button onClick={() => setSelectedMake(null)} className="p-2 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 rounded-full transition-colors"><X className="w-6 h-6" /></button>
+               <button onClick={handleCloseMakeDetails} className="p-2 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 rounded-full transition-colors"><X className="w-6 h-6" /></button>
              </div>
              
              <div className="space-y-8">
@@ -659,7 +721,14 @@ export default function RecipeViewer() {
       )}
 
       {showInstagramExporter && (
-        <InstagramExporter recipe={recipe} onClose={() => setShowInstagramExporter(false)} />
+        <InstagramExporter 
+          recipe={recipe} 
+          bakeLog={instagramExportBakeLog}
+          onClose={() => {
+            setShowInstagramExporter(false);
+            setInstagramExportBakeLog(undefined);
+          }} 
+        />
       )}
     </div>
   );

@@ -36,6 +36,7 @@ export default defineConfig({
         ]
       },
       workbox: {
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/.*\/api\/recipes/,
@@ -61,5 +62,5 @@ export default defineConfig({
     setupFiles: ['./src/setupTests.ts'],
     include: ['src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}']
   },
-  base: './',
+  base: '/',
 })

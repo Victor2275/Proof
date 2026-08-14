@@ -15,7 +15,7 @@ import Pantry from './components/Pantry';
 import TimerManager from './components/TimerManager';
 import BottomNav from './components/BottomNav';
 import { api } from './lib/api';
-import { AnimatePresence, motion } from 'framer-motion';
+import ErrorBoundary from './components/ErrorBoundary';
 
 function AuthModal({ onClose, onSuccess }: { onClose: () => void, onSuccess: () => void }) {
   const [pin, setPin] = useState('');
@@ -128,22 +128,22 @@ function App() {
       )}
       <div className={`flex h-screen bg-paper text-ink overflow-hidden selection:bg-ink selection:text-paper ${isOffline ? 'pt-6' : ''}`}>
         <Sidebar onAdminRequired={() => setShowAuthModal(true)} className={`hidden md:flex ${autoHideSidebar ? 'group -translate-x-[95%] hover:-translate-x-0 transition-transform duration-300 shadow-2xl z-50' : ''}`} />
-        <main className={`flex-1 overflow-y-auto overscroll-y-auto w-full relative pb-20 md:pb-8 pt-4 md:pt-8 px-4 md:px-8 transition-all duration-300 ${autoHideSidebar ? 'md:ml-[3%]' : 'md:ml-64'}`}>
-          <AnimatePresence mode="wait">
+        <main className={`flex-1 overflow-y-auto overscroll-y-auto w-full relative pb-20 md:pb-8 pt-safe md:pt-8 px-4 md:px-8 transition-all duration-300 ${autoHideSidebar ? 'md:ml-[3%]' : 'md:ml-64'}`}>
+          <ErrorBoundary>
             <Routes>
-              <Route path="/" element={<PageTransition><Dashboard /></PageTransition>} />
-              <Route path="/settings" element={<PageTransition><Settings /></PageTransition>} />
-              <Route path="/analytics" element={<PageTransition><Analytics /></PageTransition>} />
-              <Route path="/pantry" element={<PageTransition><Pantry /></PageTransition>} />
-              <Route path="/grocery" element={<PageTransition><GroceryList /></PageTransition>} />
-              <Route path="/recipe/:id/bake" element={<PageTransition><BakingMode /></PageTransition>} />
-              <Route path="/recipe/:id" element={<PageTransition><RecipeViewer /></PageTransition>} />
-              <Route path="/new" element={<PageTransition><RecipeEditor /></PageTransition>} />
-              <Route path="/edit/:id" element={<PageTransition><RecipeEditor /></PageTransition>} />
-              <Route path="/gallery" element={<PageTransition><Gallery /></PageTransition>} />
-              <Route path="/notes" element={<PageTransition><GeneralNotes /></PageTransition>} />
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/analytics" element={<Analytics />} />
+              <Route path="/pantry" element={<Pantry />} />
+              <Route path="/grocery" element={<GroceryList />} />
+              <Route path="/recipe/:id/bake" element={<BakingMode />} />
+              <Route path="/recipe/:id" element={<RecipeViewer />} />
+              <Route path="/new" element={<RecipeEditor />} />
+              <Route path="/edit/:id" element={<RecipeEditor />} />
+              <Route path="/gallery" element={<Gallery />} />
+              <Route path="/notes" element={<GeneralNotes />} />
             </Routes>
-          </AnimatePresence>
+          </ErrorBoundary>
         </main>
         <BottomNav />
         <TimerManager />
@@ -158,20 +158,6 @@ function App() {
         )}
       </div>
     </Router>
-  );
-}
-
-function PageTransition({ children }: { children: React.ReactNode }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
-      transition={{ duration: 0.2 }}
-      className="h-full"
-    >
-      {children}
-    </motion.div>
   );
 }
 
