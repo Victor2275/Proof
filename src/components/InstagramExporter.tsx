@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import html2canvas from 'html2canvas';
 import { Download, LayoutGrid, Image as ImageIcon, X, Sun, Moon } from 'lucide-react';
 import { type Recipe, type BakeLog } from '../lib/api';
@@ -16,9 +16,25 @@ export default function InstagramExporter({ recipe, bakeLog, onClose }: Instagra
   const [exporting, setExporting] = useState(false);
   const carouselRefs = [useRef<HTMLDivElement>(null), useRef<HTMLDivElement>(null), useRef<HTMLDivElement>(null), useRef<HTMLDivElement>(null)];
   const singleRef = useRef<HTMLDivElement>(null);
-  const [rotation] = useState(() => (Math.random() * 4 - 2).toFixed(2));
+  const [rotation] = useState(() => (Math.random() * 10 - 5).toFixed(2));
 
   const heroImage = bakeLog?.imageUrls?.[0] || recipe.imageUrls?.[0] || 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=800&q=80';
+
+  const [scale, setScale] = useState(0.4);
+  useEffect(() => {
+    const updateScale = () => {
+      const padding = window.innerWidth >= 768 ? 64 : 32;
+      const availableWidth = window.innerWidth - padding;
+      const maxScale = 0.8;
+      setScale(Math.min(availableWidth / 1080, maxScale));
+    };
+    updateScale();
+    window.addEventListener('resize', updateScale);
+    return () => window.removeEventListener('resize', updateScale);
+  }, []);
+
+  const wrapperStyle = { width: `${1080 * scale}px`, height: `${1080 * scale}px` };
+  const innerStyle = { transform: `scale(${scale})`, transformOrigin: 'top left' };
 
 
   const downloadCanvas = async (element: HTMLElement | null, filename: string) => {
@@ -75,17 +91,18 @@ export default function InstagramExporter({ recipe, bakeLog, onClose }: Instagra
           </button>
         </div>
 
-        <div className="flex flex-col gap-12 mb-12 transform scale-75 md:scale-100 origin-top">
+        <div className="flex flex-col gap-12 mb-12">
           {exportMode === 'single' && (
-            <div className="shadow-2xl overflow-hidden relative">
-              <div 
-                ref={singleRef} 
-                className={`w-[1080px] h-[1080px] relative flex items-center justify-center font-sans overflow-hidden ${theme === 'dark' ? 'bg-[#ffffff]' : 'bg-[#1a1a1a]'}`}
-              >
+            <div className="shadow-2xl overflow-hidden relative" style={wrapperStyle}>
+              <div style={innerStyle} className="absolute top-0 left-0">
                 <div 
-                  className={`relative flex flex-col shadow-2xl ${theme === 'dark' ? 'bg-[#1a1a1a] text-[#ffffff]' : 'bg-[#ffffff] text-[#000000]'}`}
-                  style={{ width: '800px', height: '900px', padding: '40px 40px 160px 40px', transform: `rotate(${rotation}deg)` }}
+                  ref={singleRef} 
+                  className={`w-[1080px] h-[1080px] relative flex items-center justify-center font-sans overflow-hidden ${theme === 'dark' ? 'bg-[#ffffff]' : 'bg-[#1a1a1a]'}`}
                 >
+                  <div 
+                    className={`relative flex flex-col shadow-2xl ${theme === 'dark' ? 'bg-[#1a1a1a] text-[#ffffff]' : 'bg-[#ffffff] text-[#000000]'}`}
+                    style={{ width: '700px', height: '800px', padding: '40px 40px 160px 40px', transform: `rotate(${rotation}deg)` }}
+                  >
                   {/* Photo Area */}
                   <div className="w-full h-full relative overflow-hidden bg-[#000000] border border-[#0000001a]" style={{ boxShadow: 'inset 0 2px 4px 0 rgba(0,0,0,0.5)' }}>
                     <div 
@@ -113,20 +130,22 @@ export default function InstagramExporter({ recipe, bakeLog, onClose }: Instagra
                       <img src="/logo.png" alt="Logo" className="h-10 w-auto" crossOrigin="anonymous" />
                     </div>
                   </div>
+                  </div>
                 </div>
               </div>
             </div>
           )}
 
           {exportMode === 'carousel' && (
-            <div className="flex gap-8 flex-wrap justify-center max-w-[3400px]">
+            <div className="flex gap-8 flex-wrap justify-center w-full max-w-[3400px]">
               {/* Slide 1: Hero Polaroid */}
-              <div className="shadow-2xl">
-                <div 
-                  ref={carouselRefs[0]} 
-                  className={`w-[1080px] h-[1080px] relative flex flex-col font-sans overflow-hidden ${theme === 'dark' ? 'bg-[#1a1a1a] text-[#ffffff]' : 'bg-[#ffffff] text-[#000000]'}`}
-                  style={{ padding: '60px 140px 220px 140px' }}
-                >
+              <div className="shadow-2xl relative" style={wrapperStyle}>
+                <div style={innerStyle} className="absolute top-0 left-0">
+                  <div 
+                    ref={carouselRefs[0]} 
+                    className={`w-[1080px] h-[1080px] relative flex flex-col font-sans overflow-hidden ${theme === 'dark' ? 'bg-[#1a1a1a] text-[#ffffff]' : 'bg-[#ffffff] text-[#000000]'}`}
+                    style={{ padding: '60px 140px 220px 140px' }}
+                  >
                   {/* Photo Area */}
                   <div className="w-full h-full relative overflow-hidden bg-[#000000] border border-[#0000001a]" style={{ boxShadow: 'inset 0 2px 4px 0 rgba(0,0,0,0.5)' }}>
                     <div 
@@ -152,14 +171,16 @@ export default function InstagramExporter({ recipe, bakeLog, onClose }: Instagra
                     <div className="absolute bottom-8 right-12">
                       <img src="/logo.png" alt="Logo" className="h-16 w-auto" crossOrigin="anonymous" />
                     </div>
+                    </div>
                   </div>
                 </div>
               </div>
 
               {/* Slide 2: Ingredients */}
-              <div className="shadow-2xl">
-                <div ref={carouselRefs[1]} className="w-[1080px] h-[1080px] bg-[#000000] text-[#ffffff] p-20 relative font-sans overflow-hidden border border-[#ffffff33] flex flex-col">
-                  <GoldAccent />
+              <div className="shadow-2xl relative" style={wrapperStyle}>
+                <div style={innerStyle} className="absolute top-0 left-0">
+                  <div ref={carouselRefs[1]} className="w-[1080px] h-[1080px] bg-[#000000] text-[#ffffff] p-20 relative font-sans overflow-hidden border border-[#ffffff33] flex flex-col">
+                    <GoldAccent />
                   <h1 className="text-6xl font-black mb-16 tracking-tight">Ingredients</h1>
                   <div className="grid grid-cols-2 gap-x-16 gap-y-8 flex-1 content-start">
                     {recipe.ingredients.slice(0, 16).map((ing, idx) => (
@@ -169,14 +190,16 @@ export default function InstagramExporter({ recipe, bakeLog, onClose }: Instagra
                       </div>
                     ))}
                   </div>
-                  <Logo />
+                    <Logo />
+                  </div>
                 </div>
               </div>
 
               {/* Slide 3: Instructions */}
-              <div className="shadow-2xl">
-                <div ref={carouselRefs[2]} className="w-[1080px] h-[1080px] bg-[#000000] text-[#ffffff] p-20 relative font-sans overflow-hidden border border-[#ffffff33] flex flex-col">
-                  <GoldAccent />
+              <div className="shadow-2xl relative" style={wrapperStyle}>
+                <div style={innerStyle} className="absolute top-0 left-0">
+                  <div ref={carouselRefs[2]} className="w-[1080px] h-[1080px] bg-[#000000] text-[#ffffff] p-20 relative font-sans overflow-hidden border border-[#ffffff33] flex flex-col">
+                    <GoldAccent />
                   <h1 className="text-6xl font-black mb-16 tracking-tight">Instructions</h1>
                   <div className="space-y-12 flex-1 overflow-hidden">
                     {recipe.instructions.slice(0, 5).map((step, idx) => (
@@ -187,16 +210,18 @@ export default function InstagramExporter({ recipe, bakeLog, onClose }: Instagra
                     ))}
                     {recipe.instructions.length > 5 && (
                       <div className="text-xl text-[#ffffff66] italic">...plus {recipe.instructions.length - 5} more steps. See the full recipe!</div>
-                    )}
+                      )}
+                    </div>
+                    <Logo />
                   </div>
-                  <Logo />
                 </div>
               </div>
 
               {/* Slide 4: Link to Website */}
-              <div className="shadow-2xl">
-                <div ref={carouselRefs[3]} className="w-[1080px] h-[1080px] bg-[#000000] text-[#ffffff] p-20 relative font-sans overflow-hidden border border-[#ffffff33] flex flex-col items-center justify-center text-center">
-                  <GoldAccent />
+              <div className="shadow-2xl relative" style={wrapperStyle}>
+                <div style={innerStyle} className="absolute top-0 left-0">
+                  <div ref={carouselRefs[3]} className="w-[1080px] h-[1080px] bg-[#000000] text-[#ffffff] p-20 relative font-sans overflow-hidden border border-[#ffffff33] flex flex-col items-center justify-center text-center">
+                    <GoldAccent />
                   <h1 className="text-7xl font-black mb-8 tracking-tight">Get the Full Details</h1>
                   <p className="text-3xl text-[#ffffffcc] mb-16 max-w-2xl leading-relaxed">
                     View the full recipe, ingredients, and instructions on our website.
@@ -206,7 +231,8 @@ export default function InstagramExporter({ recipe, bakeLog, onClose }: Instagra
                       {window.location.origin}/recipe/{recipe._id}
                     </span>
                   </div>
-                  <Logo />
+                    <Logo />
+                  </div>
                 </div>
               </div>
             </div>
