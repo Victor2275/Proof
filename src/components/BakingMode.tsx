@@ -22,6 +22,10 @@ export default function BakingMode() {
   const [viewMode, setViewMode] = useState<'focus' | 'all'>('focus');
   const [checkedIngredients, setCheckedIngredients] = useState<Record<number, boolean>>({});
 
+  // Settings
+  const [waveToAdvanceSetting] = useState(() => localStorage.getItem('waveToAdvance') === 'true');
+  const [voiceCommandsSetting] = useState(() => localStorage.getItem('voiceCommands') === 'true');
+
   // Motion Detection State
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -249,21 +253,27 @@ export default function BakingMode() {
   };
 
   useEffect(() => {
+    let isActive = true;
+    let stream: MediaStream | null = null;
+    let animationFrame: number;
+
     if (!cameraActive) {
       if (videoRef.current && videoRef.current.srcObject) {
-         const stream = videoRef.current.srcObject as MediaStream;
-         stream.getTracks().forEach(t => t.stop());
+         const oldStream = videoRef.current.srcObject as MediaStream;
+         oldStream.getTracks().forEach(t => t.stop());
          videoRef.current.srcObject = null;
       }
       return;
     }
-    
-    let stream: MediaStream | null = null;
-    let animationFrame: number;
 
     const startCamera = async () => {
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: 320, height: 240 } });
+        const mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: 320, height: 240 } });
+        if (!isActive) {
+          mediaStream.getTracks().forEach(t => t.stop());
+          return;
+        }
+        stream = mediaStream;
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
         }
@@ -273,8 +283,8 @@ export default function BakingMode() {
     };
 
     const detectMotion = () => {
-      if (!videoRef.current || !canvasRef.current || motionCooldown.current) {
-        animationFrame = requestAnimationFrame(detectMotion);
+      if (!isActive || !videoRef.current || !canvasRef.current || motionCooldown.current) {
+        if (isActive) animationFrame = requestAnimationFrame(detectMotion);
         return;
       }
       
@@ -318,11 +328,17 @@ export default function BakingMode() {
     };
 
     startCamera().then(() => {
-      animationFrame = requestAnimationFrame(detectMotion);
+      if (isActive) animationFrame = requestAnimationFrame(detectMotion);
     });
 
     return () => {
+      isActive = false;
       if (stream) stream.getTracks().forEach(t => t.stop());
+      if (videoRef.current && videoRef.current.srcObject) {
+        const oldStream = videoRef.current.srcObject as MediaStream;
+        oldStream.getTracks().forEach(t => t.stop());
+        videoRef.current.srcObject = null;
+      }
       cancelAnimationFrame(animationFrame);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -489,7 +505,7 @@ export default function BakingMode() {
             <List className="w-4 h-4" /> Ingredients
           </button>
 
-          {browserSupportsSpeechRecognition && (
+          {voiceCommandsSetting && browserSupportsSpeechRecognition && (
             <button 
               onClick={toggleMic}
               className={`p-2 rounded-full border transition-colors ${listening ? 'bg-red-500 text-white border-red-500 animate-pulse' : 'border-border-subtle hover:bg-black/5 dark:hover:bg-white/5 text-ink-muted'}`}
@@ -498,34 +514,39 @@ export default function BakingMode() {
               <Mic className="w-4 h-4" />
             </button>
           )}
-          <button 
-            onClick={() => setCameraActive(!cameraActive)}
-            className={`p-2 rounded-full border transition-colors ${cameraActive ? 'bg-ink text-paper border-ink animate-pulse' : 'border-border-subtle hover:bg-black/5 dark:hover:bg-white/5 text-ink-muted'}`}
-            title="Toggle Camera (Wave to Advance)"
-          >
-            {cameraActive ? <Video className="w-4 h-4" /> : <VideoOff className="w-4 h-4" />}
-          </button>
           
-          {cameraActive && (
-            <button 
-              onClick={async () => {
-                if (videoRef.current) {
-                  try {
-                    if (document.pictureInPictureElement) {
-                      await document.exitPictureInPicture();
-                    } else {
-                      await videoRef.current.requestPictureInPicture();
+          {waveToAdvanceSetting && (
+            <>
+              <button 
+                onClick={() => setCameraActive(!cameraActive)}
+                className={`p-2 rounded-full border transition-colors ${cameraActive ? 'bg-ink text-paper border-ink animate-pulse' : 'border-border-subtle hover:bg-black/5 dark:hover:bg-white/5 text-ink-muted'}`}
+                title="Toggle Camera (Wave to Advance)"
+              >
+                {cameraActive ? <Video className="w-4 h-4" /> : <VideoOff className="w-4 h-4" />}
+              </button>
+              
+              {cameraActive && (
+                <button 
+                  onClick={async () => {
+                    if (videoRef.current) {
+                      try {
+                        if (document.pictureInPictureElement) {
+                          await document.exitPictureInPicture();
+                        } else {
+                          await videoRef.current.requestPictureInPicture();
+                        }
+                      } catch (err) {
+                        console.error("PiP failed", err);
+                      }
                     }
-                  } catch (err) {
-                    console.error("PiP failed", err);
-                  }
-                }
-              }}
-              className="p-2 rounded-full border border-border-subtle hover:bg-black/5 dark:hover:bg-white/5 text-ink-muted transition-colors"
-              title="View Camera (Picture-in-Picture)"
-            >
-              <PictureInPicture className="w-4 h-4" />
-            </button>
+                  }}
+                  className="p-2 rounded-full border border-border-subtle hover:bg-black/5 dark:hover:bg-white/5 text-ink-muted transition-colors"
+                  title="View Camera (Picture-in-Picture)"
+                >
+                  <PictureInPicture className="w-4 h-4" />
+                </button>
+              )}
+            </>
           )}
           <button 
             onClick={() => setViewMode(prev => prev === 'focus' ? 'all' : 'focus')}
