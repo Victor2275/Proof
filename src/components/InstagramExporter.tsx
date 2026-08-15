@@ -18,7 +18,7 @@ export default function InstagramExporter({ recipe, bakeLog, onClose }: Instagra
   const singleRef = useRef<HTMLDivElement>(null);
 
   const heroImage = bakeLog?.imageUrls?.[0] || recipe.imageUrls?.[0] || 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=800&q=80';
-  const displayDescription = bakeLog?.notes || recipe.description;
+
 
   const downloadCanvas = async (element: HTMLElement | null, filename: string) => {
     if (!element) return;
