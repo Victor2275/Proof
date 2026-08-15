@@ -22,7 +22,11 @@ const bakeLogSchema = new mongoose.Schema({
   imageUrls: {
     type: [String],
     default: []
-  }
+  },
+  images: [{
+    url: String,
+    label: String
+  }]
 }, { timestamps: true });
 
 export const BakeLog = mongoose.model('BakeLog', bakeLogSchema);

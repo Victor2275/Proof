@@ -7,7 +7,7 @@ import ReverseBakeScheduler from './ReverseBakeScheduler';
 import AISubstitutionsModal from './AISubstitutionsModal';
 import InstagramExporter from './InstagramExporter';
 import BakeLogsGrid from './BakeLogsGrid';
-import { Edit, MoreVertical, Play, X, Star, Award, QrCode, Download, CheckCircle2, Calendar, Sparkles } from 'lucide-react';
+import { Edit, MoreVertical, Play, X, Star, Award, CheckCircle2, Sparkles, Share2 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
@@ -70,6 +70,10 @@ export default function RecipeViewer() {
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [showQrModal, setShowQrModal] = useState(false);
   const [showReverseScheduler, setShowReverseScheduler] = useState(false);
+  const [showStartMenu, setShowStartMenu] = useState(false);
+  const [showMobileStartModal, setShowMobileStartModal] = useState(false);
+  const [showMobileShareModal, setShowMobileShareModal] = useState(false);
+  const [heroImage, setHeroImage] = useState<string>('');
   const [showInstagramExporter, setShowInstagramExporter] = useState(false);
   const [instagramExportBakeLog, setInstagramExportBakeLog] = useState<BakeLog | undefined>(undefined);
   const [aiSubstituteIngredient, setAiSubstituteIngredient] = useState<string | null>(null);
@@ -91,6 +95,11 @@ export default function RecipeViewer() {
         
         setRecipe(data);
         setBakeLogs(allLogs);
+
+        const allPhotos = [...(data.imageUrls || []), ...allLogs.flatMap(l => l.imageUrls || [])];
+        if (allPhotos.length > 0) {
+          setHeroImage(allPhotos[Math.floor(Math.random() * allPhotos.length)]);
+        }
 
         const map: Record<string, boolean> = {};
         const fuse = new Fuse(pantryData, { keys: ['name'], threshold: 0.35 });
@@ -160,17 +169,13 @@ export default function RecipeViewer() {
     }
   };
 
-  const handleDelete = async () => {
-    if (!recipe || !id) return;
-    if (!confirm('Are you sure you want to delete this recipe?')) return;
-    
-    try {
-      await api.deleteRecipe(id);
-      navigate('/');
-    } catch (err) {
-      console.error('Failed to delete recipe', err);
-      alert('Failed to delete recipe.');
-    }
+
+  const handleShareLink = () => {
+    navigator.clipboard.writeText(window.location.href).then(() => {
+      alert('Link copied to clipboard!');
+    });
+    setShowExportMenu(false);
+    setShowMobileShareModal(false);
   };
 
   const handleExportGroceryList = () => {
@@ -188,35 +193,6 @@ export default function RecipeViewer() {
     });
   };
 
-  const handleExportImage = async () => {
-    const node = document.getElementById('recipe-export-node');
-    if (!node) return;
-    try {
-      const canvas = await html2canvas(node, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#fcf8f2',
-        onclone: (clonedDoc) => {
-          const el = clonedDoc.getElementById('recipe-export-node');
-          if (el) {
-            el.style.padding = '32px';
-            el.style.borderRadius = '16px';
-            el.style.maxWidth = '800px';
-          }
-        }
-      });
-      const dataUrl = canvas.toDataURL('image/png');
-      const link = document.createElement('a');
-      link.download = `${recipe?.title.replace(/\s+/g, '-').toLowerCase()}-card.png`;
-      link.href = dataUrl;
-      link.click();
-    } catch (err) {
-      console.error('Failed to export image', err);
-    }
-    setShowExportMenu(false);
-    setShowMobileMenu(false);
-  };
-
   const handleExportPDF = async () => {
     const node = document.getElementById('recipe-export-node');
     if (!node) return;
@@ -229,6 +205,17 @@ export default function RecipeViewer() {
           const el = clonedDoc.getElementById('recipe-export-node');
           if (el) {
             el.style.padding = '32px';
+            const allElements = clonedDoc.querySelectorAll('*');
+            allElements.forEach((n) => {
+              const htmlNode = n as HTMLElement;
+              const style = window.getComputedStyle(htmlNode);
+              ['color', 'backgroundColor', 'borderColor'].forEach(prop => {
+                const val = style.getPropertyValue(prop.replace(/[A-Z]/g, m => "-" + m.toLowerCase()));
+                if (val && val.includes('oklab')) {
+                  htmlNode.style[prop as any] = prop === 'color' ? '#000000' : (prop === 'backgroundColor' ? '#ffffff' : '#cccccc');
+                }
+              });
+            });
           }
         }
       });
@@ -265,16 +252,16 @@ export default function RecipeViewer() {
             onClick={() => setShowExportMenu(!showExportMenu)}
             className="border border-border-subtle hover:bg-black/5 dark:hover:bg-white/5 text-ink-muted px-4 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2 whitespace-nowrap"
           >
-            <Download className="w-4 h-4" /> EXPORT
+            <Share2 className="w-4 h-4" /> SHARE
           </button>
           
           {showExportMenu && (
             <div className="absolute top-full left-0 mt-2 w-56 bg-paper border border-border-subtle rounded-xl shadow-xl overflow-hidden z-50">
-              <button onClick={() => { setShowInstagramExporter(true); setInstagramExportBakeLog(undefined); setShowExportMenu(false); }} className="block w-full text-left px-4 py-3 font-medium border-b border-border-subtle hover:bg-black/5 dark:hover:bg-white/5 transition-colors flex items-center gap-2">
-                <Instagram className="w-4 h-4 text-pink-500" /> Export for Instagram
+              <button onClick={handleShareLink} className="block w-full text-left px-4 py-3 font-medium border-b border-border-subtle hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
+                Copy Link
               </button>
-              <button onClick={handleExportImage} className="block w-full text-left px-4 py-3 font-medium border-b border-border-subtle hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-                Export Image Card
+              <button onClick={() => { setShowQrModal(true); setShowExportMenu(false); }} className="block w-full text-left px-4 py-3 font-medium border-b border-border-subtle hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
+                QR Code
               </button>
               <button onClick={handleExportPDF} className="block w-full text-left px-4 py-3 font-medium hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
                 Export PDF
@@ -283,26 +270,11 @@ export default function RecipeViewer() {
           )}
 
           <button 
-            onClick={() => setShowQrModal(true)}
-            className="border border-border-subtle hover:bg-black/5 dark:hover:bg-white/5 text-ink-muted px-4 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2 whitespace-nowrap"
-          >
-            <QrCode className="w-4 h-4" /> QR CODE
-          </button>
-          <button 
-            onClick={() => setShowReverseScheduler(!showReverseScheduler)}
-            className="border border-border-subtle hover:bg-black/5 dark:hover:bg-white/5 text-ink-muted px-4 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2 whitespace-nowrap"
-          >
-            <Calendar className="w-4 h-4" /> BAKE SCHEDULE
-          </button>
-          <button 
             onClick={handleToggleFavorite}
             className={`border px-4 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2 whitespace-nowrap ${recipe.tags?.includes('Favorite') ? 'border-yellow-500/50 bg-yellow-500/10 text-yellow-600 dark:text-yellow-400' : 'border-border-subtle hover:bg-black/5 dark:hover:bg-white/5 text-ink-muted'}`}
           >
             <Star className={`w-4 h-4 ${recipe.tags?.includes('Favorite') ? 'fill-current' : ''}`} /> 
             {recipe.tags?.includes('Favorite') ? 'FAVORITED' : 'FAVORITE'}
-          </button>
-          <button onClick={handleDelete} className="border border-red-600/30 text-red-600 dark:text-red-400 px-4 py-1.5 rounded-md text-sm font-medium hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-2 uppercase tracking-wide whitespace-nowrap">
-            Delete
           </button>
           <Link 
             to={`/edit/${recipe._id}`} 
@@ -320,17 +292,8 @@ export default function RecipeViewer() {
           
           {showMobileMenu && (
             <div className="absolute right-0 top-full mt-2 w-56 bg-paper border border-border-subtle rounded-xl shadow-xl overflow-hidden z-50 text-sm">
-              <button onClick={() => { setShowInstagramExporter(true); setInstagramExportBakeLog(undefined); setShowMobileMenu(false); }} className="block w-full text-left px-4 py-3 font-medium border-b border-border-subtle flex items-center gap-2">
-                <Instagram className="w-4 h-4 text-pink-500" /> Export for Instagram
-              </button>
-              <button onClick={handleExportImage} className="block w-full text-left px-4 py-3 font-medium border-b border-border-subtle">
-                Export Image Card
-              </button>
-              <button onClick={handleExportPDF} className="block w-full text-left px-4 py-3 font-medium border-b border-border-subtle">
-                Export PDF
-              </button>
-              <button onClick={() => { setShowQrModal(true); setShowMobileMenu(false); }} className="block w-full text-left px-4 py-3 font-medium border-b border-border-subtle">
-                Show QR Code
+              <button onClick={() => { setShowMobileShareModal(true); setShowMobileMenu(false); }} className="block w-full text-left px-4 py-3 font-medium border-b border-border-subtle flex items-center gap-2">
+                <Share2 className="w-4 h-4" /> Share
               </button>
               <button 
                 onClick={() => { handleToggleFavorite(); setShowMobileMenu(false); }}
@@ -339,12 +302,9 @@ export default function RecipeViewer() {
                 {recipe.tags?.includes('Favorite') ? 'Remove Favorite' : 'Add Favorite'}
                 <Star className={`w-4 h-4 ${recipe.tags?.includes('Favorite') ? 'fill-yellow-500 text-yellow-500' : ''}`} />
               </button>
-              <Link to={`/edit/${recipe._id}`} className="block w-full text-left px-4 py-3 font-medium border-b border-border-subtle">
+              <Link to={`/edit/${recipe._id}`} className="block w-full text-left px-4 py-3 font-medium">
                 Edit Recipe
               </Link>
-              <button onClick={handleDelete} className="block w-full text-left px-4 py-3 font-medium text-red-600">
-                Delete Recipe
-              </button>
             </div>
           )}
         </div>
@@ -381,12 +341,24 @@ export default function RecipeViewer() {
               </button>
           </div>
 
-          <Link 
-            to={`/recipe/${recipe._id}/bake`} 
-            className="hidden md:flex bg-ink text-paper px-5 py-1.5 rounded-md text-sm font-medium hover:opacity-90 transition-opacity uppercase tracking-wide shadow-sm whitespace-nowrap items-center gap-2"
-          >
-            <Play className="w-4 h-4" fill="currentColor" /> START RECIPE
-          </Link>
+          <div className="relative hidden md:block">
+            <button 
+              onClick={() => setShowStartMenu(!showStartMenu)}
+              className="flex bg-ink text-paper px-5 py-1.5 rounded-md text-sm font-medium hover:opacity-90 transition-opacity uppercase tracking-wide shadow-sm whitespace-nowrap items-center gap-2"
+            >
+              <Play className="w-4 h-4" fill="currentColor" /> START RECIPE
+            </button>
+            {showStartMenu && (
+              <div className="absolute top-full right-0 mt-2 w-48 bg-paper border border-border-subtle rounded-xl shadow-xl overflow-hidden z-50">
+                <Link to={`/recipe/${recipe._id}/bake`} className="block w-full text-left px-4 py-3 font-medium border-b border-border-subtle hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
+                  Start Now
+                </Link>
+                <button onClick={() => { setShowReverseScheduler(true); setShowStartMenu(false); }} className="block w-full text-left px-4 py-3 font-medium hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
+                  Schedule Bake
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
 
@@ -395,9 +367,9 @@ export default function RecipeViewer() {
         <>
           {/* Header Card */}
           <div className="flex flex-col md:flex-row gap-8 pb-10 border-b border-border-subtle">
-            {recipe.imageUrls && recipe.imageUrls.length > 0 && (
+            {heroImage && (
               <img 
-                src={recipe.imageUrls[0]} 
+                src={heroImage} 
                 alt={recipe.title} 
                 className="w-full md:w-64 h-64 object-cover rounded-xl border border-border-subtle shadow-sm shrink-0"
               />
@@ -557,116 +529,99 @@ export default function RecipeViewer() {
         </div>
       )}
       {/* Sticky FAB for Mobile */}
-      <Link 
-        to={`/recipe/${recipe._id}/bake`} 
+      <button 
+        onClick={() => setShowMobileStartModal(true)}
         className="md:hidden fixed bottom-[calc(env(safe-area-inset-bottom,0px)+80px)] right-4 bg-ink text-paper w-14 h-14 rounded-full shadow-2xl flex items-center justify-center z-40 transition-transform hover:scale-105 active:scale-95"
       >
         <Play className="w-6 h-6 ml-1" fill="currentColor" />
-      </Link>
+      </button>
 
       {/* Make Details Full Screen Modal */}
       {selectedMake && (
         <div className="fixed inset-0 z-[100] bg-paper overflow-y-auto animate-in slide-in-from-bottom-5">
            <div className="max-w-4xl mx-auto p-4 md:p-8 pt-8">
-             <div className="flex justify-between items-center mb-8 pb-4 border-b border-border-subtle">
-               <div>
-                 <h2 className="text-3xl font-bold uppercase tracking-tight">Make #{bakeLogs.findIndex(l => l._id === selectedMake._id) !== -1 ? bakeLogs.length - bakeLogs.findIndex(l => l._id === selectedMake._id) : ''}</h2>
-                 {isEditingDate ? (
-                   <div className="flex items-center gap-2 mt-2">
-                     <input 
-                       type="datetime-local" 
-                       value={editDateValue} 
-                       onChange={e => setEditDateValue(e.target.value)} 
-                       className="border border-border-subtle rounded px-2 py-1.5 bg-black/5 dark:bg-white/5 text-ink focus:outline-none focus:ring-1 focus:ring-ink"
-                     />
-                     <button 
-                       onClick={async () => {
-                         try {
-                           let updated;
-                           if (selectedMake._id!.startsWith('local-')) {
-                             const { updateLocalBakeLog } = await import('../lib/localDB');
-                             updated = await updateLocalBakeLog(selectedMake._id!, { date: new Date(editDateValue).toISOString() });
-                           } else {
-                             updated = await api.updateBakeLog(selectedMake._id!, { date: new Date(editDateValue).toISOString() });
-                           }
-                           setSelectedMake(updated);
-                           setBakeLogs(prev => prev.map(l => l._id === updated._id ? updated : l));
-                           setIsEditingDate(false);
-                         } catch(e) { alert('Failed to update date'); }
-                       }}
-                       className="bg-ink text-paper px-4 py-1.5 rounded-md text-sm font-bold hover:opacity-90"
-                     >Save</button>
-                     <button onClick={() => setIsEditingDate(false)} className="text-sm font-medium hover:underline text-ink-muted hover:text-ink px-2">Cancel</button>
-                   </div>
-                 ) : (
-                   <div>
-                     <p className="text-ink-muted text-lg">{new Date(selectedMake.date || Date.now()).toLocaleString()}</p>
-                     <div className="flex flex-wrap items-center gap-4 mt-2">
-                     <button 
-                       onClick={async () => {
-                         try {
-                           const newStatus = !selectedMake.isPersonalBest;
-                           let updated;
-                           if (selectedMake._id!.startsWith('local-')) {
-                             const { updateLocalBakeLog } = await import('../lib/localDB');
-                             updated = await updateLocalBakeLog(selectedMake._id!, { isPersonalBest: newStatus });
-                           } else {
-                             updated = await api.updateBakeLog(selectedMake._id!, { isPersonalBest: newStatus });
-                           }
-                           setSelectedMake(updated);
-                           setBakeLogs(prev => prev.map(l => l._id === updated._id ? updated : l));
-                         } catch(e) { alert('Failed to update status'); }
-                       }} 
-                       className={`flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full border transition-all ${selectedMake.isPersonalBest ? 'bg-yellow-500 text-black border-yellow-500' : 'border-border-subtle hover:bg-black/5 dark:hover:bg-white/5 text-ink-muted'}`}
-                     >
-                       <Award className="w-3.5 h-3.5" />
-                       {selectedMake.isPersonalBest ? 'Personal Best' : 'Mark as Personal Best'}
-                     </button>
-                     <button 
-                       onClick={() => {
-                         setEditDateValue(new Date(selectedMake.date || Date.now()).toISOString().slice(0, 16));
-                         setIsEditingDate(true);
-                       }} 
-                       className="text-xs font-bold uppercase tracking-wider text-ink-muted hover:text-ink underline"
-                     >
-                       Edit Date
-                     </button>
-                     <button 
-                       onClick={async () => {
-                         if (!confirm('Are you sure you want to delete this bake log entry?')) return;
-                         try {
-                           if (selectedMake._id!.startsWith('local-')) {
-                             const { deleteLocalBakeLog } = await import('../lib/localDB');
-                             await deleteLocalBakeLog(selectedMake._id!);
-                           } else {
-                             await api.deleteBakeLog(selectedMake._id!);
-                           }
-                           setBakeLogs(prev => prev.filter(l => l._id !== selectedMake._id));
-                           handleCloseMakeDetails();
-                         } catch (e) {
-                           alert('Failed to delete log entry.');
-                         }
-                       }} 
-                       className="text-xs font-bold uppercase tracking-wider text-red-500 hover:underline"
-                     >
-                       Delete Entry
-                     </button>
-                     <button 
-                       onClick={() => {
-                         setInstagramExportBakeLog(selectedMake);
-                         setShowInstagramExporter(true);
-                       }}
-                       className="flex items-center gap-1 text-xs font-bold uppercase tracking-wider text-pink-600 hover:text-pink-500 hover:underline"
-                     >
-                       <Instagram className="w-3.5 h-3.5" />
-                       Export to Instagram
-                     </button>
-                     </div>
-                   </div>
-                 )}
-               </div>
-               <button onClick={handleCloseMakeDetails} className="p-2 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 rounded-full transition-colors"><X className="w-6 h-6" /></button>
-             </div>
+              <div className="flex justify-between items-center mb-8 pb-4 border-b border-border-subtle">
+                <div>
+                  <h2 className="text-3xl font-bold uppercase tracking-tight">Make #{bakeLogs.findIndex(l => l._id === selectedMake._id) !== -1 ? bakeLogs.length - bakeLogs.findIndex(l => l._id === selectedMake._id) : ''}</h2>
+                  {isEditingDate ? (
+                    <div className="flex items-center gap-2 mt-2">
+                      <input 
+                        type="datetime-local" 
+                        value={editDateValue} 
+                        onChange={e => setEditDateValue(e.target.value)} 
+                        className="border border-border-subtle rounded px-2 py-1.5 bg-black/5 dark:bg-white/5 text-ink focus:outline-none focus:ring-1 focus:ring-ink"
+                      />
+                      <button 
+                        onClick={async () => {
+                          try {
+                            let updated;
+                            if (selectedMake._id!.startsWith('local-')) {
+                              const { updateLocalBakeLog } = await import('../lib/localDB');
+                              updated = await updateLocalBakeLog(selectedMake._id!, { date: new Date(editDateValue).toISOString() });
+                            } else {
+                              updated = await api.updateBakeLog(selectedMake._id!, { date: new Date(editDateValue).toISOString() });
+                            }
+                            setSelectedMake(updated);
+                            setBakeLogs(prev => prev.map(l => l._id === updated._id ? updated : l));
+                            setIsEditingDate(false);
+                          } catch(e) { alert('Failed to update date'); }
+                        }}
+                        className="bg-ink text-paper px-4 py-1.5 rounded-md text-sm font-bold hover:opacity-90"
+                      >Save</button>
+                      <button onClick={() => setIsEditingDate(false)} className="text-sm font-medium hover:underline text-ink-muted hover:text-ink px-2">Cancel</button>
+                    </div>
+                  ) : (
+                    <div>
+                      <p className="text-ink-muted text-lg">{new Date(selectedMake.date || Date.now()).toLocaleString()}</p>
+                      <div className="flex flex-wrap items-center gap-4 mt-2">
+                      <button 
+                        onClick={async () => {
+                          try {
+                            const newStatus = !selectedMake.isPersonalBest;
+                            let updated;
+                            if (selectedMake._id!.startsWith('local-')) {
+                              const { updateLocalBakeLog } = await import('../lib/localDB');
+                              updated = await updateLocalBakeLog(selectedMake._id!, { isPersonalBest: newStatus });
+                            } else {
+                              updated = await api.updateBakeLog(selectedMake._id!, { isPersonalBest: newStatus });
+                            }
+                            setSelectedMake(updated);
+                            setBakeLogs(prev => prev.map(l => l._id === updated._id ? updated : l));
+                          } catch(e) { alert('Failed to update status'); }
+                        }} 
+                        className={`flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full border transition-all ${selectedMake.isPersonalBest ? 'bg-yellow-500 text-black border-yellow-500' : 'border-border-subtle hover:bg-black/5 dark:hover:bg-white/5 text-ink-muted'}`}
+                      >
+                        <Award className="w-3.5 h-3.5" />
+                        {selectedMake.isPersonalBest ? 'Personal Best' : 'Mark as Personal Best'}
+                      </button>
+                      <button 
+                        onClick={() => {
+                          setEditDateValue(new Date(selectedMake.date || Date.now()).toISOString().slice(0, 16));
+                          setIsEditingDate(true);
+                        }} 
+                        className="text-xs font-bold uppercase tracking-wider text-ink-muted hover:text-ink underline"
+                      >
+                        Edit Date
+                      </button>
+                      <button 
+                        onClick={() => {
+                          setInstagramExportBakeLog(selectedMake);
+                          setShowInstagramExporter(true);
+                        }}
+                        className="flex items-center gap-1 text-xs font-bold uppercase tracking-wider text-pink-600 hover:text-pink-500 hover:underline"
+                      >
+                        <Instagram className="w-3.5 h-3.5" />
+                        Export to Instagram
+                      </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <button onClick={handleCloseMakeDetails} className="p-2 border border-border-subtle hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors text-sm font-bold uppercase tracking-wide px-4 hidden md:block">Go to Recipe</button>
+                  <button onClick={handleCloseMakeDetails} className="p-2 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 rounded-full transition-colors"><X className="w-6 h-6" /></button>
+                </div>
+              </div>
              
              <div className="space-y-8">
                {selectedMake.notes && (
@@ -678,22 +633,108 @@ export default function RecipeViewer() {
                  </div>
                )}
 
-               {selectedMake.imageUrls && selectedMake.imageUrls.length > 0 && (
+               {(selectedMake.images && selectedMake.images.length > 0) || (selectedMake.imageUrls && selectedMake.imageUrls.length > 0) ? (
                  <div>
                    <h3 className="font-bold text-xl mb-4 uppercase tracking-wider border-l-4 border-ink pl-3">Photos</h3>
-                   {selectedMake.imageUrls.length >= 2 ? (
-                     <SideBySideCompare doughUrl={selectedMake.imageUrls[0]} bakedUrl={selectedMake.imageUrls[1]} />
+                   {selectedMake.images && selectedMake.images.length > 0 ? (
+                     selectedMake.images.length >= 2 ? (
+                       <SideBySideCompare 
+                         doughUrl={selectedMake.images[0].url} 
+                         bakedUrl={selectedMake.images[1].url} 
+                         doughLabel={selectedMake.images[0].label || 'Before'}
+                         bakedLabel={selectedMake.images[1].label || 'After'}
+                       />
+                     ) : (
+                       <div className="grid grid-cols-1 gap-6">
+                         {selectedMake.images.map((img, i) => (
+                           <div key={i} className="relative">
+                             <img src={img.url} alt={img.label || `Photo ${i+1}`} className="w-full rounded-2xl border border-border-subtle shadow-md" />
+                             {img.label && <span className="absolute bottom-3 right-3 text-xs font-bold uppercase tracking-wider bg-black/70 text-white px-2.5 py-1 rounded-full">{img.label}</span>}
+                           </div>
+                         ))}
+                       </div>
+                     )
                    ) : (
-                     <div className="grid grid-cols-1 gap-6">
-                       {selectedMake.imageUrls.map((url, i) => (
-                         <img key={i} src={url} alt={`Make photo ${i+1}`} className="w-full rounded-2xl border border-border-subtle shadow-md" />
-                       ))}
-                     </div>
+                     selectedMake.imageUrls!.length >= 2 ? (
+                       <SideBySideCompare doughUrl={selectedMake.imageUrls![0]} bakedUrl={selectedMake.imageUrls![1]} />
+                     ) : (
+                       <div className="grid grid-cols-1 gap-6">
+                         {selectedMake.imageUrls!.map((url, i) => (
+                           <img key={i} src={url} alt={`Make photo ${i+1}`} className="w-full rounded-2xl border border-border-subtle shadow-md" />
+                         ))}
+                       </div>
+                     )
                    )}
                  </div>
-               )}
-             </div>
-           </div>
+               ) : null}
+              </div>
+              <div className="pt-8 mt-8 border-t border-border-subtle flex flex-col md:flex-row justify-between items-center gap-4">
+                <button onClick={handleCloseMakeDetails} className="w-full md:w-auto px-6 py-3 border border-border-subtle hover:bg-black/5 dark:hover:bg-white/5 rounded-xl transition-colors font-bold uppercase tracking-wide md:hidden">
+                  Go to Recipe
+                </button>
+                <button 
+                  onClick={async () => {
+                    if (!confirm('Are you sure you want to delete this bake log entry?')) return;
+                    try {
+                      if (selectedMake._id!.startsWith('local-')) {
+                        const { deleteLocalBakeLog } = await import('../lib/localDB');
+                        await deleteLocalBakeLog(selectedMake._id!);
+                      } else {
+                        await api.deleteBakeLog(selectedMake._id!);
+                      }
+                      setBakeLogs(prev => prev.filter(l => l._id !== selectedMake._id));
+                      handleCloseMakeDetails();
+                    } catch (e) {
+                      alert('Failed to delete log entry.');
+                    }
+                  }} 
+                  className="w-full md:w-auto px-6 py-3 text-red-600 border border-red-600/30 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors font-bold uppercase tracking-wide"
+                >
+                  Delete Entry
+                </button>
+              </div>
+            </div>
+        </div>
+      )}
+
+      {showMobileStartModal && (
+        <div className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-end justify-center p-4 pb-12">
+          <div className="bg-paper p-6 rounded-2xl shadow-2xl relative w-full text-center animate-in slide-in-from-bottom-5">
+            <h3 className="text-xl font-bold uppercase tracking-tight mb-4">Start Recipe</h3>
+            <div className="space-y-3">
+              <Link to={`/recipe/${recipe._id}/bake`} className="block w-full py-4 bg-ink text-paper font-bold rounded-xl text-lg hover:opacity-90">
+                Start Now
+              </Link>
+              <button onClick={() => { setShowReverseScheduler(true); setShowMobileStartModal(false); }} className="block w-full py-4 border border-border-subtle font-bold rounded-xl text-lg hover:bg-black/5 dark:hover:bg-white/5">
+                Schedule Bake
+              </button>
+              <button onClick={() => setShowMobileStartModal(false)} className="block w-full py-4 font-bold rounded-xl text-lg text-ink-muted mt-2">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showMobileShareModal && (
+        <div className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-end justify-center p-4 pb-12">
+          <div className="bg-paper p-6 rounded-2xl shadow-2xl relative w-full text-center animate-in slide-in-from-bottom-5">
+            <h3 className="text-xl font-bold uppercase tracking-tight mb-4">Share</h3>
+            <div className="space-y-3">
+              <button onClick={handleShareLink} className="block w-full py-4 bg-ink text-paper font-bold rounded-xl text-lg hover:opacity-90">
+                Copy Link
+              </button>
+              <button onClick={() => { setShowQrModal(true); setShowMobileShareModal(false); }} className="block w-full py-4 border border-border-subtle font-bold rounded-xl text-lg hover:bg-black/5 dark:hover:bg-white/5">
+                QR Code
+              </button>
+              <button onClick={handleExportPDF} className="block w-full py-4 border border-border-subtle font-bold rounded-xl text-lg hover:bg-black/5 dark:hover:bg-white/5">
+                Export PDF
+              </button>
+              <button onClick={() => setShowMobileShareModal(false)} className="block w-full py-4 font-bold rounded-xl text-lg text-ink-muted mt-2">
+                Cancel
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

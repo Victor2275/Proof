@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api, API_URL, type Recipe, type Component } from '../lib/api';
 import { saveLocalBakeLog } from '../lib/localDB';
-import { X, ChevronLeft, ChevronRight, Check, Upload, Loader2, List, Link as LinkIcon, Mic, MicOff, Bluetooth } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Check, Upload, Loader2, List, Link as LinkIcon, Mic, MicOff, Bluetooth, Video, VideoOff, PictureInPicture } from 'lucide-react';
 import { renderWithTimers } from '../utils/timerParser';
 import { scaleService, type WeightMeasurement } from '../lib/bluetoothScale';
 import RecipeDrawer from './RecipeDrawer';
@@ -22,6 +22,13 @@ export default function BakingMode() {
   const [viewMode, setViewMode] = useState<'focus' | 'all'>('focus');
   const [checkedIngredients, setCheckedIngredients] = useState<Record<number, boolean>>({});
 
+  // Motion Detection State
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const lastImageData = useRef<ImageData | null>(null);
+  const motionCooldown = useRef(false);
+  const [cameraActive, setCameraActive] = useState(() => localStorage.getItem('waveToAdvance') === 'true');
+
   // Sub-recipe Drawer State
   const [openSubRecipeId, setOpenSubRecipeId] = useState<string | null>(null);
 
@@ -34,7 +41,7 @@ export default function BakingMode() {
   const [scaleWeight, setScaleWeight] = useState<WeightMeasurement | null>(null);
 
   const [notes, setNotes] = useState('');
-  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imageFiles, setImageFiles] = useState<{file: File, label: string}[]>([]);
   const [savingLog, setSavingLog] = useState(false);
   const [isDictating, setIsDictating] = useState(false);
 
@@ -224,19 +231,102 @@ export default function BakingMode() {
     }
   };
 
+  const currentStepRef = useRef(currentStep);
+  useEffect(() => { currentStepRef.current = currentStep; }, [currentStep]);
+
   const handleNextStep = async () => {
-    if (recipe && currentStep < recipe.instructions.length) {
+    if (recipe && currentStepRef.current < recipe.instructions.length) {
       setCurrentStep(prev => prev + 1);
       if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Light });
     }
   };
 
   const handlePrevStep = async () => {
-    if (currentStep > 0) {
+    if (currentStepRef.current > 0) {
       setCurrentStep(prev => prev - 1);
       if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Light });
     }
   };
+
+  useEffect(() => {
+    if (!cameraActive) {
+      if (videoRef.current && videoRef.current.srcObject) {
+         const stream = videoRef.current.srcObject as MediaStream;
+         stream.getTracks().forEach(t => t.stop());
+         videoRef.current.srcObject = null;
+      }
+      return;
+    }
+    
+    let stream: MediaStream | null = null;
+    let animationFrame: number;
+
+    const startCamera = async () => {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: 320, height: 240 } });
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+      } catch (err) {
+        console.error("Camera access denied for wave detection", err);
+      }
+    };
+
+    const detectMotion = () => {
+      if (!videoRef.current || !canvasRef.current || motionCooldown.current) {
+        animationFrame = requestAnimationFrame(detectMotion);
+        return;
+      }
+      
+      const ctx = canvasRef.current.getContext('2d');
+      if (!ctx || videoRef.current.readyState !== videoRef.current.HAVE_ENOUGH_DATA) {
+        animationFrame = requestAnimationFrame(detectMotion);
+        return;
+      }
+
+      ctx.drawImage(videoRef.current, 0, 0, canvasRef.current.width, canvasRef.current.height);
+      const currentImageData = ctx.getImageData(0, 0, canvasRef.current.width, canvasRef.current.height);
+      
+      if (lastImageData.current) {
+        let diffPixels = 0;
+        const threshold = 50; 
+        const length = currentImageData.data.length;
+        
+        // Downsample check for performance (every 4th pixel)
+        for (let i = 0; i < length; i += 16) {
+          const rDiff = Math.abs(currentImageData.data[i] - lastImageData.current.data[i]);
+          const gDiff = Math.abs(currentImageData.data[i+1] - lastImageData.current.data[i+1]);
+          const bDiff = Math.abs(currentImageData.data[i+2] - lastImageData.current.data[i+2]);
+          if (rDiff + gDiff + bDiff > threshold) {
+            diffPixels++;
+          }
+        }
+        
+        const totalCheckedPixels = length / 16;
+        if (diffPixels / totalCheckedPixels > 0.15) { // 15% of image changed
+          motionCooldown.current = true;
+          handleNextStep();
+          setTimeout(() => {
+            motionCooldown.current = false;
+            lastImageData.current = null;
+          }, 2000); // 2 second cooldown
+        }
+      }
+      
+      lastImageData.current = currentImageData;
+      animationFrame = requestAnimationFrame(detectMotion);
+    };
+
+    startCamera().then(() => {
+      animationFrame = requestAnimationFrame(detectMotion);
+    });
+
+    return () => {
+      if (stream) stream.getTracks().forEach(t => t.stop());
+      cancelAnimationFrame(animationFrame);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cameraActive]);
 
   const getSmartIngredients = (stepText: string): Component[] => {
     if (!recipe) return [];
@@ -304,14 +394,15 @@ export default function BakingMode() {
     try {
       let newLogId: string | null = null;
       if (!localStorage.getItem('adminToken')) {
-        const savedLog = await saveLocalBakeLog({ recipeId: id!, notes, imageUrls: [] }, imageFiles);
+        const savedLog = await saveLocalBakeLog({ recipeId: id!, notes, imageUrls: [], images: [] }, imageFiles);
         newLogId = savedLog._id || null;
       } else {
-        const imageUrls = [];
+        const uploadedImages: {url: string, label: string}[] = [];
+        const imageUrls: string[] = [];
         if (imageFiles.length > 0) {
-          const uploadPromises = imageFiles.map(async (file) => {
+          const uploadPromises = imageFiles.map(async (item) => {
             const formData = new FormData();
-            formData.append('image', file);
+            formData.append('image', item.file);
             const uploadRes = await fetch(`${API_URL.replace('/api', '/api/upload')}`, {
               method: 'POST',
               headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` },
@@ -319,9 +410,11 @@ export default function BakingMode() {
             });
             if (!uploadRes.ok) throw new Error('Image upload failed');
             const { imageUrl } = await uploadRes.json();
-            return imageUrl;
+            return { url: imageUrl, label: item.label };
           });
-          imageUrls.push(...await Promise.all(uploadPromises));
+          const results = await Promise.all(uploadPromises);
+          uploadedImages.push(...results);
+          imageUrls.push(...results.map(r => r.url));
         }
 
         const res = await fetch(`${API_URL.replace('/api', '')}/api/bakelogs`, {
@@ -333,7 +426,8 @@ export default function BakingMode() {
           body: JSON.stringify({
             recipeId: id,
             notes,
-            imageUrls
+            imageUrls,
+            images: uploadedImages
           })
         });
         if (!res.ok) throw new Error('Failed to log bake');
@@ -365,6 +459,10 @@ export default function BakingMode() {
 
   return (
     <div className="fixed inset-0 z-50 bg-paper flex flex-col items-center">
+      {/* Hidden Camera Elements for Motion Detection */}
+      <video ref={videoRef} autoPlay playsInline muted className="opacity-0 pointer-events-none absolute w-px h-px" />
+      <canvas ref={canvasRef} width="320" height="240" className="hidden" />
+
       {/* Progress Bar */}
       <div className="w-full h-2 bg-black/5 dark:bg-white/5 relative">
         <div className="absolute top-0 left-0 h-full bg-ink transition-all duration-300" style={{ width: `${progress}%` }} />
@@ -398,6 +496,35 @@ export default function BakingMode() {
               title="Toggle Voice Commands (Next, Back, Finish)"
             >
               <Mic className="w-4 h-4" />
+            </button>
+          )}
+          <button 
+            onClick={() => setCameraActive(!cameraActive)}
+            className={`p-2 rounded-full border transition-colors ${cameraActive ? 'bg-ink text-paper border-ink animate-pulse' : 'border-border-subtle hover:bg-black/5 dark:hover:bg-white/5 text-ink-muted'}`}
+            title="Toggle Camera (Wave to Advance)"
+          >
+            {cameraActive ? <Video className="w-4 h-4" /> : <VideoOff className="w-4 h-4" />}
+          </button>
+          
+          {cameraActive && (
+            <button 
+              onClick={async () => {
+                if (videoRef.current) {
+                  try {
+                    if (document.pictureInPictureElement) {
+                      await document.exitPictureInPicture();
+                    } else {
+                      await videoRef.current.requestPictureInPicture();
+                    }
+                  } catch (err) {
+                    console.error("PiP failed", err);
+                  }
+                }
+              }}
+              className="p-2 rounded-full border border-border-subtle hover:bg-black/5 dark:hover:bg-white/5 text-ink-muted transition-colors"
+              title="View Camera (Picture-in-Picture)"
+            >
+              <PictureInPicture className="w-4 h-4" />
             </button>
           )}
           <button 
@@ -576,12 +703,46 @@ export default function BakingMode() {
               <div>
                 <label className="block text-sm font-bold mb-2">Photos</label>
                 <div className="border-2 border-dashed border-border-subtle rounded-lg p-8 flex flex-col items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 transition-colors cursor-pointer relative">
-                  <input type="file" multiple accept="image/*" onChange={e => setImageFiles(Array.from(e.target.files || []))} className="absolute inset-0 opacity-0 cursor-pointer" />
+                  <input 
+                    type="file" 
+                    multiple 
+                    accept="image/*" 
+                    onChange={e => {
+                      const files = Array.from(e.target.files || []);
+                      setImageFiles(prev => [...prev, ...files.map(f => ({ file: f, label: '' }))]);
+                    }} 
+                    className="absolute inset-0 opacity-0 cursor-pointer" 
+                  />
                   <Upload className="w-8 h-8 text-ink-muted mb-2" />
                   <span className="text-sm font-medium text-ink-muted">
-                    {imageFiles.length > 0 ? `${imageFiles.length} photo(s) selected` : 'Upload Photos'}
+                    Upload Photos
                   </span>
                 </div>
+                {imageFiles.length > 0 && (
+                  <div className="mt-4 space-y-3">
+                    {imageFiles.map((img, idx) => (
+                      <div key={idx} className="flex items-center gap-3 bg-black/5 dark:bg-white/5 p-2 rounded-md border border-border-subtle">
+                        <div className="w-12 h-12 bg-black/10 dark:bg-white/10 rounded overflow-hidden flex-shrink-0">
+                          <img src={URL.createObjectURL(img.file)} alt="preview" className="w-full h-full object-cover" />
+                        </div>
+                        <input 
+                          type="text" 
+                          value={img.label} 
+                          onChange={e => {
+                            const newFiles = [...imageFiles];
+                            newFiles[idx].label = e.target.value;
+                            setImageFiles(newFiles);
+                          }} 
+                          placeholder="Label (e.g. Before Bake)" 
+                          className="flex-1 bg-transparent border-none focus:ring-0 text-sm p-1 outline-none"
+                        />
+                        <button type="button" onClick={() => setImageFiles(prev => prev.filter((_, i) => i !== idx))} className="p-2 hover:bg-black/10 dark:hover:bg-white/10 rounded-full text-red-500">
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <button type="submit" disabled={savingLog} className="w-full bg-ink text-paper font-bold text-lg py-4 rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2">

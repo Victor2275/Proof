@@ -18,23 +18,25 @@ export const initDB = (): Promise<IDBDatabase> => {
   });
 };
 
-export const saveLocalBakeLog = async (log: Partial<BakeLog>, files: File[]): Promise<BakeLog> => {
+export const saveLocalBakeLog = async (log: Partial<BakeLog>, fileData: {file: File, label: string}[]): Promise<BakeLog> => {
   const db = await initDB();
   
   // Convert files to data URLs for local storage display
-  const imageUrls = await Promise.all(files.map(file => {
-    return new Promise<string>((resolve, reject) => {
+  const imageData = await Promise.all(fileData.map(async item => {
+    const dataUrl = await new Promise<string>((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => resolve(reader.result as string);
       reader.onerror = () => reject(reader.error);
-      reader.readAsDataURL(file);
+      reader.readAsDataURL(item.file);
     });
+    return { url: dataUrl, label: item.label };
   }));
 
   const localLog: BakeLog = {
     ...log,
     _id: 'local-' + Date.now().toString(),
-    imageUrls: [...(log.imageUrls || []), ...imageUrls],
+    imageUrls: [...(log.imageUrls || []), ...imageData.map(d => d.url)],
+    images: [...(log.images || []), ...imageData],
     date: new Date().toISOString(),
   } as BakeLog;
 

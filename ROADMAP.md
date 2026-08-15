@@ -42,6 +42,8 @@ This document tracks all planned features and their implementation status across
 - [x] **Interactive Before & After Photo Comparison Slider**: Interactive dual-photo slider in Bake Logs (raw vs baked bread).
 - [x] **Automated Free Backups & Maintenance**: Daily `node-cron` job for JSON database dumps and Cloudinary orphan cleanup.
 - [x] **Realtime Multi-Device Timer Sync**: Socket.io sync for active timers across devices.
+- [ ] **Fix Android Microphone Issues**: Investigate and fix issues related to microphone access and speech recognition on Android devices.
+- [ ] **Auto-link to Instagram**: Automatically generate a deep link or direct integration to post the generated Instagram carousel directly to the user's feed.
 
 ## Phase 5: The "Black & Gold" Mobile-First Vision
 Based on the updated vision questionnaire, focusing on high-speed data entry, sharing, and true mobile app feel.

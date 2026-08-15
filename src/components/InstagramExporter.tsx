@@ -14,8 +14,9 @@ export default function InstagramExporter({ recipe, bakeLog, onClose }: Instagra
   const [exportMode, setExportMode] = useState<'carousel' | 'single'>('carousel');
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [exporting, setExporting] = useState(false);
-  const carouselRefs = [useRef<HTMLDivElement>(null), useRef<HTMLDivElement>(null), useRef<HTMLDivElement>(null)];
+  const carouselRefs = [useRef<HTMLDivElement>(null), useRef<HTMLDivElement>(null), useRef<HTMLDivElement>(null), useRef<HTMLDivElement>(null)];
   const singleRef = useRef<HTMLDivElement>(null);
+  const [rotation] = useState(() => (Math.random() * 4 - 2).toFixed(2));
 
   const heroImage = bakeLog?.imageUrls?.[0] || recipe.imageUrls?.[0] || 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=800&q=80';
 
@@ -38,6 +39,7 @@ export default function InstagramExporter({ recipe, bakeLog, onClose }: Instagra
         await downloadCanvas(carouselRefs[0].current, `${recipe.title}-ig-1-hero.jpg`);
         await downloadCanvas(carouselRefs[1].current, `${recipe.title}-ig-2-ingredients.jpg`);
         await downloadCanvas(carouselRefs[2].current, `${recipe.title}-ig-3-instructions.jpg`);
+        await downloadCanvas(carouselRefs[3].current, `${recipe.title}-ig-4-link.jpg`);
       }
     } catch (err) {
       console.error(err);
@@ -75,38 +77,41 @@ export default function InstagramExporter({ recipe, bakeLog, onClose }: Instagra
 
         <div className="flex flex-col gap-12 mb-12 transform scale-75 md:scale-100 origin-top">
           {exportMode === 'single' && (
-            <div className="shadow-2xl">
+            <div className="shadow-2xl overflow-hidden relative">
               <div 
                 ref={singleRef} 
-                className={`w-[1080px] h-[1080px] relative flex flex-col font-sans overflow-hidden ${theme === 'dark' ? 'bg-[#1a1a1a] text-[#ffffff]' : 'bg-[#ffffff] text-[#000000]'}`}
-                style={{ padding: '60px 140px 220px 140px' }}
+                className={`w-[1080px] h-[1080px] relative flex items-center justify-center font-sans overflow-hidden ${theme === 'dark' ? 'bg-[#ffffff]' : 'bg-[#1a1a1a]'}`}
               >
-                {/* Photo Area */}
-                <div className="w-full h-full relative overflow-hidden bg-[#000000] border border-[#0000001a]" style={{ boxShadow: 'inset 0 2px 4px 0 rgba(0,0,0,0.5)' }}>
-                  <div 
-                    className="w-full h-full" 
-                    style={{ 
-                      backgroundImage: `url(${heroImage})`, 
-                      backgroundSize: 'cover', 
-                      backgroundPosition: 'center', 
-                      opacity: 0.9 
-                    }} 
-                  />
-                </div>
+                <div 
+                  className={`relative flex flex-col shadow-2xl ${theme === 'dark' ? 'bg-[#1a1a1a] text-[#ffffff]' : 'bg-[#ffffff] text-[#000000]'}`}
+                  style={{ width: '800px', height: '900px', padding: '40px 40px 160px 40px', transform: `rotate(${rotation}deg)` }}
+                >
+                  {/* Photo Area */}
+                  <div className="w-full h-full relative overflow-hidden bg-[#000000] border border-[#0000001a]" style={{ boxShadow: 'inset 0 2px 4px 0 rgba(0,0,0,0.5)' }}>
+                    <div 
+                      className="w-full h-full" 
+                      style={{ 
+                        backgroundImage: `url(${heroImage})`, 
+                        backgroundSize: 'cover', 
+                        backgroundPosition: 'center', 
+                        opacity: 0.9 
+                      }} 
+                    />
+                  </div>
 
-                {/* Title & Logo Area (in the thick bottom border) */}
-                <div className="absolute bottom-0 left-0 right-0 h-[220px] flex flex-col items-center justify-center px-16">
-                  <h1 className="text-7xl font-black tracking-tight text-center uppercase" style={{ fontFamily: 'Impact, sans-serif' }}>
-                    {recipe.title}
-                  </h1>
-                  {recipe.tags && recipe.tags.length > 0 && (
-                    <p className={`mt-4 text-2xl tracking-widest font-bold ${theme === 'dark' ? 'text-[#ffffff80]' : 'text-[#00000080]'}`}>
-                      #{recipe.tags[0].replace(/\s+/g, '')}
-                    </p>
-                  )}
-                  
-                  <div className="absolute bottom-8 right-12">
-                    <img src="/logo.png" alt="Logo" className="h-16 w-auto" crossOrigin="anonymous" />
+                  {/* Title & Logo Area (in the thick bottom border) */}
+                  <div className="absolute bottom-0 left-0 right-0 h-[160px] flex flex-col items-center justify-center px-10">
+                    <h1 className="text-6xl font-black tracking-tight text-center uppercase" style={{ fontFamily: 'Impact, sans-serif' }}>
+                      {recipe.title}
+                    </h1>
+                    {recipe.tags && recipe.tags.length > 0 && (
+                      <p className={`mt-2 text-xl tracking-widest font-bold ${theme === 'dark' ? 'text-[#ffffff80]' : 'text-[#00000080]'}`}>
+                        #{recipe.tags[0].replace(/\s+/g, '')}
+                      </p>
+                    )}
+                    <div className="absolute bottom-6 right-8">
+                      <img src="/logo.png" alt="Logo" className="h-10 w-auto" crossOrigin="anonymous" />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -183,6 +188,23 @@ export default function InstagramExporter({ recipe, bakeLog, onClose }: Instagra
                     {recipe.instructions.length > 5 && (
                       <div className="text-xl text-[#ffffff66] italic">...plus {recipe.instructions.length - 5} more steps. See the full recipe!</div>
                     )}
+                  </div>
+                  <Logo />
+                </div>
+              </div>
+
+              {/* Slide 4: Link to Website */}
+              <div className="shadow-2xl">
+                <div ref={carouselRefs[3]} className="w-[1080px] h-[1080px] bg-[#000000] text-[#ffffff] p-20 relative font-sans overflow-hidden border border-[#ffffff33] flex flex-col items-center justify-center text-center">
+                  <GoldAccent />
+                  <h1 className="text-7xl font-black mb-8 tracking-tight">Get the Full Details</h1>
+                  <p className="text-3xl text-[#ffffffcc] mb-16 max-w-2xl leading-relaxed">
+                    View the full recipe, ingredients, and instructions on our website.
+                  </p>
+                  <div className="bg-white/10 p-8 rounded-2xl border border-white/20">
+                    <span className="text-4xl font-bold text-[#eab308] break-all">
+                      {window.location.origin}/recipe/{recipe._id}
+                    </span>
                   </div>
                   <Logo />
                 </div>

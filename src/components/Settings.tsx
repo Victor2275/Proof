@@ -118,11 +118,11 @@ export default function Settings() {
               <select 
                 value={fontFamily} 
                 onChange={e => setFontFamily(e.target.value)}
-                className="bg-black/5 dark:bg-white/5 border border-border-subtle rounded px-3 py-1.5 focus:outline-none"
+                className="bg-paper text-ink border border-border-subtle rounded px-3 py-1.5 focus:outline-none"
               >
-                <option value="sans">Modern (Sans)</option>
-                <option value="serif">Classic (Serif)</option>
-                <option value="mono">Technical (Mono)</option>
+                <option value="sans" className="bg-paper text-ink">Modern (Sans)</option>
+                <option value="serif" className="bg-paper text-ink">Classic (Serif)</option>
+                <option value="mono" className="bg-paper text-ink">Technical (Mono)</option>
               </select>
             </label>
 

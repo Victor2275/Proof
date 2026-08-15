@@ -16,6 +16,7 @@ This document exhaustively tracks every capability, component, and technical int
 - **Context-Aware Smart Ingredients**: While in Focus Mode, the UI automatically highlights the exact quantities of ingredients mentioned in the current step (via `getSmartIngredients`).
 - **Hands-Free Navigation (Voice & Gesture)**:
   - Voice Commands: Integrates `react-speech-recognition` for a full hands-free experience. Supported commands: "Next", "Back", "Read" (reads step aloud), "Ingredients" (reads required ingredients), "Start timer", "Quiet" (stops alarms), "Show all / Focus mode" (toggles view), "Up/Down" (scrolls), and "Help" (shows commands overlay).
+  - Wave-to-Advance: Lightweight motion detection using the device's front camera to advance to the next step when a hand wave is detected.
   - Swipe Gestures: Touchscreen swipe support to advance or go back.
 - **Real-Time Timers (Socket.io)**: `TimerManager.tsx` parses time text (e.g., "Bake for 45 mins") into clickable timers that instantly sync across all active devices via WebSockets.
 - **Hardware Integration**:
@@ -28,6 +29,7 @@ This document exhaustively tracks every capability, component, and technical int
 
 ## 3. Bake Logs & Learning
 - **Visual-First Bake Logs Grid**: A clean, photography-centered CSS grid view of past bakes. Tapping a photo triggers a 3D flip animation (`framer-motion`) to reveal the dictated notes on the back.
+- **Custom Image Tags**: Bake log images support custom labels, which are beautifully displayed across grids and photo comparison sliders.
 - **Interactive Before & After Photo Comparison**: A slider component to compare raw dough to baked bread.
 - **AI Photo Tagging**: Cloud functions pass uploaded bake photos to Gemini 1.5 Flash to automatically generate relevant `#tags` (like `#sourdough` or `#overproofed`).
 - **Personal Bests**: Ability to mark specific bake iterations as a "Personal Best" (indicated by a gold award badge).

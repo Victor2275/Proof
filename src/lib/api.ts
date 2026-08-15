@@ -62,6 +62,7 @@ export interface BakeLog {
   isPersonalBest?: boolean;
   notes: string;
   imageUrls: string[];
+  images?: { url: string; label: string }[];
 }
 
 export interface PantryItem {
