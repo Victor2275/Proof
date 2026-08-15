@@ -729,6 +729,16 @@ cron.schedule('0 2 * * *', async () => {
 
 // Serve production static assets from dist folder if present
 const distPath = path.join(__dirname, '../dist');
+console.log('--- DEBUG: Checking for dist folder ---');
+console.log('__dirname:', __dirname);
+console.log('distPath:', distPath);
+console.log('dist exists?', fs.existsSync(distPath));
+if (!fs.existsSync(distPath)) {
+  console.log('Directory contents of __dirname:', fs.readdirSync(__dirname));
+  console.log('Directory contents of parent (..):', fs.readdirSync(path.join(__dirname, '..')));
+}
+console.log('---------------------------------------');
+
 if (fs.existsSync(distPath)) {
   app.use(express.static(distPath, {
     setHeaders: (res, filePath) => {
@@ -742,6 +752,7 @@ if (fs.existsSync(distPath)) {
     res.sendFile(path.join(distPath, 'index.html'));
   });
 }
+
 
 if (process.env.NODE_ENV !== 'test') {
   server.listen(PORT, '0.0.0.0', () => {
