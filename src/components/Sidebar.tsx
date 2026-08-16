@@ -27,7 +27,7 @@ export default function Sidebar({ className = "", onAdminRequired }: { className
     <aside className={`w-64 bg-sidebar h-screen flex flex-col fixed left-0 top-0 border-r border-border-subtle z-20 ${className}`}>
       <div className="p-6 flex items-center gap-3">
         <img src="/logo.png" alt="Logo" className="w-10 h-10 object-contain" />
-        <span className="font-bold text-xl tracking-tight">Culinary Lab</span>
+        <span className="font-bold text-xl tracking-tight uppercase">Proof</span>
       </div>
 
       <nav className="flex-1 px-4 space-y-1">

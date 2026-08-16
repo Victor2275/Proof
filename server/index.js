@@ -99,15 +99,30 @@ const upload = multer({ storage, limits: { fileSize: 20 * 1024 * 1024 } }); // 2
 
 // Connect to MongoDB
 if (process.env.NODE_ENV !== 'test') {
-  mongoose.connect(MONGO_URI, { serverSelectionTimeoutMS: 3000 })
+  mongoose.connect(MONGO_URI, { serverSelectionTimeoutMS: 2000 })
     .then(() => console.log('Connected to MongoDB'))
-    .catch(err => console.error('MongoDB connection error (running without MongoDB):', err.message));
+    .catch(async (err) => {
+      if (process.env.NODE_ENV === 'production') {
+        return console.error('MongoDB connection error (running without MongoDB):', err.message);
+      }
+      
+      console.warn('MongoDB connection error. Attempting to start in-memory database for local testing...', err.message);
+      try {
+        const { MongoMemoryServer } = await import('mongodb-memory-server');
+        const mongod = await MongoMemoryServer.create();
+        const uri = mongod.getUri();
+        await mongoose.connect(uri);
+        console.log('Connected to local In-Memory MongoDB (Test Database)');
+      } catch (memErr) {
+        console.error('Failed to start in-memory MongoDB:', memErr.message);
+      }
+    });
 }
 
 // Routes
 
 app.get(['/api', '/api/health'], (req, res) => {
-  res.json({ status: 'ok', message: 'Victor Recipes API Server is running' });
+  res.json({ status: 'ok', message: 'Proof API Server is running' });
 });
 
 app.post('/api/upload', requireAdmin, upload.single('image'), (req, res) => {

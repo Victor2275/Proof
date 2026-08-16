@@ -10,8 +10,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
       manifest: {
-        name: 'Victor\'s Culinary Lab',
-        short_name: 'CulinaryLab',
+        name: 'Proof',
+        short_name: 'Proof',
         description: 'A private digital laboratory for recipe formulation.',
         theme_color: '#000000',
         background_color: '#ffffff',

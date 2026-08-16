@@ -106,7 +106,7 @@ export default function GroceryList() {
 
   const formatListForExport = () => {
     if (groceryItems.length === 0) return 'Grocery List is empty.';
-    let text = '🛒 Culinary Lab Grocery List\n';
+    let text = '🛒 Proof Grocery List\n';
     text += '============================\n\n';
 
     groceryItems.forEach(item => {

@@ -1,4 +1,4 @@
-# Culinary Lab Master Roadmap
+# Proof Master Roadmap
 
 This document tracks all planned features and their implementation status across sessions.
 

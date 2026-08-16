@@ -81,6 +81,10 @@ export default function RecipeViewer() {
   // Temporary checkbox state (visual only)
   const [checkedIngredients, setCheckedIngredients] = useState<Record<number, boolean>>({});
 
+  // Editing photo tags
+  const [editingTagsFor, setEditingTagsFor] = useState<string | null>(null);
+  const [tempTags, setTempTags] = useState<{url: string, label: string}[]>([]);
+
   useEffect(() => {
     const fetchRecipe = async () => {
       if (!id) return;
@@ -96,9 +100,8 @@ export default function RecipeViewer() {
         setRecipe(data);
         setBakeLogs(allLogs);
 
-        const allPhotos = [...(data.imageUrls || []), ...allLogs.flatMap(l => l.imageUrls || [])];
-        if (allPhotos.length > 0) {
-          setHeroImage(allPhotos[Math.floor(Math.random() * allPhotos.length)]);
+        if (data.imageUrls && data.imageUrls.length > 0) {
+          setHeroImage(data.imageUrls[0]);
         }
 
         const map: Record<string, boolean> = {};
@@ -635,34 +638,87 @@ export default function RecipeViewer() {
 
                {(selectedMake.images && selectedMake.images.length > 0) || (selectedMake.imageUrls && selectedMake.imageUrls.length > 0) ? (
                  <div>
-                   <h3 className="font-bold text-xl mb-4 uppercase tracking-wider border-l-4 border-ink pl-3">Photos</h3>
-                   {selectedMake.images && selectedMake.images.length > 0 ? (
-                     selectedMake.images.length >= 2 ? (
-                       <SideBySideCompare 
-                         doughUrl={selectedMake.images[0].url} 
-                         bakedUrl={selectedMake.images[1].url} 
-                         doughLabel={selectedMake.images[0].label || 'Before'}
-                         bakedLabel={selectedMake.images[1].label || 'After'}
-                       />
+                   <div className="flex justify-between items-end mb-4">
+                     <h3 className="font-bold text-xl uppercase tracking-wider border-l-4 border-ink pl-3">Photos</h3>
+                     {editingTagsFor === selectedMake._id ? (
+                       <div className="flex gap-4">
+                         <button onClick={() => setEditingTagsFor(null)} className="text-xs font-bold uppercase tracking-wider text-ink-muted hover:text-ink">Cancel</button>
+                         <button onClick={async () => {
+                           try {
+                             let updated;
+                             if (selectedMake._id!.startsWith('local-')) {
+                               const { updateLocalBakeLog } = await import('../lib/localDB');
+                               updated = await updateLocalBakeLog(selectedMake._id!, { images: tempTags });
+                             } else {
+                               updated = await api.updateBakeLog(selectedMake._id!, { images: tempTags });
+                             }
+                             setSelectedMake(updated);
+                             setBakeLogs(prev => prev.map(l => l._id === updated._id ? updated : l));
+                             setEditingTagsFor(null);
+                           } catch (err) {
+                             alert('Failed to save tags');
+                           }
+                         }} className="text-xs font-bold uppercase tracking-wider text-green-600 bg-green-50 dark:bg-green-900/30 dark:text-green-400 px-3 py-1 rounded-full border border-green-200 dark:border-green-800 transition-colors">Save</button>
+                       </div>
                      ) : (
-                       <div className="grid grid-cols-1 gap-6">
-                         {selectedMake.images.map((img, i) => (
-                           <div key={i} className="relative">
-                             <img src={img.url} alt={img.label || `Photo ${i+1}`} className="w-full rounded-2xl border border-border-subtle shadow-md" />
-                             {img.label && <span className="absolute bottom-3 right-3 text-xs font-bold uppercase tracking-wider bg-black/70 text-white px-2.5 py-1 rounded-full">{img.label}</span>}
+                       <button onClick={() => {
+                         setEditingTagsFor(selectedMake._id!);
+                         const initial = selectedMake.images ? [...selectedMake.images] : selectedMake.imageUrls!.map(url => ({url, label: ''}));
+                         setTempTags(initial);
+                       }} className="text-xs font-bold uppercase tracking-wider text-ink/50 hover:text-ink transition-colors">Edit Tags</button>
+                     )}
+                   </div>
+
+                   {editingTagsFor === selectedMake._id ? (
+                     <div className="grid grid-cols-1 gap-6">
+                       {tempTags.map((img, i) => (
+                         <div key={i} className="relative flex flex-col gap-3">
+                           <div className="relative">
+                             <img src={img.url} alt={`Photo ${i+1}`} className="w-full rounded-2xl border border-border-subtle shadow-md" />
                            </div>
-                         ))}
-                       </div>
-                     )
+                           <input 
+                             type="text" 
+                             value={img.label} 
+                             onChange={(e) => {
+                               const newTags = [...tempTags];
+                               newTags[i].label = e.target.value;
+                               setTempTags(newTags);
+                             }}
+                             placeholder="Enter tag (e.g. Dough, After Bake)"
+                             className="w-full bg-black/5 dark:bg-white/5 border border-border-subtle rounded-xl focus:border-ink outline-none px-4 py-3 font-bold uppercase tracking-wider text-sm transition-colors"
+                           />
+                         </div>
+                       ))}
+                     </div>
                    ) : (
-                     selectedMake.imageUrls!.length >= 2 ? (
-                       <SideBySideCompare doughUrl={selectedMake.imageUrls![0]} bakedUrl={selectedMake.imageUrls![1]} />
+                     selectedMake.images && selectedMake.images.length > 0 ? (
+                       selectedMake.images.length >= 2 ? (
+                         <SideBySideCompare 
+                           doughUrl={selectedMake.images[0].url} 
+                           bakedUrl={selectedMake.images[1].url} 
+                           doughLabel={selectedMake.images[0].label || 'Before'}
+                           bakedLabel={selectedMake.images[1].label || 'After'}
+                         />
+                       ) : (
+                         <div className="grid grid-cols-1 gap-6">
+                           {selectedMake.images.map((img, i) => (
+                             <div key={i} className="relative">
+                               <img src={img.url} alt={img.label || `Photo ${i+1}`} className="w-full rounded-2xl border border-border-subtle shadow-md" />
+                               {img.label && <span className="absolute bottom-3 right-3 text-xs font-bold uppercase tracking-wider bg-black/70 text-white px-2.5 py-1 rounded-full">{img.label}</span>}
+                             </div>
+                           ))}
+                         </div>
+                       )
                      ) : (
-                       <div className="grid grid-cols-1 gap-6">
-                         {selectedMake.imageUrls!.map((url, i) => (
-                           <img key={i} src={url} alt={`Make photo ${i+1}`} className="w-full rounded-2xl border border-border-subtle shadow-md" />
-                         ))}
-                       </div>
+                       selectedMake.imageUrls!.length >= 2 ? (
+                         <SideBySideCompare doughUrl={selectedMake.imageUrls![0]} bakedUrl={selectedMake.imageUrls![1]} />
+                       ) : (
+                         <div className="grid grid-cols-1 gap-6">
+                           {selectedMake.imageUrls!.map((url, i) => (
+                             <img key={i} src={url} alt={`Make photo ${i+1}`} className="w-full rounded-2xl border border-border-subtle shadow-md" />
+                           ))}
+                         </div>
+                       )
                      )
                    )}
                  </div>
@@ -672,26 +728,47 @@ export default function RecipeViewer() {
                 <button onClick={handleCloseMakeDetails} className="w-full md:w-auto px-6 py-3 border border-border-subtle hover:bg-black/5 dark:hover:bg-white/5 rounded-xl transition-colors font-bold uppercase tracking-wide md:hidden">
                   Go to Recipe
                 </button>
-                <button 
-                  onClick={async () => {
-                    if (!confirm('Are you sure you want to delete this bake log entry?')) return;
-                    try {
-                      if (selectedMake._id!.startsWith('local-')) {
-                        const { deleteLocalBakeLog } = await import('../lib/localDB');
-                        await deleteLocalBakeLog(selectedMake._id!);
-                      } else {
-                        await api.deleteBakeLog(selectedMake._id!);
+                <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                  <button 
+                    onClick={async () => {
+                      const photoUrl = selectedMake.images?.[0]?.url || selectedMake.imageUrls?.[0];
+                      if (!photoUrl || !recipe) return;
+                      try {
+                        const updated = await api.updateRecipe(recipe._id!, {
+                           imageUrls: [photoUrl, ...(recipe.imageUrls || []).filter(u => u !== photoUrl)]
+                        });
+                        setRecipe(updated);
+                        setHeroImage(photoUrl);
+                        alert('Cover photo updated successfully!');
+                      } catch (err) {
+                        alert('Failed to update cover photo.');
                       }
-                      setBakeLogs(prev => prev.filter(l => l._id !== selectedMake._id));
-                      handleCloseMakeDetails();
-                    } catch (e) {
-                      alert('Failed to delete log entry.');
-                    }
-                  }} 
-                  className="w-full md:w-auto px-6 py-3 text-red-600 border border-red-600/30 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors font-bold uppercase tracking-wide"
-                >
-                  Delete Entry
-                </button>
+                    }} 
+                    className="w-full sm:w-auto px-6 py-3 border border-ink text-ink hover:bg-ink hover:text-paper dark:border-white dark:text-white dark:hover:bg-white dark:hover:text-black rounded-xl transition-colors font-bold uppercase tracking-wide"
+                  >
+                    Set as Cover
+                  </button>
+                  <button 
+                    onClick={async () => {
+                      if (!confirm('Are you sure you want to delete this bake log entry?')) return;
+                      try {
+                        if (selectedMake._id!.startsWith('local-')) {
+                          const { deleteLocalBakeLog } = await import('../lib/localDB');
+                          await deleteLocalBakeLog(selectedMake._id!);
+                        } else {
+                          await api.deleteBakeLog(selectedMake._id!);
+                        }
+                        setBakeLogs(prev => prev.filter(l => l._id !== selectedMake._id));
+                        handleCloseMakeDetails();
+                      } catch (e) {
+                        alert('Failed to delete log entry.');
+                      }
+                    }} 
+                    className="w-full sm:w-auto px-6 py-3 text-red-600 border border-red-600/30 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors font-bold uppercase tracking-wide"
+                  >
+                    Delete Entry
+                  </button>
+                </div>
               </div>
             </div>
         </div>

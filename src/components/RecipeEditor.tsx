@@ -16,14 +16,16 @@ export default function RecipeEditor() {
   const [extractUrl, setExtractUrl] = useState('');
   const [extracting, setExtracting] = useState(false);
   const [extractError, setExtractError] = useState('');
-  const [highlightMissing, setHighlightMissing] = useState(false);
   const [showExtract, setShowExtract] = useState(false);
-  
-  // Cropping State
-  const [cropImageSrc, setCropImageSrc] = useState('');
+  const [cropImageSrc, setCropImageSrc] = useState<string>('');
   const [crop, setCrop] = useState<Crop>();
   const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
   const imageRef = useRef<HTMLImageElement>(null);
+
+  // Past bakes selection
+  const [showPastBakesModal, setShowPastBakesModal] = useState(false);
+  const [pastBakesLoading, setPastBakesLoading] = useState(false);
+  const [pastBakePhotos, setPastBakePhotos] = useState<string[]>([]);
   
   // AI State
   const [isRestructuring, setIsRestructuring] = useState(false);
@@ -136,7 +138,7 @@ export default function RecipeEditor() {
       try {
         await api.deleteRecipe(id);
         navigate('/');
-      } catch (err) {
+      } catch (err: any) {
         console.error(err);
         alert('Failed to delete recipe');
       }
@@ -152,7 +154,6 @@ export default function RecipeEditor() {
       const data = await api.extractRecipe(extractUrl);
       setRecipe(prev => ({ ...prev, ...data }));
       setExtractUrl('');
-      setHighlightMissing(true);
     } catch (err: any) {
       setExtractError(err.message || 'Failed to extract recipe.');
     } finally {
@@ -176,7 +177,6 @@ export default function RecipeEditor() {
       
       const aiData = await api.restructureRecipe(recipeText);
       setProposedRecipe(aiData);
-      setHighlightMissing(false);
     } catch (err: any) {
       setAiError(err.message || 'AI Restructure failed.');
     } finally {
@@ -249,12 +249,33 @@ export default function RecipeEditor() {
         const file = new File([blob], `photo_${Date.now()}.${photo.format || 'jpg'}`, { type: `image/${photo.format || 'jpeg'}` });
         
         const { imageUrl } = await api.uploadImage(file);
-        setRecipe(prev => ({ ...prev, imageUrls: [...(prev.imageUrls || []), imageUrl] }));
+        setRecipe({ ...recipe, imageUrls: [...(recipe.imageUrls || []), imageUrl] });
+        setUploading(false);
       }
-    } catch (err: any) {
-      console.error("Camera error:", err);
-    } finally {
+    } catch (e: any) {
+      if (e.message !== 'User cancelled photos app') {
+        alert('Failed to get photo from camera');
+      }
       setUploading(false);
+    }
+  };
+
+  const handleOpenPastBakes = async () => {
+    if (!id) return alert('Please save the recipe first to select photos from its past bakes.');
+    setShowPastBakesModal(true);
+    setPastBakesLoading(true);
+    try {
+      const logs = await api.getRecipeBakeLogs(id);
+      const urls: string[] = [];
+      logs.forEach(log => {
+        if (log.images) log.images.forEach(i => urls.push(i.url));
+        if (log.imageUrls) log.imageUrls.forEach(u => urls.push(u));
+      });
+      setPastBakePhotos(Array.from(new Set(urls))); // unique
+    } catch (e) {
+      alert('Failed to load past bakes');
+    } finally {
+      setPastBakesLoading(false);
     }
   };
 
@@ -484,7 +505,7 @@ export default function RecipeEditor() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="md:col-span-2">
             <label className="block text-sm font-medium mb-1.5 text-ink-muted">Title</label>
-            <input required type="text" value={recipe.title} onChange={e => setRecipe({...recipe, title: e.target.value})} className={`w-full bg-black/5 dark:bg-white/5 border ${highlightMissing && !recipe.title ? 'border-red-500 shadow-[0_0_0_1px_rgba(239,68,68,1)]' : 'border-border-subtle'} rounded-md p-3 text-lg font-semibold focus:outline-none focus:ring-1 focus:ring-ink`} placeholder="e.g. 72-Hour Sourdough" />
+            <input required type="text" value={recipe.title} onChange={e => setRecipe({...recipe, title: e.target.value})} className="w-full bg-black/5 dark:bg-white/5 border border-border-subtle rounded-md p-3 text-lg font-semibold focus:outline-none focus:ring-1 focus:ring-ink" placeholder="e.g. 72-Hour Sourdough" />
           </div>
           <div className="md:col-span-2">
             <label className="block text-sm font-medium mb-1.5 text-ink-muted">Description</label>
@@ -529,22 +550,32 @@ export default function RecipeEditor() {
                 )}
                 <p className="text-xs text-ink-muted opacity-70 mt-2">JPEG, PNG, WEBP. Max 20MB per file.</p>
                 {uploading && <p className="text-sm font-medium text-green-600 animate-pulse">Uploading...</p>}
+                
+                {id && (
+                  <button 
+                    type="button" 
+                    onClick={handleOpenPastBakes}
+                    className="text-sm font-medium text-ink-muted hover:text-ink underline transition-colors"
+                  >
+                    Select from Past Bakes
+                  </button>
+                )}
               </div>
             </div>
           </div>
 
           <div>
             <label className="block text-sm font-medium mb-1.5 text-ink-muted">Prep Time (mins)</label>
-            <input type="number" inputMode="decimal" value={recipe.prepTime} onChange={e => setRecipe({...recipe, prepTime: e.target.value})} className={`w-full bg-black/5 dark:bg-white/5 border ${highlightMissing && !recipe.prepTime ? 'border-red-500 shadow-[0_0_0_1px_rgba(239,68,68,1)]' : 'border-border-subtle'} rounded-md p-2.5 focus:outline-none focus:ring-1 focus:ring-ink`} placeholder="30" />
+            <input type="number" inputMode="decimal" value={recipe.prepTime} onChange={e => setRecipe({...recipe, prepTime: e.target.value})} className="w-full bg-black/5 dark:bg-white/5 border border-border-subtle rounded-md p-2.5 focus:outline-none focus:ring-1 focus:ring-ink" placeholder="30" />
           </div>
           <div>
             <label className="block text-sm font-medium mb-1.5 text-ink-muted">Cook Time (mins)</label>
-            <input type="number" inputMode="decimal" value={recipe.cookTime} onChange={e => setRecipe({...recipe, cookTime: e.target.value})} className={`w-full bg-black/5 dark:bg-white/5 border ${highlightMissing && !recipe.cookTime ? 'border-red-500 shadow-[0_0_0_1px_rgba(239,68,68,1)]' : 'border-border-subtle'} rounded-md p-2.5 focus:outline-none focus:ring-1 focus:ring-ink`} placeholder="60" />
+            <input type="number" inputMode="decimal" value={recipe.cookTime} onChange={e => setRecipe({...recipe, cookTime: e.target.value})} className="w-full bg-black/5 dark:bg-white/5 border border-border-subtle rounded-md p-2.5 focus:outline-none focus:ring-1 focus:ring-ink" placeholder="60" />
           </div>
 
           <div>
             <label className="block text-sm font-medium mb-1.5 text-ink-muted">Servings</label>
-            <input type="number" inputMode="decimal" value={recipe.servings || ''} onChange={e => setRecipe({...recipe, servings: parseInt(e.target.value)})} className={`w-full bg-black/5 dark:bg-white/5 border ${highlightMissing && !recipe.servings ? 'border-red-500 shadow-[0_0_0_1px_rgba(239,68,68,1)]' : 'border-border-subtle'} rounded-md p-2.5 focus:outline-none focus:ring-1 focus:ring-ink`} placeholder="4" />
+            <input type="number" inputMode="decimal" value={recipe.servings || ''} onChange={e => setRecipe({...recipe, servings: parseInt(e.target.value)})} className="w-full bg-black/5 dark:bg-white/5 border border-border-subtle rounded-md p-2.5 focus:outline-none focus:ring-1 focus:ring-ink" placeholder="4" />
           </div>
           <div className="flex gap-4">
             <div className="flex-1">
@@ -582,7 +613,7 @@ export default function RecipeEditor() {
       </div>
 
       {/* Ingredients */}
-      <div className={`space-y-6 pt-6 border-t ${highlightMissing && recipe.ingredients.length === 0 ? 'border-red-500 border-2 rounded-lg p-4' : 'border-border-subtle'}`}>
+      <div className="space-y-6 pt-6 border-t border-border-subtle">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-bold uppercase tracking-wider border-l-4 border-ink pl-3">Ingredients</h2>
           <button type="button" onClick={() => setRecipe({ ...recipe, ingredients: [...recipe.ingredients, { name: '', quantity: 0, unit: '' }] })} className="text-sm border border-border-subtle px-3 py-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/5 flex items-center gap-1.5 font-medium transition-colors">
@@ -624,7 +655,7 @@ export default function RecipeEditor() {
       </div>
 
       {/* Instructions */}
-      <div className={`space-y-6 pt-6 border-t ${highlightMissing && recipe.instructions.length === 0 ? 'border-red-500 border-2 rounded-lg p-4' : 'border-border-subtle'}`}>
+      <div className="space-y-6 pt-6 border-t border-border-subtle">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-bold uppercase tracking-wider border-l-4 border-ink pl-3">Instructions</h2>
           <button type="button" onClick={() => setRecipe({ ...recipe, instructions: [...recipe.instructions, ''] })} className="text-sm border border-border-subtle px-3 py-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/5 flex items-center gap-1.5 font-medium transition-colors">
@@ -690,6 +721,7 @@ export default function RecipeEditor() {
           placeholder="*Tweak:* Used rosemary instead of thyme." 
         />
       </div>
+      
       {/* Cropping Modal */}
       {cropImageSrc && (
         <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
@@ -726,6 +758,57 @@ export default function RecipeEditor() {
               >
                 {uploading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Crop & Upload'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Past Bakes Modal */}
+      {showPastBakesModal && (
+        <div className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-paper p-6 rounded-2xl shadow-2xl relative w-full max-w-3xl max-h-[80vh] flex flex-col">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold uppercase tracking-tight">Select from Past Bakes</h3>
+              <button onClick={() => setShowPastBakesModal(false)} className="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors"><X className="w-5 h-5"/></button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto">
+              {pastBakesLoading ? (
+                <div className="flex flex-col items-center justify-center py-12 text-ink-muted">
+                  <Loader2 className="w-8 h-8 animate-spin mb-4" />
+                  <p>Loading photos...</p>
+                </div>
+              ) : pastBakePhotos.length === 0 ? (
+                <div className="text-center py-12 text-ink-muted">
+                  <p>No photos found in past bakes for this recipe.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                  {pastBakePhotos.map((url, i) => {
+                    const isSelected = recipe.imageUrls?.includes(url);
+                    return (
+                      <button 
+                        key={i} 
+                        type="button"
+                        onClick={() => {
+                          if (!isSelected) {
+                            setRecipe({ ...recipe, imageUrls: [...(recipe.imageUrls || []), url] });
+                            setShowPastBakesModal(false);
+                          }
+                        }}
+                        className={`relative aspect-square rounded-xl overflow-hidden border-2 transition-all ${isSelected ? 'border-ink opacity-50' : 'border-transparent hover:border-border-subtle cursor-pointer'}`}
+                      >
+                        <img src={url} alt={`Past bake ${i+1}`} className="w-full h-full object-cover" />
+                        {isSelected && (
+                          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                            <Check className="w-8 h-8 text-white" />
+                          </div>
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
             </div>
           </div>
         </div>

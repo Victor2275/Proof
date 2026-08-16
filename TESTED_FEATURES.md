@@ -1,4 +1,4 @@
-# Culinary Lab: Tested Features Tracker
+# Proof: Tested Features Tracker
 
 This document mirrors CURRENT_FEATURES.md. Use the checkboxes to track which features have been manually tested.
 

@@ -1,8 +1,8 @@
-# 🥖 Victor Recipes — Sourdough & Culinary Lab Manual
+# 🥖 Proof — Sourdough & Culinary Lab Manual
 
 A high-performance, single-user Digital Recipe & Sourdough Lab Manual built with **React, Vite, Tailwind CSS, Node.js, Express, MongoDB**, and **Capacitor Android Native Support**.
 
-Designed like a physical high-end culinary lab notebook, **Victor Recipes** focuses on precision, iteration tracking, smart timers, dynamic baker's percentages, reverse schedule calculations, and optional AI-assisted recipe extraction & substitutions.
+Designed like a physical high-end culinary lab notebook, **Proof** focuses on precision, iteration tracking, smart timers, dynamic baker's percentages, reverse schedule calculations, and optional AI-assisted recipe extraction & substitutions.
 
 ---
 
