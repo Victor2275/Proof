@@ -1,0 +1,742 @@
+{
+  "communities": {
+    "0": [
+      "ref_react",
+      "src_app",
+      "src_app_app",
+      "src_app_authmodal",
+      "src_components_aisubstitutionsmodal",
+      "src_components_aisubstitutionsmodal_aisubstitutionsmodal",
+      "src_components_aisubstitutionsmodal_aisubstitutionsmodalprops",
+      "src_components_aisubstitutionsmodal_test",
+      "src_components_bakelogsgrid",
+      "src_components_bakelogsgrid_bakelogsgrid",
+      "src_components_bakelogsgrid_bakelogsgridprops",
+      "src_components_bakelogsgrid_instagram",
+      "src_components_bakelogsgrid_test",
+      "src_components_bottomnav",
+      "src_components_bottomnav_bottomnav",
+      "src_components_dashboard",
+      "src_components_dashboard_dashboard",
+      "src_components_dashboard_draggablerecipecard",
+      "src_components_dashboard_droppablefolder",
+      "src_components_dashboard_test",
+      "src_components_dashboard_test_mockrecipes",
+      "src_components_gallery",
+      "src_components_gallery_gallery",
+      "src_components_gallery_test",
+      "src_components_gallery_test_mockbakelogs",
+      "src_components_gallery_test_mockrecipes",
+      "src_components_generalnotes",
+      "src_components_generalnotes_generalnotes",
+      "src_components_grocerylist",
+      "src_components_grocerylist_groceryitem",
+      "src_components_grocerylist_grocerylist",
+      "src_components_grocerylist_test",
+      "src_components_grocerylist_test_mockpantry",
+      "src_components_grocerylist_test_mockrecipes",
+      "src_components_instagramexporter",
+      "src_components_instagramexporter_instagramexporter",
+      "src_components_instagramexporter_instagramexporterprops",
+      "src_components_instagramexporter_test",
+      "src_components_pantry",
+      "src_components_pantry_pantry",
+      "src_components_pantry_test",
+      "src_components_recipedrawer",
+      "src_components_recipedrawer_recipedrawer",
+      "src_components_recipedrawer_recipedrawerprops",
+      "src_components_recipedrawer_test",
+      "src_components_recipeeditor",
+      "src_components_recipeeditor_recipeeditor",
+      "src_components_recipeeditor_test",
+      "src_components_recipeeditor_test_disconnect",
+      "src_components_recipeeditor_test_observe",
+      "src_components_recipeeditor_test_unobserve",
+      "src_components_recipeviewer",
+      "src_components_recipeviewer_expandableinstruction",
+      "src_components_recipeviewer_instagram",
+      "src_components_reversebakescheduler",
+      "src_components_reversebakescheduler_reversebakescheduler",
+      "src_components_reversebakescheduler_reversebakeschedulerprops",
+      "src_components_reversebakescheduler_schedulestep",
+      "src_components_reversebakescheduler_test",
+      "src_components_reversebakescheduler_test_mockrecipe",
+      "src_components_settings",
+      "src_components_settings_settings",
+      "src_components_sidebar",
+      "src_components_sidebar_sidebar",
+      "src_components_timermanager",
+      "src_components_timermanager_socket",
+      "src_components_timermanager_socketurl",
+      "src_components_timermanager_timer",
+      "src_components_timermanager_timermanager",
+      "src_lib_api",
+      "src_lib_api_api",
+      "src_lib_api_api_url",
+      "src_lib_api_bakelog",
+      "src_lib_api_component",
+      "src_lib_api_getheaders",
+      "src_lib_api_handleresponse",
+      "src_lib_api_note",
+      "src_lib_api_pantryitem",
+      "src_lib_api_recipe",
+      "src_main",
+      "src_utils_timerparser",
+      "src_utils_timerparser_renderwithtimers",
+      "src_utils_timerparser_test"
+    ],
+    "1": [
+      "autoprefixer",
+      "capacitor_assets",
+      "capacitor_cli",
+      "jimp",
+      "jsdom",
+      "oxlint",
+      "package_devdependencies",
+      "package_devdependencies_autoprefixer",
+      "package_devdependencies_capacitor_assets",
+      "package_devdependencies_capacitor_cli",
+      "package_devdependencies_jimp",
+      "package_devdependencies_jsdom",
+      "package_devdependencies_oxlint",
+      "package_devdependencies_postcss",
+      "package_devdependencies_tailwindcss",
+      "package_devdependencies_tailwindcss_postcss",
+      "package_devdependencies_testing_library_dom",
+      "package_devdependencies_testing_library_jest_dom",
+      "package_devdependencies_testing_library_react",
+      "package_devdependencies_testing_library_user_event",
+      "package_devdependencies_types_diff",
+      "package_devdependencies_types_node",
+      "package_devdependencies_types_react",
+      "package_devdependencies_types_react_dom",
+      "package_devdependencies_types_web_bluetooth",
+      "package_devdependencies_vite",
+      "package_devdependencies_vite_plugin_pwa",
+      "package_devdependencies_vitejs_plugin_react",
+      "package_devdependencies_vitest",
+      "package_json_tailwindcss",
+      "package_json_vitest",
+      "postcss",
+      "tailwindcss_postcss",
+      "testing_library_dom",
+      "testing_library_react",
+      "testing_library_user_event",
+      "types_diff",
+      "types_node",
+      "types_react",
+      "types_react_dom",
+      "types_web_bluetooth",
+      "vite",
+      "vite_plugin_pwa",
+      "vitejs_plugin_react"
+    ],
+    "2": [
+      "server_index",
+      "server_index_adminips",
+      "server_index_app",
+      "server_index_dirname",
+      "server_index_distpath",
+      "server_index_filename",
+      "server_index_globaltimers",
+      "server_index_io",
+      "server_index_requireadmin",
+      "server_index_server",
+      "server_index_storage",
+      "server_index_upload",
+      "server_maintenance",
+      "server_maintenance_cleanorphanedphotos",
+      "server_models_bakelog",
+      "server_models_bakelog_bakelog",
+      "server_models_bakelog_bakelogschema",
+      "server_models_note",
+      "server_models_note_note",
+      "server_models_note_noteschema",
+      "server_models_pantry",
+      "server_models_pantry_pantry",
+      "server_models_pantry_pantryschema",
+      "server_models_recipe",
+      "server_models_recipe_componentschema",
+      "server_models_recipe_recipe",
+      "server_models_recipe_recipeschema",
+      "server_sampledata",
+      "server_sampledata_samplebakelogs",
+      "server_sampledata_samplepantry",
+      "server_sampledata_samplerecipes",
+      "server_tests_api_cron_test",
+      "server_tests_api_cron_test_dirname",
+      "server_tests_api_cron_test_filename",
+      "server_tests_api_misc_test",
+      "server_tests_api_recipes_test",
+      "server_tests_api_test",
+      "server_tests_api_timers_test",
+      "server_tests_api_versioning_test"
+    ],
+    "3": [
+      "axios",
+      "cheerio",
+      "cors",
+      "dotenv",
+      "express",
+      "google_generative_ai",
+      "mongoose",
+      "multer",
+      "multer_storage_cloudinary",
+      "node_cron",
+      "package_dependencies_cloudinary",
+      "package_json_cloudinary",
+      "server_package_dependencies",
+      "server_package_dependencies_axios",
+      "server_package_dependencies_cheerio",
+      "server_package_dependencies_cloudinary",
+      "server_package_dependencies_cors",
+      "server_package_dependencies_dotenv",
+      "server_package_dependencies_express",
+      "server_package_dependencies_google_generative_ai",
+      "server_package_dependencies_mongoose",
+      "server_package_dependencies_multer",
+      "server_package_dependencies_multer_storage_cloudinary",
+      "server_package_dependencies_node_cron",
+      "server_package_dependencies_socket_io",
+      "socket_io"
+    ],
+    "4": [
+      "ref_dom",
+      "ref_src",
+      "ref_vite_client",
+      "ref_web_bluetooth",
+      "tsconfig_app",
+      "tsconfig_app_compileroptions",
+      "tsconfig_app_compileroptions_allowarbitraryextensions",
+      "tsconfig_app_compileroptions_allowimportingtsextensions",
+      "tsconfig_app_compileroptions_erasablesyntaxonly",
+      "tsconfig_app_compileroptions_jsx",
+      "tsconfig_app_compileroptions_lib",
+      "tsconfig_app_compileroptions_module",
+      "tsconfig_app_compileroptions_moduledetection",
+      "tsconfig_app_compileroptions_moduleresolution",
+      "tsconfig_app_compileroptions_noemit",
+      "tsconfig_app_compileroptions_nofallthroughcasesinswitch",
+      "tsconfig_app_compileroptions_nounusedlocals",
+      "tsconfig_app_compileroptions_nounusedparameters",
+      "tsconfig_app_compileroptions_skiplibcheck",
+      "tsconfig_app_compileroptions_target",
+      "tsconfig_app_compileroptions_tsbuildinfofile",
+      "tsconfig_app_compileroptions_types",
+      "tsconfig_app_compileroptions_verbatimmodulesyntax",
+      "tsconfig_app_include",
+      "tsconfig_app_json_ref_es2023"
+    ],
+    "5": [
+      "src_components_analytics",
+      "src_components_analytics_analytics",
+      "src_components_bakingmode",
+      "src_components_bakingmode_bakingmode",
+      "src_components_bakingmode_test",
+      "src_components_bakingmode_test_mockrecipe",
+      "src_components_bakingmode_test_registeredcommands",
+      "src_components_recipeviewer_recipeviewer",
+      "src_lib_bluetoothscale",
+      "src_lib_bluetoothscale_bluetoothscale",
+      "src_lib_bluetoothscale_bluetoothscale_connect",
+      "src_lib_bluetoothscale_bluetoothscale_disconnect",
+      "src_lib_bluetoothscale_bluetoothscale_handlecharacteristicvaluechanged",
+      "src_lib_bluetoothscale_bluetoothscale_handledisconnect",
+      "src_lib_bluetoothscale_bluetoothscale_ondisconnect",
+      "src_lib_bluetoothscale_bluetoothscale_onweightchange",
+      "src_lib_bluetoothscale_scaleservice",
+      "src_lib_bluetoothscale_weightmeasurement",
+      "src_lib_bluetoothscale_weightunit",
+      "src_lib_localdb",
+      "src_lib_localdb_deletelocalbakelog",
+      "src_lib_localdb_getlocalbakelogs",
+      "src_lib_localdb_initdb",
+      "src_lib_localdb_savelocalbakelog",
+      "src_lib_localdb_updatelocalbakelog"
+    ],
+    "6": [
+      "ref_node",
+      "ref_vite_config_ts",
+      "tsconfig_node",
+      "tsconfig_node_compileroptions",
+      "tsconfig_node_compileroptions_allowimportingtsextensions",
+      "tsconfig_node_compileroptions_erasablesyntaxonly",
+      "tsconfig_node_compileroptions_lib",
+      "tsconfig_node_compileroptions_module",
+      "tsconfig_node_compileroptions_moduledetection",
+      "tsconfig_node_compileroptions_noemit",
+      "tsconfig_node_compileroptions_nofallthroughcasesinswitch",
+      "tsconfig_node_compileroptions_nounusedlocals",
+      "tsconfig_node_compileroptions_nounusedparameters",
+      "tsconfig_node_compileroptions_skiplibcheck",
+      "tsconfig_node_compileroptions_target",
+      "tsconfig_node_compileroptions_tsbuildinfofile",
+      "tsconfig_node_compileroptions_types",
+      "tsconfig_node_compileroptions_verbatimmodulesyntax",
+      "tsconfig_node_include",
+      "tsconfig_node_json_ref_es2023"
+    ],
+    "7": [
+      "server_package",
+      "server_package_author",
+      "server_package_description",
+      "server_package_devdependencies",
+      "server_package_devdependencies_mongodb_memory_server",
+      "server_package_devdependencies_supertest",
+      "server_package_devdependencies_vitest",
+      "server_package_json_mongodb_memory_server",
+      "server_package_json_vitest",
+      "server_package_keywords",
+      "server_package_license",
+      "server_package_main",
+      "server_package_name",
+      "server_package_scripts",
+      "server_package_scripts_start",
+      "server_package_scripts_test",
+      "server_package_type",
+      "server_package_version",
+      "supertest"
+    ],
+    "8": [
+      "package",
+      "package_name",
+      "package_private",
+      "package_scripts",
+      "package_scripts_adb_reverse",
+      "package_scripts_build",
+      "package_scripts_build_apk",
+      "package_scripts_dev",
+      "package_scripts_lint",
+      "package_scripts_preview",
+      "package_scripts_start",
+      "package_scripts_test",
+      "package_scripts_test_all",
+      "package_scripts_test_server",
+      "package_type",
+      "package_version"
+    ],
+    "9": [
+      "oxlintrc",
+      "oxlintrc_plugins",
+      "oxlintrc_rules",
+      "oxlintrc_rules_react_only_export_components",
+      "oxlintrc_rules_react_rules_of_hooks",
+      "oxlintrc_schema",
+      "package_devdependencies_typescript",
+      "ref_oxc",
+      "ref_warn",
+      "typescript"
+    ],
+    "10": [
+      "capacitor_haptics",
+      "diff",
+      "lucide_react",
+      "package_dependencies",
+      "package_dependencies_capacitor_haptics",
+      "package_dependencies_diff",
+      "package_dependencies_lucide_react",
+      "package_dependencies_tailwind_merge",
+      "tailwind_merge"
+    ],
+    "11": [
+      "src_components_errorboundary",
+      "src_components_errorboundary_errorboundary",
+      "src_components_errorboundary_errorboundary_componentdidcatch",
+      "src_components_errorboundary_errorboundary_getderivedstatefromerror",
+      "src_components_errorboundary_errorboundary_render",
+      "src_components_errorboundary_props",
+      "src_components_errorboundary_state",
+      "src_components_errorboundary_test",
+      "src_components_errorboundary_test_problemchild"
+    ],
+    "12": [
+      "android_app_src_androidtest_java_com_getcapacitor_myapp_exampleinstrumentedtest",
+      "android_app_src_androidtest_java_com_getcapacitor_myapp_exampleinstrumentedtest_exampleinstrumentedtest",
+      "android_app_src_androidtest_java_com_getcapacitor_myapp_exampleinstrumentedtest_exampleinstrumentedtest_useappcontext",
+      "android_app_src_test_java_com_getcapacitor_myapp_exampleunittest",
+      "android_app_src_test_java_com_getcapacitor_myapp_exampleunittest_exampleunittest",
+      "android_app_src_test_java_com_getcapacitor_myapp_exampleunittest_exampleunittest_addition_iscorrect",
+      "org_junit_runner_runwith",
+      "org_junit_test"
+    ],
+    "13": [
+      "public_manifest",
+      "public_manifest_background_color",
+      "public_manifest_display",
+      "public_manifest_icons",
+      "public_manifest_name",
+      "public_manifest_short_name",
+      "public_manifest_start_url",
+      "public_manifest_theme_color"
+    ],
+    "14": [
+      "android_gradlew",
+      "android_gradlew__entry",
+      "android_gradlew_die",
+      "android_gradlew_warn"
+    ],
+    "15": [
+      "src_components_photoslider",
+      "src_components_photoslider_photoslider",
+      "src_components_photoslider_photosliderprops",
+      "src_components_photoslider_test"
+    ],
+    "16": [
+      "src_components_sidebysidecompare",
+      "src_components_sidebysidecompare_sidebysidecompare",
+      "src_components_sidebysidecompare_sidebysidecompareprops",
+      "src_components_sidebysidecompare_test"
+    ],
+    "17": [
+      "android_app_src_main_java_com_victor_recipes_mainactivity",
+      "android_app_src_main_java_com_victor_recipes_mainactivity_mainactivity",
+      "com_getcapacitor_bridgeactivity"
+    ],
+    "18": [
+      "server_test",
+      "server_test_axios",
+      "server_test_cheerio"
+    ],
+    "19": [
+      "tsconfig",
+      "tsconfig_files",
+      "tsconfig_references"
+    ],
+    "20": [
+      "adb",
+      "package_dependencies_adb"
+    ],
+    "21": [
+      "capacitor_android",
+      "package_dependencies_capacitor_android"
+    ],
+    "22": [
+      "capacitor_camera",
+      "package_dependencies_capacitor_camera"
+    ],
+    "23": [
+      "capacitor_config",
+      "capacitor_config_config"
+    ],
+    "24": [
+      "capacitor_core",
+      "package_dependencies_capacitor_core"
+    ],
+    "25": [
+      "capacitor_local_notifications",
+      "package_dependencies_capacitor_local_notifications"
+    ],
+    "26": [
+      "capacitor_preferences",
+      "package_dependencies_capacitor_preferences"
+    ],
+    "27": [
+      "class_variance_authority",
+      "package_dependencies_class_variance_authority"
+    ],
+    "28": [
+      "clsx",
+      "package_dependencies_clsx"
+    ],
+    "29": [
+      "dnd_kit_core",
+      "package_dependencies_dnd_kit_core"
+    ],
+    "30": [
+      "dnd_kit_sortable",
+      "package_dependencies_dnd_kit_sortable"
+    ],
+    "31": [
+      "dnd_kit_utilities",
+      "package_dependencies_dnd_kit_utilities"
+    ],
+    "32": [
+      "framer_motion",
+      "package_dependencies_framer_motion"
+    ],
+    "33": [
+      "fuse_js",
+      "package_dependencies_fuse_js"
+    ],
+    "34": [
+      "html2canvas",
+      "package_dependencies_html2canvas"
+    ],
+    "35": [
+      "html5_qrcode",
+      "package_dependencies_html5_qrcode"
+    ],
+    "36": [
+      "jspdf",
+      "package_dependencies_jspdf"
+    ],
+    "37": [
+      "package_dependencies_qrcode_react",
+      "qrcode_react"
+    ],
+    "38": [
+      "package_dependencies_react",
+      "react"
+    ],
+    "39": [
+      "package_dependencies_react_dom",
+      "react_dom"
+    ],
+    "40": [
+      "package_dependencies_react_image_crop",
+      "react_image_crop"
+    ],
+    "41": [
+      "package_dependencies_react_router_dom",
+      "react_router_dom"
+    ],
+    "42": [
+      "package_dependencies_react_speech_recognition",
+      "react_speech_recognition"
+    ],
+    "43": [
+      "package_dependencies_regenerator_runtime",
+      "regenerator_runtime"
+    ],
+    "44": [
+      "package_dependencies_rehype_sanitize",
+      "rehype_sanitize"
+    ],
+    "45": [
+      "package_dependencies_socket_io_client",
+      "socket_io_client"
+    ],
+    "46": [
+      "package_dependencies_uiw_react_md_editor",
+      "uiw_react_md_editor"
+    ],
+    "47": [
+      "remove_bg",
+      "remove_bg_main"
+    ],
+    "48": [
+      "src_react_speech_recognition_d",
+      "src_react_speech_recognition_d_react_speech_recognition"
+    ],
+    "49": [
+      "android_app_build"
+    ],
+    "50": [
+      "android_app_capacitor_build"
+    ],
+    "51": [
+      "android_build"
+    ],
+    "52": [
+      "android_capacitor_settings"
+    ],
+    "53": [
+      "android_settings"
+    ],
+    "54": [
+      "android_variables"
+    ],
+    "55": [
+      "mongodb_memory_server_mongodb_memory_server"
+    ],
+    "56": [
+      "postcss_config"
+    ],
+    "57": [
+      "public_sw"
+    ],
+    "58": [
+      "server_vitest_config"
+    ],
+    "59": [
+      "src_setuptests"
+    ],
+    "60": [
+      "tailwind_config"
+    ],
+    "61": [
+      "tailwindcss_tailwindcss"
+    ],
+    "62": [
+      "vite_config"
+    ]
+  },
+  "cohesion": {
+    "0": 0.05524537173082574,
+    "1": 0.046511627906976744,
+    "2": 0.09176788124156546,
+    "3": 0.07692307692307693,
+    "4": 0.08,
+    "5": 0.12666666666666668,
+    "6": 0.1,
+    "7": 0.10526315789473684,
+    "8": 0.125,
+    "9": 0.2,
+    "10": 0.2222222222222222,
+    "11": 0.25,
+    "12": 0.35714285714285715,
+    "13": 0.25,
+    "14": 0.8333333333333334,
+    "15": 0.6666666666666666,
+    "16": 0.6666666666666666,
+    "17": 1.0,
+    "18": 0.6666666666666666,
+    "19": 0.6666666666666666,
+    "20": 1.0,
+    "21": 1.0,
+    "22": 1.0,
+    "23": 1.0,
+    "24": 1.0,
+    "25": 1.0,
+    "26": 1.0,
+    "27": 1.0,
+    "28": 1.0,
+    "29": 1.0,
+    "30": 1.0,
+    "31": 1.0,
+    "32": 1.0,
+    "33": 1.0,
+    "34": 1.0,
+    "35": 1.0,
+    "36": 1.0,
+    "37": 1.0,
+    "38": 1.0,
+    "39": 1.0,
+    "40": 1.0,
+    "41": 1.0,
+    "42": 1.0,
+    "43": 1.0,
+    "44": 1.0,
+    "45": 1.0,
+    "46": 1.0,
+    "47": 1.0,
+    "48": 1.0,
+    "49": 1.0,
+    "50": 1.0,
+    "51": 1.0,
+    "52": 1.0,
+    "53": 1.0,
+    "54": 1.0,
+    "55": 1.0,
+    "56": 1.0,
+    "57": 1.0,
+    "58": 1.0,
+    "59": 1.0,
+    "60": 1.0,
+    "61": 1.0,
+    "62": 1.0
+  },
+  "gods": [
+    {
+      "id": "ref_react",
+      "label": "react",
+      "degree": 22
+    },
+    {
+      "id": "src_lib_api_api",
+      "label": "api",
+      "degree": 20
+    },
+    {
+      "id": "tsconfig_app_compileroptions",
+      "label": "compilerOptions",
+      "degree": 18
+    },
+    {
+      "id": "tsconfig_node_compileroptions",
+      "label": "compilerOptions",
+      "degree": 15
+    },
+    {
+      "id": "src_lib_api_recipe",
+      "label": "Recipe",
+      "degree": 13
+    },
+    {
+      "id": "package_scripts",
+      "label": "scripts",
+      "degree": 11
+    },
+    {
+      "id": "src_lib_api_bakelog",
+      "label": "BakeLog",
+      "degree": 10
+    },
+    {
+      "id": "src_utils_timerparser_renderwithtimers",
+      "label": "renderWithTimers()",
+      "degree": 8
+    },
+    {
+      "id": "server_index_app",
+      "label": "app",
+      "degree": 7
+    },
+    {
+      "id": "server_models_recipe_recipe",
+      "label": "Recipe",
+      "degree": 7
+    }
+  ],
+  "surprises": [
+    {
+      "source": "plugins",
+      "target": "typescript",
+      "source_files": [
+        ".oxlintrc.json",
+        "package.json"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "extends",
+      "why": "connects across different repos/directories"
+    },
+    {
+      "source": "BakeLogsGridProps",
+      "target": "BakeLog",
+      "source_files": [
+        "src/components/BakeLogsGrid.tsx",
+        "src/lib/api.ts"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "references",
+      "why": "peripheral node `BakeLogsGridProps` unexpectedly reaches hub `BakeLog`"
+    },
+    {
+      "source": "BakingMode()",
+      "target": "renderWithTimers()",
+      "source_files": [
+        "src/components/BakingMode.tsx",
+        "src/utils/timerParser.tsx"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "why": "bridges separate communities"
+    },
+    {
+      "source": "ExpandableInstruction()",
+      "target": "renderWithTimers()",
+      "source_files": [
+        "src/components/RecipeViewer.tsx",
+        "src/utils/timerParser.tsx"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "why": "peripheral node `ExpandableInstruction()` unexpectedly reaches hub `renderWithTimers()`"
+    },
+    {
+      "source": "ReverseBakeSchedulerProps",
+      "target": "Recipe",
+      "source_files": [
+        "src/components/ReverseBakeScheduler.tsx",
+        "src/lib/api.ts"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "references",
+      "why": "peripheral node `ReverseBakeSchedulerProps` unexpectedly reaches hub `Recipe`"
+    }
+  ],
+  "tokens": {
+    "input": 0,
+    "output": 0
+  }
+}
