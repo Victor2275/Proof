@@ -188,7 +188,7 @@ export default function TimerManager() {
               <button onClick={() => setPendingTimer(null)} className="flex-1 py-3 font-medium hover:bg-black/5 dark:hover:bg-white/5 rounded-xl transition-colors">
                 Cancel
               </button>
-              <button onClick={() => confirmAddTimer(pendingTimer.durationSecs, pendingTimer.name)} className="flex-1 bg-ink text-paper py-3 font-bold rounded-xl hover:opacity-90 transition-opacity">
+              <button onClick={() => confirmAddTimer(pendingTimer.durationSecs, pendingTimer.name)} className="flex-1 bg-accent text-black py-3 font-bold rounded-xl hover:shadow-[0_0_15px_rgba(212,175,55,0.2)] transition-all">
                 Start
               </button>
             </div>

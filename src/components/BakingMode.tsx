@@ -481,18 +481,18 @@ export default function BakingMode() {
 
       {/* Progress Bar */}
       <div className="w-full h-2 bg-black/5 dark:bg-white/5 relative">
-        <div className="absolute top-0 left-0 h-full bg-ink transition-all duration-300" style={{ width: `${progress}%` }} />
+        <div className="absolute top-0 left-0 h-full bg-accent transition-all duration-300" style={{ width: `${progress}%` }} />
       </div>
       
       {/* Top Header */}
-      <div className="w-full flex justify-between items-center p-4 border-b border-border-subtle bg-paper/95 backdrop-blur-sm z-30 sticky top-0">
-        <div className="flex items-center gap-3">
-          <button onClick={() => navigate(`/recipe/${id}`)} className="p-2 bg-black/5 dark:bg-white/5 rounded-full hover:bg-black/10 dark:hover:bg-white/10 transition-colors">
-            <X className="w-5 h-5" />
+      <div className="w-full flex justify-between items-center p-3 md:p-4 border-b border-border-subtle bg-paper/95 backdrop-blur-sm z-30 sticky top-0 gap-2">
+        <div className="flex items-center gap-3 shrink-0 min-w-0">
+          <button onClick={() => navigate(`/recipe/${id}`)} className="p-2 bg-black/5 dark:bg-white/5 rounded-full hover:bg-black/10 dark:hover:bg-white/10 transition-colors shrink-0">
+            <X className="w-4 h-4 md:w-5 md:h-5" />
           </button>
-          <h1 className="font-bold uppercase tracking-wider text-sm truncate">{recipe.title}</h1>
+          <h1 className="font-bold uppercase tracking-wider text-sm truncate max-w-[100px] sm:max-w-[200px]">{recipe.title}</h1>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-nowrap items-center gap-2 md:gap-4 overflow-x-auto no-scrollbar shrink-0 pr-1 md:pr-0">
           <button onClick={connectScale} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-colors ${scaleConnected ? 'bg-blue-500/20 text-blue-600 border border-blue-500/50' : 'bg-black/5 dark:bg-white/5 border border-border-subtle hover:bg-black/10'}`}>
             <Bluetooth className={`w-3.5 h-3.5 ${scaleConnected ? 'animate-pulse' : ''}`} />
             {scaleWeight ? `${scaleWeight.weight}${scaleWeight.unit}` : (scaleConnected ? 'Connected' : 'Scale')}
@@ -500,9 +500,9 @@ export default function BakingMode() {
           
           <button 
             onClick={() => setShowIngredients(!showIngredients)}
-            className={`px-5 py-1.5 rounded-full border transition-all font-bold uppercase tracking-widest text-sm flex items-center gap-2 ${showIngredients ? 'bg-ink text-paper border-ink' : 'border-border-subtle hover:bg-black/5 dark:hover:bg-white/5'}`}
+            className={`px-3 md:px-5 py-1.5 rounded-full border transition-all font-bold uppercase tracking-widest text-xs md:text-sm flex items-center gap-2 shrink-0 ${showIngredients ? 'bg-accent/10 text-accent border-accent' : 'border-border-subtle hover:bg-black/5 dark:hover:bg-white/5 text-ink-muted'}`}
           >
-            <List className="w-4 h-4" /> Ingredients
+            <List className="w-3.5 h-3.5 md:w-4 md:h-4" /> <span className="hidden sm:inline">Ingredients</span>
           </button>
 
           {voiceCommandsSetting && browserSupportsSpeechRecognition && (
@@ -519,7 +519,7 @@ export default function BakingMode() {
             <>
               <button 
                 onClick={() => setCameraActive(!cameraActive)}
-                className={`p-2 rounded-full border transition-colors ${cameraActive ? 'bg-ink text-paper border-ink animate-pulse' : 'border-border-subtle hover:bg-black/5 dark:hover:bg-white/5 text-ink-muted'}`}
+                className={`p-2 rounded-full border transition-colors ${cameraActive ? 'bg-accent/10 text-accent border-accent animate-pulse' : 'border-border-subtle hover:bg-black/5 dark:hover:bg-white/5 text-ink-muted'}`}
                 title="Toggle Camera (Wave to Advance)"
               >
                 {cameraActive ? <Video className="w-4 h-4" /> : <VideoOff className="w-4 h-4" />}
@@ -550,18 +550,16 @@ export default function BakingMode() {
           )}
           <button 
             onClick={() => setViewMode(prev => prev === 'focus' ? 'all' : 'focus')}
-            className="px-4 py-1.5 rounded-full border border-border-subtle hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-sm font-bold uppercase tracking-wide"
+            className="px-3 md:px-4 py-1.5 rounded-full border border-border-subtle hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-xs md:text-sm font-bold uppercase tracking-wide shrink-0 whitespace-nowrap"
           >
-            {viewMode === 'focus' ? 'Show All Steps' : 'Focus Mode'}
+            {viewMode === 'focus' ? 'Show All' : 'Focus Mode'}
           </button>
           <span className="font-bold text-ink-muted uppercase tracking-wider text-sm hidden sm:inline">
             {viewMode === 'all' ? 'All Steps' : (isFinished ? 'Finished' : `Step ${currentStep + 1} of ${recipe.instructions.length}`)}
           </span>
         </div>
 
-        <button onClick={() => navigate(`/recipe/${id}`)} className="p-3 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-          <X className="w-6 h-6" />
-        </button>
+
       </div>
 
       {/* Main Content */}
@@ -606,7 +604,7 @@ export default function BakingMode() {
             )}
 
             {isFinished && (
-              <button onClick={() => setShowFinishModal(true)} className="mt-12 bg-ink text-paper px-10 py-4 rounded-xl font-bold text-xl hover:opacity-90 transition-opacity shadow-lg flex items-center gap-3">
+              <button onClick={() => setShowFinishModal(true)} className="mt-12 bg-accent text-black px-10 py-4 rounded-xl font-bold text-xl hover:shadow-[0_0_15px_rgba(212,175,55,0.2)] transition-all shadow-lg flex items-center gap-3">
                 <Check className="w-6 h-6" /> Finish Recipe
               </button>
             )}
@@ -639,7 +637,7 @@ export default function BakingMode() {
             })}
             
             <div className="pt-12 border-t border-border-subtle flex justify-center">
-              <button onClick={() => setShowFinishModal(true)} className="bg-ink text-paper px-10 py-4 rounded-xl font-bold text-xl hover:opacity-90 transition-opacity shadow-lg flex items-center gap-3">
+              <button onClick={() => setShowFinishModal(true)} className="bg-accent text-black px-10 py-4 rounded-xl font-bold text-xl hover:shadow-[0_0_15px_rgba(212,175,55,0.2)] transition-all shadow-lg flex items-center gap-3">
                 <Check className="w-6 h-6" /> Finish Recipe
               </button>
             </div>
@@ -766,7 +764,7 @@ export default function BakingMode() {
                 )}
               </div>
 
-              <button type="submit" disabled={savingLog} className="w-full bg-ink text-paper font-bold text-lg py-4 rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
+              <button type="submit" disabled={savingLog} className="w-full bg-accent text-black font-bold text-lg py-4 rounded-xl hover:shadow-[0_0_15px_rgba(212,175,55,0.2)] transition-all flex items-center justify-center gap-2">
                 {savingLog ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Save Log & Finish'}
               </button>
             </form>

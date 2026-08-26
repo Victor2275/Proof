@@ -76,28 +76,28 @@ export default function Settings() {
       <div className="bg-sidebar p-6 rounded-2xl border border-border-subtle shadow-sm space-y-6">
         <div>
           <h2 className="text-xl font-bold mb-4 flex items-center gap-2"><Sun className="w-5 h-5"/> Appearance</h2>
-          <div className="flex flex-col sm:flex-row gap-3">
+          <div className="grid grid-cols-2 sm:flex sm:flex-row gap-3">
             <button 
               onClick={() => setTheme('light')}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-medium transition-all border ${theme === 'light' ? 'bg-ink text-paper border-ink shadow-md' : 'bg-paper text-ink border-border-subtle hover:bg-black/5 dark:hover:bg-white/5'}`}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-medium transition-all border ${theme === 'light' ? 'bg-accent/10 text-accent border-accent shadow-[0_0_15px_rgba(212,175,55,0.15)]' : 'bg-paper text-ink border-border-subtle hover:bg-black/5 dark:hover:bg-white/5'}`}
             >
               <Sun className="w-4 h-4"/> Light
             </button>
             <button 
               onClick={() => setTheme('dark')}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-medium transition-all border ${theme === 'dark' ? 'bg-ink text-paper border-ink shadow-md' : 'bg-paper text-ink border-border-subtle hover:bg-black/5 dark:hover:bg-white/5'}`}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-medium transition-all border ${theme === 'dark' ? 'bg-accent/10 text-accent border-accent shadow-[0_0_15px_rgba(212,175,55,0.15)]' : 'bg-paper text-ink border-border-subtle hover:bg-black/5 dark:hover:bg-white/5'}`}
             >
               <Moon className="w-4 h-4"/> Dark
             </button>
             <button 
               onClick={() => setTheme('oled')}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-medium transition-all border ${theme === 'oled' ? 'bg-black text-white border-white shadow-md' : 'bg-paper text-ink border-border-subtle hover:bg-black/5 dark:hover:bg-white/5'}`}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-medium transition-all border ${theme === 'oled' ? 'bg-accent/10 text-accent border-accent shadow-[0_0_15px_rgba(212,175,55,0.15)]' : 'bg-paper text-ink border-border-subtle hover:bg-black/5 dark:hover:bg-white/5'}`}
             >
               <Moon className="w-4 h-4 text-purple-400"/> OLED Black
             </button>
             <button 
               onClick={() => setTheme('system')}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-medium transition-all border ${theme === 'system' ? 'bg-ink text-paper border-ink shadow-md' : 'bg-paper text-ink border-border-subtle hover:bg-black/5 dark:hover:bg-white/5'}`}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-medium transition-all border ${theme === 'system' ? 'bg-accent/10 text-accent border-accent shadow-[0_0_15px_rgba(212,175,55,0.15)]' : 'bg-paper text-ink border-border-subtle hover:bg-black/5 dark:hover:bg-white/5'}`}
             >
               System
             </button>
@@ -131,7 +131,7 @@ export default function Settings() {
                 <div className="font-bold">Baker's Math by Default</div>
                 <div className="text-sm text-ink-muted">Automatically show baker's percentages on recipes.</div>
               </div>
-              <div className="relative inline-block w-12 h-6 rounded-full transition-colors ease-in-out duration-200 focus:outline-none" style={{ backgroundColor: defaultBakersMath ? 'var(--ink)' : 'var(--border-subtle)' }}>
+              <div className="relative inline-block w-12 h-6 rounded-full transition-colors ease-in-out duration-200 focus:outline-none" style={{ backgroundColor: defaultBakersMath ? 'var(--accent-gold)' : 'var(--border-subtle)' }}>
                 <input type="checkbox" className="sr-only" checked={defaultBakersMath} onChange={e => setDefaultBakersMath(e.target.checked)} />
                 <span className={`inline-block w-6 h-6 transform bg-paper rounded-full shadow transition duration-200 ease-in-out ${defaultBakersMath ? 'translate-x-6' : 'translate-x-0'}`} />
               </div>
@@ -142,7 +142,7 @@ export default function Settings() {
                 <div className="font-bold">Auto-Hide Sidebar (PC)</div>
                 <div className="text-sm text-ink-muted">Collapse the navigation sidebar for a cleaner look.</div>
               </div>
-              <div className="relative inline-block w-12 h-6 rounded-full transition-colors ease-in-out duration-200 focus:outline-none" style={{ backgroundColor: autoHideSidebar ? 'var(--ink)' : 'var(--border-subtle)' }}>
+              <div className="relative inline-block w-12 h-6 rounded-full transition-colors ease-in-out duration-200 focus:outline-none" style={{ backgroundColor: autoHideSidebar ? 'var(--accent-gold)' : 'var(--border-subtle)' }}>
                 <input type="checkbox" className="sr-only" checked={autoHideSidebar} onChange={e => setAutoHideSidebar(e.target.checked)} />
                 <span className={`inline-block w-6 h-6 transform bg-paper rounded-full shadow transition duration-200 ease-in-out ${autoHideSidebar ? 'translate-x-6' : 'translate-x-0'}`} />
               </div>
@@ -153,7 +153,7 @@ export default function Settings() {
                 <div className="font-bold">Haptic Feedback</div>
                 <div className="text-sm text-ink-muted">Small vibrations when navigating steps or timers.</div>
               </div>
-              <div className="relative inline-block w-12 h-6 rounded-full transition-colors ease-in-out duration-200 focus:outline-none" style={{ backgroundColor: haptics ? 'var(--ink)' : 'var(--border-subtle)' }}>
+              <div className="relative inline-block w-12 h-6 rounded-full transition-colors ease-in-out duration-200 focus:outline-none" style={{ backgroundColor: haptics ? 'var(--accent-gold)' : 'var(--border-subtle)' }}>
                 <input type="checkbox" className="sr-only" checked={haptics} onChange={e => setHaptics(e.target.checked)} />
                 <span className={`inline-block w-6 h-6 transform bg-paper rounded-full shadow transition duration-200 ease-in-out ${haptics ? 'translate-x-6' : 'translate-x-0'}`} />
               </div>
@@ -164,7 +164,7 @@ export default function Settings() {
                 <div className="font-bold">Text-to-Speech (Baking Mode)</div>
                 <div className="text-sm text-ink-muted">Read steps aloud automatically.</div>
               </div>
-              <div className="relative inline-block w-12 h-6 rounded-full transition-colors ease-in-out duration-200 focus:outline-none" style={{ backgroundColor: ttsEnabled ? 'var(--ink)' : 'var(--border-subtle)' }}>
+              <div className="relative inline-block w-12 h-6 rounded-full transition-colors ease-in-out duration-200 focus:outline-none" style={{ backgroundColor: ttsEnabled ? 'var(--accent-gold)' : 'var(--border-subtle)' }}>
                 <input type="checkbox" className="sr-only" checked={ttsEnabled} onChange={e => setTtsEnabled(e.target.checked)} />
                 <span className={`inline-block w-6 h-6 transform bg-paper rounded-full shadow transition duration-200 ease-in-out ${ttsEnabled ? 'translate-x-6' : 'translate-x-0'}`} />
               </div>
@@ -175,7 +175,7 @@ export default function Settings() {
                 <div className="font-bold">Wave to Advance</div>
                 <div className="text-sm text-ink-muted">Wave hand over camera to go to next step.</div>
               </div>
-              <div className="relative inline-block w-12 h-6 rounded-full transition-colors ease-in-out duration-200 focus:outline-none" style={{ backgroundColor: waveToAdvance ? 'var(--ink)' : 'var(--border-subtle)' }}>
+              <div className="relative inline-block w-12 h-6 rounded-full transition-colors ease-in-out duration-200 focus:outline-none" style={{ backgroundColor: waveToAdvance ? 'var(--accent-gold)' : 'var(--border-subtle)' }}>
                 <input type="checkbox" className="sr-only" checked={waveToAdvance} onChange={e => setWaveToAdvance(e.target.checked)} />
                 <span className={`inline-block w-6 h-6 transform bg-paper rounded-full shadow transition duration-200 ease-in-out ${waveToAdvance ? 'translate-x-6' : 'translate-x-0'}`} />
               </div>
@@ -186,7 +186,7 @@ export default function Settings() {
                 <div className="font-bold">Voice Commands</div>
                 <div className="text-sm text-ink-muted">Say "Next step" or "Start timer" to control hands-free.</div>
               </div>
-              <div className="relative inline-block w-12 h-6 rounded-full transition-colors ease-in-out duration-200 focus:outline-none" style={{ backgroundColor: voiceCommands ? 'var(--ink)' : 'var(--border-subtle)' }}>
+              <div className="relative inline-block w-12 h-6 rounded-full transition-colors ease-in-out duration-200 focus:outline-none" style={{ backgroundColor: voiceCommands ? 'var(--accent-gold)' : 'var(--border-subtle)' }}>
                 <input type="checkbox" className="sr-only" checked={voiceCommands} onChange={e => setVoiceCommands(e.target.checked)} />
                 <span className={`inline-block w-6 h-6 transform bg-paper rounded-full shadow transition duration-200 ease-in-out ${voiceCommands ? 'translate-x-6' : 'translate-x-0'}`} />
               </div>
@@ -230,7 +230,7 @@ export default function Settings() {
                     alert('Failed to download backup.');
                   }
                 }}
-                className="flex items-center gap-2 px-4 py-2 bg-ink text-paper font-bold rounded-lg hover:opacity-90 transition-opacity"
+                className="flex items-center gap-2 px-6 py-2.5 bg-accent text-black font-bold rounded-xl hover:shadow-[0_0_15px_rgba(212,175,55,0.2)] transition-all"
               >
                 <Download className="w-4 h-4" /> Backup
               </button>

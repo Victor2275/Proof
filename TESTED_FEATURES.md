@@ -56,6 +56,7 @@ This document mirrors CURRENT_FEATURES.md. Use the checkboxes to track which fea
 
 ## 6. UI/UX Foundation
 - [ ] **Stack**: React, Vite, Tailwind CSS (`@tailwindcss/postcss`).
+- [ ] **Black & Gold Aesthetic**: Pitch black and paper white themes with elegant gold accents and glassmorphic translucent components.
 - [ ] **Sanitization**: `rehype-sanitize` ensures user-generated markdown is safe from XSS.
 - [ ] **Drag & Drop**: `@dnd-kit/core` powers drag-and-drop mechanics across the dashboard for organizing folders.
 - [ ] **Icons**: Standardized clean iconography via `lucide-react`.

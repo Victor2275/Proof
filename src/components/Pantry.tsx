@@ -98,7 +98,7 @@ export default function Pantry() {
             placeholder="e.g. Bread Flour, active dry yeast..." 
             className="flex-1 bg-paper border border-border-subtle rounded-xl px-4 py-3 focus:outline-none focus:border-ink transition-colors"
           />
-          <button type="submit" className="bg-ink text-paper px-6 py-3 rounded-xl font-bold hover:opacity-90 transition-opacity flex items-center gap-2 whitespace-nowrap">
+          <button type="submit" className="bg-accent text-black px-6 py-3 rounded-xl font-bold hover:shadow-[0_0_15px_rgba(212,175,55,0.2)] transition-all flex items-center gap-2 whitespace-nowrap">
             <Plus className="w-5 h-5" /> Add
           </button>
           <button 

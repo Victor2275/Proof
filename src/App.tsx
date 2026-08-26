@@ -38,8 +38,8 @@ function AuthModal({ onClose, onSuccess }: { onClose: () => void, onSuccess: () 
   };
 
   return (
-    <div className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-      <form onSubmit={handleSubmit} className="bg-paper rounded-xl w-full max-w-sm shadow-2xl border border-border-subtle p-6">
+    <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-md flex items-center justify-center p-4">
+      <form onSubmit={handleSubmit} className="bg-paper/90 backdrop-blur-xl rounded-2xl w-full max-w-sm shadow-2xl border border-border-subtle p-8">
         <h2 className="text-xl font-bold mb-2">Admin Access Required</h2>
         <p className="text-sm text-ink-muted mb-4">Please enter the PIN to perform this action.</p>
         <div className="mb-6">
@@ -48,7 +48,7 @@ function AuthModal({ onClose, onSuccess }: { onClose: () => void, onSuccess: () 
             value={pin}
             onChange={(e) => setPin(e.target.value)}
             placeholder="Enter PIN"
-            className="w-full bg-black/5 dark:bg-white/5 border border-border-subtle rounded-md p-3 mb-2 focus:outline-none focus:ring-2 focus:ring-ink text-center font-mono text-xl tracking-widest hidden md:block"
+            className="w-full bg-black/5 dark:bg-white/5 border border-border-subtle rounded-xl p-3 mb-2 focus:outline-none focus:ring-2 focus:ring-accent text-center font-mono text-xl tracking-widest hidden md:block"
             autoFocus
           />
           <div className="md:hidden grid grid-cols-3 gap-2">
@@ -73,7 +73,7 @@ function AuthModal({ onClose, onSuccess }: { onClose: () => void, onSuccess: () 
         </div>
         <div className="flex gap-3">
           <button type="button" onClick={onClose} className="flex-1 py-3 font-medium hover:bg-black/5 dark:hover:bg-white/5 rounded-xl transition-colors">Cancel</button>
-          <button type="submit" disabled={loading} className="flex-1 bg-ink text-paper py-3 font-bold rounded-xl hover:opacity-90 transition-opacity">{loading ? 'Verifying...' : 'Submit'}</button>
+          <button type="submit" disabled={loading} className="flex-1 bg-accent text-black py-3 font-bold rounded-xl hover:shadow-[0_0_15px_rgba(212,175,55,0.2)] transition-all">{loading ? 'Verifying...' : 'Submit'}</button>
         </div>
       </form>
       {error && (
@@ -128,7 +128,7 @@ function App() {
       )}
       <div className={`flex h-screen bg-paper text-ink overflow-hidden selection:bg-ink selection:text-paper ${isOffline ? 'pt-6' : ''}`}>
         <Sidebar onAdminRequired={() => setShowAuthModal(true)} className={`hidden md:flex ${autoHideSidebar ? 'group -translate-x-[95%] hover:-translate-x-0 transition-transform duration-300 shadow-2xl z-50' : ''}`} />
-        <main className={`flex-1 overflow-y-auto overscroll-y-auto w-full relative pb-20 md:pb-8 pt-safe md:pt-8 px-4 md:px-8 transition-all duration-300 ${autoHideSidebar ? 'md:ml-[3%]' : 'md:ml-64'}`}>
+        <main className={`flex-1 overflow-y-auto overscroll-y-auto w-full relative pb-24 md:pb-12 pt-safe md:pt-12 px-4 md:px-12 transition-all duration-300 ${autoHideSidebar ? 'md:ml-[3%]' : 'md:ml-64'}`}>
           <ErrorBoundary>
             <Routes>
               <Route path="/" element={<Dashboard />} />

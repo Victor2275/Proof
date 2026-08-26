@@ -1,0 +1,21 @@
+{
+  "mcpServers": {
+    "puppeteer": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-puppeteer"
+      ]
+    },
+    "puppeteer-mobile": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-puppeteer"
+      ],
+      "env": {
+        "PUPPETEER_LAUNCH_OPTIONS": "{\"defaultViewport\": {\"width\": 375, \"height\": 812, \"isMobile\": true, \"hasTouch\": true, \"deviceScaleFactor\": 2}}"
+      }
+    }
+  }
+}

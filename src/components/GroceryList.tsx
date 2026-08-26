@@ -180,7 +180,7 @@ export default function GroceryList() {
         <div className="flex flex-wrap gap-2">
           <button
             onClick={copyToClipboard}
-            className="flex items-center gap-2 px-4 py-2 bg-ink text-paper rounded-lg font-medium hover:opacity-90 transition-opacity text-sm shadow-sm"
+            className="flex items-center gap-2 px-4 py-2 bg-accent text-black rounded-xl font-bold hover:shadow-[0_0_15px_rgba(212,175,55,0.2)] transition-all text-sm"
           >
             {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
             {copied ? 'Copied!' : 'Copy List'}
@@ -217,13 +217,13 @@ export default function GroceryList() {
                   onClick={() => toggleRecipeSelection(recipe._id!)}
                   className={`p-3 rounded-xl border text-left transition-all flex items-center justify-between ${
                     selected
-                      ? 'border-ink bg-black/5 dark:bg-white/10 shadow-sm font-semibold'
-                      : 'border-border-subtle hover:bg-black/5 dark:hover:bg-white/5 text-ink-muted'
+                      ? 'border-accent bg-accent/10 shadow-[0_0_15px_rgba(212,175,55,0.1)] font-bold text-accent'
+                      : 'border-border-subtle hover:bg-white/5 text-ink-muted'
                   }`}
                 >
                   <span className="truncate pr-2">{recipe.title}</span>
-                  <div className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 ${
-                    selected ? 'bg-ink border-ink text-paper' : 'border-border-subtle'
+                  <div className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 transition-colors ${
+                    selected ? 'bg-accent border-accent text-black' : 'border-border-subtle'
                   }`}>
                     {selected && <Check className="w-3.5 h-3.5" />}
                   </div>
@@ -262,7 +262,7 @@ export default function GroceryList() {
           />
           <button
             type="submit"
-            className="bg-ink text-paper px-4 py-2 rounded-lg font-medium text-sm flex items-center justify-center gap-1 hover:opacity-90"
+            className="bg-accent text-black px-4 py-2 rounded-xl font-bold text-sm flex items-center justify-center gap-1 hover:shadow-[0_0_10px_rgba(212,175,55,0.2)] transition-all"
           >
             <Plus className="w-4 h-4" /> Add
           </button>
@@ -295,12 +295,12 @@ export default function GroceryList() {
                 className={`flex items-center justify-between p-3.5 rounded-xl border transition-all cursor-pointer ${
                   item.checked
                     ? 'bg-black/5 dark:bg-white/5 border-border-subtle/50 opacity-60 line-through'
-                    : 'bg-paper border-border-subtle hover:border-ink'
+                    : 'bg-paper border-border-subtle hover:border-accent'
                 }`}
               >
                 <div className="flex items-center gap-3">
                   <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${
-                    item.checked ? 'bg-ink border-ink text-paper' : 'border-border-subtle'
+                    item.checked ? 'bg-accent border-accent text-black' : 'border-border-subtle'
                   }`}>
                     {item.checked && <Check className="w-3.5 h-3.5" />}
                   </div>

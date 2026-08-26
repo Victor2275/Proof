@@ -12,7 +12,7 @@ function DroppableFolder({ folder, activeFolder, onClick }: { folder: string, ac
     <button
       ref={setNodeRef}
       onClick={onClick}
-      className={`px-4 py-2 flex items-center gap-2 rounded-lg border font-medium transition-all ${activeFolder === folder ? 'bg-ink text-paper border-ink' : isOver ? 'bg-ink/10 border-ink border-dashed' : 'bg-sidebar border-border-subtle hover:bg-black/5 dark:hover:bg-white/5'}`}
+      className={`px-4 py-2 flex items-center gap-2 rounded-xl border font-medium transition-all ${activeFolder === folder ? 'bg-accent/10 text-accent border-accent' : isOver ? 'bg-accent/5 border-accent border-dashed' : 'bg-sidebar border-border-subtle hover:bg-white/5'}`}
     >
       <Folder className="w-4 h-4" /> {folder}
     </button>
@@ -103,12 +103,12 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-border-subtle pb-6">
-        <div className="flex items-center gap-3 w-full md:w-auto justify-between">
+    <div className="space-y-8 pt-4 md:pt-6">
+      <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6 border-b border-border-subtle pb-6">
+        <div className="flex items-center gap-3 w-full xl:w-auto justify-between">
           <div className="flex items-center gap-3">
             <img src="/logo.png" alt="Logo" className="w-10 h-10 object-contain md:hidden" />
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight uppercase">My Cookbook</h1>
+            <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight uppercase">My Cookbook</h1>
           </div>
           {recipes.length > 0 && (
             <button 
@@ -116,45 +116,45 @@ export default function Dashboard() {
                 const random = recipes[Math.floor(Math.random() * recipes.length)];
                 navigate(`/recipe/${random._id}`);
               }}
-              className="md:hidden flex items-center gap-2 px-4 py-2 bg-black/5 dark:bg-white/5 border border-border-subtle rounded-md text-sm font-bold hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+              className="md:hidden flex items-center justify-center gap-2 px-4 py-2 bg-sidebar/50 border border-border-subtle rounded-xl text-sm font-bold hover:border-accent hover:text-accent transition-all"
             >
               <Shuffle className="w-4 h-4" /> Inspire Me
             </button>
           )}
         </div>
-        <div className="flex items-center gap-3 w-full md:w-auto">
+        <div className="flex flex-wrap md:flex-row items-stretch md:items-center gap-3 w-full xl:w-auto flex-1 xl:flex-none">
           {recipes.length > 0 && (
             <button 
               onClick={() => {
                 const random = recipes[Math.floor(Math.random() * recipes.length)];
                 navigate(`/recipe/${random._id}`);
               }}
-              className="hidden md:flex items-center gap-2 px-4 py-2 bg-black/5 dark:bg-white/5 border border-border-subtle rounded-md text-sm font-bold hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+              className="hidden md:flex items-center justify-center gap-2 px-5 py-2.5 bg-sidebar/50 border border-border-subtle rounded-xl text-sm font-bold hover:border-accent hover:text-accent transition-all"
             >
               <Shuffle className="w-4 h-4" /> Inspire Me
             </button>
           )}
-        <div className="relative w-full md:w-80 flex-1">
+        <div className="relative w-full min-w-[150px] flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-muted" />
           <input 
             type="text" 
             placeholder="Search recipes or tags..." 
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 border border-border-subtle bg-sidebar rounded-md focus:outline-none focus:ring-1 focus:ring-ink transition-all"
+            className="w-full pl-10 pr-4 py-2.5 border border-border-subtle bg-sidebar/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-accent transition-all"
           />
         </div>
-        <div className="hidden md:flex border border-border-subtle rounded-md overflow-hidden bg-black/5 dark:bg-white/5 p-0.5">
+        <div className="hidden md:flex border border-border-subtle rounded-xl overflow-hidden bg-sidebar/50 p-1">
           <button 
             onClick={() => setViewMode('grid')}
-            className={`p-1.5 rounded transition-all ${viewMode === 'grid' ? 'bg-paper shadow-sm text-ink' : 'text-ink-muted hover:text-ink hover:bg-black/5'}`}
+            className={`p-1.5 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-accent text-black shadow-sm' : 'text-ink-muted hover:text-accent hover:bg-white/5'}`}
             title="Grid View"
           >
             <LayoutGrid className="w-4 h-4" />
           </button>
           <button 
             onClick={() => setViewMode('list')}
-            className={`p-1.5 rounded transition-all ${viewMode === 'list' ? 'bg-paper shadow-sm text-ink' : 'text-ink-muted hover:text-ink hover:bg-black/5'}`}
+            className={`p-1.5 rounded-lg transition-all ${viewMode === 'list' ? 'bg-accent text-black shadow-sm' : 'text-ink-muted hover:text-accent hover:bg-white/5'}`}
             title="List View"
           >
             <List className="w-4 h-4" />
@@ -164,13 +164,13 @@ export default function Dashboard() {
       </div>
 
       {allTags.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2">
-          <Filter className="w-4 h-4 text-ink-muted mr-2" />
+        <div className="flex flex-nowrap md:flex-wrap items-center gap-2 overflow-x-auto no-scrollbar pb-2">
+          <Filter className="w-4 h-4 text-ink-muted shrink-0 mr-1" />
           {allTags.map(tag => (
             <button
               key={tag}
               onClick={() => setActiveFilters(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag])}
-              className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border transition-colors ${activeFilters.includes(tag) ? 'bg-ink text-paper border-ink' : 'bg-transparent border-border-subtle text-ink-muted hover:border-ink/50'}`}
+              className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border transition-colors shrink-0 ${activeFilters.includes(tag) ? 'bg-accent text-black border-accent' : 'bg-transparent border-border-subtle text-ink-muted hover:border-accent hover:text-accent'}`}
             >
               #{tag}
             </button>
@@ -180,7 +180,7 @@ export default function Dashboard() {
 
       <DndContext onDragEnd={handleDragEnd}>
         {allFolders.length > 0 && (
-          <div className="flex flex-wrap gap-3 pb-2 border-b border-border-subtle">
+          <div className="flex flex-nowrap md:flex-wrap gap-3 pb-4 border-b border-border-subtle overflow-x-auto no-scrollbar scroll-smooth">
             {allFolders.map(folder => (
               <DroppableFolder 
                 key={folder} 
@@ -206,7 +206,7 @@ export default function Dashboard() {
               <DraggableRecipeCard key={recipe._id} recipe={recipe}>
                 <Link 
                   to={`/recipe/${recipe._id}`}
-                  className={`group block bg-sidebar border border-border-subtle rounded-xl overflow-hidden hover:border-ink/30 transition-all ${viewMode === 'list' ? 'flex flex-col sm:flex-row sm:items-center p-4 gap-4 sm:gap-6' : 'flex flex-col h-full'}`}
+                  className={`group block bg-sidebar/50 backdrop-blur-sm border border-border-subtle rounded-2xl overflow-hidden hover:border-accent hover:shadow-[0_0_15px_rgba(212,175,55,0.15)] dark:hover:shadow-[0_0_15px_rgba(197,160,89,0.15)] transition-all duration-300 ${viewMode === 'list' ? 'flex flex-col sm:flex-row sm:items-center p-4 gap-4 sm:gap-6' : 'flex flex-col h-full'}`}
                 >
                   {/* Image rendering based on viewMode */}
                   {viewMode === 'grid' && (
@@ -228,7 +228,7 @@ export default function Dashboard() {
                   
                   <div className={`p-5 ${viewMode === 'list' ? 'flex-1 p-0 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2' : 'flex-1 flex flex-col'}`}>
                     <div>
-                      <h2 className="text-xl font-bold tracking-tight mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{recipe.title}</h2>
+                      <h2 className="text-xl font-bold tracking-tight mb-2 group-hover:text-accent transition-colors">{recipe.title}</h2>
                       {viewMode === 'grid' && <p className="text-ink-muted text-sm line-clamp-2 mb-4 leading-relaxed flex-1">{recipe.description}</p>}
                     </div>
                     

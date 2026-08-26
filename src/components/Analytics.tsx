@@ -76,7 +76,7 @@ export default function Analytics() {
         </div>
         <div className="p-6 rounded-2xl bg-sidebar border border-border-subtle shadow-sm flex flex-col items-center justify-center text-center">
           <TrendingUp className="w-8 h-8 text-ink-muted mb-2" />
-          <span className="text-4xl font-black text-yellow-600 dark:text-yellow-400">{personalBests}</span>
+          <span className="text-4xl font-black text-accent">{personalBests}</span>
           <span className="text-sm font-bold text-ink-muted uppercase tracking-widest mt-1">Personal Bests</span>
         </div>
         <div className="p-6 rounded-2xl bg-sidebar border border-border-subtle shadow-sm flex flex-col items-center justify-center text-center">
@@ -95,7 +95,7 @@ export default function Analytics() {
             <div key={i} className="flex flex-col items-center flex-1 gap-2 group">
               <div className="w-full relative h-full flex items-end">
                 <div 
-                  className="w-full bg-ink/20 group-hover:bg-ink/40 transition-colors rounded-sm"
+                  className="w-full bg-accent/20 group-hover:bg-accent/50 transition-colors rounded-sm"
                   style={{ height: `${(count / maxBakesInMonth) * 100}%` }}
                 ></div>
                 {count > 0 && <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-bold text-ink-muted opacity-0 group-hover:opacity-100 transition-opacity">{count}</span>}
@@ -115,7 +115,7 @@ export default function Analytics() {
             {topRecipes.map((item, idx) => (
               <div key={idx} className="flex items-center justify-between p-4 rounded-xl bg-paper border border-border-subtle">
                 <span className="font-bold text-lg">{item.recipe?.title}</span>
-                <span className="font-bold text-ink-muted bg-black/5 dark:bg-white/5 px-3 py-1 rounded-full">{item.count} makes</span>
+                <span className="font-bold text-accent bg-accent/10 px-3 py-1 rounded-full">{item.count} makes</span>
               </div>
             ))}
           </div>

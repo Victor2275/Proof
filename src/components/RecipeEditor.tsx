@@ -328,28 +328,28 @@ export default function RecipeEditor() {
           type="button" 
           onClick={handleAIRestructure} 
           disabled={isRestructuring}
-          className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/20 text-purple-700 dark:text-purple-300 font-bold uppercase tracking-wider text-xs hover:bg-purple-500/20 transition-all ml-4"
+          className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent/10 border border-accent/30 text-accent font-bold uppercase tracking-wider text-xs hover:bg-accent/20 hover:border-accent transition-all ml-4"
         >
           {isRestructuring ? <Loader2 className="w-4 h-4 animate-spin" /> : '✨ Restructure with AI'}
         </button>
 
         <div className="flex items-center gap-3">
           {id && (
-            <button type="button" onClick={handleDelete} className="border border-red-600/30 text-red-600 dark:text-red-400 px-4 py-2 rounded-md font-medium hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2 shadow-sm transition-colors">
+            <button type="button" onClick={handleDelete} className="border border-red-500/50 text-red-500 px-4 py-2 rounded-xl font-bold hover:bg-red-500/10 flex items-center gap-2 transition-all">
               <Trash2 className="w-4 h-4" /> Delete
             </button>
           )}
           {id ? (
             <>
-              <button type="submit" onClick={(e) => handleSubmit(e, false)} className="border border-green-600/30 text-green-700 dark:text-green-400 px-6 py-2 rounded-md font-medium hover:bg-green-50 dark:hover:bg-green-900/20 flex items-center gap-2 shadow-sm transition-colors">
+              <button type="submit" onClick={(e) => handleSubmit(e, false)} className="border border-accent/50 text-accent px-6 py-2 rounded-xl font-bold hover:bg-accent/10 flex items-center gap-2 transition-all">
                 <Save className="w-4 h-4" /> Quick Save
               </button>
-              <button type="button" onClick={() => setShowCommitModal(true)} className="bg-ink text-paper px-6 py-2 rounded-md font-medium hover:opacity-90 flex items-center gap-2 shadow-sm transition-colors">
+              <button type="button" onClick={() => setShowCommitModal(true)} className="bg-accent text-black px-6 py-2 rounded-xl font-bold hover:opacity-90 flex items-center gap-2 shadow-[0_0_15px_rgba(212,175,55,0.2)] transition-all">
                 Save as New Iteration
               </button>
             </>
           ) : (
-            <button type="submit" onClick={(e) => handleSubmit(e, false)} className="border border-green-600/30 text-green-700 dark:text-green-400 px-6 py-2 rounded-md font-medium hover:bg-green-50 dark:hover:bg-green-900/20 flex items-center gap-2 shadow-sm transition-colors">
+            <button type="submit" onClick={(e) => handleSubmit(e, false)} className="border border-accent/50 text-accent px-6 py-2 rounded-xl font-bold hover:bg-accent/10 hover:shadow-[0_0_15px_rgba(212,175,55,0.15)] flex items-center gap-2 transition-all">
               <Save className="w-4 h-4" /> Create Recipe
             </button>
           )}
@@ -371,7 +371,7 @@ export default function RecipeEditor() {
             />
             <div className="flex justify-end gap-3">
               <button type="button" onClick={() => setShowCommitModal(false)} className="px-4 py-2 font-medium hover:bg-black/5 dark:hover:bg-white/5 rounded-md">Cancel</button>
-              <button type="button" onClick={(e) => { setShowCommitModal(false); handleSubmit(e, true); }} className="bg-ink text-paper px-6 py-2 font-medium rounded-md hover:opacity-90">Save Iteration</button>
+              <button type="button" onClick={(e) => { setShowCommitModal(false); handleSubmit(e, true); }} className="bg-accent text-black px-6 py-2 font-bold rounded-xl hover:shadow-[0_0_15px_rgba(212,175,55,0.2)] transition-all">Save Iteration</button>
             </div>
           </div>
         </div>
@@ -485,7 +485,7 @@ export default function RecipeEditor() {
                   type="button"
                   onClick={handleExtract}
                   disabled={extracting || !extractUrl}
-                  className="bg-ink text-paper px-6 py-2 rounded-lg font-medium hover:opacity-90 flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="bg-accent text-black px-6 py-2 rounded-xl font-bold hover:shadow-[0_0_10px_rgba(212,175,55,0.2)] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   {extracting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Extract'}
                 </button>
@@ -545,7 +545,7 @@ export default function RecipeEditor() {
                     multiple
                     onChange={handleImageUpload}
                     disabled={uploading}
-                    className="block w-full text-sm text-ink-muted file:mr-4 file:py-2.5 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-border-subtle file:text-ink hover:file:opacity-80 transition-all cursor-pointer focus:outline-none" 
+                    className="block w-full text-sm text-ink-muted file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-sidebar/50 file:border file:border-border-subtle file:text-ink hover:file:border-accent hover:file:text-accent transition-all cursor-pointer focus:outline-none" 
                   />
                 )}
                 <p className="text-xs text-ink-muted opacity-70 mt-2">JPEG, PNG, WEBP. Max 20MB per file.</p>
@@ -754,7 +754,7 @@ export default function RecipeEditor() {
                 type="button" 
                 onClick={executeCropAndUpload}
                 disabled={!completedCrop || uploading}
-                className="px-6 py-3 font-bold bg-ink text-paper rounded-xl hover:opacity-90 transition-opacity flex items-center gap-2 disabled:opacity-50"
+                className="px-6 py-3 font-bold bg-accent text-black rounded-xl hover:shadow-[0_0_15px_rgba(212,175,55,0.2)] transition-all flex items-center gap-2 disabled:opacity-50"
               >
                 {uploading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Crop & Upload'}
               </button>

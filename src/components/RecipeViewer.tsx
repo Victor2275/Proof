@@ -274,14 +274,14 @@ export default function RecipeViewer() {
 
           <button 
             onClick={handleToggleFavorite}
-            className={`border px-4 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2 whitespace-nowrap ${recipe.tags?.includes('Favorite') ? 'border-yellow-500/50 bg-yellow-500/10 text-yellow-600 dark:text-yellow-400' : 'border-border-subtle hover:bg-black/5 dark:hover:bg-white/5 text-ink-muted'}`}
+            className={`border px-4 py-1.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 whitespace-nowrap ${recipe.tags?.includes('Favorite') ? 'border-accent/50 bg-accent/10 text-accent' : 'border-border-subtle hover:bg-white/5 text-ink-muted'}`}
           >
             <Star className={`w-4 h-4 ${recipe.tags?.includes('Favorite') ? 'fill-current' : ''}`} /> 
             {recipe.tags?.includes('Favorite') ? 'FAVORITED' : 'FAVORITE'}
           </button>
           <Link 
             to={`/edit/${recipe._id}`} 
-            className="border border-green-600/30 text-green-700 dark:text-green-400 px-4 py-1.5 rounded-md text-sm font-medium hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors flex items-center gap-2 whitespace-nowrap"
+            className="border border-accent/30 text-accent px-4 py-1.5 rounded-xl text-sm font-bold hover:bg-accent/10 transition-all flex items-center gap-2 whitespace-nowrap"
           >
             <Edit className="w-4 h-4" /> EDIT RECIPE
           </Link>
@@ -315,30 +315,30 @@ export default function RecipeViewer() {
       
       <div id="recipe-export-node" className="bg-paper text-ink">
         {/* Top Controls */}
-        <div className="flex flex-wrap items-center gap-3 pb-6" data-html2canvas-ignore="true">
+        <div className="flex flex-nowrap md:flex-wrap items-center gap-3 pb-6 overflow-x-auto no-scrollbar" data-html2canvas-ignore="true">
             
-            <div className="flex border border-border-subtle rounded-md overflow-hidden bg-black/5 dark:bg-white/5 p-0.5 text-xs font-medium uppercase tracking-wide">
+            <div className="flex border border-border-subtle rounded-xl overflow-hidden bg-black/5 dark:bg-white/5 p-1 text-xs font-bold uppercase tracking-wide shrink-0">
              {[0.5, 1, 2, 3].map(m => (
                <button 
                  key={m}
                  onClick={() => setScaleMultiplier(m)}
-                 className={`px-3 py-1 rounded transition-all ${scaleMultiplier === m ? 'bg-paper shadow-sm text-ink' : 'text-ink-muted hover:text-ink hover:bg-black/5 dark:hover:bg-white/5'}`}
+                 className={`px-3 py-1 rounded-lg transition-all ${scaleMultiplier === m ? 'bg-accent text-black shadow-[0_0_10px_rgba(212,175,55,0.1)]' : 'text-ink-muted hover:text-accent hover:bg-white/5'}`}
                >
                  {m}x
                </button>
              ))}
           </div>
 
-          <div className="flex border border-border-subtle rounded-md overflow-hidden bg-black/5 dark:bg-white/5 p-0.5 text-xs font-medium uppercase tracking-wide whitespace-nowrap">
+          <div className="flex border border-border-subtle rounded-xl overflow-hidden bg-black/5 dark:bg-white/5 p-1 text-xs font-bold uppercase tracking-wide whitespace-nowrap shrink-0">
              <button 
                onClick={() => setActiveTab('recipe')}
-               className={`px-3 py-1 rounded transition-all ${activeTab === 'recipe' ? 'bg-paper shadow-sm text-ink' : 'text-ink-muted hover:text-ink'}`}
+               className={`px-3 py-1 rounded-lg transition-all ${activeTab === 'recipe' ? 'bg-accent/10 text-accent' : 'text-ink-muted hover:text-accent'}`}
              >
                Recipe
              </button>
               <button 
                 onClick={() => setActiveTab('history')}
-                className={`px-3 py-1 rounded transition-all ${activeTab === 'history' ? 'bg-paper shadow-sm text-ink' : 'text-ink-muted hover:text-ink'}`}
+                className={`px-3 py-1 rounded-lg transition-all ${activeTab === 'history' ? 'bg-accent/10 text-accent' : 'text-ink-muted hover:text-accent'}`}
               >
                 Previous Makes {bakeLogs.length > 0 ? `(${bakeLogs.length})` : ''}
               </button>
@@ -347,7 +347,7 @@ export default function RecipeViewer() {
           <div className="relative hidden md:block">
             <button 
               onClick={() => setShowStartMenu(!showStartMenu)}
-              className="flex bg-ink text-paper px-5 py-1.5 rounded-md text-sm font-medium hover:opacity-90 transition-opacity uppercase tracking-wide shadow-sm whitespace-nowrap items-center gap-2"
+              className="flex bg-accent text-black px-5 py-1.5 rounded-xl text-sm font-bold hover:shadow-[0_0_15px_rgba(212,175,55,0.2)] transition-all uppercase tracking-wide shadow-sm whitespace-nowrap items-center gap-2"
             >
               <Play className="w-4 h-4" fill="currentColor" /> START RECIPE
             </button>
@@ -433,7 +433,7 @@ export default function RecipeViewer() {
                   </button>
                   <button 
                     onClick={() => setShowBakersMath(!showBakersMath)}
-                    className={`text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-md border transition-colors ${showBakersMath ? 'bg-ink text-paper border-ink' : 'border-border-subtle text-ink-muted hover:bg-black/5 dark:hover:bg-white/5'}`}
+                    className={`text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-xl border transition-all ${showBakersMath ? 'bg-accent/10 text-accent border-accent shadow-[0_0_10px_rgba(212,175,55,0.1)]' : 'border-border-subtle text-ink-muted hover:bg-white/5'}`}
                   >
                     Baker's %
                   </button>
@@ -480,7 +480,7 @@ export default function RecipeViewer() {
                         )}
                         <button
                           onClick={() => setAiSubstituteIngredient(ing.name)}
-                          className="ml-auto text-xs text-purple-600 dark:text-purple-400 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 font-medium hover:underline"
+                          className="ml-auto text-xs text-accent opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 font-bold hover:underline"
                           title="AI Substitutions"
                         >
                           <Sparkles className="w-3 h-3" /> Sub
@@ -531,10 +531,9 @@ export default function RecipeViewer() {
           />
         </div>
       )}
-      {/* Sticky FAB for Mobile */}
       <button 
         onClick={() => setShowMobileStartModal(true)}
-        className="md:hidden fixed bottom-[calc(env(safe-area-inset-bottom,0px)+80px)] right-4 bg-ink text-paper w-14 h-14 rounded-full shadow-2xl flex items-center justify-center z-40 transition-transform hover:scale-105 active:scale-95"
+        className="md:hidden fixed bottom-[calc(env(safe-area-inset-bottom,0px)+80px)] right-4 bg-accent text-black w-14 h-14 rounded-full shadow-[0_0_20px_rgba(212,175,55,0.3)] flex items-center justify-center z-40 transition-transform hover:scale-105 active:scale-95"
       >
         <Play className="w-6 h-6 ml-1" fill="currentColor" />
       </button>
@@ -569,7 +568,7 @@ export default function RecipeViewer() {
                             setIsEditingDate(false);
                           } catch(e) { alert('Failed to update date'); }
                         }}
-                        className="bg-ink text-paper px-4 py-1.5 rounded-md text-sm font-bold hover:opacity-90"
+                        className="bg-accent text-black px-4 py-1.5 rounded-xl text-sm font-bold hover:shadow-[0_0_15px_rgba(212,175,55,0.2)] transition-all"
                       >Save</button>
                       <button onClick={() => setIsEditingDate(false)} className="text-sm font-medium hover:underline text-ink-muted hover:text-ink px-2">Cancel</button>
                     </div>
@@ -779,7 +778,7 @@ export default function RecipeViewer() {
           <div className="bg-paper p-6 rounded-2xl shadow-2xl relative w-full text-center animate-in slide-in-from-bottom-5">
             <h3 className="text-xl font-bold uppercase tracking-tight mb-4">Start Recipe</h3>
             <div className="space-y-3">
-              <Link to={`/recipe/${recipe._id}/bake`} className="block w-full py-4 bg-ink text-paper font-bold rounded-xl text-lg hover:opacity-90">
+              <Link to={`/recipe/${recipe._id}/bake`} className="block w-full py-4 bg-accent text-black font-bold rounded-xl text-lg hover:shadow-[0_0_15px_rgba(212,175,55,0.2)] transition-all">
                 Start Now
               </Link>
               <button onClick={() => { setShowReverseScheduler(true); setShowMobileStartModal(false); }} className="block w-full py-4 border border-border-subtle font-bold rounded-xl text-lg hover:bg-black/5 dark:hover:bg-white/5">
@@ -798,7 +797,7 @@ export default function RecipeViewer() {
           <div className="bg-paper p-6 rounded-2xl shadow-2xl relative w-full text-center animate-in slide-in-from-bottom-5">
             <h3 className="text-xl font-bold uppercase tracking-tight mb-4">Share</h3>
             <div className="space-y-3">
-              <button onClick={handleShareLink} className="block w-full py-4 bg-ink text-paper font-bold rounded-xl text-lg hover:opacity-90">
+              <button onClick={handleShareLink} className="block w-full py-4 bg-accent text-black font-bold rounded-xl text-lg hover:shadow-[0_0_15px_rgba(212,175,55,0.2)] transition-all">
                 Copy Link
               </button>
               <button onClick={() => { setShowQrModal(true); setShowMobileShareModal(false); }} className="block w-full py-4 border border-border-subtle font-bold rounded-xl text-lg hover:bg-black/5 dark:hover:bg-white/5">

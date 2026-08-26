@@ -127,7 +127,7 @@ export default function ReverseBakeScheduler({ recipe, onClose }: ReverseBakeSch
 
         <button
           onClick={handleScheduleNotifications}
-          className="bg-ink text-paper px-6 py-2.5 rounded-lg font-bold text-sm flex items-center justify-center gap-2 hover:opacity-90 shadow-sm transition-opacity"
+          className="bg-accent text-black px-6 py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:shadow-[0_0_15px_rgba(212,175,55,0.2)] transition-all"
         >
           {scheduled ? <Check className="w-4 h-4 text-green-400" /> : <Bell className="w-4 h-4" />}
           {scheduled ? 'Notifications Scheduled!' : 'Set Phone Notification Alerts'}

@@ -33,16 +33,16 @@ export default function Gallery() {
           <h1 className="text-3xl font-bold tracking-tight uppercase">Bake History</h1>
           <p className="text-ink-muted mt-2">A visual timeline of your culinary iterations.</p>
         </div>
-        <div className="flex bg-black/5 dark:bg-white/5 p-1 rounded-md border border-border-subtle">
+        <div className="flex bg-black/5 dark:bg-white/5 p-1 rounded-xl border border-border-subtle">
           <button 
             onClick={() => setSortBy('date')}
-            className={`px-4 py-1.5 rounded text-sm font-medium transition-colors ${sortBy === 'date' ? 'bg-paper shadow-sm' : 'text-ink-muted hover:text-ink'}`}
+            className={`px-4 py-1.5 rounded-lg text-sm transition-all ${sortBy === 'date' ? 'bg-accent/10 border border-accent text-accent font-bold shadow-[0_0_10px_rgba(212,175,55,0.1)]' : 'border border-transparent text-ink-muted hover:text-ink'}`}
           >
             By Date
           </button>
           <button 
             onClick={() => setSortBy('recipe')}
-            className={`px-4 py-1.5 rounded text-sm font-medium transition-colors ${sortBy === 'recipe' ? 'bg-paper shadow-sm' : 'text-ink-muted hover:text-ink'}`}
+            className={`px-4 py-1.5 rounded-lg text-sm transition-all ${sortBy === 'recipe' ? 'bg-accent/10 border border-accent text-accent font-bold shadow-[0_0_10px_rgba(212,175,55,0.1)]' : 'border border-transparent text-ink-muted hover:text-ink'}`}
           >
             By Recipe
           </button>
