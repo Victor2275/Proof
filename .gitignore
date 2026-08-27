@@ -28,3 +28,11 @@ server/.env
 *.njsproj
 *.sln
 *.sw?
+
+# Device logs — adb_logcat.txt reached 71MB and was committed once; keep it out.
+*logcat*.txt
+adb_logcat.txt
+
+# Legacy local image uploads, superseded by Cloudinary.
+server/uploads/
+test.txt
