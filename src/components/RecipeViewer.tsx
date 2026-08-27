@@ -1,3 +1,4 @@
+import RecipeImage from './RecipeImage';
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { api, type Recipe, type BakeLog } from '../lib/api';
@@ -371,10 +372,11 @@ export default function RecipeViewer() {
           {/* Header Card */}
           <div className="flex flex-col md:flex-row gap-8 pb-10 border-b border-border-subtle">
             {heroImage && (
-              <img 
-                src={heroImage} 
-                alt={recipe.title} 
+              <RecipeImage
+                src={heroImage}
+                alt={recipe.title}
                 className="w-full md:w-64 h-64 object-cover rounded-xl border border-border-subtle shadow-sm shrink-0"
+                placeholderClassName="w-full md:w-64 h-64 rounded-xl border border-border-subtle shadow-sm shrink-0"
               />
             )}
             

@@ -1,3 +1,4 @@
+import RecipeImage from './RecipeImage';
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api, type Recipe } from '../lib/api';
@@ -211,18 +212,13 @@ export default function Dashboard() {
                   {/* Image rendering based on viewMode */}
                   {viewMode === 'grid' && (
                     <div className="aspect-[4/3] bg-black/5 dark:bg-white/5 relative overflow-hidden">
-                      {recipe.imageUrls?.[0] ? (
-                        <img 
-                          src={recipe.imageUrls[0]} 
-                          alt={recipe.title}
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                          loading="lazy"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-ink-muted/30">
-                          <span className="font-bold uppercase tracking-widest text-xs">No Image</span>
-                        </div>
-                      )}
+                      <RecipeImage
+                        src={recipe.imageUrls?.[0]}
+                        alt={recipe.title}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        placeholderClassName="w-full h-full"
+                        loading="lazy"
+                      />
                     </div>
                   )}
                   
