@@ -10,7 +10,7 @@ import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { Capacitor } from '@capacitor/core';
 import 'regenerator-runtime/runtime';
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
-import { hapticsEnabled } from '../lib/settings';
+import { hapticsEnabled, voiceCommandsEnabled, waveToAdvanceEnabled } from '../lib/settings';
 
 export default function BakingMode() {
   const { id } = useParams<{ id: string }>();
@@ -27,8 +27,8 @@ export default function BakingMode() {
   const [checkedIngredients, setCheckedIngredients] = useState<Record<number, boolean>>({});
 
   // Settings
-  const [waveToAdvanceSetting] = useState(() => localStorage.getItem('waveToAdvance') === 'true');
-  const [voiceCommandsSetting] = useState(() => localStorage.getItem('voiceCommands') === 'true');
+  const [waveToAdvanceSetting] = useState(waveToAdvanceEnabled);
+  const [voiceCommandsSetting] = useState(voiceCommandsEnabled);
 
   // Motion Detection State
   const videoRef = useRef<HTMLVideoElement>(null);

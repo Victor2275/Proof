@@ -73,6 +73,9 @@ describe('BakingMode Component', () => {
     vi.mocked(api.getRecipe).mockResolvedValue(mockRecipe as any);
     registeredCommands = [];
     window.confirm = vi.fn().mockReturnValue(true);
+    // Voice commands and wave-to-advance are opt-in, so a leftover value from an
+    // earlier test would change which controls render.
+    localStorage.clear();
   });
 
   it('renders Focus Mode by default and shows first step', async () => {
@@ -113,7 +116,7 @@ describe('BakingMode Component', () => {
     render(<MemoryRouter><BakingMode /></MemoryRouter>);
     await waitFor(() => expect(screen.getByText('Step 1: Mix')).toBeDefined());
     
-    const toggleBtn = screen.getByText('Show All Steps');
+    const toggleBtn = screen.getByText('Show All');
     fireEvent.click(toggleBtn);
     
     await waitFor(() => {
@@ -142,6 +145,8 @@ describe('BakingMode Component', () => {
   });
 
   it('toggles the microphone on click', async () => {
+    // The mic only renders when the Voice Commands setting is on.
+    localStorage.setItem('voiceCommands', 'true');
     render(<MemoryRouter><BakingMode /></MemoryRouter>);
     await waitFor(() => expect(screen.getByText('Step 1: Mix')).toBeDefined());
     
