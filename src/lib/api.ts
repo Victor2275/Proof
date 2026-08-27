@@ -8,14 +8,67 @@ const getHeaders = (isFormData = false) => {
   return headers;
 };
 
+/** Carries the HTTP status so callers can tell "server said no" from "server unreachable". */
+export class ApiError extends Error {
+  status: number;
+  degraded: boolean;
+  constructor(message: string, status: number, degraded = false) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.degraded = degraded;
+  }
+}
+
+/**
+ * Announce that the screen is showing a locally cached copy rather than live data,
+ * so the UI can say so instead of quietly presenting stale content as current.
+ */
+const announceStale = (reason: string) => {
+  window.dispatchEvent(new CustomEvent('api-stale', { detail: { reason } }));
+};
+
 const handleResponse = async (res: Response) => {
   if (res.status === 401) {
     window.dispatchEvent(new Event('auth-required'));
-    throw new Error('Admin authentication required.');
+    throw new ApiError('Admin authentication required.', 401);
   }
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || 'API Error');
+  // A degraded server answers 503 with a JSON body; a crashed one may not answer
+  // with JSON at all, so don't let the parse throw over the real status.
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new ApiError(data.error || `Request failed (${res.status})`, res.status, !!data.degraded);
   return data;
+};
+
+/**
+ * Reads that can fall back to a local cache.
+ *
+ * Falling back is right when the network is gone — you should still be able to read
+ * a recipe in the kitchen. Falling back *silently* is not: every caller used to
+ * swallow the error and return [], so a 500 or an unreachable database rendered as
+ * an empty cookbook with no way to tell an outage from genuinely having no recipes.
+ * Now a cache hit is announced as stale, and a miss propagates so the screen can
+ * show an error with a retry.
+ */
+const cachedRead = async <T>(cacheKey: string, fetcher: () => Promise<T>, label: string): Promise<T> => {
+  try {
+    const data = await fetcher();
+    localStorage.setItem(cacheKey, JSON.stringify(data));
+    return data;
+  } catch (err) {
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached) as T;
+        console.warn(`${label}: serving cached copy —`, err);
+        announceStale(err instanceof ApiError && err.degraded
+          ? 'The server is up but its database is unavailable.'
+          : "Can't reach the server.");
+        return parsed;
+      } catch { /* corrupt cache falls through to the throw below */ }
+    }
+    throw err;
+  }
 };
 
 export interface Note {
@@ -73,56 +126,27 @@ export interface PantryItem {
 
 export const api = {
   getRecipes: async (search?: string) => {
-    try {
+    const fetcher = async () => {
       const url = search ? `${API_URL}/recipes?search=${encodeURIComponent(search)}` : `${API_URL}/recipes`;
-      const res = await fetch(url, { headers: getHeaders() });
-      const data = await handleResponse(res);
-      if (!search && Array.isArray(data)) {
-        localStorage.setItem('cached_recipes', JSON.stringify(data));
-      }
-      return data;
-    } catch (err) {
-      console.warn('Backend server unreachable, trying offline local cache:', err);
-      const cached = localStorage.getItem('cached_recipes');
-      if (cached) {
-        try { return JSON.parse(cached); } catch {}
-      }
-      return [];
-    }
-  },
-  
-  getAllBakeLogs: async () => {
-    try {
-      const res = await fetch(`${API_URL}/bakelogs`, { headers: getHeaders() });
-      const data = await handleResponse(res);
-      localStorage.setItem('cached_bakelogs', JSON.stringify(data));
-      return data;
-    } catch (err) {
-      console.warn('Backend server unreachable, trying offline local cache:', err);
-      const cached = localStorage.getItem('cached_bakelogs');
-      if (cached) {
-        try { return JSON.parse(cached); } catch {}
-      }
-      return [];
-    }
+      return handleResponse(await fetch(url, { headers: getHeaders() }));
+    };
+    // Only the unfiltered list is worth caching — a search result isn't the cookbook.
+    if (search) return fetcher();
+    return cachedRead('cached_recipes', fetcher, 'Recipes');
   },
 
+  getAllBakeLogs: async () => cachedRead(
+    'cached_bakelogs',
+    async () => handleResponse(await fetch(`${API_URL}/bakelogs`, { headers: getHeaders() })),
+    'Bake logs',
+  ),
+
   // Pantry
-  getPantry: async (): Promise<PantryItem[]> => {
-    try {
-      const res = await fetch(`${API_URL}/pantry`, { headers: getHeaders() });
-      const data = await handleResponse(res);
-      localStorage.setItem('cached_pantry', JSON.stringify(data));
-      return data;
-    } catch (err) {
-      console.warn('Backend server unreachable, trying offline local cache:', err);
-      const cached = localStorage.getItem('cached_pantry');
-      if (cached) {
-        try { return JSON.parse(cached); } catch {}
-      }
-      return [];
-    }
-  },
+  getPantry: async (): Promise<PantryItem[]> => cachedRead(
+    'cached_pantry',
+    async () => handleResponse(await fetch(`${API_URL}/pantry`, { headers: getHeaders() })),
+    'Pantry',
+  ),
   addPantryItem: async (item: Partial<PantryItem>): Promise<PantryItem> => {
     const res = await fetch(`${API_URL}/pantry`, {
       method: 'POST',

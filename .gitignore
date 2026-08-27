@@ -14,6 +14,9 @@ dist-ssr
 .env
 .env.*
 server/.env
+# ...but the template with no secrets in it should be shared.
+!.env.example
+!server/.env.example
 
 # Editor directories and files
 .vscode/*

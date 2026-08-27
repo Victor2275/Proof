@@ -44,19 +44,26 @@ export default function Dashboard() {
     localStorage.setItem('dashboardViewMode', viewMode);
   }, [viewMode]);
 
+  // An outage used to look exactly like an empty cookbook. Keep the two apart so a
+  // failure reads as a failure and offers a way out.
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  const fetchRecipes = async () => {
+    setLoading(true);
+    setLoadError(null);
+    try {
+      const data = await api.getRecipes('');
+      setAllRecipes(data);
+      setRecipes(data);
+    } catch (err) {
+      console.error(err);
+      setLoadError(err instanceof Error ? err.message : 'Could not load your recipes.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchRecipes = async () => {
-      setLoading(true);
-      try {
-        const data = await api.getRecipes('');
-        setAllRecipes(data);
-        setRecipes(data);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchRecipes();
   }, []);
 
@@ -196,6 +203,17 @@ export default function Dashboard() {
         {loading ? (
           <div className="text-center py-20 text-ink-muted font-medium uppercase tracking-wide text-sm">
             Loading Cookbook...
+          </div>
+        ) : loadError ? (
+          <div className="text-center py-24 border-2 border-dashed border-red-500/30 rounded-xl bg-red-500/5 px-6">
+            <p className="font-bold text-lg mb-2">Couldn't load your cookbook</p>
+            <p className="text-ink-muted mb-6 max-w-md mx-auto">{loadError}</p>
+            <button
+              onClick={fetchRecipes}
+              className="bg-ink text-paper px-6 py-3 rounded-xl font-bold hover:opacity-90 transition-opacity"
+            >
+              Try again
+            </button>
           </div>
         ) : recipes.filter(r => (r.folder || 'Uncategorized') === activeFolder).length === 0 ? (
           <div className="text-center py-32 border-2 border-dashed border-border-subtle rounded-xl text-ink-muted bg-sidebar/50">

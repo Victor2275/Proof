@@ -88,6 +88,9 @@ function AuthModal({ onClose, onSuccess }: { onClose: () => void, onSuccess: () 
 function App() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  // Set when a screen falls back to its local cache, so we can say the data is a
+  // saved copy rather than letting stale content pass for live.
+  const [staleReason, setStaleReason] = useState<string | null>(null);
   const [autoHideSidebar, setAutoHideSidebar] = useState(() => localStorage.getItem('autoHideSidebar') === 'true');
 
   useEffect(() => {
@@ -119,26 +122,43 @@ function App() {
     const handleAuthReq = () => setShowAuthModal(true);
     window.addEventListener('auth-required', handleAuthReq);
     
-    const handleOnline = () => setIsOffline(false);
+    const handleOnline = () => { setIsOffline(false); setStaleReason(null); };
     const handleOffline = () => setIsOffline(true);
+    const handleStale = (e: Event) => setStaleReason((e as CustomEvent).detail?.reason ?? "Can't reach the server.");
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
+    window.addEventListener('api-stale', handleStale);
 
     return () => {
       window.removeEventListener('auth-required', handleAuthReq);
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
+      window.removeEventListener('api-stale', handleStale);
     };
   }, []);
 
+  // While the browser reports itself offline, the offline bar already explains things.
+  const showStaleBar = !!staleReason && !isOffline;
+
   return (
     <Router>
+      {/*
+        The status bars sit in the flow rather than fixed with a guessed pt-6: their
+        text wraps to two or three lines on a phone, which a fixed offset can't
+        account for, and the overflow landed on top of the page heading.
+      */}
+      <div className="flex flex-col h-screen bg-paper text-ink overflow-hidden selection:bg-ink selection:text-paper">
       {isOffline && (
-        <div className="fixed top-0 left-0 right-0 z-[200] bg-yellow-500 text-yellow-900 font-bold text-center py-1 text-sm shadow-md">
+        <div className="shrink-0 z-[200] bg-yellow-500 text-yellow-900 font-bold text-center py-1 px-4 text-sm shadow-md">
           Offline Mode: You are viewing cached recipes. Changes will not be saved until you reconnect.
         </div>
       )}
-      <div className={`flex h-screen bg-paper text-ink overflow-hidden selection:bg-ink selection:text-paper ${isOffline ? 'pt-6' : ''}`}>
+      {showStaleBar && (
+        <div className="shrink-0 z-[200] bg-amber-600 text-white font-bold text-center py-1 px-4 text-sm shadow-md">
+          {staleReason} Showing your last saved copy — changes won't save until it's back.
+        </div>
+      )}
+      <div className="flex flex-1 min-h-0">
         <Sidebar onAdminRequired={() => setShowAuthModal(true)} className={`hidden md:flex ${autoHideSidebar ? 'group -translate-x-[95%] hover:-translate-x-0 transition-transform duration-300 shadow-2xl z-50' : ''}`} />
         <main className={`flex-1 overflow-y-auto overscroll-y-auto w-full relative pb-24 md:pb-12 pt-safe md:pt-12 px-4 md:px-12 transition-all duration-300 ${autoHideSidebar ? 'md:ml-[3%]' : 'md:ml-64'}`}>
           <ErrorBoundary>
@@ -160,14 +180,15 @@ function App() {
         <BottomNav />
         <TimerManager />
         {showAuthModal && (
-          <AuthModal 
-            onClose={() => setShowAuthModal(false)} 
+          <AuthModal
+            onClose={() => setShowAuthModal(false)}
             onSuccess={() => {
               setShowAuthModal(false);
               window.dispatchEvent(new Event('auth-success'));
-            }} 
+            }}
           />
         )}
+      </div>
       </div>
     </Router>
   );

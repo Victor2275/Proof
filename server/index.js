@@ -16,6 +16,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { Note } from './models/Note.js';
 import { BakeLog } from './models/BakeLog.js';
 import { Pantry } from './models/Pantry.js';
+import { Timer } from './models/Timer.js';
 import { sampleRecipes, samplePantry, sampleBakeLogs } from './sampleData.js';
 import cron from 'node-cron';
 import fs from 'fs';
@@ -119,10 +120,34 @@ if (process.env.NODE_ENV !== 'test') {
     });
 }
 
+/*
+ * Database availability.
+ *
+ * Reads used to fall back to the bundled sample data with a 200 whenever Mongo was
+ * unreachable, and GET /api/recipes/:id fell through to `sampleRecipes[0]` — so any
+ * recipe URL silently rendered "Classic Country Sourdough" as though it were yours,
+ * with nothing in the response to say otherwise. Opening a recipe mid-bake during a
+ * connection blip meant reading someone else's formula without knowing.
+ *
+ * Sample data is now opt-in through DEMO_MODE (for showing the app off without a
+ * database). Otherwise a missing database is reported honestly as 503 so the client
+ * can say so rather than inventing content.
+ */
+const DEMO_MODE = process.env.DEMO_MODE === 'true';
+const dbReady = () => mongoose.connection.readyState === 1;
+const sendDegraded = (res) => res.status(503).json({
+  error: 'The recipe database is unavailable. Reconnecting — your data is safe.',
+  degraded: true,
+});
+
 // Routes
 
 app.get(['/api', '/api/health'], (req, res) => {
-  res.json({ status: 'ok', message: 'Proof API Server is running' });
+  res.json({
+    status: dbReady() ? 'ok' : 'degraded',
+    database: dbReady() ? 'connected' : (DEMO_MODE ? 'demo-mode' : 'unavailable'),
+    message: 'Proof API Server is running',
+  });
 });
 
 app.post('/api/upload', requireAdmin, upload.single('image'), (req, res) => {
@@ -382,7 +407,8 @@ Return a JSON array of objects with the following keys:
 // Get all recipes
 app.get('/api/recipes', async (req, res) => {
   try {
-    if (mongoose.connection.readyState !== 1) {
+    if (!dbReady()) {
+      if (!DEMO_MODE) return sendDegraded(res);
       if (req.query.search) {
         const s = req.query.search.toLowerCase();
         return res.json(sampleRecipes.filter(r => r.title.toLowerCase().includes(s) || r.tags.some(t => t.toLowerCase().includes(s))));
@@ -407,8 +433,11 @@ app.get('/api/recipes', async (req, res) => {
 // Get a single recipe
 app.get('/api/recipes/:id', async (req, res) => {
   try {
-    if (mongoose.connection.readyState !== 1) {
-      const match = sampleRecipes.find(r => r._id === req.params.id) || sampleRecipes[0];
+    if (!dbReady()) {
+      if (!DEMO_MODE) return sendDegraded(res);
+      // Even in demo mode, never substitute a different recipe for the one asked for.
+      const match = sampleRecipes.find(r => r._id === req.params.id);
+      if (!match) return res.status(404).json({ error: 'Recipe not found', degraded: true });
       return res.json(match);
     }
     const recipe = await Recipe.findById(req.params.id);
@@ -505,7 +534,7 @@ app.delete('/api/recipes/:id', requireAdmin, async (req, res) => {
 // General Notes endpoints
 app.get('/api/notes', async (req, res) => {
   try {
-    if (mongoose.connection.readyState !== 1) return res.json([]);
+    if (!dbReady()) return DEMO_MODE ? res.json([]) : sendDegraded(res);
     const notes = await Note.find().sort({ updatedAt: -1 });
     res.json(notes);
   } catch (err) {
@@ -546,7 +575,7 @@ app.delete('/api/notes/:id', async (req, res) => {
 // BakeLog endpoints
 app.get('/api/bakelogs', async (req, res) => {
   try {
-    if (mongoose.connection.readyState !== 1) return res.json(sampleBakeLogs);
+    if (!dbReady()) return DEMO_MODE ? res.json(sampleBakeLogs) : sendDegraded(res);
     const logs = await BakeLog.find().populate('recipeId', 'title').sort({ date: -1 });
     res.json(logs);
   } catch (err) {
@@ -556,7 +585,7 @@ app.get('/api/bakelogs', async (req, res) => {
 
 app.get('/api/recipes/:recipeId/bakelogs', async (req, res) => {
   try {
-    if (mongoose.connection.readyState !== 1) return res.json(sampleBakeLogs.filter(b => b.recipeId._id === req.params.recipeId));
+    if (!dbReady()) return DEMO_MODE ? res.json(sampleBakeLogs.filter(b => b.recipeId._id === req.params.recipeId)) : sendDegraded(res);
     const logs = await BakeLog.find({ recipeId: req.params.recipeId }).sort({ date: -1 });
     res.json(logs);
   } catch (err) {
@@ -597,7 +626,7 @@ app.delete('/api/bakelogs/:id', async (req, res) => {
 // Pantry endpoints
 app.get('/api/pantry', async (req, res) => {
   try {
-    if (mongoose.connection.readyState !== 1) return res.json(samplePantry);
+    if (!dbReady()) return DEMO_MODE ? res.json(samplePantry) : sendDegraded(res);
     const items = await Pantry.find().sort({ createdAt: -1 });
     res.json(items);
   } catch (err) {
@@ -625,28 +654,82 @@ app.delete('/api/pantry/:id', requireAdmin, async (req, res) => {
   }
 });
 
-// Active Multi-Device Timer Sync Store (Memory)
+/*
+ * Active multi-device timer sync.
+ *
+ * The in-memory array is still the hot path that Socket.io broadcasts from, but it
+ * is now mirrored to Mongo so a restart resumes running timers instead of silently
+ * dropping them. Writes are fire-and-forget: a database problem must never stop a
+ * timer from reaching the other devices in the kitchen.
+ */
 let globalTimers = [];
+
+const persistTimers = async (op) => {
+  if (!dbReady()) return;
+  try {
+    await op();
+  } catch (err) {
+    console.error('Timer persistence failed (timer still live in memory):', err.message);
+  }
+};
+
+const loadTimersFromDb = async () => {
+  if (!dbReady()) return;
+  try {
+    const stored = await Timer.find({}).lean();
+    // Drop anything that finished while the server was down — resuming an alarm for
+    // a bake that ended hours ago is worse than forgetting it.
+    const stillRelevant = stored.filter(t => t.endTime === null || t.endTime > Date.now() || !t.hasRung);
+    globalTimers = stillRelevant.map(({ id, name, endTime, remainingMs, hasRung }) => ({ id, name, endTime, remainingMs, hasRung }));
+    const staleIds = stored.filter(t => !stillRelevant.includes(t)).map(t => t.id);
+    if (staleIds.length) await Timer.deleteMany({ id: { $in: staleIds } });
+    if (globalTimers.length) console.log(`Resumed ${globalTimers.length} timer(s) from the database`);
+  } catch (err) {
+    console.error('Could not restore timers:', err.message);
+  }
+};
+
+if (process.env.NODE_ENV !== 'test') {
+  mongoose.connection.once('connected', loadTimersFromDb);
+}
+
+// Read the live timer state over HTTP — useful for a device that has not opened a
+// socket yet, and for checking state without driving the UI.
+app.get('/api/timers', (req, res) => {
+  res.json(globalTimers);
+});
+
+app.delete('/api/timers/:id', requireAdmin, async (req, res) => {
+  const before = globalTimers.length;
+  globalTimers = globalTimers.filter(t => t.id !== req.params.id);
+  if (globalTimers.length === before) return res.status(404).json({ error: 'Timer not found' });
+  await persistTimers(() => Timer.deleteOne({ id: req.params.id }));
+  io.emit('timers:sync', globalTimers);
+  res.json({ success: true, timers: globalTimers });
+});
 
 io.on('connection', (socket) => {
   console.log('Client connected to Socket.io');
-  
+
   // Send current state to newly connected client
   socket.emit('timers:sync', globalTimers);
 
   socket.on('timer:add', (timer) => {
     globalTimers.push(timer);
     io.emit('timers:sync', globalTimers);
+    persistTimers(() => Timer.updateOne({ id: timer.id }, { $set: timer }, { upsert: true }));
   });
 
   socket.on('timer:update', (timerUpdate) => {
     globalTimers = globalTimers.map(t => t.id === timerUpdate.id ? { ...t, ...timerUpdate } : t);
     io.emit('timers:sync', globalTimers);
+    persistTimers(() => Timer.updateOne({ id: timerUpdate.id }, { $set: timerUpdate }, { upsert: true }));
   });
 
   socket.on('timer:remove', (id) => {
     globalTimers = globalTimers.filter(t => t.id !== id);
     io.emit('timers:sync', globalTimers);
+    persistTimers(() => Timer.deleteOne({ id }));
   });
 
   socket.on('disconnect', () => {
@@ -775,4 +858,4 @@ if (process.env.NODE_ENV !== 'test') {
   });
 }
 
-export { app, server, io };
+export { app, server, io, loadTimersFromDb };
