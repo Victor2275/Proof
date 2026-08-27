@@ -98,9 +98,21 @@ function App() {
     
     // Initial font setup
     document.documentElement.setAttribute('data-font', localStorage.getItem('fontFamily') || 'sans');
-    
+
+    // The `dark:` variant is bound to the .dark class (see index.css), so in "system"
+    // mode we have to mirror OS theme changes onto the class ourselves.
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleSystemTheme = (e: MediaQueryListEvent) => {
+      if (localStorage.getItem('theme')) return; // an explicit choice wins
+      document.documentElement.classList.toggle('dark', e.matches);
+    };
+    mq.addEventListener('change', handleSystemTheme);
+
     window.addEventListener('settings-changed', handleSettingsChange);
-    return () => window.removeEventListener('settings-changed', handleSettingsChange);
+    return () => {
+      window.removeEventListener('settings-changed', handleSettingsChange);
+      mq.removeEventListener('change', handleSystemTheme);
+    };
   }, []);
 
   useEffect(() => {

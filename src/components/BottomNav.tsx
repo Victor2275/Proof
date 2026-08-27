@@ -5,6 +5,10 @@ import { motion } from 'framer-motion';
 export default function BottomNav() {
   const location = useLocation();
 
+  // Baking Mode is a distraction-free fullscreen surface — the nav would cover its
+  // controls and defeat the point, so stay out of the way there.
+  if (/^\/recipe\/[^/]+\/bake$/.test(location.pathname)) return null;
+
   const navItems = [
     { to: "/", icon: LayoutDashboard, label: "Cookbook" },
     { to: "/gallery", icon: ImageIcon, label: "Gallery" },

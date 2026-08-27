@@ -90,21 +90,22 @@ export default function Pantry() {
       <div className="bg-sidebar p-6 rounded-2xl border border-border-subtle shadow-sm">
         <p className="text-ink-muted mb-6 font-medium">Add ingredients you currently have in stock. When viewing recipes, your pantry will automatically cross-reference what you need via fuzzy matching.</p>
         
-        <form onSubmit={handleAddItem} className="flex gap-4">
-          <input 
-            type="text" 
+        <form onSubmit={handleAddItem} className="flex flex-wrap gap-3 sm:gap-4">
+          <input
+            type="text"
             value={newItemName}
             onChange={(e) => setNewItemName(e.target.value)}
-            placeholder="e.g. Bread Flour, active dry yeast..." 
-            className="flex-1 bg-paper border border-border-subtle rounded-xl px-4 py-3 focus:outline-none focus:border-ink transition-colors"
+            placeholder="e.g. Bread Flour, active dry yeast..."
+            className="w-full sm:w-auto sm:flex-1 min-w-0 bg-paper border border-border-subtle rounded-xl px-4 py-3 focus:outline-none focus:border-ink transition-colors"
           />
-          <button type="submit" className="bg-accent text-black px-6 py-3 rounded-xl font-bold hover:shadow-[0_0_15px_rgba(212,175,55,0.2)] transition-all flex items-center gap-2 whitespace-nowrap">
+          <button type="submit" className="flex-1 sm:flex-none justify-center bg-accent text-black px-6 py-3 rounded-xl font-bold hover:shadow-[0_0_15px_rgba(212,175,55,0.2)] transition-all flex items-center gap-2 whitespace-nowrap">
             <Plus className="w-5 h-5" /> Add
           </button>
-          <button 
-            type="button" 
+          <button
+            type="button"
             onClick={() => setScanning(true)}
-            className="border border-border-subtle px-4 py-3 rounded-xl text-ink hover:bg-black/5 dark:hover:bg-white/5 transition-colors flex items-center gap-2"
+            aria-label="Scan barcode"
+            className="shrink-0 border border-border-subtle px-4 py-3 rounded-xl text-ink hover:bg-black/5 dark:hover:bg-white/5 transition-colors flex items-center gap-2"
           >
             <ScanBarcode className="w-5 h-5" />
           </button>

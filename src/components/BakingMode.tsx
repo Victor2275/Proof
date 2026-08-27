@@ -495,10 +495,14 @@ export default function BakingMode() {
         <div className="flex flex-nowrap items-center gap-2 md:gap-4 overflow-x-auto no-scrollbar shrink-0 pr-1 md:pr-0">
           <button onClick={connectScale} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-colors ${scaleConnected ? 'bg-blue-500/20 text-blue-600 border border-blue-500/50' : 'bg-black/5 dark:bg-white/5 border border-border-subtle hover:bg-black/10'}`}>
             <Bluetooth className={`w-3.5 h-3.5 ${scaleConnected ? 'animate-pulse' : ''}`} />
-            {scaleWeight ? `${scaleWeight.weight}${scaleWeight.unit}` : (scaleConnected ? 'Connected' : 'Scale')}
+            {/* A live weight always shows; the idle label is dropped on narrow screens
+                so the whole control row fits without scrolling. */}
+            {scaleWeight
+              ? `${scaleWeight.weight}${scaleWeight.unit}`
+              : <span className="hidden sm:inline">{scaleConnected ? 'Connected' : 'Scale'}</span>}
           </button>
-          
-          <button 
+
+          <button
             onClick={() => setShowIngredients(!showIngredients)}
             className={`px-3 md:px-5 py-1.5 rounded-full border transition-all font-bold uppercase tracking-widest text-xs md:text-sm flex items-center gap-2 shrink-0 ${showIngredients ? 'bg-accent/10 text-accent border-accent' : 'border-border-subtle hover:bg-black/5 dark:hover:bg-white/5 text-ink-muted'}`}
           >
@@ -508,8 +512,9 @@ export default function BakingMode() {
           {voiceCommandsSetting && browserSupportsSpeechRecognition && (
             <button 
               onClick={toggleMic}
-              className={`p-2 rounded-full border transition-colors ${listening ? 'bg-red-500 text-white border-red-500 animate-pulse' : 'border-border-subtle hover:bg-black/5 dark:hover:bg-white/5 text-ink-muted'}`}
+              className={`shrink-0 p-2.5 rounded-full border transition-colors ${listening ? 'bg-red-500 text-white border-red-500 animate-pulse' : 'border-border-subtle hover:bg-black/5 dark:hover:bg-white/5 text-ink-muted'}`}
               title="Toggle Voice Commands (Next, Back, Finish)"
+              aria-label="Toggle voice commands"
             >
               <Mic className="w-4 h-4" />
             </button>
@@ -554,9 +559,6 @@ export default function BakingMode() {
           >
             {viewMode === 'focus' ? 'Show All' : 'Focus Mode'}
           </button>
-          <span className="font-bold text-ink-muted uppercase tracking-wider text-sm hidden sm:inline">
-            {viewMode === 'all' ? 'All Steps' : (isFinished ? 'Finished' : `Step ${currentStep + 1} of ${recipe.instructions.length}`)}
-          </span>
         </div>
 
 
@@ -564,7 +566,7 @@ export default function BakingMode() {
 
       {/* Main Content */}
       <div 
-        className="flex-1 flex flex-col items-center w-full max-w-4xl px-8 md:px-12 pb-20 relative overflow-y-auto"
+        className="flex-1 flex flex-col items-center w-full max-w-4xl px-6 md:px-12 pb-28 md:pb-20 relative overflow-y-auto"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -648,18 +650,20 @@ export default function BakingMode() {
       {/* Navigation Arrows (Only in Focus Mode) */}
       {viewMode === 'focus' && (
         <>
-          <button 
+          <button
             onClick={handlePrevStep}
             disabled={currentStep === 0}
-            className="absolute left-4 top-1/2 -translate-y-1/2 p-4 rounded-full bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 disabled:opacity-0 transition-all"
+            aria-label="Previous step"
+            className="absolute z-10 left-4 bottom-6 md:bottom-auto md:top-1/2 md:-translate-y-1/2 p-4 rounded-full bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 disabled:opacity-0 disabled:pointer-events-none transition-all"
           >
             <ChevronLeft className="w-8 h-8" />
           </button>
-          
-          <button 
+
+          <button
             onClick={handleNextStep}
             disabled={currentStep === recipe.instructions.length}
-            className="absolute right-4 top-1/2 -translate-y-1/2 p-4 rounded-full bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 disabled:opacity-0 transition-all"
+            aria-label="Next step"
+            className="absolute z-10 right-4 bottom-6 md:bottom-auto md:top-1/2 md:-translate-y-1/2 p-4 rounded-full bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 disabled:opacity-0 disabled:pointer-events-none transition-all"
           >
             <ChevronRight className="w-8 h-8" />
           </button>

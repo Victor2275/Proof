@@ -333,23 +333,23 @@ export default function RecipeEditor() {
           {isRestructuring ? <Loader2 className="w-4 h-4 animate-spin" /> : '✨ Restructure with AI'}
         </button>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 md:gap-3 w-full md:w-auto">
           {id && (
-            <button type="button" onClick={handleDelete} className="border border-red-500/50 text-red-500 px-4 py-2 rounded-xl font-bold hover:bg-red-500/10 flex items-center gap-2 transition-all">
+            <button type="button" onClick={handleDelete} className="shrink-0 border border-red-500/50 text-red-500 px-3 md:px-4 py-2 rounded-xl font-bold hover:bg-red-500/10 flex items-center gap-2 transition-all">
               <Trash2 className="w-4 h-4" /> Delete
             </button>
           )}
           {id ? (
             <>
-              <button type="submit" onClick={(e) => handleSubmit(e, false)} className="border border-accent/50 text-accent px-6 py-2 rounded-xl font-bold hover:bg-accent/10 flex items-center gap-2 transition-all">
+              <button type="submit" onClick={(e) => handleSubmit(e, false)} className="shrink-0 border border-accent/50 text-accent px-3 md:px-6 py-2 rounded-xl font-bold hover:bg-accent/10 flex items-center gap-2 transition-all whitespace-nowrap">
                 <Save className="w-4 h-4" /> Quick Save
               </button>
-              <button type="button" onClick={() => setShowCommitModal(true)} className="bg-accent text-black px-6 py-2 rounded-xl font-bold hover:opacity-90 flex items-center gap-2 shadow-[0_0_15px_rgba(212,175,55,0.2)] transition-all">
+              <button type="button" onClick={() => setShowCommitModal(true)} className="flex-1 md:flex-none justify-center bg-accent text-black px-4 md:px-6 py-2 rounded-xl font-bold hover:opacity-90 flex items-center gap-2 shadow-[0_0_15px_rgba(212,175,55,0.2)] transition-all whitespace-nowrap">
                 Save as New Iteration
               </button>
             </>
           ) : (
-            <button type="submit" onClick={(e) => handleSubmit(e, false)} className="border border-accent/50 text-accent px-6 py-2 rounded-xl font-bold hover:bg-accent/10 hover:shadow-[0_0_15px_rgba(212,175,55,0.15)] flex items-center gap-2 transition-all">
+            <button type="submit" onClick={(e) => handleSubmit(e, false)} className="shrink-0 border border-accent/50 text-accent px-4 md:px-6 py-2 rounded-xl font-bold hover:bg-accent/10 hover:shadow-[0_0_15px_rgba(212,175,55,0.15)] flex items-center gap-2 transition-all whitespace-nowrap">
               <Save className="w-4 h-4" /> Create Recipe
             </button>
           )}
@@ -509,7 +509,7 @@ export default function RecipeEditor() {
           </div>
           <div className="md:col-span-2">
             <label className="block text-sm font-medium mb-1.5 text-ink-muted">Description</label>
-            <textarea value={recipe.description} onChange={e => setRecipe({...recipe, description: e.target.value})} className="w-full bg-black/5 dark:bg-white/5 border border-border-subtle rounded-md p-3 focus:outline-none focus:ring-1 focus:ring-ink" rows={2} placeholder="Brief overview or background of the recipe..." />
+            <textarea value={recipe.description} onChange={e => setRecipe({...recipe, description: e.target.value})} className="w-full bg-black/5 dark:bg-white/5 border border-border-subtle rounded-md p-3 focus:outline-none focus:ring-1 focus:ring-ink resize-y" rows={4} placeholder="Brief overview or background of the recipe..." />
           </div>
           <div className="md:col-span-2">
             <label className="block text-sm font-medium mb-1.5 text-ink-muted">Recipe Photos</label>
@@ -640,11 +640,11 @@ export default function RecipeEditor() {
                 <button type="button" onClick={() => removeIngredient(i)} className="md:hidden p-2 text-red-500 rounded-md bg-red-500/10"><Trash2 className="w-4 h-4" /></button>
               </div>
               <div className="flex gap-2 w-full">
-                <input required type="number" inputMode="decimal" step="any" value={ing.quantity || ''} onChange={e => updateIngredient(i, 'quantity', parseFloat(e.target.value))} placeholder="Qty" className="w-20 bg-black/5 dark:bg-white/5 md:bg-transparent border-0 focus:ring-1 focus:ring-ink p-2 rounded text-center cursor-text" />
+                <input required type="number" inputMode="decimal" step="any" value={ing.quantity || ''} onChange={e => updateIngredient(i, 'quantity', parseFloat(e.target.value))} placeholder="Qty" className="w-16 md:w-20 shrink-0 bg-black/5 dark:bg-white/5 md:bg-transparent border-0 focus:ring-1 focus:ring-ink p-2 rounded text-center cursor-text" />
                 <div className="hidden md:block w-px h-6 bg-border-subtle"></div>
-                <input required type="text" value={ing.unit} onChange={e => updateIngredient(i, 'unit', e.target.value)} placeholder="Unit" className="w-24 bg-black/5 dark:bg-white/5 md:bg-transparent border-0 focus:ring-1 focus:ring-ink p-2 rounded text-center cursor-text" />
+                <input required type="text" value={ing.unit} onChange={e => updateIngredient(i, 'unit', e.target.value)} placeholder="Unit" className="w-16 md:w-24 shrink-0 bg-black/5 dark:bg-white/5 md:bg-transparent border-0 focus:ring-1 focus:ring-ink p-2 rounded text-center cursor-text" />
                 <div className="hidden md:block w-px h-6 bg-border-subtle"></div>
-                <input required type="text" value={ing.name} onChange={e => updateIngredient(i, 'name', e.target.value)} placeholder="Ingredient Name" className="flex-1 bg-black/5 dark:bg-white/5 md:bg-transparent border-0 focus:ring-1 focus:ring-ink p-2 rounded cursor-text" />
+                <input required type="text" value={ing.name} onChange={e => updateIngredient(i, 'name', e.target.value)} placeholder="Ingredient Name" className="flex-1 min-w-0 bg-black/5 dark:bg-white/5 md:bg-transparent border-0 focus:ring-1 focus:ring-ink p-2 rounded cursor-text" />
                 <button type="button" onClick={() => removeIngredient(i)} className="hidden md:block p-2 text-ink-muted/50 hover:text-red-500 rounded-md transition-colors">
                   <Trash2 className="w-4 h-4" />
                 </button>

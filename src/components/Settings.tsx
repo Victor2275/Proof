@@ -28,8 +28,8 @@ export default function Settings() {
         document.documentElement.classList.remove('oled');
         document.documentElement.classList.add('dark');
       } else if (theme === 'oled') {
-        document.documentElement.classList.remove('dark');
-        document.documentElement.classList.add('oled');
+        // Keep `dark` on so dark: utilities still apply; .oled overrides the palette.
+        document.documentElement.classList.add('dark', 'oled');
       } else {
         document.documentElement.classList.remove('dark', 'oled');
       }

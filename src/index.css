@@ -1,5 +1,14 @@
 @import "tailwindcss";
 
+/*
+ * Tailwind v4 defaults the `dark:` variant to `prefers-color-scheme`, which ignores
+ * the `.dark` class the in-app theme switcher toggles. That left the switcher only
+ * half-working: picking Dark swapped the CSS variables below but left every
+ * `dark:` utility off (and vice-versa on a dark-OS device). Bind the variant to the
+ * class so the app's own theme setting is the single source of truth.
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --color-sidebar: var(--sidebar-bg);
   --color-paper: var(--paper-bg);

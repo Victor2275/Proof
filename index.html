@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/logo.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#000000" />
     <link rel="manifest" href="/manifest.json" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -17,7 +17,9 @@
           if (theme === 'dark') {
             document.documentElement.classList.add('dark');
           } else if (theme === 'oled') {
-            document.documentElement.classList.add('oled');
+            // 'oled' is a darker variant of dark: it must keep the `dark` class so
+            // every dark: utility still applies, while .oled overrides the palette.
+            document.documentElement.classList.add('dark', 'oled');
           } else if (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches) {
             document.documentElement.classList.add('dark');
           }

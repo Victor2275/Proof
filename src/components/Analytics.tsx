@@ -86,13 +86,13 @@ export default function Analytics() {
         </div>
       </div>
 
-      <div className="p-8 rounded-2xl bg-sidebar border border-border-subtle shadow-sm">
+      <div className="p-5 md:p-8 rounded-2xl bg-sidebar border border-border-subtle shadow-sm">
         <h2 className="text-lg font-bold uppercase tracking-wider mb-8 flex items-center gap-2">
           <BarChart3 className="w-5 h-5" /> Bakes in {currentYear}
         </h2>
-        <div className="flex items-end justify-between gap-2 h-40">
+        <div className="flex items-end justify-between gap-1 md:gap-2 h-40">
           {monthCounts.map((count, i) => (
-            <div key={i} className="flex flex-col items-center flex-1 gap-2 group">
+            <div key={i} className="flex flex-col items-center flex-1 min-w-0 gap-2 group">
               <div className="w-full relative h-full flex items-end">
                 <div 
                   className="w-full bg-accent/20 group-hover:bg-accent/50 transition-colors rounded-sm"
@@ -100,7 +100,7 @@ export default function Analytics() {
                 ></div>
                 {count > 0 && <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-bold text-ink-muted opacity-0 group-hover:opacity-100 transition-opacity">{count}</span>}
               </div>
-              <span className="text-xs font-bold text-ink-muted uppercase">{months[i]}</span>
+              <span className="text-[10px] md:text-xs font-bold text-ink-muted uppercase">{months[i]}</span>
             </div>
           ))}
         </div>
