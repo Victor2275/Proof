@@ -570,7 +570,7 @@ export default function BakingMode() {
       {/* Main Content */}
       <div
         ref={contentRef}
-        className="flex-1 flex flex-col items-center w-full max-w-4xl px-6 md:px-12 pb-28 md:pb-20 relative overflow-y-auto"
+        className="flex-1 flex flex-col items-center w-full max-w-4xl px-6 md:px-12 pb-32 md:pb-20 relative overflow-y-auto"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -654,11 +654,12 @@ export default function BakingMode() {
       {/* Navigation Arrows (Only in Focus Mode) */}
       {viewMode === 'focus' && (
         <>
+          {/* Desktop has room either side of the step, so keep the arrows there. */}
           <button
             onClick={handlePrevStep}
             disabled={currentStep === 0}
             aria-label="Previous step"
-            className="absolute z-10 left-4 bottom-6 md:bottom-auto md:top-1/2 md:-translate-y-1/2 p-4 rounded-full bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 disabled:opacity-0 disabled:pointer-events-none transition-all"
+            className="hidden md:block absolute z-20 left-4 top-1/2 -translate-y-1/2 p-4 rounded-full bg-paper border border-border-subtle shadow-lg hover:bg-black/10 dark:hover:bg-white/10 disabled:opacity-0 disabled:pointer-events-none transition-all"
           >
             <ChevronLeft className="w-8 h-8" />
           </button>
@@ -667,10 +668,35 @@ export default function BakingMode() {
             onClick={handleNextStep}
             disabled={currentStep === recipe.instructions.length}
             aria-label="Next step"
-            className="absolute z-10 right-4 bottom-6 md:bottom-auto md:top-1/2 md:-translate-y-1/2 p-4 rounded-full bg-black/10 dark:bg-white/10 hover:bg-black/20 dark:hover:bg-white/20 disabled:opacity-0 disabled:pointer-events-none transition-all"
+            className="hidden md:block absolute z-20 right-4 top-1/2 -translate-y-1/2 p-4 rounded-full bg-paper border border-border-subtle shadow-lg hover:bg-black/10 dark:hover:bg-white/10 disabled:opacity-0 disabled:pointer-events-none transition-all"
           >
             <ChevronRight className="w-8 h-8" />
           </button>
+
+          {/*
+            On a phone there is no such margin: a floating arrow sat on top of the
+            step and covered ingredient quantities. Give the controls their own bar
+            (matched by the content's bottom padding) so they can never occlude the
+            recipe, and make them big thumb targets for hands covered in flour.
+          */}
+          <div className="md:hidden fixed bottom-0 left-0 right-0 z-20 flex items-stretch gap-3 px-4 pt-3 pb-3 bg-paper border-t border-border-subtle pb-safe">
+            <button
+              onClick={handlePrevStep}
+              disabled={currentStep === 0}
+              aria-label="Previous step"
+              className="flex-1 flex items-center justify-center py-3 rounded-xl border border-border-subtle bg-black/5 dark:bg-white/5 disabled:opacity-30 disabled:pointer-events-none transition-all active:scale-95"
+            >
+              <ChevronLeft className="w-7 h-7" />
+            </button>
+            <button
+              onClick={handleNextStep}
+              disabled={currentStep === recipe.instructions.length}
+              aria-label="Next step"
+              className="flex-[2] flex items-center justify-center py-3 rounded-xl bg-ink text-paper font-bold uppercase tracking-widest text-sm disabled:opacity-30 disabled:pointer-events-none transition-all active:scale-95"
+            >
+              Next <ChevronRight className="w-6 h-6 ml-1" />
+            </button>
+          </div>
         </>
       )}
 

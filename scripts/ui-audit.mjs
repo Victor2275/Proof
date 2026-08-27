@@ -60,6 +60,15 @@ const AUDIT = () => {
   const vw = window.innerWidth;
   const all = [...document.querySelectorAll('body *')];
 
+  /** True when some ancestor scrolls horizontally, making off-screen content reachable. */
+  const inScrollableX = (node) => {
+    for (let p = node.parentElement; p && p !== document.body; p = p.parentElement) {
+      const ov = getComputedStyle(p).overflowX;
+      if ((ov === 'auto' || ov === 'scroll') && p.scrollWidth > p.clientWidth + 1) return true;
+    }
+    return false;
+  };
+
   for (const el of all) {
     const r = el.getBoundingClientRect();
     const cs = getComputedStyle(el);
@@ -71,8 +80,13 @@ const AUDIT = () => {
       (typeof el.className === 'string' && el.className ? '.' + el.className.trim().split(/\s+/).slice(0, 4).join('.') : '')).slice(0, 160);
     const txt = (el.textContent || '').trim().slice(0, 50);
 
-    // horizontal overflow past viewport
-    if (r.right > vw + 1 && r.width > 4 && r.width < 100000) {
+    // Horizontal overflow past the viewport.
+    //
+    // Sitting past the right edge is only a bug if you can't get to it. Content
+    // inside a deliberately scrollable strip (overflow-x: auto/scroll) is
+    // reachable by swiping, so don't report it — otherwise every carousel and
+    // filter rail looks broken.
+    if (r.right > vw + 1 && r.width > 4 && r.width < 100000 && !inScrollableX(el)) {
       out.offenders.push({ desc, txt, right: Math.round(r.right), width: Math.round(r.width), vw });
     }
 
