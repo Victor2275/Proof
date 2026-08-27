@@ -322,7 +322,7 @@ export default function RecipeViewer() {
                <button 
                  key={m}
                  onClick={() => setScaleMultiplier(m)}
-                 className={`px-3 py-1 rounded-lg transition-all ${scaleMultiplier === m ? 'bg-accent text-black shadow-[0_0_10px_rgba(212,175,55,0.1)]' : 'text-ink-muted hover:text-accent hover:bg-white/5'}`}
+                 className={`px-3 py-2 rounded-lg transition-all ${scaleMultiplier === m ? 'bg-accent text-black shadow-[0_0_10px_rgba(212,175,55,0.1)]' : 'text-ink-muted hover:text-accent hover:bg-white/5'}`}
                >
                  {m}x
                </button>
@@ -332,13 +332,13 @@ export default function RecipeViewer() {
           <div className="flex border border-border-subtle rounded-xl overflow-hidden bg-black/5 dark:bg-white/5 p-1 text-xs font-bold uppercase tracking-wide whitespace-nowrap shrink-0">
              <button 
                onClick={() => setActiveTab('recipe')}
-               className={`px-3 py-1 rounded-lg transition-all ${activeTab === 'recipe' ? 'bg-accent/10 text-accent' : 'text-ink-muted hover:text-accent'}`}
+               className={`px-3 py-2 rounded-lg transition-all ${activeTab === 'recipe' ? 'bg-accent/10 text-accent' : 'text-ink-muted hover:text-accent'}`}
              >
                Recipe
              </button>
               <button 
                 onClick={() => setActiveTab('history')}
-                className={`px-3 py-1 rounded-lg transition-all ${activeTab === 'history' ? 'bg-accent/10 text-accent' : 'text-ink-muted hover:text-accent'}`}
+                className={`px-3 py-2 rounded-lg transition-all ${activeTab === 'history' ? 'bg-accent/10 text-accent' : 'text-ink-muted hover:text-accent'}`}
               >
                 Previous Makes {bakeLogs.length > 0 ? `(${bakeLogs.length})` : ''}
               </button>
@@ -459,7 +459,7 @@ export default function RecipeViewer() {
                             type="checkbox" 
                             checked={!!checkedIngredients[i]}
                             onChange={() => toggleCheck(i)}
-                            className="w-5 h-5 rounded border-gray-300 text-ink focus:ring-ink cursor-pointer print:appearance-none print:w-5 print:h-5 print:border-2 print:border-ink"
+                            className="w-6 h-6 shrink-0 rounded border-border-subtle text-ink focus:ring-ink cursor-pointer print:appearance-none print:w-5 print:h-5 print:border-2 print:border-ink"
                           />
                         </label>
                         <span className={`w-16 font-medium shrink-0 ${checkedIngredients[i] ? 'text-ink-muted line-through' : ''}`}>

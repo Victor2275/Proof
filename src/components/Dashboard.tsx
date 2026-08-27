@@ -170,7 +170,7 @@ export default function Dashboard() {
             <button
               key={tag}
               onClick={() => setActiveFilters(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag])}
-              className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border transition-colors shrink-0 ${activeFilters.includes(tag) ? 'bg-accent text-black border-accent' : 'bg-transparent border-border-subtle text-ink-muted hover:border-accent hover:text-accent'}`}
+              className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider border transition-colors shrink-0 ${activeFilters.includes(tag) ? 'bg-accent text-black border-accent' : 'bg-transparent border-border-subtle text-ink-muted hover:border-accent hover:text-accent'}`}
             >
               #{tag}
             </button>

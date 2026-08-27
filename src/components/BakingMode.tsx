@@ -684,7 +684,7 @@ export default function BakingMode() {
                   type="checkbox" 
                   checked={!!checkedIngredients[i]}
                   onChange={() => setCheckedIngredients(prev => ({...prev, [i]: !prev[i]}))}
-                  className="mt-1 w-5 h-5 rounded border-gray-300"
+                  className="mt-0.5 w-6 h-6 shrink-0 rounded border-border-subtle"
                 />
                 <div className={`flex flex-col ${checkedIngredients[i] ? 'opacity-50 line-through' : ''}`}>
                   <span className="font-bold">{ing.quantity} {ing.unit}</span>
