@@ -1,15 +1,18 @@
 import { useState, useEffect } from 'react';
 import { Moon, Sun, Smartphone, Database, Download } from 'lucide-react';
 import { API_URL } from '../lib/api';
+import { hapticsEnabled, ttsEnabled as readTtsEnabled } from '../lib/settings';
 
 export default function Settings() {
   const [theme, setTheme] = useState<'light' | 'dark' | 'oled' | 'system'>(() => localStorage.getItem('theme') as any || 'system');
-  const [haptics, setHaptics] = useState(() => localStorage.getItem('hapticsEnabled') !== 'false');
+  const [haptics, setHaptics] = useState(hapticsEnabled);
   const [fontFamily, setFontFamily] = useState(() => localStorage.getItem('fontFamily') || 'sans');
   const [defaultBakersMath, setDefaultBakersMath] = useState(() => localStorage.getItem('defaultBakersMath') === 'true');
   const [autoHideSidebar, setAutoHideSidebar] = useState(() => localStorage.getItem('autoHideSidebar') === 'true');
   
-  const [ttsEnabled, setTtsEnabled] = useState(() => localStorage.getItem('ttsEnabled') === 'true');
+  // Announcements have always been on in practice, so default this on rather than
+  // silencing timers for anyone who never opened Settings.
+  const [ttsEnabled, setTtsEnabled] = useState(readTtsEnabled);
   const [waveToAdvance, setWaveToAdvance] = useState(() => localStorage.getItem('waveToAdvance') === 'true');
   const [voiceCommands, setVoiceCommands] = useState(() => localStorage.getItem('voiceCommands') === 'true');
 
@@ -161,8 +164,8 @@ export default function Settings() {
 
             <label className="flex items-center justify-between p-4 bg-paper border border-border-subtle rounded-xl cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
               <div>
-                <div className="font-bold">Text-to-Speech (Baking Mode)</div>
-                <div className="text-sm text-ink-muted">Read steps aloud automatically.</div>
+                <div className="font-bold">Text-to-Speech</div>
+                <div className="text-sm text-ink-muted">Announce timers aloud when they finish.</div>
               </div>
               <div className="relative inline-block w-12 h-6 rounded-full transition-colors ease-in-out duration-200 focus:outline-none" style={{ backgroundColor: ttsEnabled ? 'var(--accent-gold)' : 'var(--border-subtle)' }}>
                 <input type="checkbox" className="sr-only" checked={ttsEnabled} onChange={e => setTtsEnabled(e.target.checked)} />

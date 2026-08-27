@@ -10,6 +10,7 @@ import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { Capacitor } from '@capacitor/core';
 import 'regenerator-runtime/runtime';
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
+import { hapticsEnabled } from '../lib/settings';
 
 export default function BakingMode() {
   const { id } = useParams<{ id: string }>();
@@ -18,6 +19,9 @@ export default function BakingMode() {
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(true);
   const wakeLock = useRef<any>(null);
+  // Baking Mode is a fixed overlay, so the window itself never scrolls — the step
+  // content is its own scroll container and the voice scroll commands need it.
+  const contentRef = useRef<HTMLDivElement>(null);
   const [showIngredients, setShowIngredients] = useState(false);
   const [viewMode, setViewMode] = useState<'focus' | 'all'>('focus');
   const [checkedIngredients, setCheckedIngredients] = useState<Record<number, boolean>>({});
@@ -127,14 +131,13 @@ export default function BakingMode() {
       {
         command: ['up', 'scroll up'],
         callback: () => {
-          // React state closure issue: this might not have the latest viewMode, but we can just scroll anyway.
-          window.scrollBy({ top: -500, behavior: 'smooth' });
+          contentRef.current?.scrollBy({ top: -500, behavior: 'smooth' });
         }
       },
       {
         command: ['down', 'scroll down'],
         callback: () => {
-          window.scrollBy({ top: 500, behavior: 'smooth' });
+          contentRef.current?.scrollBy({ top: 500, behavior: 'smooth' });
         }
       },
       {
@@ -241,14 +244,14 @@ export default function BakingMode() {
   const handleNextStep = async () => {
     if (recipe && currentStepRef.current < recipe.instructions.length) {
       setCurrentStep(prev => prev + 1);
-      if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Light });
+      if (Capacitor.isNativePlatform() && hapticsEnabled()) await Haptics.impact({ style: ImpactStyle.Light });
     }
   };
 
   const handlePrevStep = async () => {
     if (currentStepRef.current > 0) {
       setCurrentStep(prev => prev - 1);
-      if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Light });
+      if (Capacitor.isNativePlatform() && hapticsEnabled()) await Haptics.impact({ style: ImpactStyle.Light });
     }
   };
 
@@ -565,7 +568,8 @@ export default function BakingMode() {
       </div>
 
       {/* Main Content */}
-      <div 
+      <div
+        ref={contentRef}
         className="flex-1 flex flex-col items-center w-full max-w-4xl px-6 md:px-12 pb-28 md:pb-20 relative overflow-y-auto"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}

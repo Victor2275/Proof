@@ -3,6 +3,7 @@ import { Play, Pause, X, Bell } from 'lucide-react';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { io } from 'socket.io-client';
 import { API_URL } from '../lib/api';
+import { hapticsEnabled, ttsEnabled } from '../lib/settings';
 
 export interface Timer {
   id: string;
@@ -39,7 +40,7 @@ export default function TimerManager() {
           const audio = new Audio('/alarm.mp3');
           audio.play().catch(e => console.error("Audio play failed:", e));
           
-          if (window.speechSynthesis && localStorage.getItem('audioAnnouncementsEnabled') !== 'false') {
+          if (window.speechSynthesis && ttsEnabled()) {
             const msg = new SpeechSynthesisUtterance(`${t.name} timer has completed.`);
             window.speechSynthesis.speak(msg);
           }
@@ -49,10 +50,12 @@ export default function TimerManager() {
           }
 
           try {
-            Haptics.impact({ style: ImpactStyle.Heavy });
-            setTimeout(() => Haptics.impact({ style: ImpactStyle.Heavy }), 200);
-            setTimeout(() => Haptics.impact({ style: ImpactStyle.Heavy }), 400);
-            setTimeout(() => Haptics.impact({ style: ImpactStyle.Heavy }), 600);
+            if (hapticsEnabled()) {
+              Haptics.impact({ style: ImpactStyle.Heavy });
+              setTimeout(() => Haptics.impact({ style: ImpactStyle.Heavy }), 200);
+              setTimeout(() => Haptics.impact({ style: ImpactStyle.Heavy }), 400);
+              setTimeout(() => Haptics.impact({ style: ImpactStyle.Heavy }), 600);
+            }
           } catch(e) {}
 
           setIsFlashing(true);

@@ -36,6 +36,10 @@ export default function InstagramExporter({ recipe, bakeLog, onClose }: Instagra
   const wrapperStyle = { width: `${1080 * scale}px`, height: `${1080 * scale}px` };
   const innerStyle = { transform: `scale(${scale})`, transformOrigin: 'top left' };
 
+  // NOTE: a bake log's notes are meant to become the export's description
+  // (see CURRENT_FEATURES.md), but neither the polaroid nor the carousel slides
+  // have a slot for body copy, so the notes are still dropped:
+  // `bakeLog?.notes || recipe.description` has nowhere to render.
 
   const downloadCanvas = async (element: HTMLElement | null, filename: string) => {
     if (!element) return;
