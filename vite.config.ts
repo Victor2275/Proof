@@ -56,6 +56,25 @@ export default defineConfig({
       }
     })
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        // Keep the big, rarely-changing libraries in their own long-lived chunks
+        // instead of one 2.7 MB entry bundle.
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return;
+          if (/[\\/]node_modules[\\/](react|react-dom|react-router|react-router-dom|scheduler)[\\/]/.test(id)) return 'react-vendor';
+          if (id.includes('@uiw') || id.includes('react-md-editor') || id.includes('rehype') || id.includes('remark') || id.includes('micromark') || id.includes('mdast') || id.includes('hast')) return 'editor-vendor';
+          if (id.includes('html2canvas') || id.includes('jspdf') || id.includes('canvg') || id.includes('dompurify')) return 'export-vendor';
+          if (id.includes('framer-motion') || id.includes('motion-dom') || id.includes('motion-utils')) return 'motion-vendor';
+          if (id.includes('html5-qrcode')) return 'qr-vendor';
+          if (id.includes('@dnd-kit')) return 'dnd-vendor';
+          if (id.includes('fuse.js')) return 'search-vendor';
+          return 'vendor';
+        },
+      },
+    },
+  },
   test: {
     environment: 'jsdom',
     globals: true,

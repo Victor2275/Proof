@@ -32,14 +32,10 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-    <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').catch(err => {
-            console.log('Service Worker registration failed: ', err);
-          });
-        });
-      }
-    </script>
+    <!--
+      The service worker is registered by vite-plugin-pwa (registerType: 'autoUpdate').
+      A second manual navigator.serviceWorker.register('/sw.js') here used to run
+      alongside it and bypassed the plugin's update flow.
+    -->
   </body>
 </html>

@@ -97,6 +97,40 @@ const storage = new CloudinaryStorage({
 
 const upload = multer({ storage, limits: { fileSize: 20 * 1024 * 1024 } }); // 20MB limit
 
+/*
+ * Image re-hosting.
+ *
+ * An imported recipe keeps whatever image URL the source site published. Those
+ * URLs rot: sugarspunrun.com already answers hotlinks with
+ * ERR_BLOCKED_BY_RESPONSE.NotSameOrigin, and any of them can move when the site
+ * is reorganised. Copy the image onto our own Cloudinary account at import time
+ * so the URL we store is one we control. Failures are non-fatal — a recipe with
+ * an at-risk image URL still beats no recipe.
+ */
+const cloudinaryConfigured = () => !!(
+  process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET
+);
+
+const isCloudinaryUrl = (url) => /(?:\/\/|\.)cloudinary\.com\//i.test(url || '');
+
+const rehostImageUrl = async (url) => {
+  if (!url || typeof url !== 'string') return url;
+  if (!/^https?:\/\//i.test(url)) return url;   // data: URIs, relative paths — leave alone
+  if (isCloudinaryUrl(url)) return url;          // already ours
+  if (!cloudinaryConfigured()) return url;       // nowhere to upload to
+  try {
+    const result = await cloudinary.uploader.upload(url, { folder: 'cookbook' });
+    return result.secure_url || result.url || url;
+  } catch (err) {
+    console.error('Image re-host failed, keeping original URL:', url, '—', err.message);
+    return url;
+  }
+};
+
+const rehostImageUrls = async (urls) => (
+  Array.isArray(urls) ? Promise.all(urls.map(rehostImageUrl)) : urls
+);
+
 
 // Connect to MongoDB
 if (process.env.NODE_ENV !== 'test') {
@@ -318,6 +352,10 @@ app.post('/api/extract', requireAdmin, async (req, res) => {
       instructions,
       labNotes: `Extracted from: ${targetUrl}`
     };
+
+    // Copy the source image onto our own Cloudinary account so we don't ship a
+    // hotlink that the origin can block or break later.
+    extracted.imageUrls = await rehostImageUrls(extracted.imageUrls);
 
     res.json(extracted);
   } catch (err) {
@@ -761,6 +799,40 @@ app.get('/api/backup', requireAdmin, async (req, res) => {
   }
 });
 
+// One-shot backfill: pull any still-hotlinked recipe / bake-log images onto
+// Cloudinary. New imports are re-hosted automatically (see /api/extract); this
+// catches the ones saved before that was in place.
+app.post('/api/maintenance/rehost-images', requireAdmin, async (req, res) => {
+  if (!dbReady()) return sendDegraded(res);
+  if (!cloudinaryConfigured()) {
+    return res.status(503).json({ error: 'Cloudinary is not configured on the server.' });
+  }
+  try {
+    const rehosted = [];
+    const backfill = async (Model) => {
+      let updated = 0;
+      const docs = await Model.find({ imageUrls: { $exists: true, $ne: [] } });
+      for (const doc of docs) {
+        const before = doc.imageUrls.slice();
+        const after = await rehostImageUrls(before);
+        if (after.some((url, i) => url !== before[i])) {
+          before.forEach((was, i) => { if (after[i] !== was) rehosted.push({ was, now: after[i] }); });
+          doc.imageUrls = after;
+          await doc.save();
+          updated++;
+        }
+      }
+      return updated;
+    };
+
+    const recipesUpdated = await backfill(Recipe);
+    const bakeLogsUpdated = await backfill(BakeLog);
+    res.json({ recipesUpdated, bakeLogsUpdated, rehostedCount: rehosted.length, rehosted });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Automated Daily Backups & Cloudinary Cleanup
 cron.schedule('0 2 * * *', async () => {
   try {
@@ -858,4 +930,4 @@ if (process.env.NODE_ENV !== 'test') {
   });
 }
 
-export { app, server, io, loadTimersFromDb };
+export { app, server, io, loadTimersFromDb, rehostImageUrl, isCloudinaryUrl };

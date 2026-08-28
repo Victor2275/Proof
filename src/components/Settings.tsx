@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Moon, Sun, Smartphone, Database, Download } from 'lucide-react';
-import { API_URL } from '../lib/api';
+import { Moon, Sun, Smartphone, Database, Download, ImageDown } from 'lucide-react';
+import { API_URL, api } from '../lib/api';
 import { hapticsEnabled, ttsEnabled as readTtsEnabled } from '../lib/settings';
 
 export default function Settings() {
@@ -14,6 +14,8 @@ export default function Settings() {
   // silencing timers for anyone who never opened Settings.
   const [ttsEnabled, setTtsEnabled] = useState(readTtsEnabled);
   const [waveToAdvance, setWaveToAdvance] = useState(() => localStorage.getItem('waveToAdvance') === 'true');
+  const [rehostBusy, setRehostBusy] = useState(false);
+  const [rehostMsg, setRehostMsg] = useState('');
   const [voiceCommands, setVoiceCommands] = useState(() => localStorage.getItem('voiceCommands') === 'true');
 
   useEffect(() => {
@@ -236,6 +238,38 @@ export default function Settings() {
                 className="flex items-center gap-2 px-6 py-2.5 bg-accent text-black font-bold rounded-xl hover:shadow-[0_0_15px_rgba(212,175,55,0.2)] transition-all"
               >
                 <Download className="w-4 h-4" /> Backup
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between p-4 bg-paper border border-border-subtle rounded-xl gap-4">
+              <div>
+                <div className="font-bold">Re-host External Images</div>
+                <div className="text-sm text-ink-muted">
+                  Copy any recipe or bake-log photos that still point at another site onto Cloudinary.
+                  {rehostMsg && <span className="block mt-1 text-accent font-medium">{rehostMsg}</span>}
+                </div>
+              </div>
+              <button
+                disabled={rehostBusy}
+                onClick={async () => {
+                  setRehostBusy(true);
+                  setRehostMsg('');
+                  try {
+                    const r = await api.rehostImages();
+                    setRehostMsg(
+                      r.rehostedCount === 0
+                        ? 'Nothing to do — every image is already re-hosted.'
+                        : `Re-hosted ${r.rehostedCount} image(s) across ${r.recipesUpdated} recipe(s) and ${r.bakeLogsUpdated} bake log(s).`
+                    );
+                  } catch (err: any) {
+                    setRehostMsg(err?.message || 'Failed to re-host images.');
+                  } finally {
+                    setRehostBusy(false);
+                  }
+                }}
+                className="flex items-center gap-2 px-6 py-2.5 bg-accent text-black font-bold rounded-xl hover:shadow-[0_0_15px_rgba(212,175,55,0.2)] transition-all disabled:opacity-50 shrink-0"
+              >
+                <ImageDown className="w-4 h-4" /> {rehostBusy ? 'Working…' : 'Re-host'}
               </button>
             </div>
           </div>

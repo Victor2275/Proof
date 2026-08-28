@@ -1,21 +1,24 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
-import Dashboard from './components/Dashboard';
-import RecipeViewer from './components/RecipeViewer';
-import RecipeEditor from './components/RecipeEditor';
-import Gallery from './components/Gallery';
-import Analytics from './components/Analytics';
-
-import GroceryList from './components/GroceryList';
-import GeneralNotes from './components/GeneralNotes';
-import BakingMode from './components/BakingMode';
-import Settings from './components/Settings';
-import Pantry from './components/Pantry';
 import TimerManager from './components/TimerManager';
 import BottomNav from './components/BottomNav';
 import { api } from './lib/api';
 import ErrorBoundary from './components/ErrorBoundary';
+
+// Route components are split out of the initial bundle: each screen (and the heavy
+// libraries it pulls — the markdown editor, html2canvas/jspdf, framer-motion) now
+// loads on navigation instead of inflating first paint.
+const Dashboard = lazy(() => import('./components/Dashboard'));
+const RecipeViewer = lazy(() => import('./components/RecipeViewer'));
+const RecipeEditor = lazy(() => import('./components/RecipeEditor'));
+const Gallery = lazy(() => import('./components/Gallery'));
+const Analytics = lazy(() => import('./components/Analytics'));
+const GroceryList = lazy(() => import('./components/GroceryList'));
+const GeneralNotes = lazy(() => import('./components/GeneralNotes'));
+const BakingMode = lazy(() => import('./components/BakingMode'));
+const Settings = lazy(() => import('./components/Settings'));
+const Pantry = lazy(() => import('./components/Pantry'));
 
 function AuthModal({ onClose, onSuccess }: { onClose: () => void, onSuccess: () => void }) {
   const [pin, setPin] = useState('');
@@ -162,19 +165,21 @@ function App() {
         <Sidebar onAdminRequired={() => setShowAuthModal(true)} className={`hidden md:flex ${autoHideSidebar ? 'group -translate-x-[95%] hover:-translate-x-0 transition-transform duration-300 shadow-2xl z-50' : ''}`} />
         <main className={`flex-1 overflow-y-auto overscroll-y-auto w-full relative pb-24 md:pb-12 pt-safe md:pt-12 px-4 md:px-12 transition-all duration-300 ${autoHideSidebar ? 'md:ml-[3%]' : 'md:ml-64'}`}>
           <ErrorBoundary>
-            <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/analytics" element={<Analytics />} />
-              <Route path="/pantry" element={<Pantry />} />
-              <Route path="/grocery" element={<GroceryList />} />
-              <Route path="/recipe/:id/bake" element={<BakingMode />} />
-              <Route path="/recipe/:id" element={<RecipeViewer />} />
-              <Route path="/new" element={<RecipeEditor />} />
-              <Route path="/edit/:id" element={<RecipeEditor />} />
-              <Route path="/gallery" element={<Gallery />} />
-              <Route path="/notes" element={<GeneralNotes />} />
-            </Routes>
+            <Suspense fallback={<div className="pt-12 text-center text-ink-muted text-sm">Loading…</div>}>
+              <Routes>
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="/analytics" element={<Analytics />} />
+                <Route path="/pantry" element={<Pantry />} />
+                <Route path="/grocery" element={<GroceryList />} />
+                <Route path="/recipe/:id/bake" element={<BakingMode />} />
+                <Route path="/recipe/:id" element={<RecipeViewer />} />
+                <Route path="/new" element={<RecipeEditor />} />
+                <Route path="/edit/:id" element={<RecipeEditor />} />
+                <Route path="/gallery" element={<Gallery />} />
+                <Route path="/notes" element={<GeneralNotes />} />
+              </Routes>
+            </Suspense>
           </ErrorBoundary>
         </main>
         <BottomNav />

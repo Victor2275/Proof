@@ -1,18 +1,20 @@
 import RecipeImage from './RecipeImage';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { api, type Recipe, type BakeLog } from '../lib/api';
-import { getLocalBakeLogs } from '../lib/localDB';
+import { getLocalBakeLogs, updateLocalBakeLog, deleteLocalBakeLog } from '../lib/localDB';
 import SideBySideCompare from './SideBySideCompare';
 import ReverseBakeScheduler from './ReverseBakeScheduler';
 import AISubstitutionsModal from './AISubstitutionsModal';
-import InstagramExporter from './InstagramExporter';
 import BakeLogsGrid from './BakeLogsGrid';
 import { Edit, MoreVertical, Play, X, Star, Award, CheckCircle2, Sparkles, Share2 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
 import Fuse from 'fuse.js';
+
+// html2canvas + jspdf are ~780 kB together and only run when the user actually
+// exports. The Instagram exporter is a full-screen modal opened on demand. All
+// three load lazily so viewing a recipe doesn't pay for them.
+const InstagramExporter = lazy(() => import('./InstagramExporter'));
 import { renderWithTimers } from '../utils/timerParser';
 
 function Instagram({ className = "w-4 h-4" }: { className?: string }) {
@@ -201,6 +203,10 @@ export default function RecipeViewer() {
     const node = document.getElementById('recipe-export-node');
     if (!node) return;
     try {
+      const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+        import('html2canvas'),
+        import('jspdf'),
+      ]);
       const canvas = await html2canvas(node, {
         scale: 2,
         useCORS: true,
@@ -560,7 +566,6 @@ export default function RecipeViewer() {
                           try {
                             let updated;
                             if (selectedMake._id!.startsWith('local-')) {
-                              const { updateLocalBakeLog } = await import('../lib/localDB');
                               updated = await updateLocalBakeLog(selectedMake._id!, { date: new Date(editDateValue).toISOString() });
                             } else {
                               updated = await api.updateBakeLog(selectedMake._id!, { date: new Date(editDateValue).toISOString() });
@@ -584,7 +589,6 @@ export default function RecipeViewer() {
                             const newStatus = !selectedMake.isPersonalBest;
                             let updated;
                             if (selectedMake._id!.startsWith('local-')) {
-                              const { updateLocalBakeLog } = await import('../lib/localDB');
                               updated = await updateLocalBakeLog(selectedMake._id!, { isPersonalBest: newStatus });
                             } else {
                               updated = await api.updateBakeLog(selectedMake._id!, { isPersonalBest: newStatus });
@@ -648,7 +652,6 @@ export default function RecipeViewer() {
                            try {
                              let updated;
                              if (selectedMake._id!.startsWith('local-')) {
-                               const { updateLocalBakeLog } = await import('../lib/localDB');
                                updated = await updateLocalBakeLog(selectedMake._id!, { images: tempTags });
                              } else {
                                updated = await api.updateBakeLog(selectedMake._id!, { images: tempTags });
@@ -754,7 +757,6 @@ export default function RecipeViewer() {
                       if (!confirm('Are you sure you want to delete this bake log entry?')) return;
                       try {
                         if (selectedMake._id!.startsWith('local-')) {
-                          const { deleteLocalBakeLog } = await import('../lib/localDB');
                           await deleteLocalBakeLog(selectedMake._id!);
                         } else {
                           await api.deleteBakeLog(selectedMake._id!);
@@ -840,14 +842,16 @@ export default function RecipeViewer() {
       )}
 
       {showInstagramExporter && (
-        <InstagramExporter 
-          recipe={recipe} 
-          bakeLog={instagramExportBakeLog}
-          onClose={() => {
-            setShowInstagramExporter(false);
-            setInstagramExportBakeLog(undefined);
-          }} 
-        />
+        <Suspense fallback={<div className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center text-white/70 text-sm">Loading exporter…</div>}>
+          <InstagramExporter
+            recipe={recipe}
+            bakeLog={instagramExportBakeLog}
+            onClose={() => {
+              setShowInstagramExporter(false);
+              setInstagramExportBakeLog(undefined);
+            }}
+          />
+        </Suspense>
       )}
     </div>
   );

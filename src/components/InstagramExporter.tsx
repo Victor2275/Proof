@@ -14,11 +14,24 @@ export default function InstagramExporter({ recipe, bakeLog, onClose }: Instagra
   const [exportMode, setExportMode] = useState<'carousel' | 'single'>('carousel');
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [exporting, setExporting] = useState(false);
-  const carouselRefs = [useRef<HTMLDivElement>(null), useRef<HTMLDivElement>(null), useRef<HTMLDivElement>(null), useRef<HTMLDivElement>(null)];
+  const carouselRefs = [
+    useRef<HTMLDivElement>(null),
+    useRef<HTMLDivElement>(null),
+    useRef<HTMLDivElement>(null),
+    useRef<HTMLDivElement>(null),
+    useRef<HTMLDivElement>(null),
+  ];
   const singleRef = useRef<HTMLDivElement>(null);
   const [rotation] = useState(() => (Math.random() * 10 - 5).toFixed(2));
 
   const heroImage = bakeLog?.imageUrls?.[0] || recipe.imageUrls?.[0] || 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=800&q=80';
+
+  // CURRENT_FEATURES.md promises a bake-log export "uses ... its notes as the
+  // description". Give that copy a home: a dedicated slide, shown only when there
+  // is something to say (the log's notes, or failing that the recipe blurb).
+  const noteText = (bakeLog?.notes?.trim()) || (recipe.description?.trim()) || '';
+  const noteHeading = bakeLog?.notes?.trim() ? "Baker's Log" : 'About This Bake';
+  const carouselSlideCount = noteText ? 5 : 4;
 
   const [scale, setScale] = useState(0.4);
   useEffect(() => {
@@ -36,11 +49,6 @@ export default function InstagramExporter({ recipe, bakeLog, onClose }: Instagra
   const wrapperStyle = { width: `${1080 * scale}px`, height: `${1080 * scale}px` };
   const innerStyle = { transform: `scale(${scale})`, transformOrigin: 'top left' };
 
-  // NOTE: a bake log's notes are meant to become the export's description
-  // (see CURRENT_FEATURES.md), but neither the polaroid nor the carousel slides
-  // have a slot for body copy, so the notes are still dropped:
-  // `bakeLog?.notes || recipe.description` has nowhere to render.
-
   const downloadCanvas = async (element: HTMLElement | null, filename: string) => {
     if (!element) return;
     const canvas = await html2canvas(element, { scale: 2, useCORS: true, backgroundColor: '#000000' });
@@ -56,10 +64,17 @@ export default function InstagramExporter({ recipe, bakeLog, onClose }: Instagra
       if (exportMode === 'single') {
         await downloadCanvas(singleRef.current, `${recipe.title}-ig-single.jpg`);
       } else {
-        await downloadCanvas(carouselRefs[0].current, `${recipe.title}-ig-1-hero.jpg`);
-        await downloadCanvas(carouselRefs[1].current, `${recipe.title}-ig-2-ingredients.jpg`);
-        await downloadCanvas(carouselRefs[2].current, `${recipe.title}-ig-3-instructions.jpg`);
-        await downloadCanvas(carouselRefs[3].current, `${recipe.title}-ig-4-link.jpg`);
+        const slides = [
+          [carouselRefs[0], 'hero'],
+          [carouselRefs[1], 'ingredients'],
+          [carouselRefs[2], 'instructions'],
+          ...(noteText ? [[carouselRefs[3], 'notes'] as const] : []),
+          [carouselRefs[4], 'link'],
+        ] as const;
+        for (let i = 0; i < slides.length; i++) {
+          const [ref, label] = slides[i];
+          await downloadCanvas(ref.current, `${recipe.title}-ig-${i + 1}-${label}.jpg`);
+        }
       }
     } catch (err) {
       console.error(err);
@@ -81,7 +96,7 @@ export default function InstagramExporter({ recipe, bakeLog, onClose }: Instagra
 
       <div className="flex-1 overflow-y-auto p-4 md:p-8 flex flex-col items-center">
         <div className="flex flex-wrap gap-4 mb-8 justify-center">
-          <button onClick={() => setExportMode('carousel')} className={`px-6 py-3 rounded-xl flex items-center gap-2 font-bold transition-all ${exportMode === 'carousel' ? 'bg-yellow-500 text-black' : 'bg-white/10 text-white'}`}><LayoutGrid className="w-5 h-5" /> Carousel (3 Posts)</button>
+          <button onClick={() => setExportMode('carousel')} className={`px-6 py-3 rounded-xl flex items-center gap-2 font-bold transition-all ${exportMode === 'carousel' ? 'bg-yellow-500 text-black' : 'bg-white/10 text-white'}`}><LayoutGrid className="w-5 h-5" /> Carousel ({carouselSlideCount} Posts)</button>
           <button onClick={() => setExportMode('single')} className={`px-6 py-3 rounded-xl flex items-center gap-2 font-bold transition-all ${exportMode === 'single' ? 'bg-yellow-500 text-black' : 'bg-white/10 text-white'}`}><ImageIcon className="w-5 h-5" /> Single Polaroid Only</button>
           
           <div className="w-px h-8 bg-white/20 self-center mx-2 hidden sm:block"></div>
@@ -221,10 +236,26 @@ export default function InstagramExporter({ recipe, bakeLog, onClose }: Instagra
                 </div>
               </div>
 
-              {/* Slide 4: Link to Website */}
+              {/* Slide 4: Baker's Log / Notes — only when there's copy to show */}
+              {noteText && (
+                <div className="shadow-2xl relative" style={wrapperStyle}>
+                  <div style={innerStyle} className="absolute top-0 left-0">
+                    <div ref={carouselRefs[3]} className="w-[1080px] h-[1080px] bg-[#000000] text-[#ffffff] p-20 relative font-sans overflow-hidden border border-[#ffffff33] flex flex-col">
+                      <GoldAccent />
+                      <h1 className="text-6xl font-black mb-12 tracking-tight">{noteHeading}</h1>
+                      <div className="text-3xl leading-relaxed text-[#ffffffcc] flex-1 overflow-hidden whitespace-pre-wrap">
+                        {noteText.length > 600 ? `${noteText.slice(0, 600).trimEnd()}…` : noteText}
+                      </div>
+                      <Logo />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Slide 5: Link to Website */}
               <div className="shadow-2xl relative" style={wrapperStyle}>
                 <div style={innerStyle} className="absolute top-0 left-0">
-                  <div ref={carouselRefs[3]} className="w-[1080px] h-[1080px] bg-[#000000] text-[#ffffff] p-20 relative font-sans overflow-hidden border border-[#ffffff33] flex flex-col items-center justify-center text-center">
+                  <div ref={carouselRefs[4]} className="w-[1080px] h-[1080px] bg-[#000000] text-[#ffffff] p-20 relative font-sans overflow-hidden border border-[#ffffff33] flex flex-col items-center justify-center text-center">
                     <GoldAccent />
                   <h1 className="text-7xl font-black mb-8 tracking-tight">Get the Full Details</h1>
                   <p className="text-3xl text-[#ffffffcc] mb-16 max-w-2xl leading-relaxed">

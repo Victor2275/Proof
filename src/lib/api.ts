@@ -308,6 +308,14 @@ export const api = {
     return handleResponse(res);
   },
 
+  rehostImages: async (): Promise<{ recipesUpdated: number; bakeLogsUpdated: number; rehostedCount: number }> => {
+    const res = await fetch(`${API_URL}/maintenance/rehost-images`, {
+      method: 'POST',
+      headers: getHeaders(),
+    });
+    return handleResponse(res);
+  },
+
   submitPin: async (pin: string): Promise<{ token: string }> => {
     const res = await fetch(`${API_URL}/auth/pin`, {
       method: 'POST',

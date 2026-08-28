@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Play, Pause, X, Bell } from 'lucide-react';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
-import { io } from 'socket.io-client';
+import { io, type Socket } from 'socket.io-client';
 import { API_URL } from '../lib/api';
 import { hapticsEnabled, ttsEnabled } from '../lib/settings';
 
@@ -14,20 +14,26 @@ export interface Timer {
 }
 
 const socketUrl = API_URL.replace('/api', '');
-const socket = io(socketUrl);
 
 export default function TimerManager() {
   const [timers, setTimers] = useState<Timer[]>([]);
   const [now, setNow] = useState(Date.now());
   const [pendingTimer, setPendingTimer] = useState<{ durationSecs: number, name: string } | null>(null);
   const [isFlashing, setIsFlashing] = useState(false);
+  // The websocket used to be opened at module scope, so every page load connected
+  // one and nothing ever closed it. Own it here so it's torn down on unmount.
+  const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
+    const socket = io(socketUrl);
+    socketRef.current = socket;
     socket.on('timers:sync', (serverTimers: Timer[]) => {
       setTimers(serverTimers);
     });
     return () => {
       socket.off('timers:sync');
+      socket.disconnect();
+      socketRef.current = null;
     };
   }, []);
 
@@ -62,7 +68,7 @@ export default function TimerManager() {
           setTimeout(() => setIsFlashing(false), 1500);
 
           const updatedTimer = { ...t, hasRung: true };
-          socket.emit('timer:update', updatedTimer);
+          socketRef.current?.emit('timer:update', updatedTimer);
           return updatedTimer;
         }
         return t;
@@ -105,7 +111,7 @@ export default function TimerManager() {
       remainingMs: durationSecs * 1000,
       hasRung: false
     };
-    socket.emit('timer:add', newTimer);
+    socketRef.current?.emit('timer:add', newTimer);
     setPendingTimer(null);
   };
 
@@ -120,11 +126,11 @@ export default function TimerManager() {
     } else {
       updatedTimer = { ...t, endTime: Date.now() + t.remainingMs };
     }
-    socket.emit('timer:update', updatedTimer);
+    socketRef.current?.emit('timer:update', updatedTimer);
   };
 
   const removeTimer = (id: string) => {
-    socket.emit('timer:remove', id);
+    socketRef.current?.emit('timer:remove', id);
   };
 
   const formatTime = (ms: number) => {
