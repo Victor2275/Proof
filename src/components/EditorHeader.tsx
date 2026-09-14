@@ -1,4 +1,3 @@
-import React from 'react';
 import { ArrowLeft, Loader2, Trash2, Save } from 'lucide-react';
 
 interface EditorHeaderProps {

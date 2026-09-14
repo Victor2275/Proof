@@ -1,7 +1,6 @@
-import RecipeImage from './RecipeImage';
-import { useState, useEffect, lazy, Suspense } from 'react';
+import { useState, useEffect, lazy, Suspense, useMemo } from 'react';
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
-import { api, type Recipe, type BakeLog } from '../lib/api';
+import { api, type BakeLog } from '../lib/api';
 import { useRecipe, useRecipeBakeLogs, usePantry, useUpdateRecipe } from '../lib/queries';
 import { updateLocalBakeLog, deleteLocalBakeLog } from '../lib/localDB';
 import ReverseBakeScheduler from './ReverseBakeScheduler';
@@ -10,8 +9,10 @@ import BakeLogsGrid from './BakeLogsGrid';
 import RecipeHeader from './RecipeHeader';
 import IngredientList from './IngredientList';
 import InstructionList from './InstructionList';
-import { Edit, MoreVertical, Play, X, Star, Award, CheckCircle2, Sparkles, Share2 } from 'lucide-react';
+import SideBySideCompare from './SideBySideCompare';
+import { Edit, MoreVertical, Play, X, Star, Award, Share2 } from 'lucide-react';
 import { Skeleton } from './ui/Skeleton';
+import { useQueryClient } from '@tanstack/react-query';
 import { QRCodeSVG } from 'qrcode.react';
 import Fuse from 'fuse.js';
 
@@ -19,7 +20,7 @@ import Fuse from 'fuse.js';
 // exports. The Instagram exporter is a full-screen modal opened on demand. All
 // three load lazily so viewing a recipe doesn't pay for them.
 const InstagramExporter = lazy(() => import('./InstagramExporter'));
-import { renderWithTimers } from '../utils/timerParser';
+
 
 function Instagram({ className = "w-4 h-4" }: { className?: string }) {
   return (
@@ -40,24 +41,7 @@ function Instagram({ className = "w-4 h-4" }: { className?: string }) {
   );
 }
 
-function ExpandableInstruction({ text = '', index }: { text: string, index: number }) {
-  const [expanded, setExpanded] = useState(false);
-  const isLong = (text || '').length > 150;
 
-  return (
-    <li className="flex gap-4">
-      <span className="font-medium text-ink-muted min-w-[20px]">{index + 1}.</span>
-      <div className="flex-1">
-        <p className={`leading-relaxed ${!expanded && isLong ? 'line-clamp-3' : ''}`}>
-          {renderWithTimers(text || '', `Step ${index + 1}`)}
-        </p>
-        {!expanded && isLong && (
-          <button onClick={() => setExpanded(true)} className="text-ink font-bold text-sm mt-1 underline">Read more</button>
-        )}
-      </div>
-    </li>
-  );
-}
 
 const EMPTY_LOGS: BakeLog[] = [];
 const EMPTY_PANTRY: any[] = []; // or actual type if imported
@@ -65,6 +49,7 @@ const EMPTY_PANTRY: any[] = []; // or actual type if imported
 export default function RecipeViewer() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const location = useLocation();
   const { data: recipe, isLoading: loadingRecipe } = useRecipe(id);
   const { data: bakeLogs = EMPTY_LOGS, isLoading: loadingLogs } = useRecipeBakeLogs(id);
@@ -97,7 +82,7 @@ export default function RecipeViewer() {
   const [editingTagsFor, setEditingTagsFor] = useState<string | null>(null);
   const [tempTags, setTempTags] = useState<{url: string, label: string}[]>([]);
 
-  const inPantryMap = React.useMemo(() => {
+  const inPantryMap = useMemo(() => {
     if (!recipe || !pantryData.length) return {};
     const map: Record<string, boolean> = {};
     const fuse = new Fuse(pantryData, { keys: ['name'], threshold: 0.35 });
@@ -159,7 +144,7 @@ export default function RecipeViewer() {
     const newTags = isFav ? currentTags.filter(t => t !== 'Favorite') : [...currentTags, 'Favorite'];
     
     try {
-      await updateRecipe({ id, data: { tags: newTags } });
+      await updateRecipe({ id, data: { tags: newTags } as any });
     } catch (err) {
       console.error('Failed to toggle favorite', err);
     }
@@ -471,7 +456,7 @@ export default function RecipeViewer() {
                               updated = await api.updateBakeLog(selectedMake._id!, { date: new Date(editDateValue).toISOString() });
                             }
                             setSelectedMake(updated);
-                            setBakeLogs(prev => prev.map(l => l._id === updated._id ? updated : l));
+                            queryClient.invalidateQueries({ queryKey: ['bakeLogs', id] });
                             setIsEditingDate(false);
                           } catch(e) { alert('Failed to update date'); }
                         }}
@@ -494,7 +479,7 @@ export default function RecipeViewer() {
                               updated = await api.updateBakeLog(selectedMake._id!, { isPersonalBest: newStatus });
                             }
                             setSelectedMake(updated);
-                            setBakeLogs(prev => prev.map(l => l._id === updated._id ? updated : l));
+                            queryClient.invalidateQueries({ queryKey: ['bakeLogs', id] });
                           } catch(e) { alert('Failed to update status'); }
                         }} 
                         className={`flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full border transition-all ${selectedMake.isPersonalBest ? 'bg-yellow-500 text-black border-yellow-500' : 'border-border-subtle hover:bg-black/5 dark:hover:bg-white/5 text-ink-muted'}`}
@@ -557,7 +542,7 @@ export default function RecipeViewer() {
                                updated = await api.updateBakeLog(selectedMake._id!, { images: tempTags });
                              }
                              setSelectedMake(updated);
-                             setBakeLogs(prev => prev.map(l => l._id === updated._id ? updated : l));
+                             queryClient.invalidateQueries({ queryKey: ['bakeLogs', id] });
                              setEditingTagsFor(null);
                            } catch (err) {
                              alert('Failed to save tags');
@@ -638,11 +623,10 @@ export default function RecipeViewer() {
                       const photoUrl = selectedMake.images?.[0]?.url || selectedMake.imageUrls?.[0];
                       if (!photoUrl || !recipe) return;
                       try {
-                        const updated = await api.updateRecipe(recipe._id!, {
+                        await api.updateRecipe(recipe._id!, {
                            imageUrls: [photoUrl, ...(recipe.imageUrls || []).filter(u => u !== photoUrl)]
                         });
-                        setRecipe(updated);
-                        setHeroImage(photoUrl);
+                        queryClient.invalidateQueries({ queryKey: ['recipe', id] });
                         alert('Cover photo updated successfully!');
                       } catch (err) {
                         alert('Failed to update cover photo.');
@@ -661,7 +645,7 @@ export default function RecipeViewer() {
                         } else {
                           await api.deleteBakeLog(selectedMake._id!);
                         }
-                        setBakeLogs(prev => prev.filter(l => l._id !== selectedMake._id));
+                        queryClient.invalidateQueries({ queryKey: ['bakeLogs', id] });
                         handleCloseMakeDetails();
                       } catch (e) {
                         alert('Failed to delete log entry.');

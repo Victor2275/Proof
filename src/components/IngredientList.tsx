@@ -1,5 +1,4 @@
-import React from 'react';
-import { Recipe } from '../lib/api';
+import type { Recipe } from '../lib/api';
 import { CheckCircle2, Sparkles } from 'lucide-react';
 
 interface IngredientListProps {

@@ -40,7 +40,7 @@ export const useUpdateRecipe = () => {
     mutationFn: ({ id, data }: { id: string; data: Omit<Recipe, '_id'> }) =>
       api.updateRecipe(id, data),
     onSuccess: (updated) => {
-      queryClient.setQueryData(queryKeys.recipe(updated._id), updated);
+      queryClient.setQueryData(queryKeys.recipe(updated._id!), updated);
       queryClient.invalidateQueries({ queryKey: ['recipes'] });
     },
   });

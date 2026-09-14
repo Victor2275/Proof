@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { api, type Recipe, type Component } from '../lib/api';
-import { ArrowLeft, Trash2, Save, Plus, X, GripVertical, Loader2, Download, Check, Image as ImageIcon, ArrowUp, ArrowDown, Link as LinkIcon } from 'lucide-react';
+import { Trash2, Plus, X, GripVertical, Loader2, Download, Check, ArrowUp, ArrowDown, Link as LinkIcon } from 'lucide-react';
 import ReactCrop, { type Crop, type PixelCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 import * as Diff from 'diff';
-import { Capacitor } from '@capacitor/core';
+
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import EditorHeader from './EditorHeader';
 import BasicInfoForm from './BasicInfoForm';
@@ -447,7 +447,7 @@ export default function RecipeEditor() {
         uploading={uploading}
         handleNativeImageUpload={handleNativeImageUpload}
         handleImageUpload={handleImageUpload}
-        handleOpenPastBakes={() => setShowPastBakesModal(true)}
+        handleOpenPastBakes={handleOpenPastBakes}
         id={id}
       />
 

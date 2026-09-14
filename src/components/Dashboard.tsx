@@ -1,10 +1,10 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import RecipeImage from './RecipeImage';
 import { SkeletonCard } from './ui/Skeleton';
 import { Link, useNavigate } from 'react-router-dom';
 import { type Recipe } from '../lib/api';
 import { useRecipes } from '../lib/queries';
-import { Search, Clock, Shuffle, LayoutGrid, List, Filter, Flame } from 'lucide-react';
+import { Search, Clock, LayoutGrid, List, Flame } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Fuse from 'fuse.js';
 import OnboardingModal from './OnboardingModal';
@@ -41,8 +41,8 @@ export default function Dashboard() {
     let filtered = allRecipes;
 
     if (activeFilters.length > 0) {
-      filtered = filtered.filter(recipe => 
-        activeFilters.every(filter => recipe.tags?.map(t => t.toLowerCase()).includes(filter.toLowerCase()))
+      filtered = filtered.filter((recipe: Recipe) => 
+        activeFilters.every(filter => recipe.tags?.map((t: string) => t.toLowerCase()).includes(filter.toLowerCase()))
       );
     }
 
@@ -58,7 +58,7 @@ export default function Dashboard() {
     setRecipes(filtered);
   }, [search, activeFilters, allRecipes]);
 
-  const allTags = Array.from(new Set(allRecipes.flatMap(r => (r.tags || []).map(t => t.toLowerCase())))).sort();
+  const allTags = Array.from(new Set(allRecipes.flatMap((r: Recipe) => (r.tags || []).map((t: string) => t.toLowerCase())))).sort() as string[];
 
   return (
     <div className="space-y-8 pt-4 md:pt-6">
@@ -130,7 +130,7 @@ export default function Dashboard() {
           >
             All Recipes
           </button>
-          {allTags.map(tag => (
+          {allTags.map((tag: string) => (
             <button
               key={tag}
               onClick={() => setActiveFilters([tag])}

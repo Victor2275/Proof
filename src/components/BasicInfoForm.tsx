@@ -1,5 +1,5 @@
 import React from 'react';
-import { Recipe } from '../lib/api';
+import type { Recipe } from '../lib/api';
 import { X, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 
