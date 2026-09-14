@@ -4,7 +4,6 @@ This document exhaustively tracks every capability, component, and technical int
 
 ## 1. Core Recipe Management
 - **Structured Schema (MongoDB)**: Recipes are stored with precise, structured fields: `title`, `description`, `imageUrls`, `servings`, `difficulty`, `prepTime`, `cookTime`, `tags`, `ingredients` (Object: Name, Qty, Unit), `instructions`, and `labNotes`.
-- **Folder Organization**: Recipes can be categorized into user-defined folders for easy retrieval.
 - **Git-Style Version Control**: Native branching support. Recipes track `parentRecipeId`, `versionNumber`, `isLatestVersion`, and `commitMessage`, allowing chefs to save iterations of a master recipe.
 - **Visual Diff / Side-by-Side Comparison**: `SideBySideCompare.tsx` allows users to compare different iterations of recipes, highlighting what changed in ingredients and instructions.
 - **Fuzzy Search & Filtering**: Uses `fuse.js` to enable rapid, typo-tolerant searching across recipe titles and tags on the dashboard.
@@ -58,7 +57,6 @@ This document exhaustively tracks every capability, component, and technical int
 - **Stack**: React, Vite, Tailwind CSS (`@tailwindcss/postcss`).
 - **Black & Gold Aesthetic**: Pitch black and paper white themes with elegant gold accents and glassmorphic translucent components.
 - **Sanitization**: `rehype-sanitize` ensures user-generated markdown is safe from XSS.
-- **Drag & Drop**: `@dnd-kit/core` powers drag-and-drop mechanics across the dashboard for organizing folders.
 - **Icons**: Standardized clean iconography via `lucide-react`.
 - **Fault Resilience & Crash Protection**: `ErrorBoundary.tsx` wraps the routing tree to catch unhandled rendering exceptions, preventing white-screen crashes and presenting diagnostic stack traces with graceful recovery navigation.
 

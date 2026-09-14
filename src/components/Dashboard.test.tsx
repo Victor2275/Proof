@@ -63,9 +63,6 @@ describe('Dashboard Component', () => {
     );
     await waitFor(() => expect(screen.getByText('Sourdough Bread')).toBeDefined());
     
-    const dessertsTab = screen.getByRole('button', { name: /Desserts/i });
-    fireEvent.click(dessertsTab);
-    
     const searchInput = screen.getByPlaceholderText(/Search recipes or tags/i);
     fireEvent.change(searchInput, { target: { value: 'Chocolate' } });
     
@@ -90,7 +87,7 @@ describe('Dashboard Component', () => {
     });
   });
 
-  it('filters recipes by clicking tag', async () => {
+  it('filters recipes by selecting tag from dropdown', async () => {
     render(
       <MemoryRouter>
         <Dashboard />
@@ -98,8 +95,8 @@ describe('Dashboard Component', () => {
     );
     await waitFor(() => expect(screen.getByText('Sourdough Bread')).toBeDefined());
     
-    const tagBtn = screen.getByText('#sourdough');
-    fireEvent.click(tagBtn);
+    const select = screen.getByRole('combobox');
+    fireEvent.change(select, { target: { value: 'sourdough' } });
     
     await waitFor(() => {
       expect(screen.getByText('Sourdough Bread')).toBeDefined();
@@ -115,27 +112,12 @@ describe('Dashboard Component', () => {
       </MemoryRouter>
     );
     await waitFor(() => expect(screen.getByText('Test')).toBeDefined());
-    const tag = screen.getByRole('button', { name: /#sourdough/i });
-    fireEvent.click(tag);
+    
+    const select = screen.getByRole('combobox');
+    fireEvent.change(select, { target: { value: 'sourdough' } });
+    
     await waitFor(() => {
       expect(screen.getByText('Test')).toBeDefined();
-    });
-  });
-
-  it('filters recipes by folder tabs', async () => {
-    render(
-      <MemoryRouter>
-        <Dashboard />
-      </MemoryRouter>
-    );
-    await waitFor(() => expect(screen.getByText('Sourdough Bread')).toBeDefined());
-    
-    const breadsTab = screen.getByRole('button', { name: /Breads/i });
-    fireEvent.click(breadsTab);
-    
-    await waitFor(() => {
-      expect(screen.getByText('Pizza Dough')).toBeDefined();
-      expect(screen.queryByText('Sourdough Bread')).toBeNull();
     });
   });
 
