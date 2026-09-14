@@ -39,8 +39,8 @@ export default function Sidebar({ className = "", onAdminRequired }: { className
               key={item.name}
               to={item.path}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-sm transition-colors ${isActive
-                  ? 'bg-accent/20 text-accent font-medium'
-                  : 'text-ink-muted hover:bg-black/5 dark:hover:bg-white/5'
+                  ? 'bg-accent/10 border-l-4 border-accent text-accent font-bold pl-2 shadow-[inset_2px_0_10px_rgba(212,175,55,0.05)]'
+                  : 'text-ink-muted hover:bg-black/5 dark:hover:bg-white/5 border-l-4 border-transparent'
                 }`}
             >
               <Icon className="w-4 h-4 opacity-100" />

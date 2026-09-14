@@ -38,9 +38,9 @@ export default function RecipeHeader({ recipe, heroImage, scaleMultiplier }: Rec
 
         <div className="flex flex-wrap gap-6 md:gap-10 pt-4">
           <div>
-            <div className="font-bold mb-1">Total Time:</div>
+            <div className="font-bold mb-1">Prep & Cook:</div>
             <div className="text-ink-muted">
-              {parseInt(recipe.prepTime) + parseInt(recipe.cookTime) || 90} mins
+              {recipe.prepTime ? recipe.prepTime.replace(/[\[\]]/g, '') : 'N/A'} {recipe.cookTime ? `/ ${recipe.cookTime.replace(/[\[\]]/g, '')}` : ''}
             </div>
           </div>
           <div>

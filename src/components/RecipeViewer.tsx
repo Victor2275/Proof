@@ -11,6 +11,7 @@ import RecipeHeader from './RecipeHeader';
 import IngredientList from './IngredientList';
 import InstructionList from './InstructionList';
 import { Edit, MoreVertical, Play, X, Star, Award, CheckCircle2, Sparkles, Share2 } from 'lucide-react';
+import { Skeleton } from './ui/Skeleton';
 import { QRCodeSVG } from 'qrcode.react';
 import Fuse from 'fuse.js';
 
@@ -235,7 +236,28 @@ export default function RecipeViewer() {
     setShowMobileMenu(false);
   };
 
-  if (loading) return <div className="text-center py-20 text-ink-muted">Loading recipe...</div>;
+  if (loading) return (
+    <div className="max-w-4xl mx-auto space-y-10 pb-20 pt-6">
+      <div className="flex justify-between items-center mb-6">
+        <Skeleton className="h-8 w-48" />
+        <div className="hidden md:flex gap-3">
+          <Skeleton className="h-8 w-24" />
+          <Skeleton className="h-8 w-24" />
+        </div>
+      </div>
+      <Skeleton className="h-[40vh] w-full rounded-2xl" />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-12 pt-8">
+        <div className="space-y-4">
+          <Skeleton className="h-6 w-32 mb-6" />
+          {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
+        </div>
+        <div className="space-y-4">
+          <Skeleton className="h-6 w-32 mb-6" />
+          {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-20 w-full" />)}
+        </div>
+      </div>
+    </div>
+  );
   if (!recipe) return <div className="text-center py-20 text-ink-muted">Recipe not found.</div>;
 
   return (

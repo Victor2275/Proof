@@ -67,25 +67,32 @@ export default function IngredientList({
                     className="w-6 h-6 shrink-0 rounded border-border-subtle text-ink focus:ring-ink cursor-pointer print:appearance-none print:w-5 print:h-5 print:border-2 print:border-ink"
                   />
                 </label>
-                <span className={`w-16 font-medium shrink-0 ${checkedIngredients[i] ? 'text-ink-muted line-through' : ''}`}>
-                  {Number((ing.quantity * scaleMultiplier).toFixed(2))} {ing.unit}
-                </span>
-                {showBakersMath && (
-                  <span className="w-16 text-ink-muted font-mono text-sm shrink-0">
-                    {pct}
+                
+                <div className="flex-1 flex flex-wrap sm:flex-nowrap items-baseline gap-x-4 gap-y-1">
+                  <span className={`font-medium shrink-0 min-w-[4rem] ${checkedIngredients[i] ? 'text-ink-muted line-through' : ''}`}>
+                    {Number((ing.quantity * scaleMultiplier).toFixed(2))} {ing.unit}
                   </span>
-                )}
-                <span className={checkedIngredients[i] ? 'text-ink-muted line-through' : ''}>
-                  {ing.name}
-                </span>
-                {inPantryMap[ing.name] && (
-                  <span className="ml-2 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform" title="In your pantry">
-                    <CheckCircle2 className="w-4 h-4 text-green-500/70" />
+                  
+                  {showBakersMath && (
+                    <span className="text-ink-muted font-mono text-sm shrink-0 min-w-[3rem]">
+                      {pct}
+                    </span>
+                  )}
+                  
+                  <span className={`flex-1 break-words ${checkedIngredients[i] ? 'text-ink-muted line-through' : ''}`}>
+                    {ing.name}
                   </span>
-                )}
+                  
+                  {inPantryMap[ing.name] && (
+                    <span className="flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform" title="In your pantry">
+                      <CheckCircle2 className="w-4 h-4 text-green-500/70" />
+                    </span>
+                  )}
+                </div>
+
                 <button
                   onClick={() => setAiSubstituteIngredient(ing.name)}
-                  className="ml-auto text-xs text-accent opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 font-bold hover:underline"
+                  className="ml-2 text-[10px] sm:text-xs text-accent px-2 py-1 rounded border border-accent/20 bg-accent/5 opacity-80 sm:opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 font-bold hover:bg-accent/10 shrink-0 uppercase tracking-widest mt-1 sm:mt-0"
                   title="AI Substitutions"
                 >
                   <Sparkles className="w-3 h-3" /> Sub

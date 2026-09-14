@@ -1,5 +1,8 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
+import LandingPage from './components/LandingPage';
+import NotFound from './components/NotFound';
 import Sidebar from './components/Sidebar';
 import TimerManager from './components/TimerManager';
 import BottomNav from './components/BottomNav';
@@ -88,17 +91,41 @@ function AuthModal({ onClose, onSuccess }: { onClose: () => void, onSuccess: () 
   );
 }
 
+function AnimatedRoutes() {
+  const location = useLocation();
+  return (
+    <AnimatePresence mode="wait">
+      <Routes location={location} key={location.pathname}>
+        <Route path="/welcome" element={<LandingPage />} />
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/settings" element={<Settings />} />
+        <Route path="/analytics" element={<Analytics />} />
+        <Route path="/pantry" element={<Pantry />} />
+        <Route path="/grocery" element={<GroceryList />} />
+        <Route path="/recipe/:id/bake" element={<BakingMode />} />
+        <Route path="/recipe/:id" element={<RecipeViewer />} />
+        <Route path="/new" element={<RecipeEditor />} />
+        <Route path="/edit/:id" element={<RecipeEditor />} />
+        <Route path="/gallery" element={<Gallery />} />
+        <Route path="/notes" element={<GeneralNotes />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </AnimatePresence>
+  );
+}
+
 function App() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   // Set when a screen falls back to its local cache, so we can say the data is a
   // saved copy rather than letting stale content pass for live.
   const [staleReason, setStaleReason] = useState<string | null>(null);
-  const [autoHideSidebar, setAutoHideSidebar] = useState(() => localStorage.getItem('autoHideSidebar') === 'true');
-
   useEffect(() => {
+    if (!localStorage.getItem('hasVisited') && window.location.pathname !== '/welcome') {
+      window.location.href = '/welcome';
+    }
+
     const handleSettingsChange = () => {
-      setAutoHideSidebar(localStorage.getItem('autoHideSidebar') === 'true');
       document.documentElement.setAttribute('data-font', localStorage.getItem('fontFamily') || 'sans');
     };
     
@@ -162,23 +189,11 @@ function App() {
         </div>
       )}
       <div className="flex flex-1 min-h-0">
-        <Sidebar onAdminRequired={() => setShowAuthModal(true)} className={`hidden md:flex ${autoHideSidebar ? 'group -translate-x-[95%] hover:-translate-x-0 transition-transform duration-300 shadow-2xl z-50' : ''}`} />
-        <main className={`flex-1 overflow-y-auto overscroll-y-auto w-full relative pb-24 md:pb-12 pt-safe md:pt-12 px-4 md:px-12 transition-all duration-300 ${autoHideSidebar ? 'md:ml-[3%]' : 'md:ml-64'}`}>
+        <Sidebar onAdminRequired={() => setShowAuthModal(true)} className="hidden md:flex" />
+        <main className="flex-1 overflow-y-auto overscroll-y-auto w-full relative pb-24 md:pb-12 pt-safe md:pt-12 px-4 md:px-12 transition-all duration-300 md:ml-64">
           <ErrorBoundary>
             <Suspense fallback={<div className="pt-12 text-center text-ink-muted text-sm">Loading…</div>}>
-              <Routes>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/settings" element={<Settings />} />
-                <Route path="/analytics" element={<Analytics />} />
-                <Route path="/pantry" element={<Pantry />} />
-                <Route path="/grocery" element={<GroceryList />} />
-                <Route path="/recipe/:id/bake" element={<BakingMode />} />
-                <Route path="/recipe/:id" element={<RecipeViewer />} />
-                <Route path="/new" element={<RecipeEditor />} />
-                <Route path="/edit/:id" element={<RecipeEditor />} />
-                <Route path="/gallery" element={<Gallery />} />
-                <Route path="/notes" element={<GeneralNotes />} />
-              </Routes>
+              <AnimatedRoutes />
             </Suspense>
           </ErrorBoundary>
         </main>

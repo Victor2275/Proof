@@ -50,15 +50,35 @@ export default function Gallery() {
       </div>
 
       {loading ? (
-        <div className="text-center py-20 text-ink-muted font-medium uppercase tracking-wide text-sm">
-          Loading History...
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="animate-pulse bg-black/10 dark:bg-white/10 rounded-xl aspect-square" />
+          ))}
         </div>
       ) : sortedLogs.length === 0 ? (
-        <div className="text-center py-32 border-2 border-dashed border-border-subtle rounded-xl text-ink-muted bg-sidebar/50">
-          <p className="mb-2">No baked items logged yet.</p>
-          <Link to="/" className="text-sm font-medium hover:underline">
-            Use the "Start Recipe" mode to log your first bake!
-          </Link>
+        <div className="relative overflow-hidden rounded-2xl border border-border-subtle aspect-video md:aspect-[21/9] flex flex-col items-center justify-center text-center p-6">
+          <div 
+            className="absolute inset-0 z-0 opacity-20 dark:opacity-30 mix-blend-screen"
+            style={{
+              backgroundImage: 'url(/gallery-empty.jpg)',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+            }}
+          />
+          <div className="relative z-10 space-y-4">
+            <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tight text-ink drop-shadow-md">
+              A Blank Canvas
+            </h2>
+            <p className="text-ink-muted text-lg max-w-md mx-auto font-medium">
+              No bakes logged yet. Start a recipe and log your results to build your visual history.
+            </p>
+            <Link 
+              to="/" 
+              className="inline-block mt-4 px-8 py-3 bg-accent text-black font-bold uppercase tracking-wider rounded-xl hover:shadow-[0_0_20px_rgba(212,175,55,0.3)] transition-all"
+            >
+              Start Cooking
+            </Link>
+          </div>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

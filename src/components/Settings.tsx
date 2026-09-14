@@ -4,11 +4,11 @@ import { API_URL, api } from '../lib/api';
 import { hapticsEnabled, ttsEnabled as readTtsEnabled } from '../lib/settings';
 
 export default function Settings() {
-  const [theme, setTheme] = useState<'light' | 'dark' | 'oled' | 'system'>(() => localStorage.getItem('theme') as any || 'system');
+  const [theme, setTheme] = useState<'light' | 'dark' | 'system'>(() => localStorage.getItem('theme') as any || 'system');
   const [haptics, setHaptics] = useState(hapticsEnabled);
   const [fontFamily, setFontFamily] = useState(() => localStorage.getItem('fontFamily') || 'sans');
   const [defaultBakersMath, setDefaultBakersMath] = useState(() => localStorage.getItem('defaultBakersMath') === 'true');
-  const [autoHideSidebar, setAutoHideSidebar] = useState(() => localStorage.getItem('autoHideSidebar') === 'true');
+
   
   // Announcements have always been on in practice, so default this on rather than
   // silencing timers for anyone who never opened Settings.
@@ -30,13 +30,9 @@ export default function Settings() {
     } else {
       localStorage.setItem('theme', theme);
       if (theme === 'dark') {
-        document.documentElement.classList.remove('oled');
         document.documentElement.classList.add('dark');
-      } else if (theme === 'oled') {
-        // Keep `dark` on so dark: utilities still apply; .oled overrides the palette.
-        document.documentElement.classList.add('dark', 'oled');
       } else {
-        document.documentElement.classList.remove('dark', 'oled');
+        document.documentElement.classList.remove('dark');
       }
     }
   }, [theme]);
@@ -55,10 +51,7 @@ export default function Settings() {
     window.dispatchEvent(new Event('settings-changed'));
   }, [defaultBakersMath]);
 
-  useEffect(() => {
-    localStorage.setItem('autoHideSidebar', autoHideSidebar.toString());
-    window.dispatchEvent(new Event('settings-changed'));
-  }, [autoHideSidebar]);
+
 
   useEffect(() => {
     localStorage.setItem('ttsEnabled', ttsEnabled.toString());
@@ -94,12 +87,7 @@ export default function Settings() {
             >
               <Moon className="w-4 h-4"/> Dark
             </button>
-            <button 
-              onClick={() => setTheme('oled')}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-medium transition-all border ${theme === 'oled' ? 'bg-accent/10 text-accent border-accent shadow-[0_0_15px_rgba(212,175,55,0.15)]' : 'bg-paper text-ink border-border-subtle hover:bg-black/5 dark:hover:bg-white/5'}`}
-            >
-              <Moon className="w-4 h-4 text-purple-400"/> OLED Black
-            </button>
+
             <button 
               onClick={() => setTheme('system')}
               className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-medium transition-all border ${theme === 'system' ? 'bg-accent/10 text-accent border-accent shadow-[0_0_15px_rgba(212,175,55,0.15)]' : 'bg-paper text-ink border-border-subtle hover:bg-black/5 dark:hover:bg-white/5'}`}
@@ -142,16 +130,7 @@ export default function Settings() {
               </div>
             </label>
 
-            <label className="flex items-center justify-between p-4 bg-paper border border-border-subtle rounded-xl cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-              <div>
-                <div className="font-bold">Auto-Hide Sidebar (PC)</div>
-                <div className="text-sm text-ink-muted">Collapse the navigation sidebar for a cleaner look.</div>
-              </div>
-              <div className="relative inline-block w-12 h-6 rounded-full transition-colors ease-in-out duration-200 focus:outline-none" style={{ backgroundColor: autoHideSidebar ? 'var(--accent-gold)' : 'var(--border-subtle)' }}>
-                <input type="checkbox" className="sr-only" checked={autoHideSidebar} onChange={e => setAutoHideSidebar(e.target.checked)} />
-                <span className={`inline-block w-6 h-6 transform bg-paper rounded-full shadow transition duration-200 ease-in-out ${autoHideSidebar ? 'translate-x-6' : 'translate-x-0'}`} />
-              </div>
-            </label>
+
 
             <label className="flex items-center justify-between p-4 bg-paper border border-border-subtle rounded-xl cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
               <div>

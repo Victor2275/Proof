@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { api, type Recipe, type BakeLog } from '../lib/api';
 import { getLocalBakeLogs } from '../lib/localDB';
 import { BarChart3, TrendingUp, Calendar, Hash } from 'lucide-react';
+import { Skeleton } from './ui/Skeleton';
 
 export default function Analytics() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
@@ -35,7 +36,19 @@ export default function Analytics() {
     fetchData();
   }, []);
 
-  if (loading) return <div className="text-center py-20 text-ink-muted">Loading analytics...</div>;
+  if (loading) return (
+    <div className="max-w-4xl mx-auto space-y-8 pb-20 pt-6">
+      <div className="flex items-center gap-3 border-b border-border-subtle pb-6">
+        <Skeleton className="h-10 w-10" />
+        <Skeleton className="h-10 w-48" />
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+        {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-32 w-full rounded-2xl" />)}
+      </div>
+      <Skeleton className="h-64 w-full rounded-2xl" />
+      <Skeleton className="h-48 w-full rounded-2xl" />
+    </div>
+  );
 
   const totalBakes = logs.length;
   const personalBests = logs.filter(l => l.isPersonalBest).length;
