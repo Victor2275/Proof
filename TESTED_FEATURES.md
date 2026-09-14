@@ -58,6 +58,8 @@ This is a 1-to-1 mirror of CURRENT_FEATURES.md. Use checkboxes to track manual t
 ## 7. UI/UX Foundation
 - [ ] **Two Themes**: Light and Dark (dark is default).
 - [ ] **Black & Gold Aesthetic**: Pitch black, gold accents, glassmorphic components.
+- [ ] **Onboarding & Landing**: A dedicated hero landing page with a 3-step carousel modal to introduce new users to the app functionality.
+- [ ] **Skeletons & Empty States**: Polished animated skeleton loaders for data fetching, custom illustrated 404 pages, and a tailored empty state for the gallery.
 - [ ] **XSS Sanitization**: rehype-sanitize on user markdown.
 - [ ] **Error Boundary**: Catches unhandled render errors gracefully.
 - [ ] **Server Architecture**: Modular Express server architecture with separated routes and services.

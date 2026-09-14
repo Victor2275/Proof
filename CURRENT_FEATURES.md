@@ -64,6 +64,8 @@ This document exhaustively tracks every capability, component, and technical int
 - **Stack**: React, Vite, Tailwind CSS (`@tailwindcss/postcss`), shadcn/ui, TanStack Query for server state management.
 - **Black & Gold Aesthetic**: Pitch black and paper white themes with elegant gold accents and glassmorphic translucent components.
 - **Two Themes**: Light mode and Dark mode (dark is default).
+- **Onboarding & Landing**: A dedicated hero landing page with a 3-step carousel modal to introduce new users to the app functionality.
+- **Skeletons & Empty States**: Polished animated skeleton loaders for data fetching, custom illustrated 404 pages, and a tailored empty state for the gallery.
 - **Sanitization**: `rehype-sanitize` ensures user-generated markdown is safe from XSS.
 - **Icons**: Standardized clean iconography via `lucide-react`.
 - **Fault Resilience & Crash Protection**: `ErrorBoundary.tsx` wraps the routing tree to catch unhandled rendering exceptions, preventing white-screen crashes.
