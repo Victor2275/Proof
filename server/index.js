@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import express from 'express';
 import http from 'http';
 import { Server } from 'socket.io';
@@ -38,21 +39,31 @@ app.use(cors());
 app.use(express.json());
 
 // --- Security / Admin Gate ---
-const adminIPs = new Set();
-const ADMIN_TOKEN = 'admin-secret-token-123';
+// Session tokens are generated per-login and stored in memory with a 24h TTL.
+// This replaces the previous hardcoded token that was visible in the public repo.
+const SESSION_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+const activeSessions = new Map(); // token -> { createdAt: number }
+
+const generateToken = () => crypto.randomUUID();
+
+const isValidSession = (token) => {
+  if (!token) return false;
+  const session = activeSessions.get(token);
+  if (!session) return false;
+  if (Date.now() - session.createdAt > SESSION_TTL_MS) {
+    activeSessions.delete(token);
+    return false;
+  }
+  return true;
+};
 
 const requireAdmin = (req, res, next) => {
   // If no PIN is configured, everyone is an admin
   if (!process.env.ADMIN_PIN) return next();
 
-  const clientIp = req.ip || req.connection.remoteAddress;
   const token = req.headers.authorization?.split(' ')[1];
 
-  if (adminIPs.has(clientIp) || token === ADMIN_TOKEN) {
-    // If they used a token, auto-whitelist their new IP for convenience
-    if (token === ADMIN_TOKEN && !adminIPs.has(clientIp)) {
-      adminIPs.add(clientIp);
-    }
+  if (isValidSession(token)) {
     next();
   } else {
     res.status(401).json({ error: 'Admin authentication required.' });
@@ -62,12 +73,14 @@ const requireAdmin = (req, res, next) => {
 app.post('/api/auth/pin', (req, res) => {
   const { pin } = req.body;
   if (!process.env.ADMIN_PIN) {
-    return res.json({ token: ADMIN_TOKEN });
+    const token = generateToken();
+    activeSessions.set(token, { createdAt: Date.now() });
+    return res.json({ token });
   }
   if (pin === process.env.ADMIN_PIN) {
-    const clientIp = req.ip || req.connection.remoteAddress;
-    adminIPs.add(clientIp);
-    res.json({ token: ADMIN_TOKEN });
+    const token = generateToken();
+    activeSessions.set(token, { createdAt: Date.now() });
+    res.json({ token });
   } else {
     res.status(401).json({ error: 'Invalid PIN' });
   }
@@ -453,7 +466,7 @@ app.get('/api/recipes', async (req, res) => {
       }
       return res.json(sampleRecipes);
     }
-    const query = { isLatestVersion: { $ne: false } };
+    const query = {};
     if (req.query.search) {
       query.$or = [
         { title: { $regex: req.query.search, $options: 'i' } },
@@ -500,7 +513,7 @@ app.post('/api/recipes', requireAdmin, async (req, res) => {
 // Update a recipe (Quick Save)
 app.put('/api/recipes/:id', requireAdmin, async (req, res) => {
   try {
-    const recipe = await Recipe.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const recipe = await Recipe.findByIdAndUpdate(req.params.id, req.body, { returnDocument: 'after' });
     if (!recipe) return res.status(404).json({ error: 'Recipe not found' });
     res.json(recipe);
   } catch (err) {
@@ -508,55 +521,7 @@ app.put('/api/recipes/:id', requireAdmin, async (req, res) => {
   }
 });
 
-// Save as New Iteration
-app.post('/api/recipes/:id/version', requireAdmin, async (req, res) => {
-  try {
-    // 1. Mark the current parent (or latest) as not latest
-    const oldRecipe = await Recipe.findById(req.params.id);
-    if (!oldRecipe) return res.status(404).json({ error: 'Recipe not found' });
 
-    oldRecipe.isLatestVersion = false;
-    await oldRecipe.save();
-
-    // 2. Determine parentId (if we are branching off a child, the root parent is parentRecipeId, or this is the root)
-    const parentId = oldRecipe.parentRecipeId || oldRecipe._id;
-
-    // 3. Find the highest version number for this lineage
-    const versions = await Recipe.find({ $or: [{ _id: parentId }, { parentRecipeId: parentId }] });
-    const nextVersion = Math.max(...versions.map(v => v.versionNumber)) + 1;
-
-    // 4. Create new version
-    const newRecipeData = {
-      ...req.body,
-      _id: undefined,
-      parentRecipeId: parentId,
-      versionNumber: nextVersion,
-      isLatestVersion: true
-    };
-
-    const newRecipe = new Recipe(newRecipeData);
-    await newRecipe.save();
-
-    res.status(201).json(newRecipe);
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-});
-
-// Get Version History
-app.get('/api/recipes/:id/versions', async (req, res) => {
-  try {
-    const recipe = await Recipe.findById(req.params.id);
-    if (!recipe) return res.status(404).json({ error: 'Recipe not found' });
-
-    const parentId = recipe.parentRecipeId || recipe._id;
-    const history = await Recipe.find({ $or: [{ _id: parentId }, { parentRecipeId: parentId }] }).sort({ versionNumber: -1 });
-
-    res.json(history);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
 
 // Delete a recipe
 app.delete('/api/recipes/:id', requireAdmin, async (req, res) => {
@@ -592,7 +557,7 @@ app.post('/api/notes', async (req, res) => {
 
 app.put('/api/notes/:id', async (req, res) => {
   try {
-    const note = await Note.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const note = await Note.findByIdAndUpdate(req.params.id, req.body, { returnDocument: 'after' });
     if (!note) return res.status(404).json({ error: 'Note not found' });
     res.json(note);
   } catch (err) {
@@ -643,7 +608,7 @@ app.post('/api/bakelogs', async (req, res) => {
 
 app.put('/api/bakelogs/:id', async (req, res) => {
   try {
-    const log = await BakeLog.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const log = await BakeLog.findByIdAndUpdate(req.params.id, req.body, { returnDocument: 'after' });
     if (!log) return res.status(404).json({ error: 'Log not found' });
     res.json(log);
   } catch (err) {
@@ -899,15 +864,6 @@ cron.schedule('0 2 * * *', async () => {
 
 // Serve production static assets from dist folder if present
 const distPath = path.join(__dirname, '../dist');
-console.log('--- DEBUG: Checking for dist folder ---');
-console.log('__dirname:', __dirname);
-console.log('distPath:', distPath);
-console.log('dist exists?', fs.existsSync(distPath));
-if (!fs.existsSync(distPath)) {
-  console.log('Directory contents of __dirname:', fs.readdirSync(__dirname));
-  console.log('Directory contents of parent (..):', fs.readdirSync(path.join(__dirname, '..')));
-}
-console.log('---------------------------------------');
 
 if (fs.existsSync(distPath)) {
   app.use(express.static(distPath, {

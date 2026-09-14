@@ -1,14 +1,14 @@
 # Proof: Current Features Tracker
 
-This document exhaustively tracks every capability, component, and technical integration currently active in the Victor-recipes codebase.
+This document exhaustively tracks every capability, component, and technical integration currently active in the Proof codebase.
 
 ## 1. Core Recipe Management
-- **Structured Schema (MongoDB)**: Recipes are stored with precise, structured fields: `title`, `description`, `imageUrls`, `servings`, `difficulty`, `prepTime`, `cookTime`, `tags`, `ingredients` (Object: Name, Qty, Unit), `instructions`, and `labNotes`.
-- **Git-Style Version Control**: Native branching support. Recipes track `parentRecipeId`, `versionNumber`, `isLatestVersion`, and `commitMessage`, allowing chefs to save iterations of a master recipe.
-- **Visual Diff / Side-by-Side Comparison**: `SideBySideCompare.tsx` allows users to compare different iterations of recipes, highlighting what changed in ingredients and instructions.
+- **Structured Schema (MongoDB)**: Recipes are stored with precise, structured fields: `title`, `description`, `imageUrls`, `servings`, `difficulty`, `prepTime`, `cookTime`, `tags`, `ingredients` (Object: Name, Qty, Unit), `instructions`, `folder`, and `labNotes`.
 - **Fuzzy Search & Filtering**: Uses `fuse.js` to enable rapid, typo-tolerant searching across recipe titles and tags on the dashboard.
 - **Nested Sub-Recipe Drawers**: Allows linking recipes to specific instruction steps. Linked recipes slide up in a native drawer without losing context in the parent recipe.
 - **Compact & Grid Views**: UI toggle on the dashboard to switch between large image cards and dense list views.
+- **Recipe Folders**: Recipes can be organized into named folders for easy browsing.
+- **Sub-recipe Instruction Links**: Any instruction step can link to another recipe, which opens inline in a drawer.
 
 ## 2. "The Kitchen Lab" (Active Baking Mode)
 - **Distraction-Free Focus Mode**: `BakingMode.tsx` provides an ultra-clean, step-by-step UI optimized for reading at a distance.
@@ -34,8 +34,10 @@ This document exhaustively tracks every capability, component, and technical int
 - **Personal Bests**: Ability to mark specific bake iterations as a "Personal Best" (indicated by a gold award badge).
 
 ## 4. Data Insights, AI, and Utilities
+- **AI Recipe Extraction**: Paste a URL from any recipe website and Gemini scrapes & structures it into the app format.
+- **AI Recipe Restructuring**: Paste raw text and Gemini formats it into structured ingredients and instructions, with a live diff preview before accepting.
 - **AI Ingredient Substitutions**: `AISubstitutionsModal.tsx` connects to Gemini to generate smart ratios for missing ingredients (e.g., swapping AP Flour for Whole Wheat).
-- **Smart Pantry & Barcode Scanning**: 
+- **Smart Pantry & Barcode Scanning**:
   - `Pantry.tsx` tracks inventory.
   - Integrates `html5-qrcode` to scan real-world UPC barcodes to log ingredients quickly.
 - **Grocery List Generator**: `GroceryList.tsx` converts missing recipe ingredients into an aggregated shopping list.
@@ -50,13 +52,18 @@ This document exhaustively tracks every capability, component, and technical int
 - **Image Architecture**: Images are captured via `@capacitor/camera` (or file upload) and stored on Cloudinary (via `multer-storage-cloudinary`).
 - **Export Engine**:
   - `jspdf` and `html2canvas` generate beautiful printable PDFs and square recipe cards.
-  - **Automated Instagram Recipe Exporter**: Exports the recipe to a Black & Gold styled 1080x1080 square image (or 3-post carousel) using `html2canvas`. Supports exporting a specific Bake Log directly from its card, using the log's photo as the hero image and its notes as the description.
+  - **Instagram Recipe Exporter**: Exports the recipe to a Black & Gold styled 1080x1080 square image (or 3-post carousel) using `html2canvas`. Supports exporting a specific Bake Log directly from its card.
   - `qrcode.react` creates scannable deep-links.
 
-## 6. UI/UX Foundation
-- **Stack**: React, Vite, Tailwind CSS (`@tailwindcss/postcss`).
+## 6. Security & Auth
+- **PIN-Gated Admin Access**: A PIN is required for all write/delete operations. Read operations are fully public.
+- **Crypto-Random Session Tokens**: Login generates a `crypto.randomUUID()` session token stored server-side with a 24-hour TTL — no hardcoded secrets.
+- **Rate Limiting**: AI endpoints and the auth endpoint are rate-limited to prevent abuse.
+
+## 7. UI/UX Foundation
+- **Stack**: React, Vite, Tailwind CSS (`@tailwindcss/postcss`), shadcn/ui.
 - **Black & Gold Aesthetic**: Pitch black and paper white themes with elegant gold accents and glassmorphic translucent components.
+- **Two Themes**: Light mode and Dark mode (dark is default).
 - **Sanitization**: `rehype-sanitize` ensures user-generated markdown is safe from XSS.
 - **Icons**: Standardized clean iconography via `lucide-react`.
-- **Fault Resilience & Crash Protection**: `ErrorBoundary.tsx` wraps the routing tree to catch unhandled rendering exceptions, preventing white-screen crashes and presenting diagnostic stack traces with graceful recovery navigation.
-
+- **Fault Resilience & Crash Protection**: `ErrorBoundary.tsx` wraps the routing tree to catch unhandled rendering exceptions, preventing white-screen crashes.

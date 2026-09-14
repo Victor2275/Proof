@@ -406,16 +406,16 @@ export default function RecipeViewer() {
                 <div>
                   <div className="font-bold mb-1">Total Time:</div>
                   <div className="text-ink-muted">
-                    [{parseInt(recipe.prepTime) + parseInt(recipe.cookTime) || 90} mins]
+                    {parseInt(recipe.prepTime) + parseInt(recipe.cookTime) || 90} mins
                   </div>
                 </div>
                 <div>
                   <div className="font-bold mb-1">Servings:</div>
-                  <div className="text-ink-muted">[{recipe.servings ? recipe.servings * scaleMultiplier : 4 * scaleMultiplier}]</div>
+                  <div className="text-ink-muted">{recipe.servings ? recipe.servings * scaleMultiplier : 4 * scaleMultiplier}</div>
                 </div>
                 <div>
                   <div className="font-bold mb-1">Difficulty:</div>
-                  <div className="text-ink-muted">[{recipe.difficulty || 'Medium'}]</div>
+                  <div className="text-ink-muted">{recipe.difficulty || 'Medium'}</div>
                 </div>
               </div>
             </div>

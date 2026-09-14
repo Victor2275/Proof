@@ -184,19 +184,6 @@ export const api = {
     return handleResponse(res);
   },
 
-  createRecipeVersion: async (id: string, recipe: Omit<Recipe, '_id'>): Promise<Recipe> => {
-    const res = await fetch(`${API_URL}/recipes/${id}/version`, {
-      method: 'POST',
-      headers: getHeaders(),
-      body: JSON.stringify(recipe),
-    });
-    return handleResponse(res);
-  },
-
-  getRecipeVersions: async (id: string): Promise<Recipe[]> => {
-    const res = await fetch(`${API_URL}/recipes/${id}/versions`);
-    return handleResponse(res);
-  },
 
   uploadImage: async (file: File): Promise<{ imageUrl: string }> => {
     const formData = new FormData();
@@ -230,9 +217,9 @@ export const api = {
   deleteRecipe: async (id: string): Promise<{ message: string }> => {
     const res = await fetch(`${API_URL}/recipes/${id}`, {
       method: 'DELETE',
+      headers: getHeaders(),
     });
-    if (!res.ok) throw new Error('Failed to delete recipe');
-    return res.json();
+    return handleResponse(res);
   },
 
   getNotes: async (): Promise<Note[]> => {
@@ -244,29 +231,27 @@ export const api = {
   createNote: async (note: Omit<Note, '_id'>): Promise<Note> => {
     const res = await fetch(`${API_URL}/notes`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getHeaders(),
       body: JSON.stringify(note),
     });
-    if (!res.ok) throw new Error('Failed to create note');
-    return res.json();
+    return handleResponse(res);
   },
 
   updateNote: async (id: string, note: Partial<Note>): Promise<Note> => {
     const res = await fetch(`${API_URL}/notes/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getHeaders(),
       body: JSON.stringify(note),
     });
-    if (!res.ok) throw new Error('Failed to update note');
-    return res.json();
+    return handleResponse(res);
   },
 
   deleteNote: async (id: string): Promise<{ message: string }> => {
     const res = await fetch(`${API_URL}/notes/${id}`, {
       method: 'DELETE',
+      headers: getHeaders(),
     });
-    if (!res.ok) throw new Error('Failed to delete note');
-    return res.json();
+    return handleResponse(res);
   },
 
   getBakeLogs: async (): Promise<BakeLog[]> => {

@@ -16,10 +16,10 @@ Whenever any changes are made to the codebase, you MUST:
 3. Ensure that a unit test is written for every new feature added.
 
 # Improvement Plan
-For the active improvement roadmap, priorities, and phased plan, refer to [ImprovementPlan.md](file:///c:/Users/gusev/Documents/Github/Proof/ImprovementPlan.md).
+For the active improvement roadmap, priorities, and phased plan, refer to [ImprovementPlan.md](ImprovementPlan.md).
 
 # Project Vision & Scope
-For a complete understanding of the project's long-term scope, design aesthetics (Black & Gold), and architecture, refer to the [VISION.md](file:///c:/Users/gusev/Documents/Github/Proof/.agents/VISION.md) file.
+For a complete understanding of the project's long-term scope, design aesthetics (Black & Gold), and architecture, refer to the [VISION.md](.agents/VISION.md) file.
 
 # UI/UX Principles
 - **Dark mode is the default** for the demo and production deployment.

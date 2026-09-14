@@ -33,11 +33,7 @@ export default function RecipeEditor() {
   const [aiError, setAiError] = useState('');
   const [saveError, setSaveError] = useState('');
   
-  // Versioning States
-  const [showCommitModal, setShowCommitModal] = useState(false);
-  const [commitMessage, setCommitMessage] = useState('');
   const [recipe, setRecipe] = useState<Omit<Recipe, '_id'>>(() => {
-    console.log("INITIALIZING RECIPE STATE", location.state);
     if (location.state?.recipe) {
       return location.state.recipe;
     }
@@ -57,8 +53,7 @@ export default function RecipeEditor() {
     };
   });
   
-  console.log("CURRENT RECIPE:", recipe);
-  console.log("USE PARAMS ID:", id);
+
 
   const [draggedIngredientIdx, setDraggedIngredientIdx] = useState<number | null>(null);
   const [draggedInstructionIdx, setDraggedInstructionIdx] = useState<number | null>(null);
@@ -101,7 +96,7 @@ export default function RecipeEditor() {
     }
   }, [id]);
 
-  const handleSubmit = async (e: React.FormEvent, isCommit = false) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!recipe.title.trim()) return;
     setSaveError('');
@@ -118,13 +113,8 @@ export default function RecipeEditor() {
     } else {
       // Update existing recipe
       try {
-        if (isCommit) {
-          const createdVersion = await api.createRecipeVersion(id, { ...recipe, commitMessage });
-          navigate(`/recipe/${createdVersion._id}`);
-        } else {
-          const updated = await api.updateRecipe(id, recipe);
-          navigate(`/recipe/${updated._id}`);
-        }
+        const updated = await api.updateRecipe(id, recipe);
+        navigate(`/recipe/${updated._id}`);
       } catch (err: any) {
         console.error(err);
         setSaveError(err.message || 'Failed to save recipe.');
@@ -341,41 +331,18 @@ export default function RecipeEditor() {
           )}
           {id ? (
             <>
-              <button type="submit" onClick={(e) => handleSubmit(e, false)} className="shrink-0 border border-accent/50 text-accent px-3 md:px-6 py-2 rounded-xl font-bold hover:bg-accent/10 flex items-center gap-2 transition-all whitespace-nowrap">
-                <Save className="w-4 h-4" /> Quick Save
-              </button>
-              <button type="button" onClick={() => setShowCommitModal(true)} className="flex-1 md:flex-none justify-center bg-accent text-black px-4 md:px-6 py-2 rounded-xl font-bold hover:opacity-90 flex items-center gap-2 shadow-[0_0_15px_rgba(212,175,55,0.2)] transition-all whitespace-nowrap">
-                Save as New Iteration
+              <button type="submit" className="shrink-0 border border-accent/50 text-accent px-3 md:px-6 py-2 rounded-xl font-bold hover:bg-accent/10 flex items-center gap-2 transition-all whitespace-nowrap">
+                <Save className="w-4 h-4" /> Save Recipe
               </button>
             </>
           ) : (
-            <button type="submit" onClick={(e) => handleSubmit(e, false)} className="shrink-0 border border-accent/50 text-accent px-4 md:px-6 py-2 rounded-xl font-bold hover:bg-accent/10 hover:shadow-[0_0_15px_rgba(212,175,55,0.15)] flex items-center gap-2 transition-all whitespace-nowrap">
+            <button type="submit" className="shrink-0 border border-accent/50 text-accent px-4 md:px-6 py-2 rounded-xl font-bold hover:bg-accent/10 hover:shadow-[0_0_15px_rgba(212,175,55,0.15)] flex items-center gap-2 transition-all whitespace-nowrap">
               <Save className="w-4 h-4" /> Create Recipe
             </button>
           )}
         </div>
       </div>
 
-      {showCommitModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-paper rounded-xl w-full max-w-md shadow-2xl border border-border-subtle p-6">
-            <h2 className="text-xl font-bold mb-2">New Iteration</h2>
-            <p className="text-sm text-ink-muted mb-4">Briefly describe what you changed in this version (e.g. "Increased hydration", "Baked at higher temp").</p>
-            <input 
-              type="text" 
-              value={commitMessage} 
-              onChange={(e) => setCommitMessage(e.target.value)} 
-              placeholder="Commit Message..." 
-              className="w-full bg-black/5 dark:bg-white/5 border border-border-subtle rounded-md p-3 mb-6 focus:outline-none focus:ring-1 focus:ring-ink"
-              autoFocus
-            />
-            <div className="flex justify-end gap-3">
-              <button type="button" onClick={() => setShowCommitModal(false)} className="px-4 py-2 font-medium hover:bg-black/5 dark:hover:bg-white/5 rounded-md">Cancel</button>
-              <button type="button" onClick={(e) => { setShowCommitModal(false); handleSubmit(e, true); }} className="bg-accent text-black px-6 py-2 font-bold rounded-xl hover:shadow-[0_0_15px_rgba(212,175,55,0.2)] transition-all">Save Iteration</button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {saveError && (
         <div className="bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 p-4 rounded-xl mb-6 font-medium">

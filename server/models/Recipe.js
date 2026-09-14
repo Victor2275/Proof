@@ -32,24 +32,6 @@ const recipeSchema = new mongoose.Schema({
   folder: {
     type: String,
     default: 'Uncategorized'
-  },
-  // Versioning Fields
-  parentRecipeId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Recipe',
-    default: null
-  },
-  versionNumber: {
-    type: Number,
-    default: 1
-  },
-  isLatestVersion: {
-    type: Boolean,
-    default: true
-  },
-  commitMessage: {
-    type: String,
-    default: ''
   }
 }, { timestamps: true });
 

@@ -210,7 +210,7 @@ export default function BakingMode() {
           wakeLock.current = await (navigator as any).wakeLock.request('screen');
         }
       } catch (err: any) {
-        console.log('Wake Lock error:', err.name, err.message);
+        console.warn('Wake Lock error:', err.name, err.message);
       }
     };
     requestWakeLock();

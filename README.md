@@ -86,8 +86,8 @@ The application supports two operating modes:
 
 1. **Clone repository**:
    ```bash
-   git clone https://github.com/Victor2275/Victor-recipes.git
-   cd Victor-recipes
+   git clone https://github.com/Victor2275/Proof.git
+   cd Proof
    ```
 
 2. **Install dependencies**:
