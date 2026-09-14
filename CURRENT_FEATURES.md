@@ -61,9 +61,10 @@ This document exhaustively tracks every capability, component, and technical int
 - **Rate Limiting**: AI endpoints and the auth endpoint are rate-limited to prevent abuse.
 
 ## 7. UI/UX Foundation
-- **Stack**: React, Vite, Tailwind CSS (`@tailwindcss/postcss`), shadcn/ui.
+- **Stack**: React, Vite, Tailwind CSS (`@tailwindcss/postcss`), shadcn/ui, TanStack Query for server state management.
 - **Black & Gold Aesthetic**: Pitch black and paper white themes with elegant gold accents and glassmorphic translucent components.
 - **Two Themes**: Light mode and Dark mode (dark is default).
 - **Sanitization**: `rehype-sanitize` ensures user-generated markdown is safe from XSS.
 - **Icons**: Standardized clean iconography via `lucide-react`.
 - **Fault Resilience & Crash Protection**: `ErrorBoundary.tsx` wraps the routing tree to catch unhandled rendering exceptions, preventing white-screen crashes.
+- **Server Architecture**: Modular Express server architecture with separated `routes/`, `services/`, and `middleware/`.

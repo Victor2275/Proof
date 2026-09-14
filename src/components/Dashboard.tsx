@@ -1,45 +1,26 @@
 import RecipeImage from './RecipeImage';
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { api, type Recipe } from '../lib/api';
+import { type Recipe } from '../lib/api';
+import { useRecipes } from '../lib/queries';
 import { Search, Clock, Shuffle, LayoutGrid, List, Filter } from 'lucide-react';
 import Fuse from 'fuse.js';
 
+const EMPTY_ARRAY: Recipe[] = [];
+
 export default function Dashboard() {
-  const [allRecipes, setAllRecipes] = useState<Recipe[]>([]);
+  const { data: allRecipes = EMPTY_ARRAY, isLoading: loading, error, refetch } = useRecipes();
+  const loadError = error instanceof Error ? error.message : null;
+
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [search, setSearch] = useState('');
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => localStorage.getItem('dashboardViewMode') as any || 'grid');
   const navigate = useNavigate();
 
   useEffect(() => {
     localStorage.setItem('dashboardViewMode', viewMode);
   }, [viewMode]);
-
-  // An outage used to look exactly like an empty cookbook. Keep the two apart so a
-  // failure reads as a failure and offers a way out.
-  const [loadError, setLoadError] = useState<string | null>(null);
-
-  const fetchRecipes = async () => {
-    setLoading(true);
-    setLoadError(null);
-    try {
-      const data = await api.getRecipes('');
-      setAllRecipes(data);
-      setRecipes(data);
-    } catch (err) {
-      console.error(err);
-      setLoadError(err instanceof Error ? err.message : 'Could not load your recipes.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchRecipes();
-  }, []);
 
   useEffect(() => {
     let filtered = allRecipes;
@@ -151,7 +132,7 @@ export default function Dashboard() {
             <p className="font-bold text-lg mb-2">Couldn't load your cookbook</p>
             <p className="text-ink-muted mb-6 max-w-md mx-auto">{loadError}</p>
             <button
-              onClick={fetchRecipes}
+              onClick={() => refetch()}
               className="bg-ink text-paper px-6 py-3 rounded-xl font-bold hover:opacity-90 transition-opacity"
             >
               Try again

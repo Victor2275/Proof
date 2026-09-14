@@ -2,11 +2,14 @@ import RecipeImage from './RecipeImage';
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { api, type Recipe, type BakeLog } from '../lib/api';
-import { getLocalBakeLogs, updateLocalBakeLog, deleteLocalBakeLog } from '../lib/localDB';
-import SideBySideCompare from './SideBySideCompare';
+import { useRecipe, useRecipeBakeLogs, usePantry, useUpdateRecipe } from '../lib/queries';
+import { updateLocalBakeLog, deleteLocalBakeLog } from '../lib/localDB';
 import ReverseBakeScheduler from './ReverseBakeScheduler';
 import AISubstitutionsModal from './AISubstitutionsModal';
 import BakeLogsGrid from './BakeLogsGrid';
+import RecipeHeader from './RecipeHeader';
+import IngredientList from './IngredientList';
+import InstructionList from './InstructionList';
 import { Edit, MoreVertical, Play, X, Star, Award, CheckCircle2, Sparkles, Share2 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import Fuse from 'fuse.js';
@@ -55,14 +58,19 @@ function ExpandableInstruction({ text = '', index }: { text: string, index: numb
   );
 }
 
+const EMPTY_LOGS: BakeLog[] = [];
+const EMPTY_PANTRY: any[] = []; // or actual type if imported
+
 export default function RecipeViewer() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
-  const [recipe, setRecipe] = useState<Recipe | null>(null);
-  const [bakeLogs, setBakeLogs] = useState<BakeLog[]>([]);
-  const [inPantryMap, setInPantryMap] = useState<Record<string, boolean>>({});
-  const [loading, setLoading] = useState(true);
+  const { data: recipe, isLoading: loadingRecipe } = useRecipe(id);
+  const { data: bakeLogs = EMPTY_LOGS, isLoading: loadingLogs } = useRecipeBakeLogs(id);
+  const { data: pantryData = EMPTY_PANTRY } = usePantry();
+  
+  const loading = loadingRecipe || loadingLogs;
+
   const [scaleMultiplier, setScaleMultiplier] = useState(1);
   const [activeTab, setActiveTab] = useState<'recipe' | 'history'>('recipe');
   const [selectedMake, setSelectedMake] = useState<BakeLog | null>(null);
@@ -88,44 +96,24 @@ export default function RecipeViewer() {
   const [editingTagsFor, setEditingTagsFor] = useState<string | null>(null);
   const [tempTags, setTempTags] = useState<{url: string, label: string}[]>([]);
 
-  useEffect(() => {
-    const fetchRecipe = async () => {
-      if (!id) return;
-      try {
-        const [data, cloudLogs, pantryData] = await Promise.all([
-          api.getRecipe(id),
-          api.getRecipeBakeLogs(id).catch(() => []),
-          api.getPantry().catch(() => [])
-        ]);
-        const localLogs = await getLocalBakeLogs(id);
-        const allLogs = [...cloudLogs, ...localLogs].sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime());
-        
-        setRecipe(data);
-        setBakeLogs(allLogs);
-
-        if (data.imageUrls && data.imageUrls.length > 0) {
-          setHeroImage(data.imageUrls[0]);
-        }
-
-        const map: Record<string, boolean> = {};
-        const fuse = new Fuse(pantryData, { keys: ['name'], threshold: 0.35 });
-
-        (data.ingredients || []).forEach(ing => {
-          const results = fuse.search(ing.name || '');
-          if (results.length > 0) {
-            map[ing.name || ''] = true;
-          }
-        });
-        setInPantryMap(map);
-
-      } catch (err) {
-        console.error('Failed to load recipe data', err);
-      } finally {
-        setLoading(false);
+  const inPantryMap = React.useMemo(() => {
+    if (!recipe || !pantryData.length) return {};
+    const map: Record<string, boolean> = {};
+    const fuse = new Fuse(pantryData, { keys: ['name'], threshold: 0.35 });
+    (recipe.ingredients || []).forEach(ing => {
+      const results = fuse.search(ing.name || '');
+      if (results.length > 0) {
+        map[ing.name || ''] = true;
       }
-    };
-    fetchRecipe();
-  }, [id]);
+    });
+    return map;
+  }, [recipe, pantryData]);
+
+  useEffect(() => {
+    if (recipe?.imageUrls && recipe.imageUrls.length > 0) {
+      setHeroImage(recipe.imageUrls[0]);
+    }
+  }, [recipe]);
 
   useEffect(() => {
     if (bakeLogs.length > 0) {
@@ -161,6 +149,8 @@ export default function RecipeViewer() {
     }));
   };
 
+  const { mutateAsync: updateRecipe } = useUpdateRecipe();
+
   const handleToggleFavorite = async () => {
     if (!recipe || !id) return;
     const currentTags = recipe.tags || [];
@@ -168,8 +158,7 @@ export default function RecipeViewer() {
     const newTags = isFav ? currentTags.filter(t => t !== 'Favorite') : [...currentTags, 'Favorite'];
     
     try {
-      const updated = await api.updateRecipe(id, { tags: newTags });
-      setRecipe(updated);
+      await updateRecipe({ id, data: { tags: newTags } });
     } catch (err) {
       console.error('Failed to toggle favorite', err);
     }
@@ -375,51 +364,7 @@ export default function RecipeViewer() {
 
       {activeTab === 'recipe' ? (
         <>
-          {/* Header Card */}
-          <div className="flex flex-col md:flex-row gap-8 pb-10 border-b border-border-subtle">
-            {heroImage && (
-              <RecipeImage
-                src={heroImage}
-                alt={recipe.title}
-                className="w-full md:w-64 h-64 object-cover rounded-xl border border-border-subtle shadow-sm shrink-0"
-                placeholderClassName="w-full md:w-64 h-64 rounded-xl border border-border-subtle shadow-sm shrink-0"
-              />
-            )}
-            
-            <div className="space-y-4 flex-1">
-              <div>
-                <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-2 text-ink uppercase">{recipe.title}</h1>
-                <p className="text-ink-muted text-lg leading-relaxed">{recipe.description}</p>
-              </div>
-
-              {recipe.tags && recipe.tags.length > 0 && (
-                <div className="flex flex-wrap gap-2 pt-2">
-                  {recipe.tags.map((tag, i) => (
-                    <span key={i} className="text-xs bg-black/5 dark:bg-white/10 px-2.5 py-1 rounded-full font-medium text-ink-muted">
-                      #{tag}
-                    </span>
-                  ))}
-                </div>
-              )}
-
-              <div className="flex flex-wrap gap-6 md:gap-10 pt-4">
-                <div>
-                  <div className="font-bold mb-1">Total Time:</div>
-                  <div className="text-ink-muted">
-                    {parseInt(recipe.prepTime) + parseInt(recipe.cookTime) || 90} mins
-                  </div>
-                </div>
-                <div>
-                  <div className="font-bold mb-1">Servings:</div>
-                  <div className="text-ink-muted">{recipe.servings ? recipe.servings * scaleMultiplier : 4 * scaleMultiplier}</div>
-                </div>
-                <div>
-                  <div className="font-bold mb-1">Difficulty:</div>
-                  <div className="text-ink-muted">{recipe.difficulty || 'Medium'}</div>
-                </div>
-              </div>
-            </div>
-          </div>
+          <RecipeHeader recipe={recipe} heroImage={heroImage} scaleMultiplier={scaleMultiplier} />
 
           {showReverseScheduler && (
             <div className="mt-6 mb-2">
@@ -429,85 +374,18 @@ export default function RecipeViewer() {
 
           {/* Ingredients and Steps */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 pt-8">
-            <div>
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="font-bold text-lg uppercase tracking-wider">Ingredients</h3>
-                <div className="flex gap-2">
-                  <button 
-                    onClick={handleExportGroceryList}
-                    className="text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-md border border-border-subtle text-ink-muted hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
-                  >
-                    Copy List
-                  </button>
-                  <button 
-                    onClick={() => setShowBakersMath(!showBakersMath)}
-                    className={`text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-xl border transition-all ${showBakersMath ? 'bg-accent/10 text-accent border-accent shadow-[0_0_10px_rgba(212,175,55,0.1)]' : 'border-border-subtle text-ink-muted hover:bg-white/5'}`}
-                  >
-                    Baker's %
-                  </button>
-                </div>
-              </div>
-
-              <ul className="space-y-0">
-                {(() => {
-                  const flourTotal = (recipe.ingredients || []).reduce((acc, ing) => {
-                    return (ing.name || '').toLowerCase().includes('flour') ? acc + (ing.quantity || 0) : acc;
-                  }, 0);
-
-                  return (recipe.ingredients || []).map((ing, i) => {
-                    let pct = '';
-                    if (showBakersMath && flourTotal > 0) {
-                      pct = ((ing.quantity / flourTotal) * 100).toFixed(1) + '%';
-                    }
-                    
-                    return (
-                      <li key={i} className="flex items-start py-3 border-b border-dashed border-border-subtle last:border-0 group">
-                        <label className="flex items-center p-2 -ml-2 mr-2 cursor-pointer touch-manipulation">
-                          <input 
-                            type="checkbox" 
-                            checked={!!checkedIngredients[i]}
-                            onChange={() => toggleCheck(i)}
-                            className="w-6 h-6 shrink-0 rounded border-border-subtle text-ink focus:ring-ink cursor-pointer print:appearance-none print:w-5 print:h-5 print:border-2 print:border-ink"
-                          />
-                        </label>
-                        <span className={`w-16 font-medium shrink-0 ${checkedIngredients[i] ? 'text-ink-muted line-through' : ''}`}>
-                          {Number((ing.quantity * scaleMultiplier).toFixed(2))} {ing.unit}
-                        </span>
-                        {showBakersMath && (
-                          <span className="w-16 text-ink-muted font-mono text-sm shrink-0">
-                            {pct}
-                          </span>
-                        )}
-                        <span className={checkedIngredients[i] ? 'text-ink-muted line-through' : ''}>
-                          {ing.name}
-                        </span>
-                        {inPantryMap[ing.name] && (
-                          <span className="ml-2 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform" title="In your pantry">
-                            <CheckCircle2 className="w-4 h-4 text-green-500/70" />
-                          </span>
-                        )}
-                        <button
-                          onClick={() => setAiSubstituteIngredient(ing.name)}
-                          className="ml-auto text-xs text-accent opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 font-bold hover:underline"
-                          title="AI Substitutions"
-                        >
-                          <Sparkles className="w-3 h-3" /> Sub
-                        </button>
-                      </li>
-                    );
-                  });
-                })()}
-              </ul>
-            </div>
-
-            <div>
-              <h3 className="font-bold text-lg mb-6 uppercase tracking-wider">Steps / Directions</h3>
-              <ol className="space-y-6">
-                {(recipe.instructions || []).map((step, i) => (
-                  <ExpandableInstruction key={i} text={step} index={i} />
-                ))}
-              </ol>
-            </div>
+            <IngredientList 
+              recipe={recipe}
+              scaleMultiplier={scaleMultiplier}
+              showBakersMath={showBakersMath}
+              setShowBakersMath={setShowBakersMath}
+              inPantryMap={inPantryMap}
+              checkedIngredients={checkedIngredients}
+              toggleCheck={toggleCheck}
+              setAiSubstituteIngredient={setAiSubstituteIngredient}
+              handleExportGroceryList={handleExportGroceryList}
+            />
+            <InstructionList recipe={recipe} />
           </div>
 
           {/* Lab Notes */}

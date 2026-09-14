@@ -60,3 +60,4 @@ This is a 1-to-1 mirror of CURRENT_FEATURES.md. Use checkboxes to track manual t
 - [ ] **Black & Gold Aesthetic**: Pitch black, gold accents, glassmorphic components.
 - [ ] **XSS Sanitization**: rehype-sanitize on user markdown.
 - [ ] **Error Boundary**: Catches unhandled render errors gracefully.
+- [ ] **Server Architecture**: Modular Express server architecture with separated routes and services.

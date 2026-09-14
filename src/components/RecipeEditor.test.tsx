@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import RecipeEditor from './RecipeEditor';
@@ -27,14 +27,18 @@ describe('RecipeEditor Component', () => {
     vi.clearAllMocks();
   });
 
-  it('renders correctly for a new recipe', () => {
-    render(<MemoryRouter><RecipeEditor /></MemoryRouter>);
+  it('renders correctly for a new recipe', async () => {
+    await act(async () => {
+      render(<MemoryRouter><RecipeEditor /></MemoryRouter>);
+    });
     expect(screen.getByText(/Create Recipe/i)).toBeDefined();
     expect(screen.getByPlaceholderText(/72-Hour Sourdough/i)).toBeDefined();
   });
 
   it('blocks submission if title is missing', async () => {
-    render(<MemoryRouter><RecipeEditor /></MemoryRouter>);
+    await act(async () => {
+      render(<MemoryRouter><RecipeEditor /></MemoryRouter>);
+    });
     // Don't fill title
     const saveBtn = screen.getByText('Create Recipe');
     fireEvent.click(saveBtn);
@@ -42,24 +46,30 @@ describe('RecipeEditor Component', () => {
     expect(api.createRecipe).not.toHaveBeenCalled();
   });
 
-  it('allows adding a new ingredient dynamically', () => {
-    render(<MemoryRouter><RecipeEditor /></MemoryRouter>);
+  it('allows adding a new ingredient dynamically', async () => {
+    await act(async () => {
+      render(<MemoryRouter><RecipeEditor /></MemoryRouter>);
+    });
     const addIngBtn = screen.getByText('Add Row');
     fireEvent.click(addIngBtn);
     const nameInputs = screen.getAllByPlaceholderText(/Ingredient name/i);
     expect(nameInputs).toHaveLength(1);
   });
 
-  it('allows adding an instruction dynamically', () => {
-    render(<MemoryRouter><RecipeEditor /></MemoryRouter>);
+  it('allows adding an instruction dynamically', async () => {
+    await act(async () => {
+      render(<MemoryRouter><RecipeEditor /></MemoryRouter>);
+    });
     const addInstBtn = screen.getByText('Add Step');
     fireEvent.click(addInstBtn);
     const stepInputs = screen.getAllByPlaceholderText(/Describe step\.\.\./i);
     expect(stepInputs).toHaveLength(1);
   });
 
-  it('displays the URL extractor UI', () => {
-    render(<MemoryRouter><RecipeEditor /></MemoryRouter>);
+  it('displays the URL extractor UI', async () => {
+    await act(async () => {
+      render(<MemoryRouter><RecipeEditor /></MemoryRouter>);
+    });
     const importBtn = screen.getByRole('button', { name: /Import from URL/i });
     fireEvent.click(importBtn);
     expect(screen.getByPlaceholderText(/allrecipes\.com/i)).toBeDefined();
@@ -67,7 +77,9 @@ describe('RecipeEditor Component', () => {
 
   it('calls extractRecipe when a URL is pasted and button clicked', async () => {
     vi.mocked(api.extractRecipe).mockResolvedValue({ title: 'Extracted Title' });
-    render(<MemoryRouter><RecipeEditor /></MemoryRouter>);
+    await act(async () => {
+      render(<MemoryRouter><RecipeEditor /></MemoryRouter>);
+    });
     const importBtn = screen.getByRole('button', { name: /Import from URL/i });
     fireEvent.click(importBtn);
     
@@ -89,7 +101,9 @@ describe('RecipeEditor Component', () => {
     vi.mocked(api.getRecipes).mockResolvedValue([
       { _id: 'rec1', title: 'Frosting', description: '', imageUrls: [], servings: 4, prepTime: '', cookTime: '', tags: [], ingredients: [], instructions: [] },
     ]);
-    render(<MemoryRouter><RecipeEditor /></MemoryRouter>);
+    await act(async () => {
+      render(<MemoryRouter><RecipeEditor /></MemoryRouter>);
+    });
     
     // Add instruction
     const addInstBtn = screen.getByText('Add Step');
