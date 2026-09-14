@@ -39,7 +39,7 @@ describe('Gallery Component', () => {
     vi.mocked(api.getBakeLogs).mockResolvedValue([mockBakeLogs[2]] as any);
     render(<MemoryRouter><Gallery /></MemoryRouter>);
     await waitFor(() => {
-      expect(screen.getByText(/No baked items logged yet/i)).toBeDefined();
+      expect(screen.getByText(/A Blank Canvas/i)).toBeDefined();
     });
   });
 

@@ -86,12 +86,12 @@ describe('Dashboard Component', () => {
     });
   });
 
-  it('filters recipes by selecting tag from dropdown', async () => {
+  it('filters recipes by selecting tag', async () => {
     renderWithProviders(<Dashboard />);
     await waitFor(() => expect(screen.getByText('Sourdough Bread')).toBeDefined());
     
-    const select = screen.getByRole('combobox');
-    fireEvent.change(select, { target: { value: 'sourdough' } });
+    const tagButton = screen.getAllByText('sourdough')[0];
+    fireEvent.click(tagButton);
     
     await waitFor(() => {
       expect(screen.getByText('Sourdough Bread')).toBeDefined();
@@ -104,8 +104,8 @@ describe('Dashboard Component', () => {
     renderWithProviders(<Dashboard />);
     await waitFor(() => expect(screen.getByText('Test')).toBeDefined());
     
-    const select = screen.getByRole('combobox');
-    fireEvent.change(select, { target: { value: 'sourdough' } });
+    const tagButton = screen.getAllByText('SoURdougH')[0];
+    fireEvent.click(tagButton);
     
     await waitFor(() => {
       expect(screen.getByText('Test')).toBeDefined();
