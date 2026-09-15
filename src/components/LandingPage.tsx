@@ -35,7 +35,7 @@ export default function LandingPage() {
           filter: 'grayscale(50%) blur(4px)'
         }}
       />
-      <div className="absolute inset-0 z-0 bg-gradient-to-b from-paper/80 via-paper/95 to-paper" />
+      <div className="absolute inset-0 z-0 bg-ground/90" />
 
       <motion.div 
         className="z-10 max-w-4xl w-full text-center space-y-12 py-20"
@@ -58,28 +58,28 @@ export default function LandingPage() {
         <motion.div variants={itemVariants} className="flex flex-col sm:flex-row justify-center gap-6 pb-12">
           <button 
             onClick={handleExplore}
-            className="px-8 py-4 bg-accent text-black font-bold text-lg uppercase tracking-wider rounded-xl shadow-[0_0_30px_rgba(212,175,55,0.3)] hover:shadow-[0_0_50px_rgba(212,175,55,0.5)] transition-all hover:scale-105 flex items-center justify-center gap-3"
+            className="px-8 py-4 bg-accent text-black font-bold text-lg uppercase tracking-wider rounded-xl hover: transition-all hover:scale-105 flex items-center justify-center gap-3"
           >
             Explore the Cookbook <ArrowRight className="w-5 h-5" />
           </button>
         </motion.div>
 
         <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-3 gap-8 text-left border-t border-border-subtle pt-12">
-          <div className="space-y-3 p-6 rounded-2xl bg-black/5 dark:bg-white/5 border border-border-subtle backdrop-blur-sm">
+          <div className="space-y-3 p-6 rounded-2xl bg-black/5 dark:bg-white/5 border border-border-subtle ">
             <Mic className="w-8 h-8 text-accent" />
             <h3 className="font-bold text-lg uppercase tracking-wider">Hands-Free Mode</h3>
             <p className="text-ink-muted text-sm leading-relaxed">
               Covered in flour? Navigate recipes using voice commands or wave gestures over your camera.
             </p>
           </div>
-          <div className="space-y-3 p-6 rounded-2xl bg-black/5 dark:bg-white/5 border border-border-subtle backdrop-blur-sm">
+          <div className="space-y-3 p-6 rounded-2xl bg-black/5 dark:bg-white/5 border border-border-subtle ">
             <Clock className="w-8 h-8 text-accent" />
             <h3 className="font-bold text-lg uppercase tracking-wider">Synced Timers</h3>
             <p className="text-ink-muted text-sm leading-relaxed">
               Start a 45-minute bake on your phone and hear the alarm on your laptop. Real-time websocket sync.
             </p>
           </div>
-          <div className="space-y-3 p-6 rounded-2xl bg-black/5 dark:bg-white/5 border border-border-subtle backdrop-blur-sm">
+          <div className="space-y-3 p-6 rounded-2xl bg-black/5 dark:bg-white/5 border border-border-subtle ">
             <Book className="w-8 h-8 text-accent" />
             <h3 className="font-bold text-lg uppercase tracking-wider">Visual Bake Logs</h3>
             <p className="text-ink-muted text-sm leading-relaxed">

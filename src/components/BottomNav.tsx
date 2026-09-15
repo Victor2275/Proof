@@ -18,7 +18,7 @@ export default function BottomNav() {
   ];
 
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 bg-paper/80 backdrop-blur-xl border-t border-border-subtle z-50 px-4 py-2 flex items-center justify-between pb-safe">
+    <div className="md:hidden fixed bottom-0 left-0 right-0 bg-paper border-t border-border-subtle z-50 px-4 py-2 flex items-center justify-between pb-safe">
       {navItems.map((item) => {
         const isActive = location.pathname === item.to || (item.to !== '/' && location.pathname.startsWith(item.to));
         const Icon = item.icon;

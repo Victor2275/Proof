@@ -488,7 +488,7 @@ export default function BakingMode() {
       </div>
       
       {/* Top Header */}
-      <div className="w-full flex justify-between items-center p-3 md:p-4 border-b border-border-subtle bg-paper/95 backdrop-blur-sm z-30 sticky top-0 gap-2">
+      <div className="w-full flex justify-between items-center p-3 md:p-4 border-b border-border-subtle bg-paper z-30 sticky top-0 gap-2">
         <div className="flex items-center gap-3 shrink-0 min-w-0">
           <button onClick={() => navigate(`/recipe/${id}`)} className="p-2 bg-black/5 dark:bg-white/5 rounded-full hover:bg-black/10 dark:hover:bg-white/10 transition-colors shrink-0">
             <X className="w-4 h-4 md:w-5 md:h-5" />
@@ -610,7 +610,7 @@ export default function BakingMode() {
             )}
 
             {isFinished && (
-              <button onClick={() => setShowFinishModal(true)} className="mt-12 bg-accent text-black px-10 py-4 rounded-xl font-bold text-xl hover:shadow-[0_0_15px_rgba(212,175,55,0.2)] transition-all shadow-lg flex items-center gap-3">
+              <button onClick={() => setShowFinishModal(true)} className="mt-12 bg-accent text-black px-10 py-4 rounded-xl font-bold text-xl hover: transition-all shadow-lg flex items-center gap-3">
                 <Check className="w-6 h-6" /> Finish Recipe
               </button>
             )}
@@ -643,7 +643,7 @@ export default function BakingMode() {
             })}
             
             <div className="pt-12 border-t border-border-subtle flex justify-center">
-              <button onClick={() => setShowFinishModal(true)} className="bg-accent text-black px-10 py-4 rounded-xl font-bold text-xl hover:shadow-[0_0_15px_rgba(212,175,55,0.2)] transition-all shadow-lg flex items-center gap-3">
+              <button onClick={() => setShowFinishModal(true)} className="bg-accent text-black px-10 py-4 rounded-xl font-bold text-xl hover: transition-all shadow-lg flex items-center gap-3">
                 <Check className="w-6 h-6" /> Finish Recipe
               </button>
             </div>
@@ -728,7 +728,7 @@ export default function BakingMode() {
 
       {/* Finish Modal */}
       {showFinishModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
           <div className="bg-paper rounded-2xl w-full max-w-xl shadow-2xl border border-border-subtle flex flex-col max-h-[90vh]">
             <div className="p-6 border-b border-border-subtle flex justify-between items-center">
               <h2 className="text-2xl font-bold">Log Bake</h2>
@@ -798,7 +798,7 @@ export default function BakingMode() {
                 )}
               </div>
 
-              <button type="submit" disabled={savingLog} className="w-full bg-accent text-black font-bold text-lg py-4 rounded-xl hover:shadow-[0_0_15px_rgba(212,175,55,0.2)] transition-all flex items-center justify-center gap-2">
+              <button type="submit" disabled={savingLog} className="w-full bg-accent text-black font-bold text-lg py-4 rounded-xl hover: transition-all flex items-center justify-center gap-2">
                 {savingLog ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Save Log & Finish'}
               </button>
             </form>
@@ -808,7 +808,7 @@ export default function BakingMode() {
 
       {/* Voice Help Modal */}
       {showVoiceHelp && (
-        <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center p-4">
           <div className="bg-paper rounded-2xl w-full max-w-sm shadow-2xl border border-border-subtle p-6">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold uppercase tracking-wider">Voice Commands</h2>

@@ -32,7 +32,7 @@ export default function RecipeDrawer({ isOpen, onClose, recipeId }: RecipeDrawer
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/60 z-[100] backdrop-blur-sm"
+            className="fixed inset-0 bg-black/60 z-[100] "
             data-testid="recipe-drawer-backdrop"
           />
           <motion.div
@@ -99,7 +99,7 @@ export default function RecipeDrawer({ isOpen, onClose, recipeId }: RecipeDrawer
               <div className="p-4 bg-paper border-t border-border-subtle">
                 <button
                   onClick={onClose}
-                  className="w-full bg-accent text-black font-bold text-lg py-4 rounded-xl hover:shadow-[0_0_15px_rgba(212,175,55,0.2)] transition-all flex justify-center items-center gap-2"
+                  className="w-full bg-accent text-black font-bold text-lg py-4 rounded-xl hover: transition-all flex justify-center items-center gap-2"
                 >
                   <Check className="w-5 h-5" /> Finish {recipe.title}
                 </button>

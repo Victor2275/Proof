@@ -62,8 +62,18 @@ This document exhaustively tracks every capability, component, and technical int
 
 ## 7. UI/UX Foundation
 - **Stack**: React, Vite, Tailwind CSS (`@tailwindcss/postcss`), shadcn/ui, TanStack Query for server state management.
-- **Black & Gold Aesthetic**: Pitch black and paper white themes with elegant gold accents and glassmorphic translucent components.
-- **Two Themes**: Light mode and Dark mode (dark is default).
+- **"Step Row" Visual World (Phase 0 foundation)**: The Black & Gold glassmorphic world has been replaced by an early-80s rhythm-machine design language: matte panels, silkscreened labels, lit step keys, and seven-segment readouts. Colour is temporal, never decorative — red marks *now*, orange *due*, yellow *queued*, white *complete*, and an unlit key is drawn as deliberately as a lit one.
+- **Three enforced bans**: No gradients, no `backdrop-filter`/blur, and no glow except a lit key or segment. Enforced in CI by `src/designSystem.test.ts`, which scans every component source and fails the build on a violation.
+- **Two Themes**: Light and Dark only. Dark is the default and is now true `#000000`; the former separate OLED theme is consolidated into it and the orphaned `.oled` token block has been deleted.
+- **Self-hosted typography**: Archivo Variable (weight + width axes) for the faceplate display voice and instruction prose, JetBrains Mono Variable for UI, labels and data. Latin subsets only, served from `/fonts`, precached by the service worker so they survive an offline kitchen. Tabular figures are on globally.
+- **Component layer (Phase 1)**: A bespoke primitive set replaces hand-rolled inline Tailwind: `Panel`/`PanelRow` (flat bordered surfaces with a silkscreen head and status lamp), `Button` (primary/secondary/ghost/danger, 44px touch target, real press travel), `Field` (unit slot, focus signal, errors wired via `aria-describedby`), `SegmentReadout`, `StepRow`, `InstrumentRow` and `Meter`. Exported from `src/components/ui`.
+- **Seven-segment readouts**: SVG digits that render all seven segments and dim the unlit ones, so a value has a fixed width and absence is drawn as deliberately as light. Reserved for instrument values — timers, temperatures, weights, hydration — with tabular mono for counts and dates. Announced to screen readers as one value.
+- **Step row**: The signature component. One key per phase of a bake, coloured temporally — red is now, orange due, dim amber queued, grey complete, unlit not yet reached. Labels print beneath the keys; below `sm` they drop and the running phase is named above the row so it stays legible at 390px. A recipe with no phases renders as dark keys rather than as an error.
+- **Phase derivation** (`src/lib/phases.ts`): Derives a bake's phases from instruction text with a bread vocabulary (levain, autolyse, mix, bulk, shape, proof, bake, rest), assigned monotonically so a recipe never jumps backwards. Falls back to a generic prep/cook/finish vocabulary unless the text names something a bread bake actually has, so a soup is never given a levain.
+- **Component lab** (`/lab`, development only): A gallery of every primitive in its real states, registered behind `import.meta.env.DEV` so it never reaches a production bundle.
+- **Themed browser surfaces**: Text selection, caret, scrollbars and focus rings are themed from the palette rather than left at browser defaults.
+- **Global reduced-motion support**: `prefers-reduced-motion: reduce` collapses every animation and transition app-wide.
+- **Retired: global font switcher**: The sans/serif/mono `data-font` preference has been removed so the design owns its own typography.
 - **Onboarding & Landing**: A dedicated hero landing page with a 3-step carousel modal to introduce new users to the app functionality.
 - **Skeletons & Empty States**: Polished animated skeleton loaders for data fetching, custom illustrated 404 pages, and a tailored empty state for the gallery.
 - **Sanitization**: `rehype-sanitize` ensures user-generated markdown is safe from XSS.

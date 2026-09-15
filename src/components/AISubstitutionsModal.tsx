@@ -37,7 +37,7 @@ export default function AISubstitutionsModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
       <div className="bg-paper rounded-xl w-full max-w-md shadow-2xl border border-border-subtle p-6 animate-in fade-in zoom-in-95">
         <div className="flex justify-between items-center border-b border-border-subtle pb-4 mb-4">
           <div className="flex items-center gap-2 text-purple-700 dark:text-purple-300 font-bold">
@@ -57,7 +57,7 @@ export default function AISubstitutionsModal({
           <div className="text-center py-6">
             <button
               onClick={handleFetchSubstitutions}
-              className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold px-6 py-3 rounded-xl shadow-md transition-all flex items-center gap-2 mx-auto"
+              className="bg-signal text-white font-bold px-6 py-3 rounded-control hover:opacity-90 transition-opacity flex items-center gap-2 mx-auto"
             >
               <Sparkles className="w-4 h-4" /> Generate Substitutions
             </button>

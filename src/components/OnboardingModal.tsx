@@ -36,7 +36,7 @@ export default function OnboardingModal({ onClose }: OnboardingModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-md flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[200] bg-black/60 flex items-center justify-center p-4">
       <motion.div 
         initial={{ opacity: 0, scale: 0.9, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -95,7 +95,7 @@ export default function OnboardingModal({ onClose }: OnboardingModalProps) {
 
           <button
             onClick={handleNext}
-            className="w-full bg-accent text-black font-bold uppercase tracking-wider py-4 rounded-xl flex justify-center items-center gap-2 hover:shadow-[0_0_20px_rgba(212,175,55,0.3)] transition-all"
+            className="w-full bg-accent text-black font-bold uppercase tracking-wider py-4 rounded-xl flex justify-center items-center gap-2 hover: transition-all"
           >
             {step === steps.length - 1 ? (
               <>Let's Bake <CheckCircle2 className="w-5 h-5" /></>

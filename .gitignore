@@ -36,3 +36,9 @@ adb_logcat.txt
 # Legacy local image uploads, superseded by Cloudinary.
 server/uploads/
 test.txt
+
+# Playwright MCP session artifacts (snapshots, console logs, screenshots).
+.playwright-mcp/
+
+# Impeccable transient session state (decision-page answers).
+.impeccable/questions/

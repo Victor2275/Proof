@@ -16,7 +16,7 @@ export default function EditorHeader({
   onBack
 }: EditorHeaderProps) {
   return (
-    <div className="sticky top-0 z-40 bg-paper/95 backdrop-blur-sm flex flex-wrap items-center justify-between py-4 border-b border-border-subtle mb-6 -mx-4 px-4 md:mx-0 md:px-0">
+    <div className="sticky top-0 z-40 bg-paper flex flex-wrap items-center justify-between py-4 border-b border-border-subtle mb-6 -mx-4 px-4 md:mx-0 md:px-0">
       <button type="button" onClick={onBack} className="inline-flex items-center text-sm font-medium text-ink-muted hover:text-ink transition-colors">
         <ArrowLeft className="w-4 h-4 mr-1.5" /> Cancel & Back
       </button>
@@ -43,7 +43,7 @@ export default function EditorHeader({
             </button>
           </>
         ) : (
-          <button type="submit" className="shrink-0 border border-accent/50 text-accent px-4 md:px-6 py-2 rounded-xl font-bold hover:bg-accent/10 hover:shadow-[0_0_15px_rgba(212,175,55,0.15)] flex items-center gap-2 transition-all whitespace-nowrap">
+          <button type="submit" className="shrink-0 border border-accent/50 text-accent px-4 md:px-6 py-2 rounded-xl font-bold hover:bg-accent/10 hover: flex items-center gap-2 transition-all whitespace-nowrap">
             <Save className="w-4 h-4" /> Create Recipe
           </button>
         )}

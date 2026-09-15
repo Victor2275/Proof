@@ -36,13 +36,13 @@ export default function Gallery() {
         <div className="flex bg-black/5 dark:bg-white/5 p-1 rounded-xl border border-border-subtle">
           <button 
             onClick={() => setSortBy('date')}
-            className={`px-4 py-1.5 rounded-lg text-sm transition-all ${sortBy === 'date' ? 'bg-accent/10 border border-accent text-accent font-bold shadow-[0_0_10px_rgba(212,175,55,0.1)]' : 'border border-transparent text-ink-muted hover:text-ink'}`}
+            className={`px-4 py-1.5 rounded-lg text-sm transition-all ${sortBy === 'date' ? 'bg-accent/10 border border-accent text-accent font-bold ' : 'border border-transparent text-ink-muted hover:text-ink'}`}
           >
             By Date
           </button>
           <button 
             onClick={() => setSortBy('recipe')}
-            className={`px-4 py-1.5 rounded-lg text-sm transition-all ${sortBy === 'recipe' ? 'bg-accent/10 border border-accent text-accent font-bold shadow-[0_0_10px_rgba(212,175,55,0.1)]' : 'border border-transparent text-ink-muted hover:text-ink'}`}
+            className={`px-4 py-1.5 rounded-lg text-sm transition-all ${sortBy === 'recipe' ? 'bg-accent/10 border border-accent text-accent font-bold ' : 'border border-transparent text-ink-muted hover:text-ink'}`}
           >
             By Recipe
           </button>
@@ -74,7 +74,7 @@ export default function Gallery() {
             </p>
             <Link 
               to="/" 
-              className="inline-block mt-4 px-8 py-3 bg-accent text-black font-bold uppercase tracking-wider rounded-xl hover:shadow-[0_0_20px_rgba(212,175,55,0.3)] transition-all"
+              className="inline-block mt-4 px-8 py-3 bg-accent text-black font-bold uppercase tracking-wider rounded-xl hover: transition-all"
             >
               Start Cooking
             </Link>

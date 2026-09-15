@@ -74,7 +74,7 @@ export default function BakeLogsGrid({ logs, onSelect, onExportInstagram }: Bake
                   </div>
                 )}
                 
-                <div className="absolute top-3 left-3 bg-paper/90 backdrop-blur-sm px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow-sm flex items-center gap-1.5 border border-border-subtle">
+                <div className="absolute top-3 left-3 bg-paper px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow-sm flex items-center gap-1.5 border border-border-subtle">
                   Make #{logs.length - idx}
                   {log.isPersonalBest && <Award className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />}
                 </div>

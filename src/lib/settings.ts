@@ -14,7 +14,6 @@ export const SETTINGS_KEYS = {
   waveToAdvance: 'waveToAdvance',
   defaultBakersMath: 'defaultBakersMath',
   autoHideSidebar: 'autoHideSidebar',
-  fontFamily: 'fontFamily',
   theme: 'theme',
 } as const;
 

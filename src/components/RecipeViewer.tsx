@@ -325,7 +325,7 @@ export default function RecipeViewer() {
                <button 
                  key={m}
                  onClick={() => setScaleMultiplier(m)}
-                 className={`px-3 py-2 rounded-lg transition-all ${scaleMultiplier === m ? 'bg-accent text-black shadow-[0_0_10px_rgba(212,175,55,0.1)]' : 'text-ink-muted hover:text-accent hover:bg-white/5'}`}
+                 className={`px-3 py-2 rounded-lg transition-all ${scaleMultiplier === m ? 'bg-accent text-black ' : 'text-ink-muted hover:text-accent hover:bg-white/5'}`}
                >
                  {m}x
                </button>
@@ -350,7 +350,7 @@ export default function RecipeViewer() {
           <div className="relative hidden md:block">
             <button 
               onClick={() => setShowStartMenu(!showStartMenu)}
-              className="flex bg-accent text-black px-5 py-1.5 rounded-xl text-sm font-bold hover:shadow-[0_0_15px_rgba(212,175,55,0.2)] transition-all uppercase tracking-wide shadow-sm whitespace-nowrap items-center gap-2"
+              className="flex bg-accent text-black px-5 py-1.5 rounded-xl text-sm font-bold hover: transition-all uppercase tracking-wide shadow-sm whitespace-nowrap items-center gap-2"
             >
               <Play className="w-4 h-4" fill="currentColor" /> START RECIPE
             </button>
@@ -426,7 +426,7 @@ export default function RecipeViewer() {
       )}
       <button 
         onClick={() => setShowMobileStartModal(true)}
-        className="md:hidden fixed bottom-[calc(env(safe-area-inset-bottom,0px)+80px)] right-4 bg-accent text-black w-14 h-14 rounded-full shadow-[0_0_20px_rgba(212,175,55,0.3)] flex items-center justify-center z-40 transition-transform hover:scale-105 active:scale-95"
+        className="md:hidden fixed bottom-[calc(env(safe-area-inset-bottom,0px)+80px)] right-4 bg-accent text-black w-14 h-14 rounded-full flex items-center justify-center z-40 transition-transform hover:scale-105 active:scale-95"
       >
         <Play className="w-6 h-6 ml-1" fill="currentColor" />
       </button>
@@ -460,7 +460,7 @@ export default function RecipeViewer() {
                             setIsEditingDate(false);
                           } catch(e) { alert('Failed to update date'); }
                         }}
-                        className="bg-accent text-black px-4 py-1.5 rounded-xl text-sm font-bold hover:shadow-[0_0_15px_rgba(212,175,55,0.2)] transition-all"
+                        className="bg-accent text-black px-4 py-1.5 rounded-xl text-sm font-bold hover: transition-all"
                       >Save</button>
                       <button onClick={() => setIsEditingDate(false)} className="text-sm font-medium hover:underline text-ink-muted hover:text-ink px-2">Cancel</button>
                     </div>
@@ -662,11 +662,11 @@ export default function RecipeViewer() {
       )}
 
       {showMobileStartModal && (
-        <div className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-end justify-center p-4 pb-12">
+        <div className="fixed inset-0 z-[100] bg-black/50 flex items-end justify-center p-4 pb-12">
           <div className="bg-paper p-6 rounded-2xl shadow-2xl relative w-full text-center animate-in slide-in-from-bottom-5">
             <h3 className="text-xl font-bold uppercase tracking-tight mb-4">Start Recipe</h3>
             <div className="space-y-3">
-              <Link to={`/recipe/${recipe._id}/bake`} className="block w-full py-4 bg-accent text-black font-bold rounded-xl text-lg hover:shadow-[0_0_15px_rgba(212,175,55,0.2)] transition-all">
+              <Link to={`/recipe/${recipe._id}/bake`} className="block w-full py-4 bg-accent text-black font-bold rounded-xl text-lg hover: transition-all">
                 Start Now
               </Link>
               <button onClick={() => { setShowReverseScheduler(true); setShowMobileStartModal(false); }} className="block w-full py-4 border border-border-subtle font-bold rounded-xl text-lg hover:bg-black/5 dark:hover:bg-white/5">
@@ -681,11 +681,11 @@ export default function RecipeViewer() {
       )}
 
       {showMobileShareModal && (
-        <div className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-end justify-center p-4 pb-12">
+        <div className="fixed inset-0 z-[100] bg-black/50 flex items-end justify-center p-4 pb-12">
           <div className="bg-paper p-6 rounded-2xl shadow-2xl relative w-full text-center animate-in slide-in-from-bottom-5">
             <h3 className="text-xl font-bold uppercase tracking-tight mb-4">Share</h3>
             <div className="space-y-3">
-              <button onClick={handleShareLink} className="block w-full py-4 bg-accent text-black font-bold rounded-xl text-lg hover:shadow-[0_0_15px_rgba(212,175,55,0.2)] transition-all">
+              <button onClick={handleShareLink} className="block w-full py-4 bg-accent text-black font-bold rounded-xl text-lg hover: transition-all">
                 Copy Link
               </button>
               <button onClick={() => { setShowQrModal(true); setShowMobileShareModal(false); }} className="block w-full py-4 border border-border-subtle font-bold rounded-xl text-lg hover:bg-black/5 dark:hover:bg-white/5">
@@ -705,7 +705,7 @@ export default function RecipeViewer() {
       </div>
 
       {showQrModal && (
-        <div className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[100] bg-black/50 flex items-center justify-center p-4">
           <div className="bg-paper p-8 rounded-2xl shadow-2xl relative max-w-sm w-full text-center animate-in zoom-in-95">
             <button onClick={() => setShowQrModal(false)} className="absolute top-4 right-4 p-2 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 rounded-full transition-colors"><X className="w-5 h-5" /></button>
             <h3 className="text-xl font-bold uppercase tracking-tight mb-6">{recipe.title}</h3>

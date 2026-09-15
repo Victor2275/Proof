@@ -333,7 +333,7 @@ export default function RecipeEditor() {
       )}
 
       {proposedRecipe && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-0 md:p-4">
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-0 md:p-4">
           <div className="bg-paper w-full h-full md:rounded-xl md:max-w-4xl shadow-2xl border-none md:border md:border-border-subtle flex flex-col md:max-h-[90vh]">
             <div className="p-4 md:p-6 border-b border-border-subtle flex justify-between items-center bg-purple-500/10">
               <div>
@@ -385,7 +385,7 @@ export default function RecipeEditor() {
 
       {/* Sub-Recipe Selection Modal */}
       {linkingStepIdx !== null && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
           <div className="bg-paper rounded-xl w-full max-w-md shadow-2xl border border-border-subtle p-6 flex flex-col max-h-[80vh]">
             <h2 className="text-xl font-bold mb-4 flex items-center gap-2"><LinkIcon className="w-5 h-5"/> Link Sub-Recipe</h2>
             <div className="flex-1 overflow-y-auto space-y-2">
@@ -428,7 +428,7 @@ export default function RecipeEditor() {
                   type="button"
                   onClick={handleExtract}
                   disabled={extracting || !extractUrl}
-                  className="bg-accent text-black px-6 py-2 rounded-xl font-bold hover:shadow-[0_0_10px_rgba(212,175,55,0.2)] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="bg-accent text-black px-6 py-2 rounded-xl font-bold hover: transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   {extracting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Extract'}
                 </button>
@@ -593,7 +593,7 @@ export default function RecipeEditor() {
                 type="button" 
                 onClick={executeCropAndUpload}
                 disabled={!completedCrop || uploading}
-                className="px-6 py-3 font-bold bg-accent text-black rounded-xl hover:shadow-[0_0_15px_rgba(212,175,55,0.2)] transition-all flex items-center gap-2 disabled:opacity-50"
+                className="px-6 py-3 font-bold bg-accent text-black rounded-xl hover: transition-all flex items-center gap-2 disabled:opacity-50"
               >
                 {uploading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Crop & Upload'}
               </button>
@@ -604,7 +604,7 @@ export default function RecipeEditor() {
 
       {/* Past Bakes Modal */}
       {showPastBakesModal && (
-        <div className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[100] bg-black/50 flex items-center justify-center p-4">
           <div className="bg-paper p-6 rounded-2xl shadow-2xl relative w-full max-w-3xl max-h-[80vh] flex flex-col">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-xl font-bold uppercase tracking-tight">Select from Past Bakes</h3>

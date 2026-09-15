@@ -88,7 +88,7 @@ export default function InstagramExporter({ recipe, bakeLog, onClose }: Instagra
   const Logo = () => <div className="absolute bottom-12 right-12"><img src="/logo.png" alt="Logo" className="h-16 w-auto" crossOrigin="anonymous" /></div>;
 
   return (
-    <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex flex-col">
+    <div className="fixed inset-0 z-[100] bg-black/90 flex flex-col">
       <div className="p-4 md:p-6 flex justify-between items-center bg-black border-b border-white/10">
         <h2 className="text-white font-bold text-xl uppercase tracking-widest">Instagram Exporter</h2>
         <button onClick={onClose} className="p-2 text-white/50 hover:text-white rounded-full transition-colors"><X className="w-6 h-6" /></button>
@@ -137,7 +137,7 @@ export default function InstagramExporter({ recipe, bakeLog, onClose }: Instagra
 
                   {/* Title & Logo Area (in the thick bottom border) */}
                   <div className="absolute bottom-0 left-0 right-0 h-[160px] flex flex-col items-center justify-center px-10">
-                    <h1 className="text-6xl font-black tracking-tight text-center uppercase" style={{ fontFamily: 'Impact, sans-serif' }}>
+                    <h1 className="text-6xl font-black tracking-tight text-center uppercase" style={{ fontFamily: 'Archivo Variable, sans-serif', fontStretch: '118%' }}>
                       {recipe.title}
                     </h1>
                     {recipe.tags && recipe.tags.length > 0 && (
@@ -180,7 +180,7 @@ export default function InstagramExporter({ recipe, bakeLog, onClose }: Instagra
 
                   {/* Title & Logo Area (in the thick bottom border) */}
                   <div className="absolute bottom-0 left-0 right-0 h-[220px] flex flex-col items-center justify-center px-16">
-                    <h1 className="text-7xl font-black tracking-tight text-center uppercase" style={{ fontFamily: 'Impact, sans-serif' }}>
+                    <h1 className="text-7xl font-black tracking-tight text-center uppercase" style={{ fontFamily: 'Archivo Variable, sans-serif', fontStretch: '118%' }}>
                       {recipe.title}
                     </h1>
                     <p className={`mt-4 text-2xl tracking-widest font-bold ${theme === 'dark' ? 'text-[#ffffff80]' : 'text-[#00000080]'}`}>

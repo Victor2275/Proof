@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.app.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.test.tsbuildinfo",
+    /* Tests may reach the filesystem to assert on source and stylesheet text;
+     * application code deliberately cannot, which is why node types live here
+     * rather than in tsconfig.app.json. */
+    "types": ["vite/client", "web-bluetooth", "node", "vitest/globals"]
+  },
+  /* Ambient declarations (e.g. react-speech-recognition) are part of every
+   * program that compiles the components under test. */
+  "include": ["src/**/*.test.ts", "src/**/*.test.tsx", "src/setupTests.ts", "src/**/*.d.ts"],
+  /* tsconfig.app.json excludes the test files; that exclude is inherited
+   * through "extends" and would cancel the include above. */
+  "exclude": []
+}

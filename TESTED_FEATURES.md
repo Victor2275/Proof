@@ -56,8 +56,18 @@ This is a 1-to-1 mirror of CURRENT_FEATURES.md. Use checkboxes to track manual t
 - [ ] **Rate Limiting**: AI and auth endpoints rate-limited.
 
 ## 7. UI/UX Foundation
-- [ ] **Two Themes**: Light and Dark (dark is default).
-- [ ] **Black & Gold Aesthetic**: Pitch black, gold accents, glassmorphic components.
+- [ ] **"Step Row" Visual World (Phase 0 foundation)**: Rhythm-machine design language — matte panels, silkscreen labels, lit step keys, segment readouts; colour is temporal, not decorative.
+- [ ] **Three enforced bans**: No gradients, no backdrop blur, no glow except lit keys/segments; enforced by `src/designSystem.test.ts`.
+- [ ] **Two Themes**: Light and Dark only; dark is default and true `#000000`, OLED consolidated in.
+- [ ] **Self-hosted typography**: Archivo Variable + JetBrains Mono Variable, latin subsets, precached for offline use.
+- [ ] **Component layer (Phase 1)**: Panel, Button, Field, SegmentReadout, StepRow, InstrumentRow, Meter in `src/components/ui`.
+- [ ] **Seven-segment readouts**: Ghost segments visible, fixed width, reserved for instrument values, announced as one value.
+- [ ] **Step row**: One key per phase, temporal colour, labels below the keys, collapses to a named running phase at 390px.
+- [ ] **Phase derivation**: Bread vocabulary with a generic fallback; monotonic; never invents a levain for a non-bread recipe.
+- [ ] **Component lab** (`/lab`): Dev-only primitives gallery, absent from production builds.
+- [ ] **Themed browser surfaces**: Selection, caret, scrollbars and focus rings themed from the palette.
+- [ ] **Global reduced-motion support**: `prefers-reduced-motion` collapses all animation.
+- [ ] **Retired: global font switcher**: sans/serif/mono preference removed.
 - [ ] **Onboarding & Landing**: A dedicated hero landing page with a 3-step carousel modal to introduce new users to the app functionality.
 - [ ] **Skeletons & Empty States**: Polished animated skeleton loaders for data fetching, custom illustrated 404 pages, and a tailored empty state for the gallery.
 - [ ] **XSS Sanitization**: rehype-sanitize on user markdown.

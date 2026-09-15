@@ -37,7 +37,7 @@ export default function IngredientList({
           </button>
           <button 
             onClick={() => setShowBakersMath(!showBakersMath)}
-            className={`text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-xl border transition-all ${showBakersMath ? 'bg-accent/10 text-accent border-accent shadow-[0_0_10px_rgba(212,175,55,0.1)]' : 'border-border-subtle text-ink-muted hover:bg-white/5'}`}
+            className={`text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-xl border transition-all ${showBakersMath ? 'bg-accent/10 text-accent border-accent ' : 'border-border-subtle text-ink-muted hover:bg-white/5'}`}
           >
             Baker's %
           </button>

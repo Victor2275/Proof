@@ -22,6 +22,9 @@ const GeneralNotes = lazy(() => import('./components/GeneralNotes'));
 const BakingMode = lazy(() => import('./components/BakingMode'));
 const Settings = lazy(() => import('./components/Settings'));
 const Pantry = lazy(() => import('./components/Pantry'));
+// Primitives gallery. Guarded so the chunk is never referenced in a production
+// build; see components/Lab.tsx.
+const Lab = import.meta.env.DEV ? lazy(() => import('./components/Lab')) : null;
 
 function AuthModal({ onClose, onSuccess }: { onClose: () => void, onSuccess: () => void }) {
   const [pin, setPin] = useState('');
@@ -44,8 +47,8 @@ function AuthModal({ onClose, onSuccess }: { onClose: () => void, onSuccess: () 
   };
 
   return (
-    <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-md flex items-center justify-center p-4">
-      <form onSubmit={handleSubmit} className="bg-paper/90 backdrop-blur-xl rounded-2xl w-full max-w-sm shadow-2xl border border-border-subtle p-8">
+    <div className="fixed inset-0 z-[100] bg-black/60 flex items-center justify-center p-4">
+      <form onSubmit={handleSubmit} className="bg-paper rounded-2xl w-full max-w-sm shadow-2xl border border-border-subtle p-8">
         <h2 className="text-xl font-bold mb-2">Admin Access Required</h2>
         <p className="text-sm text-ink-muted mb-4">Please enter the PIN to perform this action.</p>
         <div className="mb-6">
@@ -79,7 +82,7 @@ function AuthModal({ onClose, onSuccess }: { onClose: () => void, onSuccess: () 
         </div>
         <div className="flex gap-3">
           <button type="button" onClick={onClose} className="flex-1 py-3 font-medium hover:bg-black/5 dark:hover:bg-white/5 rounded-xl transition-colors">Cancel</button>
-          <button type="submit" disabled={loading} className="flex-1 bg-accent text-black py-3 font-bold rounded-xl hover:shadow-[0_0_15px_rgba(212,175,55,0.2)] transition-all">{loading ? 'Verifying...' : 'Submit'}</button>
+          <button type="submit" disabled={loading} className="flex-1 bg-accent text-black py-3 font-bold rounded-xl hover: transition-all">{loading ? 'Verifying...' : 'Submit'}</button>
         </div>
       </form>
       {error && (
@@ -108,6 +111,7 @@ function AnimatedRoutes() {
         <Route path="/edit/:id" element={<RecipeEditor />} />
         <Route path="/gallery" element={<Gallery />} />
         <Route path="/notes" element={<GeneralNotes />} />
+        {Lab ? <Route path="/lab" element={<Lab />} /> : null}
         <Route path="*" element={<NotFound />} />
       </Routes>
     </AnimatePresence>
@@ -125,13 +129,6 @@ function App() {
       window.location.href = '/welcome';
     }
 
-    const handleSettingsChange = () => {
-      document.documentElement.setAttribute('data-font', localStorage.getItem('fontFamily') || 'sans');
-    };
-    
-    // Initial font setup
-    document.documentElement.setAttribute('data-font', localStorage.getItem('fontFamily') || 'sans');
-
     // The `dark:` variant is bound to the .dark class (see index.css), so in "system"
     // mode we have to mirror OS theme changes onto the class ourselves.
     const mq = window.matchMedia('(prefers-color-scheme: dark)');
@@ -141,9 +138,7 @@ function App() {
     };
     mq.addEventListener('change', handleSystemTheme);
 
-    window.addEventListener('settings-changed', handleSettingsChange);
     return () => {
-      window.removeEventListener('settings-changed', handleSettingsChange);
       mq.removeEventListener('change', handleSystemTheme);
     };
   }, []);

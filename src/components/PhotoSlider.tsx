@@ -57,7 +57,7 @@ export default function PhotoSlider({
       />
       
       {/* After Label (Bottom Right) */}
-      <span className="absolute bottom-3 right-3 text-xs font-bold uppercase tracking-wider bg-black/70 text-white px-2.5 py-1 rounded-full pointer-events-none z-10 backdrop-blur-xs">
+      <span className="absolute bottom-3 right-3 text-xs font-bold uppercase tracking-wider bg-black/70 text-white px-2.5 py-1 rounded-full pointer-events-none z-10 -xs">
         {afterLabel}
       </span>
 
@@ -72,14 +72,14 @@ export default function PhotoSlider({
           className="absolute inset-0 w-full h-full object-cover"
         />
         {/* Before Label (Bottom Left) */}
-        <span className="absolute bottom-3 left-3 text-xs font-bold uppercase tracking-wider bg-black/70 text-white px-2.5 py-1 rounded-full pointer-events-none z-10 backdrop-blur-xs">
+        <span className="absolute bottom-3 left-3 text-xs font-bold uppercase tracking-wider bg-black/70 text-white px-2.5 py-1 rounded-full pointer-events-none z-10 -xs">
           {beforeLabel}
         </span>
       </div>
 
       {/* Divider Bar */}
       <div
-        className="absolute top-0 bottom-0 w-1 bg-white shadow-[0_0_10px_rgba(0,0,0,0.5)] z-20 pointer-events-none"
+        className="absolute top-0 bottom-0 w-1 bg-white z-20 pointer-events-none"
         style={{ left: `${sliderPosition}%`, transform: 'translateX(-50%)' }}
       >
         {/* Handle Icon */}

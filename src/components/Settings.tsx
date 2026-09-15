@@ -6,7 +6,6 @@ import { hapticsEnabled, ttsEnabled as readTtsEnabled } from '../lib/settings';
 export default function Settings() {
   const [theme, setTheme] = useState<'light' | 'dark' | 'system'>(() => localStorage.getItem('theme') as any || 'system');
   const [haptics, setHaptics] = useState(hapticsEnabled);
-  const [fontFamily, setFontFamily] = useState(() => localStorage.getItem('fontFamily') || 'sans');
   const [defaultBakersMath, setDefaultBakersMath] = useState(() => localStorage.getItem('defaultBakersMath') === 'true');
 
   
@@ -21,7 +20,6 @@ export default function Settings() {
   useEffect(() => {
     if (theme === 'system') {
       localStorage.removeItem('theme');
-      document.documentElement.classList.remove('oled');
       if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
         document.documentElement.classList.add('dark');
       } else {
@@ -40,11 +38,6 @@ export default function Settings() {
   useEffect(() => {
     localStorage.setItem('hapticsEnabled', haptics.toString());
   }, [haptics]);
-
-  useEffect(() => {
-    localStorage.setItem('fontFamily', fontFamily);
-    document.documentElement.setAttribute('data-font', fontFamily);
-  }, [fontFamily]);
 
   useEffect(() => {
     localStorage.setItem('defaultBakersMath', defaultBakersMath.toString());
@@ -77,20 +70,20 @@ export default function Settings() {
           <div className="grid grid-cols-2 sm:flex sm:flex-row gap-3">
             <button 
               onClick={() => setTheme('light')}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-medium transition-all border ${theme === 'light' ? 'bg-accent/10 text-accent border-accent shadow-[0_0_15px_rgba(212,175,55,0.15)]' : 'bg-paper text-ink border-border-subtle hover:bg-black/5 dark:hover:bg-white/5'}`}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-medium transition-all border ${theme === 'light' ? 'bg-accent/10 text-accent border-accent ' : 'bg-paper text-ink border-border-subtle hover:bg-black/5 dark:hover:bg-white/5'}`}
             >
               <Sun className="w-4 h-4"/> Light
             </button>
             <button 
               onClick={() => setTheme('dark')}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-medium transition-all border ${theme === 'dark' ? 'bg-accent/10 text-accent border-accent shadow-[0_0_15px_rgba(212,175,55,0.15)]' : 'bg-paper text-ink border-border-subtle hover:bg-black/5 dark:hover:bg-white/5'}`}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-medium transition-all border ${theme === 'dark' ? 'bg-accent/10 text-accent border-accent ' : 'bg-paper text-ink border-border-subtle hover:bg-black/5 dark:hover:bg-white/5'}`}
             >
               <Moon className="w-4 h-4"/> Dark
             </button>
 
             <button 
               onClick={() => setTheme('system')}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-medium transition-all border ${theme === 'system' ? 'bg-accent/10 text-accent border-accent shadow-[0_0_15px_rgba(212,175,55,0.15)]' : 'bg-paper text-ink border-border-subtle hover:bg-black/5 dark:hover:bg-white/5'}`}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-medium transition-all border ${theme === 'system' ? 'bg-accent/10 text-accent border-accent ' : 'bg-paper text-ink border-border-subtle hover:bg-black/5 dark:hover:bg-white/5'}`}
             >
               System
             </button>
@@ -105,26 +98,10 @@ export default function Settings() {
           <div className="space-y-3">
             <label className="flex items-center justify-between p-4 bg-paper border border-border-subtle rounded-xl cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
               <div>
-                <div className="font-bold">Typography</div>
-                <div className="text-sm text-ink-muted">Choose your preferred font style.</div>
-              </div>
-              <select 
-                value={fontFamily} 
-                onChange={e => setFontFamily(e.target.value)}
-                className="bg-paper text-ink border border-border-subtle rounded px-3 py-1.5 focus:outline-none"
-              >
-                <option value="sans" className="bg-paper text-ink">Modern (Sans)</option>
-                <option value="serif" className="bg-paper text-ink">Classic (Serif)</option>
-                <option value="mono" className="bg-paper text-ink">Technical (Mono)</option>
-              </select>
-            </label>
-
-            <label className="flex items-center justify-between p-4 bg-paper border border-border-subtle rounded-xl cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-              <div>
                 <div className="font-bold">Baker's Math by Default</div>
                 <div className="text-sm text-ink-muted">Automatically show baker's percentages on recipes.</div>
               </div>
-              <div className="relative inline-block w-12 h-6 rounded-full transition-colors ease-in-out duration-200 focus:outline-none" style={{ backgroundColor: defaultBakersMath ? 'var(--accent-gold)' : 'var(--border-subtle)' }}>
+              <div className="relative inline-block w-12 h-6 rounded-full transition-colors ease-in-out duration-200 focus:outline-none" style={{ backgroundColor: defaultBakersMath ? 'var(--signal)' : 'var(--rule)' }}>
                 <input type="checkbox" className="sr-only" checked={defaultBakersMath} onChange={e => setDefaultBakersMath(e.target.checked)} />
                 <span className={`inline-block w-6 h-6 transform bg-paper rounded-full shadow transition duration-200 ease-in-out ${defaultBakersMath ? 'translate-x-6' : 'translate-x-0'}`} />
               </div>
@@ -137,7 +114,7 @@ export default function Settings() {
                 <div className="font-bold">Haptic Feedback</div>
                 <div className="text-sm text-ink-muted">Small vibrations when navigating steps or timers.</div>
               </div>
-              <div className="relative inline-block w-12 h-6 rounded-full transition-colors ease-in-out duration-200 focus:outline-none" style={{ backgroundColor: haptics ? 'var(--accent-gold)' : 'var(--border-subtle)' }}>
+              <div className="relative inline-block w-12 h-6 rounded-full transition-colors ease-in-out duration-200 focus:outline-none" style={{ backgroundColor: haptics ? 'var(--signal)' : 'var(--rule)' }}>
                 <input type="checkbox" className="sr-only" checked={haptics} onChange={e => setHaptics(e.target.checked)} />
                 <span className={`inline-block w-6 h-6 transform bg-paper rounded-full shadow transition duration-200 ease-in-out ${haptics ? 'translate-x-6' : 'translate-x-0'}`} />
               </div>
@@ -148,7 +125,7 @@ export default function Settings() {
                 <div className="font-bold">Text-to-Speech</div>
                 <div className="text-sm text-ink-muted">Announce timers aloud when they finish.</div>
               </div>
-              <div className="relative inline-block w-12 h-6 rounded-full transition-colors ease-in-out duration-200 focus:outline-none" style={{ backgroundColor: ttsEnabled ? 'var(--accent-gold)' : 'var(--border-subtle)' }}>
+              <div className="relative inline-block w-12 h-6 rounded-full transition-colors ease-in-out duration-200 focus:outline-none" style={{ backgroundColor: ttsEnabled ? 'var(--signal)' : 'var(--rule)' }}>
                 <input type="checkbox" className="sr-only" checked={ttsEnabled} onChange={e => setTtsEnabled(e.target.checked)} />
                 <span className={`inline-block w-6 h-6 transform bg-paper rounded-full shadow transition duration-200 ease-in-out ${ttsEnabled ? 'translate-x-6' : 'translate-x-0'}`} />
               </div>
@@ -159,7 +136,7 @@ export default function Settings() {
                 <div className="font-bold">Wave to Advance</div>
                 <div className="text-sm text-ink-muted">Wave hand over camera to go to next step.</div>
               </div>
-              <div className="relative inline-block w-12 h-6 rounded-full transition-colors ease-in-out duration-200 focus:outline-none" style={{ backgroundColor: waveToAdvance ? 'var(--accent-gold)' : 'var(--border-subtle)' }}>
+              <div className="relative inline-block w-12 h-6 rounded-full transition-colors ease-in-out duration-200 focus:outline-none" style={{ backgroundColor: waveToAdvance ? 'var(--signal)' : 'var(--rule)' }}>
                 <input type="checkbox" className="sr-only" checked={waveToAdvance} onChange={e => setWaveToAdvance(e.target.checked)} />
                 <span className={`inline-block w-6 h-6 transform bg-paper rounded-full shadow transition duration-200 ease-in-out ${waveToAdvance ? 'translate-x-6' : 'translate-x-0'}`} />
               </div>
@@ -170,7 +147,7 @@ export default function Settings() {
                 <div className="font-bold">Voice Commands</div>
                 <div className="text-sm text-ink-muted">Say "Next step" or "Start timer" to control hands-free.</div>
               </div>
-              <div className="relative inline-block w-12 h-6 rounded-full transition-colors ease-in-out duration-200 focus:outline-none" style={{ backgroundColor: voiceCommands ? 'var(--accent-gold)' : 'var(--border-subtle)' }}>
+              <div className="relative inline-block w-12 h-6 rounded-full transition-colors ease-in-out duration-200 focus:outline-none" style={{ backgroundColor: voiceCommands ? 'var(--signal)' : 'var(--rule)' }}>
                 <input type="checkbox" className="sr-only" checked={voiceCommands} onChange={e => setVoiceCommands(e.target.checked)} />
                 <span className={`inline-block w-6 h-6 transform bg-paper rounded-full shadow transition duration-200 ease-in-out ${voiceCommands ? 'translate-x-6' : 'translate-x-0'}`} />
               </div>
@@ -214,7 +191,7 @@ export default function Settings() {
                     alert('Failed to download backup.');
                   }
                 }}
-                className="flex items-center gap-2 px-6 py-2.5 bg-accent text-black font-bold rounded-xl hover:shadow-[0_0_15px_rgba(212,175,55,0.2)] transition-all"
+                className="flex items-center gap-2 px-6 py-2.5 bg-accent text-black font-bold rounded-xl hover: transition-all"
               >
                 <Download className="w-4 h-4" /> Backup
               </button>
@@ -246,7 +223,7 @@ export default function Settings() {
                     setRehostBusy(false);
                   }
                 }}
-                className="flex items-center gap-2 px-6 py-2.5 bg-accent text-black font-bold rounded-xl hover:shadow-[0_0_15px_rgba(212,175,55,0.2)] transition-all disabled:opacity-50 shrink-0"
+                className="flex items-center gap-2 px-6 py-2.5 bg-accent text-black font-bold rounded-xl hover: transition-all disabled:opacity-50 shrink-0"
               >
                 <ImageDown className="w-4 h-4" /> {rehostBusy ? 'Working…' : 'Re-host'}
               </button>

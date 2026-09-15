@@ -22,8 +22,8 @@ export default function SideBySideCompare({
           alt={doughLabel}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
-        <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/80 to-transparent flex items-center justify-between">
-          <span className="text-xs font-bold uppercase tracking-wider text-white bg-black/50 px-2.5 py-1 rounded-full backdrop-blur-xs">
+        <div className="absolute inset-x-0 bottom-0 p-3 bg-ground/85 flex items-center justify-between">
+          <span className="text-xs font-bold uppercase tracking-wider text-white bg-black/50 px-2.5 py-1 rounded-full -xs">
             🧪 {doughLabel}
           </span>
         </div>
@@ -36,8 +36,8 @@ export default function SideBySideCompare({
           alt={bakedLabel}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
-        <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/80 to-transparent flex items-center justify-between">
-          <span className="text-xs font-bold uppercase tracking-wider text-white bg-black/50 px-2.5 py-1 rounded-full backdrop-blur-xs">
+        <div className="absolute inset-x-0 bottom-0 p-3 bg-ground/85 flex items-center justify-between">
+          <span className="text-xs font-bold uppercase tracking-wider text-white bg-black/50 px-2.5 py-1 rounded-full -xs">
             🍞 {bakedLabel}
           </span>
         </div>

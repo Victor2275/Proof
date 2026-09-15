@@ -36,6 +36,10 @@ export default defineConfig({
         ]
       },
       workbox: {
+        // The default glob omits woff2, which would leave the self-hosted display
+        // and mono faces uncached — the one asset class this app cannot refetch
+        // in a kitchen with no signal.
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         runtimeCaching: [
           {

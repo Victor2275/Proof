@@ -86,7 +86,7 @@ export default function Dashboard() {
                 const random = recipes[Math.floor(Math.random() * recipes.length)];
                 navigate(`/recipe/${random._id}`);
               }}
-              className="flex items-center justify-center gap-2 px-5 py-2.5 bg-accent/10 border border-accent/50 text-accent rounded-xl text-sm font-bold shadow-[0_0_15px_rgba(212,175,55,0.15)] hover:bg-accent/20 transition-colors"
+              className="flex items-center justify-center gap-2 px-5 py-2.5 bg-accent/10 border border-accent/50 text-accent rounded-xl text-sm font-bold hover:bg-accent/20 transition-colors"
             >
               <Flame className="w-4 h-4" /> Inspire Me
             </motion.button>
@@ -98,10 +98,10 @@ export default function Dashboard() {
             placeholder="Search recipes or tags..." 
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 border border-border-subtle bg-sidebar/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-accent transition-all"
+            className="w-full pl-10 pr-4 py-2.5 border border-border-subtle bg-sidebar rounded-xl focus:outline-none focus:ring-2 focus:ring-accent transition-all"
           />
         </div>
-        <div className="hidden md:flex border border-border-subtle rounded-xl overflow-hidden bg-sidebar/50 p-1">
+        <div className="hidden md:flex border border-border-subtle rounded-xl overflow-hidden bg-sidebar p-1">
           <button 
             onClick={() => setViewMode('grid')}
             className={`p-1.5 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-accent text-black shadow-sm' : 'text-ink-muted hover:text-accent hover:bg-white/5'}`}
@@ -135,7 +135,7 @@ export default function Dashboard() {
               key={tag}
               onClick={() => setActiveFilters([tag])}
               className={`shrink-0 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest transition-all snap-start ${
-                activeFilters.includes(tag) ? 'bg-accent text-black shadow-[0_0_10px_rgba(212,175,55,0.2)]' : 'bg-black/5 dark:bg-white/5 text-ink-muted border border-border-subtle hover:text-ink hover:border-ink/50'
+                activeFilters.includes(tag) ? 'bg-accent text-black ' : 'bg-black/5 dark:bg-white/5 text-ink-muted border border-border-subtle hover:text-ink hover:border-ink/50'
               }`}
             >
               {tag}
@@ -163,7 +163,7 @@ export default function Dashboard() {
             </button>
           </div>
         ) : recipes.length === 0 ? (
-          <div className="text-center py-32 border-2 border-dashed border-border-subtle rounded-xl text-ink-muted bg-sidebar/50">
+          <div className="text-center py-32 border-2 border-dashed border-border-subtle rounded-xl text-ink-muted bg-sidebar">
             <p className="mb-2">No recipes found.</p>
           </div>
         ) : (
@@ -172,7 +172,7 @@ export default function Dashboard() {
               <div key={recipe._id}>
                 <Link 
                   to={`/recipe/${recipe._id}`}
-                  className={`group block bg-sidebar/50 backdrop-blur-sm border border-border-subtle rounded-2xl overflow-hidden hover:border-accent hover:shadow-[0_0_15px_rgba(212,175,55,0.15)] dark:hover:shadow-[0_0_15px_rgba(197,160,89,0.15)] transition-all duration-300 ${viewMode === 'list' ? 'flex flex-col sm:flex-row sm:items-start p-4 gap-4 sm:gap-6' : 'flex flex-col h-full'}`}
+                  className={`group block bg-sidebar border border-border-subtle rounded-2xl overflow-hidden hover:border-accent hover: dark:hover: transition-all duration-300 ${viewMode === 'list' ? 'flex flex-col sm:flex-row sm:items-start p-4 gap-4 sm:gap-6' : 'flex flex-col h-full'}`}
                 >
                   {/* Image rendering based on viewMode */}
                   {viewMode === 'grid' && (

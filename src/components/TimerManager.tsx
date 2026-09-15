@@ -183,11 +183,11 @@ export default function TimerManager() {
       </div>
 
       {isFlashing && (
-        <div className="fixed inset-0 z-[9999] bg-ink/30 dark:bg-paper/30 pointer-events-none animate-pulse transition-opacity duration-300" />
+        <div className="fixed inset-0 z-[9999] bg-ink/30 dark:bg-paper pointer-events-none animate-pulse transition-opacity duration-300" />
       )}
 
       {pendingTimer && (
-        <div className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-end md:items-center justify-center p-0 md:p-4 animate-in slide-in-from-bottom md:slide-in-from-bottom-4">
+        <div className="fixed inset-0 z-[100] bg-black/50 flex items-end md:items-center justify-center p-0 md:p-4 animate-in slide-in-from-bottom md:slide-in-from-bottom-4">
           <div className="bg-paper w-full md:max-w-sm md:rounded-2xl rounded-t-3xl shadow-2xl p-6 pb-safe">
             <h3 className="text-xl font-bold mb-2">Start Timer</h3>
             <p className="text-ink-muted mb-6">
@@ -197,7 +197,7 @@ export default function TimerManager() {
               <button onClick={() => setPendingTimer(null)} className="flex-1 py-3 font-medium hover:bg-black/5 dark:hover:bg-white/5 rounded-xl transition-colors">
                 Cancel
               </button>
-              <button onClick={() => confirmAddTimer(pendingTimer.durationSecs, pendingTimer.name)} className="flex-1 bg-accent text-black py-3 font-bold rounded-xl hover:shadow-[0_0_15px_rgba(212,175,55,0.2)] transition-all">
+              <button onClick={() => confirmAddTimer(pendingTimer.durationSecs, pendingTimer.name)} className="flex-1 bg-accent text-black py-3 font-bold rounded-xl hover: transition-all">
                 Start
               </button>
             </div>

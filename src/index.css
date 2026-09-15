@@ -1,98 +1,263 @@
 @import "tailwindcss";
 
 /*
- * Tailwind v4 defaults the `dark:` variant to `prefers-color-scheme`, which ignores
- * the `.dark` class the in-app theme switcher toggles. That left the switcher only
- * half-working: picking Dark swapped the CSS variables below but left every
- * `dark:` utility off (and vice-versa on a dark-OS device). Bind the variant to the
- * class so the app's own theme setting is the single source of truth.
+ * PROOF — foundation layer.
+ *
+ * The visual world is an early-80s rhythm machine: a matte panel, silkscreened
+ * labels, lit step keys, and seven-segment readouts. A recipe is a pattern; a
+ * bake is a pattern running; the chase light says where "now" is.
+ *
+ * Three bans hold everywhere in this codebase:
+ *   1. no gradients
+ *   2. no backdrop-filter / blur
+ *   3. no glow, except a lit key or a lit segment
+ * These replace the glassmorphism and gold box-shadow halos of the previous
+ * world. They also render cheaper: no per-frame backdrop compositing on scroll.
+ *
+ * Tailwind v4 defaults the `dark:` variant to `prefers-color-scheme`, which
+ * ignores the `.dark` class the in-app theme switcher toggles. Bind the variant
+ * to the class so the app's own setting is the single source of truth.
  */
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --color-sidebar: var(--sidebar-bg);
-  --color-paper: var(--paper-bg);
+  /* --- Legacy aliases -------------------------------------------------
+   * Components still reference bg-paper / bg-sidebar / border-border-subtle
+   * from the previous world. They are mapped onto the new tokens so the app
+   * stays working while surfaces migrate phase by phase. Do not add new uses.
+   */
+  --color-sidebar: var(--ground);
+  --color-paper: var(--panel);
+  --color-border-subtle: var(--rule);
+  --color-accent: var(--signal);
+
+  /* --- The world ----------------------------------------------------- */
+  --color-ground: var(--ground);
+  --color-panel: var(--panel);
+  --color-panel-sunk: var(--panel-sunk);
+  --color-rule: var(--rule);
   --color-ink: var(--ink);
   --color-ink-muted: var(--ink-muted);
-  --color-border-subtle: var(--border-subtle);
-  --color-accent: var(--accent-gold);
+  --color-silkscreen: var(--silkscreen);
+
+  /* Step keys. Colour here is temporal, never decorative. */
+  --color-key-now: var(--key-now);
+  --color-key-due: var(--key-due);
+  --color-key-queued: var(--key-queued);
+  --color-key-done: var(--key-done);
+  --color-key-unlit: var(--key-unlit);
+  --color-signal: var(--signal);
+  --color-spoiled: var(--spoiled);
+
+  --font-display: 'Archivo Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono Variable', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --radius-key: 2px;
+  --radius-panel: 4px;
+  --radius-control: 3px;
+}
+
+/* --- Faces ------------------------------------------------------------
+ * Self-hosted, latin subset only, served from /fonts and precached by the
+ * service worker (see globPatterns in vite.config.ts) so they survive a
+ * kitchen with no signal. Both SIL Open Font License; see /fonts/*-OFL.txt.
+ *
+ * Archivo carries the width axis the faceplate lettering needs: display is set
+ * expanded and heavy, instruction prose at normal width and weight.
+ */
+@font-face {
+  font-family: 'Archivo Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  font-stretch: 62% 125%;
+  src: url('/fonts/archivo-latin-variable.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'JetBrains Mono Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 800;
+  src: url('/fonts/jetbrains-mono-latin-variable.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
 @layer base {
+  /*
+   * Dark is the default because of the use scene, not the category: a kitchen
+   * before dawn, the only lit object a propped phone. Light is the faceplate
+   * inverted — classic machines wore cream plastic — and is first-class, not a
+   * courtesy.
+   */
   :root {
-    --sidebar-bg: #fcf8f2;
-    --paper-bg: #ffffff;
-    --ink: #111111;
-    --ink-muted: #666666;
-    --border-subtle: #e0e0e0;
-    --accent-gold: #D4AF37;
+    --ground: #e8e4dc;
+    --panel: #f2efe9;
+    --panel-sunk: #dcd7cc;
+    --rule: #c9c4b8;
+    --ink: #171614;
+    --ink-muted: #63605a;
+    --silkscreen: #4a4640;
+
+    --key-now: #e02a20;
+    --key-due: #e07d00;
+    --key-queued: #cbbc84;
+    --key-done: #b0aba1;
+    --key-unlit: #d2cdc2;
+    --signal: #c81e14;
+    --spoiled: #6d2018;
+
+    color-scheme: light;
   }
-  
+
+  /*
+   * One dark theme, and it is true black. The former three-theme split (dark +
+   * a separate OLED) was drift: the README documented it, CLAUDE.md said two,
+   * and an orphaned `.oled` block sat in this file styling nothing reachable.
+   */
+  .dark {
+    --ground: #000000;
+    --panel: #1a1a1a;
+    --panel-sunk: #0d0d0d;
+    --rule: #2e2e2e;
+    --ink: #f2f2f2;
+    --ink-muted: #8a8a8a;
+    --silkscreen: #bdbdbd;
+
+    --key-now: #ff3b30;
+    --key-due: #ff9a00;
+    --key-queued: #7a6000;
+    --key-done: #57564f;
+    --key-unlit: #2a2a2a;
+    --signal: #ff3b30;
+    --spoiled: #5a1a12;
+
+    color-scheme: dark;
+  }
+
+  /*
+   * 16px everywhere. The previous 18px mobile base was a blunt instrument for
+   * kitchen legibility and cost density on every browsing screen; Baking Mode
+   * owns its own oversized scale instead, where the reading distance is real.
+   */
   html {
-    font-size: 18px;
-    font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    font-size: 16px;
+    font-family: var(--font-mono);
+    -webkit-text-size-adjust: 100%;
   }
-  
-  html[data-font="sans"] {
-    font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  body {
+    background-color: var(--ground);
+    color: var(--ink);
+    font-family: var(--font-mono);
+    font-weight: 400;
+    /* Data and measurement are everywhere in this product; figures must align
+     * in every column they appear in, not only in tables that opt in. */
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1;
   }
-  
-  html[data-font="serif"] {
-    font-family: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+
+  /* The display voice: expanded, heavy, uppercase. Faceplate lettering. */
+  .font-faceplate {
+    font-family: var(--font-display);
+    font-stretch: 118%;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    text-transform: uppercase;
   }
-  
-  html[data-font="mono"] {
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
+  /* Instruction prose — the one place mono is the wrong tool. Same family as
+   * the display voice at normal width, so it stays one type system. */
+  .font-prose {
+    font-family: var(--font-display);
+    font-stretch: 100%;
+    font-weight: 400;
+    letter-spacing: 0;
+    line-height: 1.6;
   }
-  
-  @media (min-width: 768px) {
-    html {
-      font-size: 16px;
+
+  /* Silkscreened component labels: small, tracked, plain words. Every region
+   * names itself rather than relying on an icon read at arm's length. */
+  .label-silkscreen {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--silkscreen);
+  }
+
+  /* --- Browser surfaces ---------------------------------------------
+   * The parts not drawn by hand still carry the design. Selection, caret,
+   * scrollbars and focus rings ship with defaults belonging to no design
+   * system; they are themed from the palette here.
+   */
+  ::selection {
+    background-color: var(--signal);
+    color: #ffffff;
+  }
+
+  :root {
+    caret-color: var(--signal);
+    scrollbar-color: var(--rule) transparent;
+    scrollbar-width: thin;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: var(--rule);
+    border-radius: 0;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: var(--ink-muted);
+  }
+
+  /* A square focus ring, matched to the world. Never removed. */
+  *:focus-visible {
+    outline: 2px solid var(--signal);
+    outline-offset: 2px;
+    border-radius: 0;
+  }
+
+  /*
+   * Controls are squared. The previous global `border-radius: 12px !important`
+   * forced iOS-style pills onto every input and button and, being !important,
+   * made the rule unoverridable by any component that needed otherwise.
+   */
+  input:not([type='checkbox']):not([type='radio']),
+  textarea,
+  select,
+  button {
+    border-radius: var(--radius-control);
+    font-family: inherit;
+  }
+
+  /*
+   * All motion in this world derives from one clock: the chase light sweeping
+   * and a key flashing on press. Under reduced-motion the chase light becomes
+   * a static position marker and every sweep stops.
+   */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
     }
   }
-
-  .dark {
-    --sidebar-bg: #050505;
-    --paper-bg: #000000;
-    --ink: #ffffff;
-    --ink-muted: #a0a0a0;
-    --border-subtle: #222222;
-    --accent-gold: #c5a059;
-  }
-
-  .oled {
-    --sidebar-bg: #000000;
-    --paper-bg: #000000;
-    --ink: #ffffff;
-    --ink-muted: #888888;
-    --border-subtle: #222222;
-    --accent-gold: #c5a059;
-  }
-}
-
-body {
-  background-color: var(--paper-bg);
-  color: var(--ink);
-  transition: background-color 0.2s, color 0.2s;
-}
-
-::selection {
-  background-color: var(--accent-gold);
-  color: #000000;
-}
-
-/* Force iOS-style heavily rounded corners globally */
-input:not([type="checkbox"]):not([type="radio"]), 
-textarea, 
-select, 
-button {
-  border-radius: 12px !important;
-}
-
-/* Global Focus Ring */
-*:focus-visible {
-  outline: 2px solid var(--accent-gold);
-  outline-offset: 2px;
 }
 
 @layer utilities {
@@ -103,8 +268,8 @@ button {
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
-  
-  /* Capacitor Safe Area Utils */
+
+  /* Capacitor safe areas */
   .pb-safe {
     padding-bottom: env(safe-area-inset-bottom, 20px);
   }
@@ -122,27 +287,25 @@ button {
     margin: 1cm;
     size: auto;
   }
-  
+
   body {
     background-color: white !important;
     color: black !important;
-    font-size: 11pt; /* Smaller font to fit 1 page */
+    font-size: 11pt;
     line-height: 1.3;
   }
-  
+
   /* Hide UI components not needed on paper */
-  nav, aside, button, .bg-sidebar, a {
+  nav, aside, button, .bg-sidebar, .bg-ground, .bg-panel, a {
     display: none !important;
   }
 
-  /* Force layout to flow nicely */
   main {
     margin: 0 !important;
     padding: 0 !important;
     max-width: none !important;
   }
 
-  /* Make sure images render nicely if they are present */
   img {
     max-height: 200px !important;
     width: auto !important;
@@ -150,7 +313,7 @@ button {
   }
 
   /* Empty checkboxes for pen check-offs */
-  input[type="checkbox"] {
+  input[type='checkbox'] {
     appearance: none;
     background-color: transparent !important;
     border: 1px solid black !important;
@@ -160,18 +323,16 @@ button {
     position: relative;
     top: 2px;
   }
-  input[type="checkbox"]:checked {
-    background-color: transparent !important; /* Keep empty for print */
+  input[type='checkbox']:checked {
+    background-color: transparent !important;
   }
 
-  /* Reduce spacing to squeeze onto 1 page */
   .space-y-10 > * + * { margin-top: 1.5rem !important; }
   .space-y-4 > * + * { margin-top: 0.5rem !important; }
   .space-y-6 > * + * { margin-top: 0.75rem !important; }
-  
+
   .pb-20, .pb-6, .pt-10, .pt-8 {
     padding-bottom: 0 !important;
     padding-top: 1rem !important;
   }
 }
-
