@@ -12,7 +12,7 @@
     "test:server": "npm --prefix server run test",
     "test:all": "npm run test && npm run test:server",
     "build:apk": "npm run build && npx cap sync android && cd android && ./gradlew assembleDebug",
-    "start": "cd server && npm install && node index.js",
+    "start": "cd server && npm install && npx tsx index.js",
     "adb:reverse": "%LOCALAPPDATA%\\Android\\Sdk\\platform-tools\\adb.exe reverse tcp:3001 tcp:3001"
   },
   "dependencies": {
