@@ -428,7 +428,7 @@ export default function RecipeEditor() {
                   type="button"
                   onClick={handleExtract}
                   disabled={extracting || !extractUrl}
-                  className="bg-accent text-black px-6 py-2 rounded-xl font-bold hover: transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="bg-accent text-black px-6 py-2 rounded-xl font-bold transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   {extracting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Extract'}
                 </button>
@@ -593,7 +593,7 @@ export default function RecipeEditor() {
                 type="button" 
                 onClick={executeCropAndUpload}
                 disabled={!completedCrop || uploading}
-                className="px-6 py-3 font-bold bg-accent text-black rounded-xl hover: transition-all flex items-center gap-2 disabled:opacity-50"
+                className="px-6 py-3 font-bold bg-accent text-black rounded-xl transition-all flex items-center gap-2 disabled:opacity-50"
               >
                 {uploading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Crop & Upload'}
               </button>

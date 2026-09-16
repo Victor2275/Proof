@@ -74,7 +74,7 @@ export default function Gallery() {
             </p>
             <Link 
               to="/" 
-              className="inline-block mt-4 px-8 py-3 bg-accent text-black font-bold uppercase tracking-wider rounded-xl hover: transition-all"
+              className="inline-block mt-4 px-8 py-3 bg-accent text-black font-bold uppercase tracking-wider rounded-xl transition-all"
             >
               Start Cooking
             </Link>

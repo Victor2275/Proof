@@ -60,6 +60,20 @@ This document exhaustively tracks every capability, component, and technical int
 - **Crypto-Random Session Tokens**: Login generates a `crypto.randomUUID()` session token stored server-side with a 24-hour TTL — no hardcoded secrets.
 - **Rate Limiting**: AI endpoints and the auth endpoint are rate-limited to prevent abuse.
 
+## 2a. Dashboard (Phase 2 — hero surface)
+- **Pattern-list cookbook**: The dashboard reads as a machine's pattern browser, not a photo-card grid. Each recipe is a row: title at display scale, total time as a seven-segment readout, its phases as a miniature step row. No photograph is required for a row to read, which turns uneven photo coverage across the real 203-recipe library from a defect into a non-issue.
+- **Bank rail**: Recipes are organised by folder ("bake type") as a vertical rail on desktop (internally scrolling past 70vh, since the real cookbook already has 18 distinct folders) and a horizontal scroller on mobile. Search (`fuse.js`) and bank filtering compose together.
+- **Smart shelves**: "Personal Bests" and "Recently Baked" — derived from real bake logs, deduplicated to one entry per recipe, hidden automatically while searching or a bank filter is active so they don't compete with a deliberate query.
+- **Now Baking / chase light**: A currently running bake (tracked in `src/lib/activeBake.ts`, `localStorage`-backed, live across tabs) surfaces as a dedicated panel at the top of the dashboard with a RESUME control into Baking Mode, as a persistent strip in the global sidebar reachable from any screen, and as the one lit key in that recipe's own row elsewhere in the list.
+- **Duration parsing**: `src/lib/duration.ts` reads both the schema's bare-minutes convention ("30") and AI-import's unit-annotated or bracket-wrapped text ("[50 mins]", "1 hr 30 mins") into a single total, formatted for the segment readout.
+- **Phase derivation reused for real recipes**: The Phase 1 `derivePhases` bread/generic vocabulary now drives every dashboard row, not just the component lab.
+
+## 2b. Application shell (Phase 2)
+- **Global sidebar redesign**: Same seven sections as before; active state is a filled panel block (lightness contrast) rather than the source world's own red nav highlight, keeping the signal colour reserved for "happening now" per the accent-scarcity rule.
+- **Mobile bottom nav restructured**: Four fixed slots (Cookbook, Gallery, Pantry, More) instead of the previous five with no room for Pantry, Grocery List, or Analytics. A More sheet (properly `inert` while closed, not just visually hidden) holds Analytics, Grocery List, General Notes, and Settings. New Recipe moves to a floating action button.
+- **Onboarding modal, PIN auth modal, offline/stale bars**: retheme only — the PIN numeric keypad's interaction is unchanged (an explicit favourite), offline/stale banners use the world's amber "due" tone instead of raw Tailwind yellow/amber.
+- **Fixed**: dangling `hover:` / `dark:hover:` Tailwind fragments left by Phase 0's glow-stripping script across 15 files.
+
 ## 7. UI/UX Foundation
 - **Stack**: React, Vite, Tailwind CSS (`@tailwindcss/postcss`), shadcn/ui, TanStack Query for server state management.
 - **"Step Row" Visual World (Phase 0 foundation)**: The Black & Gold glassmorphic world has been replaced by an early-80s rhythm-machine design language: matte panels, silkscreened labels, lit step keys, and seven-segment readouts. Colour is temporal, never decorative — red marks *now*, orange *due*, yellow *queued*, white *complete*, and an unlit key is drawn as deliberately as a lit one.

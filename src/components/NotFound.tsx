@@ -13,7 +13,7 @@ export default function NotFound() {
       </div>
       <Link 
         to="/"
-        className="mt-8 flex items-center justify-center gap-2 px-6 py-3 bg-accent text-black font-bold uppercase tracking-wider rounded-xl hover: transition-all"
+        className="mt-8 flex items-center justify-center gap-2 px-6 py-3 bg-accent text-black font-bold uppercase tracking-wider rounded-xl transition-all"
       >
         <ArrowLeft className="w-5 h-5" /> Back to Kitchen
       </Link>

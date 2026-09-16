@@ -99,7 +99,7 @@ export default function RecipeDrawer({ isOpen, onClose, recipeId }: RecipeDrawer
               <div className="p-4 bg-paper border-t border-border-subtle">
                 <button
                   onClick={onClose}
-                  className="w-full bg-accent text-black font-bold text-lg py-4 rounded-xl hover: transition-all flex justify-center items-center gap-2"
+                  className="w-full bg-accent text-black font-bold text-lg py-4 rounded-xl transition-all flex justify-center items-center gap-2"
                 >
                   <Check className="w-5 h-5" /> Finish {recipe.title}
                 </button>

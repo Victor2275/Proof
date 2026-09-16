@@ -58,7 +58,7 @@ export default function LandingPage() {
         <motion.div variants={itemVariants} className="flex flex-col sm:flex-row justify-center gap-6 pb-12">
           <button 
             onClick={handleExplore}
-            className="px-8 py-4 bg-accent text-black font-bold text-lg uppercase tracking-wider rounded-xl hover: transition-all hover:scale-105 flex items-center justify-center gap-3"
+            className="px-8 py-4 bg-accent text-black font-bold text-lg uppercase tracking-wider rounded-xl transition-all hover:scale-105 flex items-center justify-center gap-3"
           >
             Explore the Cookbook <ArrowRight className="w-5 h-5" />
           </button>

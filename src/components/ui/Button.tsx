@@ -36,6 +36,35 @@ const SIZES: Record<Size, string> = {
   lg: 'h-14 px-6 text-base',
 };
 
+/**
+ * The button's visual classes, exposed for the rare non-<button> element that
+ * must look like one — a routed `<Link>` acting as a control (the dashboard's
+ * RESUME jumps into Baking Mode, which is navigation, not a click handler).
+ * Kept in one place so the Link and the real button can never drift apart.
+ */
+export function buttonClassName({
+  variant = 'secondary',
+  size = 'md',
+  engaged = false,
+  className,
+}: {
+  variant?: Variant;
+  size?: Size;
+  engaged?: boolean;
+  className?: string;
+} = {}) {
+  return cn(
+    'label-silkscreen inline-flex items-center justify-center gap-2 rounded-control border',
+    'transition-[background-color,border-color,color,transform] duration-75',
+    'active:translate-y-px',
+    'disabled:cursor-not-allowed disabled:opacity-40 disabled:active:translate-y-0',
+    SIZES[size],
+    VARIANTS[variant],
+    engaged && variant === 'secondary' && 'border-ink bg-ink text-ground',
+    className,
+  );
+}
+
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant;
   size?: Size;
@@ -64,17 +93,7 @@ export function Button({
       disabled={disabled || busy}
       aria-busy={busy || undefined}
       aria-pressed={engaged || undefined}
-      className={cn(
-        'label-silkscreen inline-flex items-center justify-center gap-2 rounded-control border',
-        'transition-[background-color,border-color,color,transform] duration-75',
-        'active:translate-y-px',
-        'disabled:cursor-not-allowed disabled:opacity-40 disabled:active:translate-y-0',
-        SIZES[size],
-        VARIANTS[variant],
-        // An engaged secondary control inverts, the way a latched panel key does.
-        engaged && variant === 'secondary' && 'border-ink bg-ink text-ground',
-        className,
-      )}
+      className={buttonClassName({ variant, size, engaged, className })}
       {...props}
     >
       {icon}

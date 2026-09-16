@@ -55,6 +55,19 @@ This is a 1-to-1 mirror of CURRENT_FEATURES.md. Use checkboxes to track manual t
 - [ ] **Crypto-Random Session Tokens**: No hardcoded secrets — UUID tokens with 24h TTL.
 - [ ] **Rate Limiting**: AI and auth endpoints rate-limited.
 
+## 2a. Dashboard (Phase 2 — hero surface)
+- [ ] **Pattern-list cookbook**: rows read without a photograph; title, segment-readout time, mini step row.
+- [ ] **Bank rail**: folder filtering, vertical + capped-scroll on desktop, horizontal scroller on mobile.
+- [ ] **Smart shelves**: Personal Bests and Recently Baked, hidden while searching/filtering.
+- [ ] **Now Baking / chase light**: dashboard panel, sidebar strip, and lit row all reflect the same running bake; resumes at the correct step after closing the tab.
+- [ ] **Duration parsing**: bare-minutes and unit-annotated/bracketed prepTime+cookTime sum correctly.
+- [ ] **Phase derivation on real data**: dashboard step rows match each recipe's actual instructions.
+
+## 2b. Application shell (Phase 2)
+- [ ] **Sidebar redesign**: active state readable without colour alone; chase-light strip appears only when a bake is running.
+- [ ] **Bottom nav restructure**: four dock slots + working More sheet (inert while closed) + FAB New Recipe.
+- [ ] **Onboarding/PIN/status bars retheme**: PIN keypad still works exactly as before; banners read in the amber "due" tone.
+
 ## 7. UI/UX Foundation
 - [ ] **"Step Row" Visual World (Phase 0 foundation)**: Rhythm-machine design language — matte panels, silkscreen labels, lit step keys, segment readouts; colour is temporal, not decorative.
 - [ ] **Three enforced bans**: No gradients, no backdrop blur, no glow except lit keys/segments; enforced by `src/designSystem.test.ts`.

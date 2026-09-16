@@ -1,26 +1,150 @@
-import { useState, useEffect } from 'react';
-import RecipeImage from './RecipeImage';
-import { SkeletonCard } from './ui/Skeleton';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { type Recipe } from '../lib/api';
-import { useRecipes } from '../lib/queries';
-import { Search, Clock, LayoutGrid, List, Flame } from 'lucide-react';
-import { motion } from 'framer-motion';
 import Fuse from 'fuse.js';
+import { Search, Shuffle } from 'lucide-react';
+import { type Recipe, type BakeLog } from '../lib/api';
+import { useRecipes, useBakeLogs } from '../lib/queries';
+import { useActiveBake } from '../lib/useActiveBake';
+import { derivePhases } from '../lib/phases';
+import { totalRecipeMinutes, formatMinutesForSegments } from '../lib/duration';
+import { Button, Field, StepRow, SegmentReadout, buttonClassName } from './ui';
 import OnboardingModal from './OnboardingModal';
 
-const EMPTY_ARRAY: Recipe[] = [];
+/*
+ * The hero surface. A recipe reads as a pattern — title, total time as a
+ * segment readout, its method as a miniature step row — not as a photo card;
+ * uneven photography coverage across 100+ recipes stops being a defect when no
+ * row needs a picture to read. One row, and only one, carries a lit key: the
+ * bake actually running right now.
+ */
+
+const EMPTY_RECIPES: Recipe[] = [];
+const EMPTY_LOGS: BakeLog[] = [];
+const ALL_BANK = '__all__';
+const SHELF_LIMIT = 8;
+
+function bakeLogRecipeId(log: BakeLog): string {
+  return typeof log.recipeId === 'string' ? log.recipeId : log.recipeId._id;
+}
+
+function bakeLogDate(log: BakeLog): number {
+  return log.date ? new Date(log.date).getTime() : 0;
+}
+
+function relativeDate(iso: string): string {
+  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
+  if (days <= 0) return 'Today';
+  if (days === 1) return 'Yesterday';
+  if (days < 7) return `${days}d ago`;
+  if (days < 30) return `${Math.floor(days / 7)}w ago`;
+  return `${Math.floor(days / 30)}mo ago`;
+}
+
+/** A pattern in a shelf: title + mini step row, no card, no border. */
+function ShelfItem({ recipe, caption }: { recipe: Recipe; caption: string }) {
+  return (
+    <Link to={`/recipe/${recipe._id}`} className="flex w-40 shrink-0 flex-col gap-2 sm:w-48">
+      <h3 className="font-faceplate truncate text-sm text-ink">{recipe.title}</h3>
+      <StepRow phases={derivePhases(recipe.instructions)} size="mini" />
+      <span className="label-silkscreen text-ink-muted">{caption}</span>
+    </Link>
+  );
+}
+
+function Shelf({
+  title,
+  items,
+  caption,
+}: {
+  title: string;
+  items: { recipe: Recipe; caption: string }[];
+  caption: string;
+}) {
+  if (items.length === 0) return null;
+  return (
+    <section className="flex flex-col gap-3">
+      <h2 className="label-silkscreen border-b border-rule pb-2">{title}</h2>
+      <div className="no-scrollbar flex gap-5 overflow-x-auto pb-1">
+        {items.map(({ recipe, caption: itemCaption }) => (
+          <ShelfItem key={recipe._id} recipe={recipe} caption={itemCaption ?? caption} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/** One row of the main list — the pattern itself. */
+function PatternRow({
+  recipe,
+  isActive,
+  activeStep,
+}: {
+  recipe: Recipe;
+  isActive: boolean;
+  activeStep?: number;
+}) {
+  const phases = useMemo(() => derivePhases(recipe.instructions), [recipe.instructions]);
+  const totalMinutes = totalRecipeMinutes(recipe);
+  const segment = totalMinutes !== null ? formatMinutesForSegments(totalMinutes) : null;
+
+  return (
+    <div className="flex flex-col gap-2.5 border-b border-rule py-4">
+      {/*
+       * One link for the whole pattern rather than two. An earlier version
+       * split this into a title link plus a second, aria-hidden link around
+       * the step row meant only to widen the click target for a mouse — but
+       * aria-hidden removes its entire subtree from the accessibility tree,
+       * which silently deleted the step row's own accessible description
+       * (its phase list) for anyone using a screen reader, not merely the
+       * redundant second link. A single link whose content is the title, the
+       * time, and the step row together gives one coherent announcement
+       * ("Sourdough Bread, Bake phases: Levain, Bulk, Bake, link") and still
+       * makes the entire row clickable.
+       */}
+      <Link to={`/recipe/${recipe._id}`} className="flex flex-col gap-2.5">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0 flex-1">
+            <h3 className="font-faceplate truncate text-xl text-ink sm:text-2xl">{recipe.title}</h3>
+            {recipe.folder && recipe.folder !== 'Uncategorized' ? (
+              <span className="label-silkscreen text-ink-muted">{recipe.folder}</span>
+            ) : null}
+          </div>
+          <SegmentReadout
+            value={segment?.value ?? '--'}
+            unit={segment?.unit}
+            size="sm"
+            tone={isActive ? 'signal' : 'ink'}
+          />
+        </div>
+        <StepRow phases={phases} activeStep={activeStep} />
+      </Link>
+
+      {isActive ? (
+        <Link
+          to={`/recipe/${recipe._id}/bake`}
+          className={buttonClassName({ variant: 'primary', size: 'sm', className: 'self-start' })}
+        >
+          Resume
+        </Link>
+      ) : null}
+    </div>
+  );
+}
 
 export default function Dashboard() {
-  const { data: allRecipes = EMPTY_ARRAY, isLoading: loading, error, refetch } = useRecipes();
-  const loadError = error instanceof Error ? error.message : null;
-
-  const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [search, setSearch] = useState('');
-  const [activeFilters, setActiveFilters] = useState<string[]>([]);
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => localStorage.getItem('dashboardViewMode') as any || 'grid');
-  const [showOnboarding, setShowOnboarding] = useState(false);
+  const { data: allRecipes = EMPTY_RECIPES, isLoading, error, refetch } = useRecipes();
+  // Best-effort: the smart shelves are a secondary enhancement, not the
+  // dashboard's primary function, so a failed fetch here quietly hides the
+  // shelves rather than breaking the recipe list.
+  const { data: bakeLogs = EMPTY_LOGS } = useBakeLogs();
+  const activeBake = useActiveBake();
   const navigate = useNavigate();
+
+  const [search, setSearch] = useState('');
+  const [bank, setBank] = useState<string>(ALL_BANK);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  const loadError = error instanceof Error ? error.message : null;
 
   useEffect(() => {
     if (localStorage.getItem('hasVisited') === 'true' && !localStorage.getItem('hasSeenOnboarding')) {
@@ -33,200 +157,227 @@ export default function Dashboard() {
     setShowOnboarding(false);
   };
 
-  useEffect(() => {
-    localStorage.setItem('dashboardViewMode', viewMode);
-  }, [viewMode]);
+  const banks = useMemo(() => {
+    const counts = new Map<string, number>();
+    allRecipes.forEach((r: Recipe) => {
+      const name = r.folder || 'Uncategorized';
+      counts.set(name, (counts.get(name) ?? 0) + 1);
+    });
+    return Array.from(counts.entries()).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  }, [allRecipes]);
 
-  useEffect(() => {
-    let filtered = allRecipes;
+  const bankFiltered = useMemo(
+    () => (bank === ALL_BANK ? allRecipes : allRecipes.filter((r: Recipe) => (r.folder || 'Uncategorized') === bank)),
+    [allRecipes, bank],
+  );
 
-    if (activeFilters.length > 0) {
-      filtered = filtered.filter((recipe: Recipe) => 
-        activeFilters.every(filter => recipe.tags?.map((t: string) => t.toLowerCase()).includes(filter.toLowerCase()))
-      );
-    }
+  const recipes = useMemo(() => {
+    if (!search.trim()) return bankFiltered;
+    const fuse = new Fuse(bankFiltered, { keys: ['title', 'description', 'tags'], threshold: 0.3, ignoreLocation: true });
+    return fuse.search(search).map((r) => r.item as Recipe);
+  }, [search, bankFiltered]);
 
-    if (search.trim()) {
-      const fuse = new Fuse(filtered, {
-        keys: ['title', 'description', 'tags'],
-        threshold: 0.3,
-        ignoreLocation: true
+  const recipesById = useMemo(() => {
+    const map = new Map<string, Recipe>();
+    allRecipes.forEach((r: Recipe) => { if (r._id) map.set(r._id, r); });
+    return map;
+  }, [allRecipes]);
+
+  const showShelves = !search.trim() && bank === ALL_BANK;
+
+  const personalBests = useMemo(() => {
+    if (!showShelves) return [];
+    const seen = new Set<string>();
+    const result: { recipe: Recipe; caption: string }[] = [];
+    [...bakeLogs]
+      .filter((l) => l.isPersonalBest)
+      .sort((a, b) => bakeLogDate(b) - bakeLogDate(a))
+      .forEach((log) => {
+        const id = bakeLogRecipeId(log);
+        const recipe = recipesById.get(id);
+        if (recipe && !seen.has(id)) {
+          seen.add(id);
+          result.push({ recipe, caption: 'Personal best' });
+        }
       });
-      filtered = fuse.search(search).map(result => result.item);
-    }
+    return result.slice(0, SHELF_LIMIT);
+  }, [showShelves, bakeLogs, recipesById]);
 
-    setRecipes(filtered);
-  }, [search, activeFilters, allRecipes]);
+  const recentlyBaked = useMemo(() => {
+    if (!showShelves) return [];
+    const seen = new Set<string>();
+    const result: { recipe: Recipe; caption: string }[] = [];
+    [...bakeLogs]
+      .sort((a, b) => bakeLogDate(b) - bakeLogDate(a))
+      .forEach((log) => {
+        const id = bakeLogRecipeId(log);
+        const recipe = recipesById.get(id);
+        if (recipe && !seen.has(id)) {
+          seen.add(id);
+          result.push({ recipe, caption: log.date ? relativeDate(log.date) : '' });
+        }
+      });
+    return result.slice(0, SHELF_LIMIT);
+  }, [showShelves, bakeLogs, recipesById]);
 
-  const allTags = Array.from(new Set(allRecipes.flatMap((r: Recipe) => (r.tags || []).map((t: string) => t.toLowerCase())))).sort() as string[];
+  const activeRecipe = activeBake ? recipesById.get(activeBake.recipeId) : undefined;
+
+  const handleInspireMe = () => {
+    if (recipes.length === 0) return;
+    const random = recipes[Math.floor(Math.random() * recipes.length)];
+    navigate(`/recipe/${random._id}`);
+  };
 
   return (
     <div className="space-y-8 pt-4 md:pt-6">
       {showOnboarding && <OnboardingModal onClose={handleCloseOnboarding} />}
-      
-      <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6 border-b border-border-subtle pb-6">
-        <div className="flex flex-col gap-1 w-full xl:w-auto">
-          <div className="flex items-center gap-3">
-            <img src="/logo.png" alt="Logo" className="w-10 h-10 object-contain md:hidden" />
-            <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight uppercase">
-              {activeFilters.length > 0 ? `#${activeFilters[0]}` : search ? `Search: ${search}` : 'All Recipes'}
-            </h1>
-          </div>
-          <p className="text-ink-muted text-sm font-medium">
-            {recipes.length} {recipes.length === 1 ? 'recipe' : 'recipes'} found
+
+      <div className="flex flex-col gap-4 border-b border-rule pb-6 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="font-faceplate text-3xl text-ink md:text-4xl">
+            {bank !== ALL_BANK ? bank : 'My Cookbook'}
+          </h1>
+          <p className="label-silkscreen text-ink-muted">
+            {recipes.length} {recipes.length === 1 ? 'recipe' : 'recipes'}
           </p>
         </div>
-
-        <div className="flex flex-wrap md:flex-row items-stretch md:items-center gap-3 w-full xl:w-auto flex-1 xl:flex-none">
-          {recipes.length > 0 && (
-            <motion.button 
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => {
-                const random = recipes[Math.floor(Math.random() * recipes.length)];
-                navigate(`/recipe/${random._id}`);
-              }}
-              className="flex items-center justify-center gap-2 px-5 py-2.5 bg-accent/10 border border-accent/50 text-accent rounded-xl text-sm font-bold hover:bg-accent/20 transition-colors"
-            >
-              <Flame className="w-4 h-4" /> Inspire Me
-            </motion.button>
-          )}
-        <div className="relative w-full min-w-[150px] flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-muted" />
-          <input 
-            type="text" 
-            placeholder="Search recipes or tags..." 
+        <div className="flex w-full gap-3 sm:w-auto">
+          <Field
+            label="Search"
+            hideLabel
+            leading={<Search className="h-4 w-4" />}
+            placeholder="Search recipes or tags…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 border border-border-subtle bg-sidebar rounded-xl focus:outline-none focus:ring-2 focus:ring-accent transition-all"
+            className="flex-1 sm:w-72"
           />
-        </div>
-        <div className="hidden md:flex border border-border-subtle rounded-xl overflow-hidden bg-sidebar p-1">
-          <button 
-            onClick={() => setViewMode('grid')}
-            className={`p-1.5 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-accent text-black shadow-sm' : 'text-ink-muted hover:text-accent hover:bg-white/5'}`}
-            title="Grid View"
-          >
-            <LayoutGrid className="w-4 h-4" />
-          </button>
-          <button 
-            onClick={() => setViewMode('list')}
-            className={`p-1.5 rounded-lg transition-all ${viewMode === 'list' ? 'bg-accent text-black shadow-sm' : 'text-ink-muted hover:text-accent hover:bg-white/5'}`}
-            title="List View"
-          >
-            <List className="w-4 h-4" />
-          </button>
-        </div>
+          {allRecipes.length > 0 && (
+            <Button variant="secondary" onClick={handleInspireMe} icon={<Shuffle className="h-4 w-4" />}>
+              <span className="hidden sm:inline">Inspire Me</span>
+            </Button>
+          )}
         </div>
       </div>
 
-      {allTags.length > 0 && (
-        <div className="flex items-center gap-3 overflow-x-auto pb-4 custom-scrollbar snap-x">
+      {/* Bank rail: vertical on desktop, a horizontal scroller on a phone
+        * screen too narrow for a second sidebar. The row never wraps — it
+        * scales, the same rule the step row itself follows.
+        *
+        * This whole layout renders unconditionally — including while loading
+        * or errored, when `banks` (derived from the still-empty recipe list)
+        * has nothing in it yet. Gating it on `banks.length` would have hidden
+        * the loading skeleton, the error state, and the empty state along
+        * with the rail, which is the one state where a baker most needs to
+        * see *something* on screen. */}
+      {/*
+       * `items-start` matters, not just style: a plain flex row defaults to
+       * `align-items: stretch`, which was silently forcing the rail to match
+       * the content column's full height — invisible on desktop only because
+       * the rail has no background to show it, but at 203 unvirtualized rows
+       * that meant a ~30,000px-tall nav element sitting in the page. Below
+       * `lg` the direction flips to column so the rail becomes a horizontal
+       * scroller sitting above the content instead of squeezed beside it —
+       * the "vertical on desktop, horizontal on mobile" comment above never
+       * actually flipped this outer container, only the nav's own internals,
+       * so on a phone it tried to lay out at its full unwrapped content width
+       * (native flex `min-width: auto` beats a plain `overflow-x-auto`) next
+       * to the content column instead of above it.
+       *
+       * `items-start` is `lg:`-only, not universal: stacked on mobile (a
+       * column), the default stretch is exactly right — it is what makes the
+       * rail and the content column both span the full width. Applying
+       * `items-start` there instead flips the cross axis to shrink-to-fit,
+       * and the content column's intrinsic width is its *desktop* row shape
+       * (title + segment readout side by side, ~1190px) — so the column
+       * would size itself to that and silently overflow the viewport
+       * sideways, invisible in a screenshot because `main`'s `overflow-y-
+       * auto` also makes its `overflow-x` computed value `auto` per the CSS
+       * overflow spec, so the clipped width just scrolls inside `main`
+       * instead of widening the document.
+       */}
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
+        <nav
+          aria-label="Bake types"
+          // The real cookbook this ships for already has 18 distinct folders;
+          // an uncapped vertical list at that count would push the content
+          // column down the page behind it. Past `lg` the rail scrolls
+          // internally instead of growing without bound.
+          className="no-scrollbar flex w-full shrink-0 gap-1 overflow-x-auto lg:w-40 lg:max-h-[70vh] lg:flex-col lg:overflow-y-auto"
+        >
           <button
-            onClick={() => setActiveFilters([])}
-            className={`shrink-0 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest transition-all snap-start ${
-              activeFilters.length === 0 ? 'bg-ink text-paper' : 'bg-black/5 dark:bg-white/5 text-ink-muted border border-border-subtle hover:text-ink'
+            type="button"
+            onClick={() => setBank(ALL_BANK)}
+            className={`label-silkscreen shrink-0 whitespace-nowrap rounded-control px-3 py-2 text-left ${
+              bank === ALL_BANK ? 'bg-panel-sunk text-ink' : 'text-ink-muted hover:text-ink'
             }`}
           >
-            All Recipes
+            All ({allRecipes.length})
           </button>
-          {allTags.map((tag: string) => (
+          {banks.map(([name, count]) => (
             <button
-              key={tag}
-              onClick={() => setActiveFilters([tag])}
-              className={`shrink-0 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest transition-all snap-start ${
-                activeFilters.includes(tag) ? 'bg-accent text-black ' : 'bg-black/5 dark:bg-white/5 text-ink-muted border border-border-subtle hover:text-ink hover:border-ink/50'
+              key={name}
+              type="button"
+              onClick={() => setBank(name)}
+              className={`label-silkscreen shrink-0 whitespace-nowrap rounded-control px-3 py-2 text-left ${
+                bank === name ? 'bg-panel-sunk text-ink' : 'text-ink-muted hover:text-ink'
               }`}
             >
-              {tag}
+              {name} ({count})
             </button>
           ))}
-        </div>
-      )}
+        </nav>
 
-      <div>
-        {loading ? (
-          <div className={viewMode === 'grid' ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" : "space-y-4"}>
-            {Array.from({ length: 8 }).map((_, i) => (
-              <SkeletonCard key={i} />
-            ))}
-          </div>
-        ) : loadError ? (
-          <div className="text-center py-24 border-2 border-dashed border-red-500/30 rounded-xl bg-red-500/5 px-6">
-            <p className="font-bold text-lg mb-2">Couldn't load your cookbook</p>
-            <p className="text-ink-muted mb-6 max-w-md mx-auto">{loadError}</p>
-            <button
-              onClick={() => refetch()}
-              className="bg-ink text-paper px-6 py-3 rounded-xl font-bold hover:opacity-90 transition-opacity"
-            >
-              Try again
-            </button>
-          </div>
-        ) : recipes.length === 0 ? (
-          <div className="text-center py-32 border-2 border-dashed border-border-subtle rounded-xl text-ink-muted bg-sidebar">
-            <p className="mb-2">No recipes found.</p>
-          </div>
-        ) : (
-          <div className={viewMode === 'grid' ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" : "space-y-4"}>
-            {recipes.map((recipe) => (
-              <div key={recipe._id}>
-                <Link 
-                  to={`/recipe/${recipe._id}`}
-                  className={`group block bg-sidebar border border-border-subtle rounded-2xl overflow-hidden hover:border-accent hover: dark:hover: transition-all duration-300 ${viewMode === 'list' ? 'flex flex-col sm:flex-row sm:items-start p-4 gap-4 sm:gap-6' : 'flex flex-col h-full'}`}
-                >
-                  {/* Image rendering based on viewMode */}
-                  {viewMode === 'grid' && (
-                    <div className="aspect-[4/3] shrink-0 bg-black/5 dark:bg-white/5 relative overflow-hidden">
-                      <RecipeImage
-                        src={recipe.imageUrls?.[0]}
-                        alt={recipe.title}
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                        placeholderClassName="w-full h-full"
-                        loading="lazy"
-                      />
-                    </div>
-                  )}
-                  
-                  <div className={`p-5 ${viewMode === 'list' ? 'flex-1 p-0 flex flex-col justify-between items-start gap-4' : 'flex-1 flex flex-col'}`}>
-                    <div className="w-full">
-                      <h2 className="text-xl font-bold tracking-tight mb-2 group-hover:text-accent transition-colors">{recipe.title}</h2>
-                      {viewMode === 'grid' && <p className="text-ink-muted text-sm line-clamp-2 mb-4 leading-relaxed">{recipe.description}</p>}
-                      
-                      {recipe.tags && recipe.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mb-4">
-                          {recipe.tags.slice(0, 3).map((tag, i) => (
-                            <span key={i} className="text-[10px] uppercase tracking-widest font-bold bg-black/5 dark:bg-white/10 px-2 py-1 rounded-sm text-ink-muted">
-                              {tag}
-                            </span>
-                          ))}
-                          {recipe.tags.length > 3 && (
-                            <span className="text-[10px] uppercase tracking-widest font-bold text-ink-muted px-1 py-1">
-                              +{recipe.tags.length - 3}
-                            </span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div className={`flex items-center gap-4 text-xs font-bold uppercase tracking-widest text-ink-muted ${viewMode === 'list' ? 'mt-auto' : 'mt-auto pt-4 border-t border-border-subtle w-full'}`}>
-                      {recipe.prepTime && (
-                        <div className="flex items-center gap-1.5">
-                          <Clock className="w-3.5 h-3.5" />
-                          <span>{recipe.prepTime}</span>
-                        </div>
-                      )}
-                      {recipe.difficulty && (
-                        <div className="flex items-center gap-1.5">
-                          <span>• {recipe.difficulty}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </Link>
+        <div className="min-w-0 flex-1 space-y-8">
+          {activeRecipe && (
+            <section className="border border-signal rounded-panel p-4">
+              <div className="mb-3 flex items-center gap-2">
+                <span className="h-2 w-2 bg-signal" aria-hidden="true" />
+                <span className="label-silkscreen text-signal">Now baking</span>
               </div>
-            ))}
-          </div>
-        )}
+              <PatternRow recipe={activeRecipe} isActive activeStep={activeBake!.stepIndex} />
+            </section>
+          )}
+
+          {showShelves && (
+            <>
+              <Shelf title="Personal Bests" items={personalBests} caption="Personal best" />
+              <Shelf title="Recently Baked" items={recentlyBaked} caption="" />
+            </>
+          )}
+
+          <section>
+            {isLoading ? (
+              <div className="space-y-4">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="animate-pulse space-y-2 border-b border-rule py-4">
+                    <div className="h-6 w-2/3 bg-panel-sunk" />
+                    <div className="h-2 w-full bg-panel-sunk" />
+                  </div>
+                ))}
+              </div>
+            ) : loadError ? (
+              <div className="border border-signal rounded-panel px-6 py-16 text-center">
+                <p className="font-faceplate text-lg text-ink">Couldn't load your cookbook</p>
+                <p className="mt-2 text-sm text-ink-muted">{loadError}</p>
+                <Button variant="secondary" className="mt-6" onClick={() => refetch()}>
+                  Try again
+                </Button>
+              </div>
+            ) : recipes.length === 0 ? (
+              <div className="rounded-panel border border-dashed border-rule px-6 py-16 text-center text-ink-muted">
+                <p>No recipes found.</p>
+              </div>
+            ) : (
+              <div>
+                {recipes
+                  .filter((r: Recipe) => !activeRecipe || r._id !== activeRecipe._id)
+                  .map((recipe: Recipe) => (
+                    <PatternRow key={recipe._id} recipe={recipe} isActive={false} />
+                  ))}
+              </div>
+            )}
+          </section>
+        </div>
       </div>
     </div>
   );

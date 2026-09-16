@@ -1,8 +1,19 @@
 import { Link, useLocation } from 'react-router-dom';
 import { Book, PlusCircle, Lightbulb, Image, Settings as SettingsIcon, BarChart3, Box, ShoppingBag } from 'lucide-react';
+import { cn } from '../lib/cn';
+import { useActiveBake } from '../lib/useActiveBake';
 
+/*
+ * The global nav rail. Same sections as before — this is a redesign, not a
+ * restructure — but the active state no longer borrows the signal red the
+ * reference board uses for its own nav highlight: red is reserved for what is
+ * happening now, and a nav item you're merely standing on is not an event.
+ * Position is instead a lightness contrast (a pressed panel block), the same
+ * "engaged" treatment a latched control gets.
+ */
 export default function Sidebar({ className = "", onAdminRequired }: { className?: string, onAdminRequired?: () => void }) {
   const location = useLocation();
+  const activeBake = useActiveBake();
 
   const handleNewRecipe = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -24,11 +35,23 @@ export default function Sidebar({ className = "", onAdminRequired }: { className
   ];
 
   return (
-    <aside className={`w-64 bg-sidebar h-screen flex flex-col fixed left-0 top-0 border-r border-border-subtle z-20 ${className}`}>
-      <div className="p-6 flex items-center gap-3">
-        <img src="/logo.png" alt="Logo" className="w-10 h-10 object-contain" />
-        <span className="font-bold text-xl tracking-tight uppercase">Proof</span>
+    <aside className={cn('w-64 bg-panel h-screen flex flex-col fixed left-0 top-0 border-r border-rule z-20', className)}>
+      <div className="p-6">
+        <span className="font-faceplate text-xl text-ink">Proof</span>
       </div>
+
+      {/* The chase light, visible from anywhere in the app — not only on the
+        * dashboard row it was born on. */}
+      {activeBake ? (
+        <Link
+          to={`/recipe/${activeBake.recipeId}/bake`}
+          className="mx-4 mb-2 flex items-center gap-2 rounded-control border border-signal px-3 py-2 hover:bg-panel-sunk"
+        >
+          <span className="h-2 w-2 shrink-0 bg-signal" aria-hidden="true" />
+          <span className="min-w-0 flex-1 truncate text-xs text-ink">{activeBake.recipeTitle}</span>
+          <span className="label-silkscreen shrink-0 text-signal">Resume</span>
+        </Link>
+      ) : null}
 
       <nav className="flex-1 px-4 space-y-1">
         {navItems.map((item) => {
@@ -38,24 +61,27 @@ export default function Sidebar({ className = "", onAdminRequired }: { className
             <Link
               key={item.name}
               to={item.path}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-sm transition-colors ${isActive
-                  ? 'bg-accent/10 border-l-4 border-accent text-accent font-bold pl-2 shadow-[inset_2px_0_10px_rgba(212,175,55,0.05)]'
-                  : 'text-ink-muted hover:bg-black/5 dark:hover:bg-white/5 border-l-4 border-transparent'
-                }`}
+              aria-current={isActive ? 'page' : undefined}
+              className={cn(
+                'flex items-center gap-3 rounded-control px-3 py-2.5 text-sm transition-colors',
+                isActive
+                  ? 'bg-panel-sunk text-ink font-bold'
+                  : 'text-ink-muted hover:bg-panel-sunk hover:text-ink',
+              )}
             >
-              <Icon className="w-4 h-4 opacity-100" />
+              <Icon className="h-4 w-4 shrink-0" />
               {item.name}
             </Link>
           );
         })}
-        
+
         <div className="pt-4">
           <a
             href="/new"
             onClick={handleNewRecipe}
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-sm transition-colors text-ink-muted hover:bg-black/5 dark:hover:bg-white/5`}
+            className="flex items-center gap-3 rounded-control px-3 py-2.5 text-sm text-ink-muted transition-colors hover:bg-panel-sunk hover:text-ink"
           >
-            <PlusCircle className="w-4 h-4 opacity-70" />
+            <PlusCircle className="h-4 w-4 shrink-0 opacity-70" />
             New Recipe
           </a>
         </div>

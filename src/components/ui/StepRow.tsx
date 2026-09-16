@@ -19,7 +19,13 @@ const KEY_TONE: Record<PhaseState, string> = {
   due: 'bg-key-due',
   queued: 'bg-key-queued',
   done: 'bg-key-done',
-  idle: 'bg-key-unlit',
+  // `key-unlit` (#2A2A2A) and the rule token (#2E2E2E) sit only four steps
+  // apart in the dark theme — nearly the same grey — so an idle key filled
+  // flat against a true-black page dissolves into an unbroken smear instead
+  // of reading as a designed, empty slot. A low-opacity ink-muted border
+  // draws its edge without giving idle keys the same flat-block weight the
+  // lit states earn.
+  idle: 'bg-key-unlit border border-ink-muted/20',
 };
 
 /*
@@ -69,7 +75,7 @@ export function StepRow({
         aria-label="No phases yet"
       >
         {Array.from({ length: 8 }).map((_, i) => (
-          <div key={i} className="flex-1 rounded-key bg-key-unlit" />
+          <div key={i} className="flex-1 rounded-key bg-key-unlit border border-ink-muted/20" />
         ))}
       </div>
     );

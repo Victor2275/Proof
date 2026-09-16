@@ -43,7 +43,7 @@ export default function EditorHeader({
             </button>
           </>
         ) : (
-          <button type="submit" className="shrink-0 border border-accent/50 text-accent px-4 md:px-6 py-2 rounded-xl font-bold hover:bg-accent/10 hover: flex items-center gap-2 transition-all whitespace-nowrap">
+          <button type="submit" className="shrink-0 border border-accent/50 text-accent px-4 md:px-6 py-2 rounded-xl font-bold hover:bg-accent/10 flex items-center gap-2 transition-all whitespace-nowrap">
             <Save className="w-4 h-4" /> Create Recipe
           </button>
         )}

@@ -11,6 +11,7 @@ import { Capacitor } from '@capacitor/core';
 import 'regenerator-runtime/runtime';
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 import { hapticsEnabled, voiceCommandsEnabled, waveToAdvanceEnabled } from '../lib/settings';
+import { getActiveBake, startActiveBake, clearActiveBake } from '../lib/activeBake';
 
 export default function BakingMode() {
   const { id } = useParams<{ id: string }>();
@@ -197,11 +198,35 @@ export default function BakingMode() {
   useEffect(() => {
     if (id) {
       api.getRecipe(id)
-        .then(setRecipe)
+        .then((r) => {
+          setRecipe(r);
+          // Resume rather than restart: if this recipe is already the active
+          // bake (opened from the dashboard's RESUME control, or the tab was
+          // simply closed mid-bake), pick the step back up instead of
+          // silently rewinding to the first instruction.
+          const existing = getActiveBake();
+          if (existing?.recipeId === id) setCurrentStep(existing.stepIndex);
+        })
         .catch(console.error)
         .finally(() => setLoading(false));
     }
   }, [id]);
+
+  // Announce this bake to the rest of the app (the dashboard's lit row, and any
+  // future consumer) whenever the recipe is known and the step advances.
+  // `startActiveBake` is itself resume-aware — it only touches `startedAt`
+  // when the active recipe actually changes — so a single call here covers
+  // both "first step of a fresh bake" and "step N of a bake already running."
+  // A baker works one loaf at a time on one device: opening Baking Mode for a
+  // different recipe supersedes whatever was previously flagged as running.
+  useEffect(() => {
+    if (!id || !recipe) return;
+    if (currentStep >= recipe.instructions.length) {
+      clearActiveBake(id);
+      return;
+    }
+    startActiveBake(id, recipe.title, currentStep);
+  }, [id, recipe, currentStep]);
 
   useEffect(() => {
     const requestWakeLock = async () => {
@@ -610,7 +635,7 @@ export default function BakingMode() {
             )}
 
             {isFinished && (
-              <button onClick={() => setShowFinishModal(true)} className="mt-12 bg-accent text-black px-10 py-4 rounded-xl font-bold text-xl hover: transition-all shadow-lg flex items-center gap-3">
+              <button onClick={() => setShowFinishModal(true)} className="mt-12 bg-accent text-black px-10 py-4 rounded-xl font-bold text-xl transition-all shadow-lg flex items-center gap-3">
                 <Check className="w-6 h-6" /> Finish Recipe
               </button>
             )}
@@ -643,7 +668,7 @@ export default function BakingMode() {
             })}
             
             <div className="pt-12 border-t border-border-subtle flex justify-center">
-              <button onClick={() => setShowFinishModal(true)} className="bg-accent text-black px-10 py-4 rounded-xl font-bold text-xl hover: transition-all shadow-lg flex items-center gap-3">
+              <button onClick={() => setShowFinishModal(true)} className="bg-accent text-black px-10 py-4 rounded-xl font-bold text-xl transition-all shadow-lg flex items-center gap-3">
                 <Check className="w-6 h-6" /> Finish Recipe
               </button>
             </div>
@@ -798,7 +823,7 @@ export default function BakingMode() {
                 )}
               </div>
 
-              <button type="submit" disabled={savingLog} className="w-full bg-accent text-black font-bold text-lg py-4 rounded-xl hover: transition-all flex items-center justify-center gap-2">
+              <button type="submit" disabled={savingLog} className="w-full bg-accent text-black font-bold text-lg py-4 rounded-xl transition-all flex items-center justify-center gap-2">
                 {savingLog ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Save Log & Finish'}
               </button>
             </form>

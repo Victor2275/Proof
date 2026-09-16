@@ -191,7 +191,7 @@ export default function Settings() {
                     alert('Failed to download backup.');
                   }
                 }}
-                className="flex items-center gap-2 px-6 py-2.5 bg-accent text-black font-bold rounded-xl hover: transition-all"
+                className="flex items-center gap-2 px-6 py-2.5 bg-accent text-black font-bold rounded-xl transition-all"
               >
                 <Download className="w-4 h-4" /> Backup
               </button>
@@ -223,7 +223,7 @@ export default function Settings() {
                     setRehostBusy(false);
                   }
                 }}
-                className="flex items-center gap-2 px-6 py-2.5 bg-accent text-black font-bold rounded-xl hover: transition-all disabled:opacity-50 shrink-0"
+                className="flex items-center gap-2 px-6 py-2.5 bg-accent text-black font-bold rounded-xl transition-all disabled:opacity-50 shrink-0"
               >
                 <ImageDown className="w-4 h-4" /> {rehostBusy ? 'Working…' : 'Re-host'}
               </button>

@@ -350,7 +350,7 @@ export default function RecipeViewer() {
           <div className="relative hidden md:block">
             <button 
               onClick={() => setShowStartMenu(!showStartMenu)}
-              className="flex bg-accent text-black px-5 py-1.5 rounded-xl text-sm font-bold hover: transition-all uppercase tracking-wide shadow-sm whitespace-nowrap items-center gap-2"
+              className="flex bg-accent text-black px-5 py-1.5 rounded-xl text-sm font-bold transition-all uppercase tracking-wide shadow-sm whitespace-nowrap items-center gap-2"
             >
               <Play className="w-4 h-4" fill="currentColor" /> START RECIPE
             </button>
@@ -460,7 +460,7 @@ export default function RecipeViewer() {
                             setIsEditingDate(false);
                           } catch(e) { alert('Failed to update date'); }
                         }}
-                        className="bg-accent text-black px-4 py-1.5 rounded-xl text-sm font-bold hover: transition-all"
+                        className="bg-accent text-black px-4 py-1.5 rounded-xl text-sm font-bold transition-all"
                       >Save</button>
                       <button onClick={() => setIsEditingDate(false)} className="text-sm font-medium hover:underline text-ink-muted hover:text-ink px-2">Cancel</button>
                     </div>
@@ -666,7 +666,7 @@ export default function RecipeViewer() {
           <div className="bg-paper p-6 rounded-2xl shadow-2xl relative w-full text-center animate-in slide-in-from-bottom-5">
             <h3 className="text-xl font-bold uppercase tracking-tight mb-4">Start Recipe</h3>
             <div className="space-y-3">
-              <Link to={`/recipe/${recipe._id}/bake`} className="block w-full py-4 bg-accent text-black font-bold rounded-xl text-lg hover: transition-all">
+              <Link to={`/recipe/${recipe._id}/bake`} className="block w-full py-4 bg-accent text-black font-bold rounded-xl text-lg transition-all">
                 Start Now
               </Link>
               <button onClick={() => { setShowReverseScheduler(true); setShowMobileStartModal(false); }} className="block w-full py-4 border border-border-subtle font-bold rounded-xl text-lg hover:bg-black/5 dark:hover:bg-white/5">
@@ -685,7 +685,7 @@ export default function RecipeViewer() {
           <div className="bg-paper p-6 rounded-2xl shadow-2xl relative w-full text-center animate-in slide-in-from-bottom-5">
             <h3 className="text-xl font-bold uppercase tracking-tight mb-4">Share</h3>
             <div className="space-y-3">
-              <button onClick={handleShareLink} className="block w-full py-4 bg-accent text-black font-bold rounded-xl text-lg hover: transition-all">
+              <button onClick={handleShareLink} className="block w-full py-4 bg-accent text-black font-bold rounded-xl text-lg transition-all">
                 Copy Link
               </button>
               <button onClick={() => { setShowQrModal(true); setShowMobileShareModal(false); }} className="block w-full py-4 border border-border-subtle font-bold rounded-xl text-lg hover:bg-black/5 dark:hover:bg-white/5">

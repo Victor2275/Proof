@@ -180,7 +180,7 @@ export default function GroceryList() {
         <div className="flex flex-wrap gap-2">
           <button
             onClick={copyToClipboard}
-            className="flex items-center gap-2 px-4 py-2 bg-accent text-black rounded-xl font-bold hover: transition-all text-sm"
+            className="flex items-center gap-2 px-4 py-2 bg-accent text-black rounded-xl font-bold transition-all text-sm"
           >
             {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
             {copied ? 'Copied!' : 'Copy List'}
@@ -262,7 +262,7 @@ export default function GroceryList() {
           />
           <button
             type="submit"
-            className="bg-accent text-black px-4 py-2 rounded-xl font-bold text-sm flex items-center justify-center gap-1 hover: transition-all"
+            className="bg-accent text-black px-4 py-2 rounded-xl font-bold text-sm flex items-center justify-center gap-1 transition-all"
           >
             <Plus className="w-4 h-4" /> Add
           </button>

@@ -7,7 +7,7 @@
  * button styles.
  */
 export { Panel, PanelRow, type PanelProps } from './Panel';
-export { Button, type ButtonProps } from './Button';
+export { Button, buttonClassName, type ButtonProps } from './Button';
 export { Field, type FieldProps } from './Field';
 export { SegmentReadout, type SegmentReadoutProps, type SegmentSize } from './SegmentReadout';
 export { StepRow, type StepRowProps } from './StepRow';
