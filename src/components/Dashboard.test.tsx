@@ -84,14 +84,28 @@ describe('Dashboard Component', () => {
     expect(document.body).toBeDefined();
   });
 
-  it('renders populated state with recipes as patterns, not cards', async () => {
+  it('renders the cookbook as a gallery of photographs, each named underneath', async () => {
     renderWithProviders(<Dashboard />);
     await waitFor(() => {
       expect(screen.getByText('Sourdough Bread')).toBeDefined();
     });
-    // Every pattern row is readable without a photograph: its method renders
-    // as a miniature step row instead.
-    expect(screen.getAllByRole('img', { name: /Bake phases/i }).length).toBeGreaterThan(0);
+    expect(screen.getByRole('img', { name: 'Sourdough Bread' })).toHaveAttribute(
+      'src',
+      'https://example.com/sourdough.jpg',
+    );
+    expect(screen.getByRole('heading', { name: 'Sourdough Bread' })).toBeInTheDocument();
+  });
+
+  it('shows phases only for a recipe whose instructions proved them', async () => {
+    renderWithProviders(<Dashboard />);
+    await waitFor(() => expect(screen.getByText('Sourdough Bread')).toBeDefined());
+
+    // The sourdough names a levain and a bulk ferment, so its keys mean
+    // something.
+    expect(screen.getByRole('img', { name: /Sourdough Bread phases/i })).toBeInTheDocument();
+    // The cookies read as generic prep/cook — true of almost anything, and not
+    // worth a row of keys that would look like data.
+    expect(screen.queryByRole('img', { name: /Chocolate Chip Cookies phases/i })).not.toBeInTheDocument();
   });
 
   it('shows the total time as a segment readout, not raw prepTime/cookTime text', async () => {
@@ -196,4 +210,26 @@ describe('Dashboard Component', () => {
     expect(screen.getByText('Chocolate Chip Cookies')).toBeInTheDocument();
     expect(screen.queryByRole('img', { name: 'Chocolate Chip Cookies' })).not.toBeInTheDocument();
   });
+  it('draws a page of tiles at a time rather than the whole library at once', async () => {
+    // 203 tiles meant 200+ image requests in flight behind a six-connection
+    // limit, where they stall and compete with the app's own API calls.
+    const many = Array.from({ length: 60 }, (_, i) => ({
+      ...mockRecipes[0],
+      _id: `bulk-${i}`,
+      title: `Bulk Recipe ${i}`,
+    }));
+    vi.mocked(api.getRecipes).mockResolvedValue(many);
+
+    renderWithProviders(<Dashboard />);
+    await waitFor(() => expect(screen.getByText('Bulk Recipe 0')).toBeDefined());
+
+    expect(screen.getByText('Bulk Recipe 47')).toBeInTheDocument();
+    expect(screen.queryByText('Bulk Recipe 48')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /show 12 more/i }));
+    expect(screen.getByText('Bulk Recipe 48')).toBeInTheDocument();
+    // A full page of tiles is a few seconds to mount under jsdom, which is
+    // slower at layout-free DOM construction than any real browser; the budget
+    // is raised rather than the page size lowered to fit a test runner.
+  }, 20000);
 });

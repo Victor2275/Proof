@@ -80,14 +80,38 @@ the cost of a cold first screen. The amendment:
   keep their current weight and are unchanged in structure. A missing or broken
   image degrades to an unlit plate, not a hole in the layout. The row remains
   legible if every image in the library vanished.
-- **No photo grid.** The list stays a list. Density and scanability are the
-  point of the Operate mode; the plate makes it warmer without making it a
-  Pinterest board.
 - **Smart shelves get plates too**, at shelf-tile scale, so the top of the
   dashboard reads as a shelf of real food.
 - **The Recipe Viewer is title-led**, with the photo as a framed plate rather
   than a full-bleed hero — consistent with the world, and it keeps ingredients
   and method above the fold.
+
+### Second pass: the cookbook is a gallery
+
+The plate-on-a-row version kept the list, on the reasoning that density and
+scanability are the point of an Operate surface. Seen against the real library
+that reasoning did not survive: the pattern beside each plate was **203 rows of
+`PREP COOK FINISH · 50 MIN`** — a step row derived from a generic vocabulary
+that fits any recipe, and a time that 199 recipes share verbatim. The list was
+spending its density on placeholder text, and suppressing the one honest thing
+every recipe owns.
+
+- **Tiles, photograph first**, name silkscreened underneath. Two up on a phone,
+  four on a desktop.
+- **Hover reveals what the recipe can prove**: a flat panel slides up over the
+  photograph's lower half with bake type, real time, real phases. The tile's
+  border lights at the same moment.
+- **Nothing scales on hover.** A grid whose tiles grow under the cursor is a
+  grid that shifts while you read it. The highlight is a border and a panel, so
+  it costs no layout.
+- **Provenance decides what the panel says.** `derivePhasesWithReading` reports
+  whether a recipe's phases were *proved* (it named a levain, an autolyse, a
+  bulk) or merely *generic*; `isPlaceholderTiming` recognises the seed script's
+  `"20 mins"` / `"30 mins"` pair, which 199 of 203 recipes carry verbatim.
+  Neither is drawn unless it is real — otherwise the tile shows bake type and
+  ingredient count, which are always true.
+- **The step row keeps one home on this page**: the Now Baking panel, where its
+  keys are lit and therefore reporting rather than decorating.
 
 ---
 
@@ -135,8 +159,12 @@ never gets a fabricated "levain."
 
 - `RecipePlate` primitive: fixed-ratio image plate with lazy loading, an unlit
   fallback, and no gradient scrim.
-- Pattern rows and shelf tiles adopt it.
-- Tests for the fallback path and for the row staying legible without an image.
+- `RecipeTile`: the gallery tile — photograph, name, and a hover panel carrying
+  only what the recipe can prove.
+- The cookbook grid, the smart shelves and the Recipe Viewer's framed plate all
+  compose from those two.
+- `derivePhasesWithReading` and `isPlaceholderTiming` expose provenance, so a
+  surface can tell the difference between data and a default.
 
 ### Phase 3 — Recipe Viewer ✅
 
@@ -155,11 +183,20 @@ floured. Only the `activeBake` plumbing landed in Phase 2 — no visual work yet
 Large type, the step row as the primary navigation element, timers as segment
 readouts, voice and wave controls kept.
 
-### Phase 5 — Gallery, Pantry, Grocery ⬜
+### Phase 5 — Gallery, Pantry, Grocery, Instagram export ⬜
 
 The photo-heaviest surfaces. Gallery is Experience mode — the bakes lead.
 Pantry and Grocery are checklists, and should read as a machine's own inventory
 panel.
+
+**The Instagram exporter is a full redesign, not a retheme.** It is the only
+surface in Proof that someone who has never seen the app will look at, and it is
+seen out of context: a fixed-size image on someone else's feed, with no
+navigation, no hover, and no second screen to explain it. That makes it a
+Persuade surface inside an Operate product, and the composition itself — what a
+shared bake card actually *is* in this world — has to be designed rather than
+recoloured. The current export borrows the old world's photo-with-a-caption
+layout wholesale.
 
 ### Phase 6 — Editor + Notes ⬜
 
@@ -202,5 +239,14 @@ not from intentions, and not before the build is done.
   `prepTime: "20 mins"` / `cookTime: "30 mins"` verbatim, so most rows read an
   identical 50 MIN. The parser is correct; the data is a seed-script
   placeholder. A data question, not a UI one.
+- **The library is rendered a page at a time, not virtualised.** 48 tiles per
+  page keeps in-flight image requests near what the connection pool can serve,
+  but a baker who clicks Show more four times still ends up with 200 mounted
+  tiles. If the library keeps growing, this wants windowing rather than a
+  bigger page.
+- **Recipe photography is all one CDN.** Every image points at themealdb, which
+  is fine until it is not: there is no local copy, no resizing, and a tile
+  downloads a full-size photograph to display it at 280px. Worth revisiting
+  when the library holds real bake photography.
 - **No shared `Sheet`/`Dialog` primitive.** The bottom nav's More sheet is
   bespoke. Worth formalising if Phases 4–6 need more sheets.

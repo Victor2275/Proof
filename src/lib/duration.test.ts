@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseDurationMinutes, totalRecipeMinutes, formatMinutesForSegments } from './duration';
+import { parseDurationMinutes, totalRecipeMinutes, formatMinutesForSegments, isPlaceholderTiming } from './duration';
 
 describe('parseDurationMinutes', () => {
   it('reads the schema convention: a bare number of minutes', () => {
@@ -49,5 +49,24 @@ describe('formatMinutesForSegments', () => {
   it('switches to H:MM at an hour and up', () => {
     expect(formatMinutesForSegments(90)).toEqual({ value: '1:30', unit: 'HR' });
     expect(formatMinutesForSegments(60)).toEqual({ value: '1:00', unit: 'HR' });
+  });
+});
+
+describe('isPlaceholderTiming', () => {
+  it('recognises the seed script default that 199 of 203 live recipes share', () => {
+    expect(isPlaceholderTiming({ prepTime: '20 mins', cookTime: '30 mins' })).toBe(true);
+    expect(isPlaceholderTiming({ prepTime: '20 min', cookTime: '30 min' })).toBe(true);
+  });
+
+  it('keeps a real timing that happens to be twenty and thirty minutes', () => {
+    // Bare minutes are what the app's own recipe form writes; the seed script
+    // wrote them unit-annotated. The format is the tell, not the number.
+    expect(isPlaceholderTiming({ prepTime: '20', cookTime: '30' })).toBe(false);
+  });
+
+  it('leaves every other timing alone', () => {
+    expect(isPlaceholderTiming({ prepTime: '30', cookTime: '45' })).toBe(false);
+    expect(isPlaceholderTiming({ prepTime: '20 mins', cookTime: '75 mins' })).toBe(false);
+    expect(isPlaceholderTiming({})).toBe(false);
   });
 });

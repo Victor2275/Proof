@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { derivePhases, phaseState } from './phases';
+import { derivePhases, phaseState, derivePhasesWithReading } from './phases';
 
 const SOURDOUGH = [
   'Feed the starter and leave the levain to ripen for 6 hours.',
@@ -103,5 +103,29 @@ describe('phaseState', () => {
       const running = phases.filter((p) => phaseState(p, step) === 'now');
       expect(running).toHaveLength(1);
     }
+  });
+});
+
+describe('derivePhasesWithReading', () => {
+  it('reports a bread reading when the recipe proved it', () => {
+    const result = derivePhasesWithReading([
+      'Feed the levain and let it ripen.',
+      'Bulk ferment for 4 hours.',
+      'Bake at 250C.',
+    ]);
+    expect(result.reading).toBe('bread');
+    expect(result.phases.map((p) => p.id)).toContain('levain');
+  });
+
+  it('reports a generic reading for a recipe that named nothing specific', () => {
+    // Prep/cook/finish is true of almost any recipe, so a surface can use this
+    // to decide the phases are not worth drawing.
+    const result = derivePhasesWithReading(['Chop the onion.', 'Simmer for an hour.', 'Serve.']);
+    expect(result.reading).toBe('generic');
+  });
+
+  it('reports no reading at all for a recipe with no instructions', () => {
+    expect(derivePhasesWithReading([]).reading).toBe('none');
+    expect(derivePhasesWithReading(undefined).reading).toBe('none');
   });
 });

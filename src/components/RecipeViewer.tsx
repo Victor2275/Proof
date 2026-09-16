@@ -329,7 +329,12 @@ export default function RecipeViewer() {
         * lighter slab behind the whole recipe that lined up with nothing. */}
       <div id="recipe-export-node" className="bg-ground text-ink">
         {/* Top Controls */}
-        <div className="no-scrollbar flex flex-nowrap items-center gap-4 overflow-x-auto pb-6 md:flex-wrap" data-html2canvas-ignore="true">
+        {/* `overflow-x-auto` is what lets the control bank scroll on a phone,
+          * but it also makes this element a clipping context — which cut the
+          * Start Recipe menu off at the row's own bottom edge. The menu only
+          * exists from `md` up, which is exactly where the row no longer needs
+          * to scroll, so the overflow is released at that breakpoint. */}
+        <div className="no-scrollbar flex flex-nowrap items-center gap-4 overflow-x-auto pb-6 md:flex-wrap md:overflow-x-visible" data-html2canvas-ignore="true">
           {/* The scale bank. A multiplier switch: one engaged at a time, and
             * the recipe as written is 1x. */}
           <div className="flex shrink-0 items-center gap-2" role="group" aria-label="Scale recipe">

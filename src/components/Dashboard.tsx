@@ -7,22 +7,40 @@ import { useRecipes, useBakeLogs } from '../lib/queries';
 import { useActiveBake } from '../lib/useActiveBake';
 import { derivePhases } from '../lib/phases';
 import { totalRecipeMinutes, formatMinutesForSegments } from '../lib/duration';
-import { Button, Field, StepRow, SegmentReadout, RecipePlate, buttonClassName } from './ui';
+import { Button, Field, StepRow, SegmentReadout, RecipePlate, RecipeTile, buttonClassName } from './ui';
 import OnboardingModal from './OnboardingModal';
 
 /*
- * The hero surface. A recipe reads as a pattern — its photograph on a plate,
- * its title, its total time as a segment readout, and its method as a
- * miniature step row — rather than as a photo card in a grid. The plate makes
- * the library warm to arrive at; the pattern beside it is what makes the
- * library scannable, and it carries the row on its own if an image is missing.
- * One row, and only one, carries a lit key: the bake actually running now.
+ * The hero surface: a gallery of what you could make.
+ *
+ * This was a pattern list, on the reasoning that a photograph was unreliable
+ * and a step row was not. Both halves turned out to be wrong for this library.
+ * Every recipe has a photograph, and almost none has real phases or a real
+ * time — so the list was suppressing the one honest thing each recipe owns in
+ * favour of 203 rows of "PREP COOK FINISH · 50 MIN", which looks like data and
+ * is placeholder text.
+ *
+ * So: tiles, photograph first, name underneath. What a recipe can actually
+ * prove — a real bake time, a real set of phases — waits on the tile's hover
+ * panel. The bake running now is the one tile lit in the signal colour.
  */
 
 const EMPTY_RECIPES: Recipe[] = [];
 const EMPTY_LOGS: BakeLog[] = [];
 const ALL_BANK = '__all__';
 const SHELF_LIMIT = 8;
+
+/*
+ * How many tiles the gallery draws before asking.
+ *
+ * Rendering the whole library at once put 203 <img> elements on the page and
+ * over 170 requests in flight simultaneously. `loading="lazy"` does not save it
+ * — the browser's lazy threshold is generous enough to start nearly all of
+ * them, and they then queue behind a six-connection-per-host limit where they
+ * stall indefinitely and compete with the app's own API calls. A page of tiles
+ * keeps the in-flight count near what the connection pool can actually serve.
+ */
+const PAGE_SIZE = 48;
 
 function bakeLogRecipeId(log: BakeLog): string {
   return typeof log.recipeId === 'string' ? log.recipeId : log.recipeId._id;
@@ -41,15 +59,13 @@ function relativeDate(iso: string): string {
   return `${Math.floor(days / 30)}mo ago`;
 }
 
-/** A pattern in a shelf: title + mini step row, no card, no border. */
+/** A shelf entry: the same tile as the grid, plus why it is on the shelf. */
 function ShelfItem({ recipe, caption }: { recipe: Recipe; caption: string }) {
   return (
-    <Link to={`/recipe/${recipe._id}`} className="flex w-40 shrink-0 flex-col gap-2 sm:w-48">
-      <RecipePlate src={recipe.imageUrls?.[0]} alt={recipe.title} size="tile" />
-      <h3 className="font-faceplate truncate text-sm text-ink">{recipe.title}</h3>
-      <StepRow phases={derivePhases(recipe.instructions)} size="mini" />
-      <span className="label-silkscreen text-ink-muted">{caption}</span>
-    </Link>
+    <div className="w-40 shrink-0 sm:w-48">
+      <RecipeTile recipe={recipe} />
+      {caption ? <span className="label-silkscreen mt-1 block text-ink-muted">{caption}</span> : null}
+    </div>
   );
 }
 
@@ -150,6 +166,7 @@ export default function Dashboard() {
 
   const [search, setSearch] = useState('');
   const [bank, setBank] = useState<string>(ALL_BANK);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [showOnboarding, setShowOnboarding] = useState(false);
 
   const loadError = error instanceof Error ? error.message : null;
@@ -184,6 +201,20 @@ export default function Dashboard() {
     const fuse = new Fuse(bankFiltered, { keys: ['title', 'description', 'tags'], threshold: 0.3, ignoreLocation: true });
     return fuse.search(search).map((r) => r.item as Recipe);
   }, [search, bankFiltered]);
+
+  /** The gallery's own list: everything matching, minus the bake already shown
+   * in its own panel above. */
+  const listed = useMemo(
+    () => recipes.filter((r: Recipe) => !activeBake || r._id !== activeBake.recipeId),
+    [recipes, activeBake],
+  );
+  const remaining = listed.length - visibleCount;
+
+  // A new search or bank is a new list; keeping a scrolled-open page count from
+  // the previous one would render hundreds of tiles for a two-recipe filter.
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [search, bank]);
 
   const recipesById = useMemo(() => {
     const map = new Map<string, Recipe>();
@@ -342,6 +373,9 @@ export default function Dashboard() {
                 <span className="h-2 w-2 bg-signal" aria-hidden="true" />
                 <span className="label-silkscreen text-signal">Now baking</span>
               </div>
+              {/* The running bake is the one place a full step row belongs on
+                * this page: its keys are lit, so they are reporting rather
+                * than decorating. */}
               <PatternRow recipe={activeRecipe} isActive activeStep={activeBake!.stepIndex} />
             </section>
           )}
@@ -355,11 +389,11 @@ export default function Dashboard() {
 
           <section>
             {isLoading ? (
-              <div className="space-y-4">
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="animate-pulse space-y-2 border-b border-rule py-4">
-                    <div className="h-6 w-2/3 bg-panel-sunk" />
-                    <div className="h-2 w-full bg-panel-sunk" />
+              <div className="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 2xl:grid-cols-4">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <div key={i} className="animate-pulse space-y-2">
+                    <div className="aspect-square w-full rounded-key bg-panel-sunk" />
+                    <div className="h-4 w-2/3 bg-panel-sunk" />
                   </div>
                 ))}
               </div>
@@ -376,13 +410,24 @@ export default function Dashboard() {
                 <p>No recipes found.</p>
               </div>
             ) : (
-              <div>
-                {recipes
-                  .filter((r: Recipe) => !activeRecipe || r._id !== activeRecipe._id)
-                  .map((recipe: Recipe) => (
-                    <PatternRow key={recipe._id} recipe={recipe} isActive={false} />
+              <>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 2xl:grid-cols-4">
+                  {listed.slice(0, visibleCount).map((recipe: Recipe) => (
+                    <RecipeTile key={recipe._id} recipe={recipe} />
                   ))}
-              </div>
+                </div>
+
+                {remaining > 0 && (
+                  <div className="mt-8 flex items-center justify-center gap-4">
+                    <span className="label-silkscreen text-ink-muted">
+                      {visibleCount} of {listed.length}
+                    </span>
+                    <Button variant="secondary" onClick={() => setVisibleCount((n) => n + PAGE_SIZE)}>
+                      Show {Math.min(remaining, PAGE_SIZE)} more
+                    </Button>
+                  </div>
+                )}
+              </>
             )}
           </section>
         </div>

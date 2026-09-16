@@ -109,13 +109,31 @@ function toPhases(byPhase: Map<string, number[]>, vocabulary: PhaseDefinition[])
 }
 
 /**
- * Derive the phases of a recipe from its instruction text.
+ * How a recipe's phases were read.
  *
- * Returns an empty array for a recipe with no instructions, which the step row
- * renders as an unlit invitation rather than as an error.
+ * `bread` means the text named things a bread bake actually has and the phases
+ * are the recipe's own. `generic` means nothing proved itself and the phases
+ * are a three-word shape (prep, cook, finish) that fits almost any recipe —
+ * true, but not informative, and not worth drawing a step row for. `none` is a
+ * recipe with no instructions at all.
+ *
+ * Surfaces use this to decide whether a step row says anything: a library where
+ * every row shows the same three generic keys is a library of decoration.
  */
-export function derivePhases(instructions: string[] | undefined | null): Phase[] {
-  if (!instructions || instructions.length === 0) return [];
+export type PhaseReading = 'bread' | 'generic' | 'none';
+
+export interface DerivedPhases {
+  phases: Phase[];
+  reading: PhaseReading;
+}
+
+/**
+ * Derive the phases of a recipe, and say how much the derivation actually knew.
+ */
+export function derivePhasesWithReading(
+  instructions: string[] | undefined | null,
+): DerivedPhases {
+  if (!instructions || instructions.length === 0) return { phases: [], reading: 'none' };
 
   const bread = assign(instructions, BREAD_VOCABULARY);
   /*
@@ -128,10 +146,22 @@ export function derivePhases(instructions: string[] | undefined | null): Phase[]
   const signature = ['levain', 'autolyse', 'bulk', 'shape', 'proof'];
   const readsAsBread =
     bread.matched.size >= 2 && signature.some((id) => bread.matched.has(id));
-  if (readsAsBread) return toPhases(bread.byPhase, BREAD_VOCABULARY);
+  if (readsAsBread) {
+    return { phases: toPhases(bread.byPhase, BREAD_VOCABULARY), reading: 'bread' };
+  }
 
   const generic = assign(instructions, GENERIC_VOCABULARY);
-  return toPhases(generic.byPhase, GENERIC_VOCABULARY);
+  return { phases: toPhases(generic.byPhase, GENERIC_VOCABULARY), reading: 'generic' };
+}
+
+/**
+ * Derive the phases of a recipe from its instruction text.
+ *
+ * Returns an empty array for a recipe with no instructions, which the step row
+ * renders as an unlit invitation rather than as an error.
+ */
+export function derivePhases(instructions: string[] | undefined | null): Phase[] {
+  return derivePhasesWithReading(instructions).phases;
 }
 
 /**

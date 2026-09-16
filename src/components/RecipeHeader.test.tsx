@@ -66,4 +66,14 @@ describe('RecipeHeader', () => {
     );
     expect(screen.getByRole('img', { name: /Prep -- MIN/i })).toBeInTheDocument();
   });
+
+  it('refuses to report the import script placeholder as a real timing', () => {
+    render(
+      <RecipeHeader
+        recipe={{ ...recipe, prepTime: '20 mins', cookTime: '30 mins' }}
+        scaleMultiplier={1}
+      />,
+    );
+    expect(screen.getByRole('img', { name: /Total -- MIN/i })).toBeInTheDocument();
+  });
 });

@@ -1,7 +1,12 @@
 import { useMemo } from 'react';
 import type { Recipe } from '../lib/api';
 import { derivePhases } from '../lib/phases';
-import { parseDurationMinutes, totalRecipeMinutes, formatMinutesForSegments } from '../lib/duration';
+import {
+  parseDurationMinutes,
+  totalRecipeMinutes,
+  formatMinutesForSegments,
+  isPlaceholderTiming,
+} from '../lib/duration';
 import { RecipePlate, SegmentReadout, StepRow } from './ui';
 
 /*
@@ -33,10 +38,18 @@ function segments(raw: string | undefined) {
 export default function RecipeHeader({ recipe, heroImage, scaleMultiplier }: RecipeHeaderProps) {
   const phases = useMemo(() => derivePhases(recipe.instructions), [recipe.instructions]);
 
-  const total = totalRecipeMinutes(recipe);
+  /*
+   * The same rule the cookbook uses: an import script's "20 mins" / "30 mins"
+   * default is not a measurement, and 199 recipes share it verbatim. An unlit
+   * display is honest about not knowing; a fabricated 50 MIN is not, and it is
+   * worse here than in the gallery, because this is the screen someone plans an
+   * afternoon from.
+   */
+  const placeholder = isPlaceholderTiming(recipe);
+  const total = placeholder ? null : totalRecipeMinutes(recipe);
   const totalSeg = total === null ? { value: '--', unit: 'MIN' } : formatMinutesForSegments(total);
-  const prep = segments(recipe.prepTime);
-  const cook = segments(recipe.cookTime);
+  const prep = placeholder ? { value: '--', unit: 'MIN' } : segments(recipe.prepTime);
+  const cook = placeholder ? { value: '--', unit: 'MIN' } : segments(recipe.cookTime);
   const servings = (recipe.servings || 4) * scaleMultiplier;
 
   return (

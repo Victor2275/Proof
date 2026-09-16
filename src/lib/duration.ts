@@ -49,3 +49,25 @@ export function formatMinutesForSegments(totalMinutes: number): { value: string;
   const minutes = totalMinutes % 60;
   return { value: `${hours}:${String(minutes).padStart(2, '0')}`, unit: 'HR' };
 }
+
+/*
+ * The seed placeholder.
+ *
+ * 199 of the 203 recipes in the live library carry prepTime "20 mins" and
+ * cookTime "30 mins" verbatim — an unrelated stir-fry, cassoulet and bundt cake
+ * all claiming the same 50 minutes. That is an old import script's default, not
+ * a measurement, and a library where every tile reads 50 MIN is a library
+ * telling the same lie 199 times.
+ *
+ * The tell is the format, not the number. The app's own recipe form writes bare
+ * minutes ("20"), while the seed script wrote them unit-annotated ("20 mins"),
+ * so a recipe someone actually timed at twenty and thirty minutes still reads
+ * as real. This is narrow on purpose: it suppresses one known placeholder pair
+ * rather than second-guessing durations in general.
+ */
+const SEED_PREP = /^\s*20\s*mins?\s*$/i;
+const SEED_COOK = /^\s*30\s*mins?\s*$/i;
+
+export function isPlaceholderTiming(recipe: { prepTime?: string; cookTime?: string }): boolean {
+  return SEED_PREP.test(recipe.prepTime ?? '') && SEED_COOK.test(recipe.cookTime ?? '');
+}
