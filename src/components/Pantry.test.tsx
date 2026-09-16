@@ -15,16 +15,28 @@ vi.mock('../lib/api', () => ({
 }));
 
 describe('Pantry Component', () => {
-  it('renders loading state initially, then shows fetched items', async () => {
+  it('shows a skeleton while loading, then the stock list', async () => {
     render(<Pantry />);
-    
-    // Check loading state
-    expect(screen.getByText(/Loading pantry/i)).toBeDefined();
-    
-    // Check if items are rendered after fetch
+
+    // A skeleton rather than the word "Loading" — the shape of the list
+    // arrives before its contents do.
+    expect(screen.getByLabelText(/Loading pantry/i)).toBeDefined();
+
     await waitFor(() => {
       expect(screen.getByText('Bread Flour')).toBeDefined();
       expect(screen.getByText('Active Dry Yeast')).toBeDefined();
     });
+  });
+
+  it('counts what is in stock and lets a lamp be put out', async () => {
+    render(<Pantry />);
+    await waitFor(() => expect(screen.getByText('Bread Flour')).toBeDefined());
+
+    expect(screen.getByText('2 items in stock')).toBeInTheDocument();
+    // Every row is removable, and the control names what it removes rather
+    // than being an anonymous cross.
+    expect(
+      screen.getByRole('button', { name: /Remove Bread Flour from the pantry/i }),
+    ).toBeInTheDocument();
   });
 });

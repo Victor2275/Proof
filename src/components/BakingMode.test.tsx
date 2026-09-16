@@ -5,6 +5,7 @@ import { MemoryRouter } from 'react-router-dom';
 import BakingMode from './BakingMode';
 import { api } from '../lib/api';
 import SpeechRecognition from 'react-speech-recognition';
+import { publishRunningTimers } from '../lib/timerBus';
 
 vi.mock('../lib/api', () => ({
   api: {
@@ -59,6 +60,18 @@ vi.mock('@capacitor/core', () => ({
   Capacitor: {
     isNativePlatform: () => false
   }
+}));
+
+// The scale is a Web Bluetooth device, so it can only ever be faked here. The
+// handle is hoisted because vi.mock factories run before the file body.
+const scaleMock = vi.hoisted(() => ({ onWeight: null as ((m: any) => void) | null }));
+vi.mock('../lib/bluetoothScale', () => ({
+  scaleService: {
+    connect: vi.fn().mockResolvedValue(undefined),
+    disconnect: vi.fn(),
+    onWeightChange: (cb: (m: any) => void) => { scaleMock.onWeight = cb; },
+    onDisconnect: vi.fn(),
+  },
 }));
 
 const mockRecipe = {
@@ -154,6 +167,76 @@ describe('BakingMode Component', () => {
     fireEvent.click(micBtn);
     
     expect(SpeechRecognition.startListening).toHaveBeenCalledWith({ continuous: true });
+  });
+
+  /*
+   * Phase 4 — the step row is the navigation, and the header only reports what
+   * it can actually measure.
+   */
+
+  it('jumps to the first step of a phase when its key is pressed', async () => {
+    render(<MemoryRouter><BakingMode /></MemoryRouter>);
+    await waitFor(() => expect(screen.getByText('Step 1: Mix')).toBeDefined());
+
+    // "Step 3: Bake" reads as the cook phase; its key is the way a baker who
+    // walked back into the kitchen gets there without tapping Next three times.
+    fireEvent.click(screen.getByRole('button', { name: /Cook/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Step 3: Bake')).toBeInTheDocument();
+    });
+  });
+
+  it('names the running phase and the step position', async () => {
+    render(<MemoryRouter><BakingMode /></MemoryRouter>);
+    await waitFor(() => expect(screen.getByText('Step 1: Mix')).toBeDefined());
+
+    expect(screen.getByText('STEP 01 / 03')).toBeInTheDocument();
+  });
+
+  it('docks a running timer as a readout instead of floating it over the step', async () => {
+    render(<MemoryRouter><BakingMode /></MemoryRouter>);
+    await waitFor(() => expect(screen.getByText('Step 1: Mix')).toBeDefined());
+
+    act(() => {
+      publishRunningTimers([
+        { id: 't1', name: 'Bulk', remainingMs: 12 * 60 * 1000 + 40 * 1000, running: true },
+      ]);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole('img', { name: /Bulk 12:40/ })).toBeInTheDocument();
+    });
+  });
+
+  it('shows the scale target only once a scale is connected', async () => {
+    vi.mocked(api.getRecipe).mockResolvedValue({
+      _id: '1',
+      title: 'Weighed Loaf',
+      instructions: ['Add the flour to the bowl'],
+      ingredients: [{ name: 'Flour', quantity: 500, unit: 'g' }],
+    } as any);
+
+    render(<MemoryRouter><BakingMode /></MemoryRouter>);
+    await waitFor(() => expect(screen.getByText('Add the flour to the bowl')).toBeDefined());
+
+    // Nothing is connected, so there is no weight to report and no empty
+    // display pretending otherwise.
+    expect(screen.queryByRole('img', { name: /Target/i })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTitle(/Connect a Bluetooth scale/i));
+
+    await waitFor(() => {
+      expect(screen.getByRole('img', { name: /Target 500 G/i })).toBeInTheDocument();
+    });
+
+    act(() => {
+      scaleMock.onWeight?.({ weight: 412, unit: 'g' });
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole('img', { name: /On scale 412 g/i })).toBeInTheDocument();
+    });
   });
 
   it('registers advanced voice commands including read, timer, and help', async () => {

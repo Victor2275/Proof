@@ -12,6 +12,10 @@ This is a 1-to-1 mirror of CURRENT_FEATURES.md. Use checkboxes to track manual t
 
 ## 2. "The Kitchen Lab" (Active Baking Mode)
 - [ ] **Distraction-Free Focus Mode**: Step-by-step baking UI.
+- [ ] **Step row is the navigation (Phase 4)**: keys are live — red now, orange due, complete behind — and pressing one jumps to the first step of that phase.
+- [ ] **Timers dock as readouts**: a running timer counts down on segments in Baking Mode's head and turns red past its end, instead of floating over the step.
+- [ ] **Scale readout**: the live weight and the step's target only appear once a scale is connected.
+- [ ] **Show All**: steps grouped under the same phase headings, running step outlined, tapping one returns to focus there.
 - [ ] **Context-Aware Smart Ingredients**: Highlights relevant quantities per step.
 - [ ] **Voice Commands**: Next, Back, Read, Ingredients, Start timer, Quiet, Show all, Help.
 - [ ] **Wave-to-Advance**: Motion detection via front camera.
@@ -35,9 +39,11 @@ This is a 1-to-1 mirror of CURRENT_FEATURES.md. Use checkboxes to track manual t
 - [ ] **AI Recipe Extraction**: URL → structured recipe via Gemini.
 - [ ] **AI Recipe Restructuring**: Raw text → structured recipe with diff preview.
 - [ ] **AI Ingredient Substitutions**: Gemini-powered swap suggestions.
-- [ ] **Smart Pantry**: Inventory tracking with pantry-matching on recipes.
+- [ ] **Smart Pantry**: Inventory tracking with pantry-matching on recipes; stock panel with a lit lamp per item, a count in the head, and a named remove control per row.
 - [ ] **Barcode Scanning**: UPC scan to add pantry items.
 - [ ] **Grocery List Generator**: Missing ingredients → shopping list.
+- [ ] **Recipe bank**: a dozen latching keys with a search field; engaged recipes stay visible whatever the search says.
+- [ ] **Checklist**: real checkboxes, strike-through, and a count that decrements as items are ticked.
 - [ ] **Baking Analytics**: Charts for baking habits and history.
 - [ ] **Nightly DB Backup (cron)**: JSON backup of MongoDB data.
 - [ ] **Orphaned Image Cleanup**: Cloudinary cleanup via Admin API.
@@ -45,9 +51,13 @@ This is a 1-to-1 mirror of CURRENT_FEATURES.md. Use checkboxes to track manual t
 
 ## 5. Sub-Resources & Media
 - [ ] **Bake Logs**: Attach logs with photos and notes to recipes.
+- [ ] **Bake logs grid**: notes on hover, one click opens the make, attempts numbered from the oldest, personal best marked in text as well as an icon.
 - [ ] **Cloudinary Image Upload**: Images stored on Cloudinary via multer.
 - [ ] **PDF / Recipe Card Export**: jspdf + html2canvas print output.
-- [ ] **Instagram Exporter**: Black & Gold 1080x1080 or carousel export.
+- [ ] **Shareable bake card**: 1080×1080 pattern card (photo plate, name, real instrument values, complete key row, site address), alone or as a carousel.
+- [ ] **Card provenance**: no fabricated timing; labelled phase keys where proved, one key per step for a short generic recipe, phase keys past sixteen steps.
+- [ ] **Card resolution**: a card exported from a phone is still 1080 (2160 at 2×), not the size of the preview.
+- [ ] **Log slide**: appears only when the bake or recipe actually has notes.
 - [ ] **QR Code Deep-links**: qrcode.react for recipe sharing.
 
 ## 6. Security & Auth
@@ -69,6 +79,9 @@ This is a 1-to-1 mirror of CURRENT_FEATURES.md. Use checkboxes to track manual t
 - [ ] **Onboarding/PIN/status bars retheme**: PIN keypad still works exactly as before; banners read in the amber "due" tone.
 
 ## 2c. Photo plates (Phase 2a)
+- [ ] **Bake history by recipe (Phase 5)**: one row per recipe, oldest bake on the left, counting attempts not photographs.
+- [ ] **Bake history by date**: every bake newest-first, cut into months.
+- [ ] **Bake history empty state**: unlit plates rather than an illustration of absence.
 - [ ] **Gallery grid**: photographs lead, names read underneath, two up at 390px and three or four on a desktop.
 - [ ] **Hover**: the detail panel slides up, the border lights, and nothing resizes or shifts.
 - [ ] **Provenance**: a recipe with real phases shows a step row; a generic one shows bake type and ingredient count instead. No tile claims 50 MIN.
@@ -89,7 +102,7 @@ This is a 1-to-1 mirror of CURRENT_FEATURES.md. Use checkboxes to track manual t
 
 ## 7. UI/UX Foundation
 - [ ] **"Step Row" Visual World (Phase 0 foundation)**: Rhythm-machine design language — matte panels, silkscreen labels, lit step keys, segment readouts; colour is temporal, not decorative.
-- [ ] **Three enforced bans**: No gradients, no backdrop blur, no glow except lit keys/segments; enforced by `src/designSystem.test.ts`.
+- [ ] **One enforced ban, two defined materials**: no glow except a lit key or segment; `--faceplate` and `.scrim` are the only gradient and blur, enforced by `src/designSystem.test.ts`.
 - [ ] **Two Themes**: Light and Dark only; dark is default and true `#000000`, OLED consolidated in.
 - [ ] **Self-hosted typography**: Archivo Variable + JetBrains Mono Variable, latin subsets, precached for offline use.
 - [ ] **Component layer (Phase 1)**: Panel, Button, Field, SegmentReadout, StepRow, InstrumentRow, Meter in `src/components/ui`.

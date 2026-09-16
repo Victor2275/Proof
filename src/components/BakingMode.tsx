@@ -1,8 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo, useSyncExternalStore } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api, API_URL, type Recipe, type Component } from '../lib/api';
 import { saveLocalBakeLog } from '../lib/localDB';
-import { X, ChevronLeft, ChevronRight, Check, Upload, Loader2, List, Link as LinkIcon, Mic, MicOff, Bluetooth, Video, VideoOff, PictureInPicture } from 'lucide-react';
+import { X, Check, Upload, Loader2, List, Link as LinkIcon, Mic, MicOff, Bluetooth, Video, VideoOff, PictureInPicture } from 'lucide-react';
 import { renderWithTimers } from '../utils/timerParser';
 import { scaleService, type WeightMeasurement } from '../lib/bluetoothScale';
 import RecipeDrawer from './RecipeDrawer';
@@ -12,6 +12,27 @@ import 'regenerator-runtime/runtime';
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 import { hapticsEnabled, voiceCommandsEnabled, waveToAdvanceEnabled } from '../lib/settings';
 import { getActiveBake, startActiveBake, clearActiveBake } from '../lib/activeBake';
+import { derivePhases, type Phase } from '../lib/phases';
+import { subscribeRunningTimers, getRunningTimers, formatTimerClock } from '../lib/timerBus';
+import { Button, Panel, SegmentReadout, Skeleton, StepRow, cn } from './ui';
+
+/*
+ * Baking Mode — the surface the whole product exists for.
+ *
+ * One baker, a phone propped at arm's length, hands covered in flour. Every
+ * decision here is made for that scene rather than for a screenshot: the step
+ * is the largest type in the app, the controls are wide enough to hit without
+ * looking, and nothing floats over the instruction.
+ *
+ * The step row is the navigation. Elsewhere in Proof it is an instrument that
+ * reports the shape of a bake; here its keys are live — the running phase is
+ * the one red thing on screen, and tapping "Shape" jumps to the first step of
+ * shaping. That is the whole reason the row exists: a baker who walks back into
+ * the kitchen mid-bulk wants the phase, not instruction seventeen.
+ *
+ * Timers dock in the header as segment readouts rather than floating over the
+ * step, because the floating stack sits exactly where the instruction is.
+ */
 
 export default function BakingMode() {
   const { id } = useParams<{ id: string }>();
@@ -20,8 +41,8 @@ export default function BakingMode() {
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(true);
   const wakeLock = useRef<any>(null);
-  // Baking Mode is a fixed overlay, so the window itself never scrolls — the step
-  // content is its own scroll container and the voice scroll commands need it.
+  // Baking Mode is a fixed overlay, so the window itself never scrolls — the
+  // step content is its own scroll container and the voice scroll commands need it.
   const contentRef = useRef<HTMLDivElement>(null);
   const [showIngredients, setShowIngredients] = useState(false);
   const [viewMode, setViewMode] = useState<'focus' | 'all'>('focus');
@@ -53,6 +74,15 @@ export default function BakingMode() {
   const [imageFiles, setImageFiles] = useState<{file: File, label: string}[]>([]);
   const [savingLog, setSavingLog] = useState(false);
   const [isDictating, setIsDictating] = useState(false);
+
+  /*
+   * The timers, read from the manager that owns them. `useSyncExternalStore`
+   * rather than a subscribe-into-state effect so the header cannot render one
+   * tick behind the stack a baker is watching.
+   */
+  const timers = useSyncExternalStore(subscribeRunningTimers, getRunningTimers, getRunningTimers);
+
+  const phases = useMemo(() => derivePhases(recipe?.instructions), [recipe]);
 
   // Voice Commands
   const { listening, browserSupportsSpeechRecognition, transcript, resetTranscript } = useSpeechRecognition({
@@ -167,7 +197,7 @@ export default function BakingMode() {
     if (isDictating) {
       SpeechRecognition.stopListening();
       setIsDictating(false);
-      
+
       // Parse context-aware ingredients
       if (recipe) {
         let newNotes = notes;
@@ -280,6 +310,19 @@ export default function BakingMode() {
     }
   };
 
+  /*
+   * Jumping by phase. The row's keys are the coarse navigation a baker actually
+   * thinks in, so a key lands on the first step of its phase — never in the
+   * middle of one, which would be a jump nobody could predict from the label.
+   */
+  const handleSelectPhase = async (phase: Phase) => {
+    const target = phase.stepIndices[0];
+    if (target === undefined) return;
+    setCurrentStep(target);
+    setViewMode('focus');
+    if (Capacitor.isNativePlatform() && hapticsEnabled()) await Haptics.impact({ style: ImpactStyle.Light });
+  };
+
   useEffect(() => {
     let isActive = true;
     let stream: MediaStream | null = null;
@@ -315,7 +358,7 @@ export default function BakingMode() {
         if (isActive) animationFrame = requestAnimationFrame(detectMotion);
         return;
       }
-      
+
       const ctx = canvasRef.current.getContext('2d');
       if (!ctx || videoRef.current.readyState !== videoRef.current.HAVE_ENOUGH_DATA) {
         animationFrame = requestAnimationFrame(detectMotion);
@@ -324,12 +367,12 @@ export default function BakingMode() {
 
       ctx.drawImage(videoRef.current, 0, 0, canvasRef.current.width, canvasRef.current.height);
       const currentImageData = ctx.getImageData(0, 0, canvasRef.current.width, canvasRef.current.height);
-      
+
       if (lastImageData.current) {
         let diffPixels = 0;
-        const threshold = 50; 
+        const threshold = 50;
         const length = currentImageData.data.length;
-        
+
         // Downsample check for performance (every 4th pixel)
         for (let i = 0; i < length; i += 16) {
           const rDiff = Math.abs(currentImageData.data[i] - lastImageData.current.data[i]);
@@ -339,7 +382,7 @@ export default function BakingMode() {
             diffPixels++;
           }
         }
-        
+
         const totalCheckedPixels = length / 16;
         if (diffPixels / totalCheckedPixels > 0.15) { // 15% of image changed
           motionCooldown.current = true;
@@ -350,7 +393,7 @@ export default function BakingMode() {
           }, 2000); // 2 second cooldown
         }
       }
-      
+
       lastImageData.current = currentImageData;
       animationFrame = requestAnimationFrame(detectMotion);
     };
@@ -387,7 +430,7 @@ export default function BakingMode() {
       const stepText = recipe.instructions[currentStep];
       const smartIngs = getSmartIngredients(stepText);
       const targetWeight = smartIngs.reduce((sum, ing) => sum + (ing.quantity || 0), 0);
-      
+
       if (targetWeight > 0) {
         // Assume grams for simplicity for the generic implementation
         // Auto-advance if weight is within 5% of target
@@ -403,7 +446,7 @@ export default function BakingMode() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (showFinishModal) return;
       if (e.key === 'Escape') navigate(`/recipe/${id}`);
-      
+
       if (viewMode === 'focus') {
         if (e.key === 'ArrowRight') handleNextStep();
         if (e.key === 'ArrowLeft') handlePrevStep();
@@ -463,7 +506,7 @@ export default function BakingMode() {
 
         const res = await fetch(`${API_URL.replace('/api', '')}/api/bakelogs`, {
           method: 'POST',
-          headers: { 
+          headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
           },
@@ -478,7 +521,7 @@ export default function BakingMode() {
         const createdLog = await res.json();
         newLogId = createdLog._id;
       }
-      
+
       if (newLogId) {
         navigate(`/recipe/${id}?makeId=${newLogId}&export=instagram`);
       } else {
@@ -492,340 +535,514 @@ export default function BakingMode() {
     }
   };
 
-  if (loading) return <div className="fixed inset-0 z-50 bg-paper flex items-center justify-center">Loading...</div>;
-  if (!recipe) return <div className="fixed inset-0 z-50 bg-paper flex items-center justify-center">Recipe not found.</div>;
+  if (loading) {
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col bg-ground">
+        <div className="border-b border-rule bg-panel faceplate px-3 py-3">
+          <Skeleton className="h-4 w-40" />
+          <div className="mt-3 flex w-full gap-px" aria-hidden="true">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="h-14 max-w-20 flex-1 rounded-key bg-key-unlit" />
+            ))}
+          </div>
+        </div>
+        <div className="flex flex-1 flex-col justify-center gap-4 px-6">
+          <Skeleton className="h-8 w-3/4" />
+          <Skeleton className="h-8 w-2/3" />
+          <Skeleton className="h-8 w-1/2" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!recipe) {
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-ground px-6 text-center">
+        <span className="label-silkscreen text-ink-muted">No recipe loaded</span>
+        <Button onClick={() => navigate('/')}>Back to cookbook</Button>
+      </div>
+    );
+  }
 
   const isFinished = currentStep === recipe.instructions.length;
-  const progress = (currentStep / recipe.instructions.length) * 100;
-  
   const stepText = isFinished ? "You're done!" : recipe.instructions[currentStep];
   const smartIngredients = isFinished ? [] : getSmartIngredients(stepText);
+  const currentPhase = isFinished
+    ? null
+    : phases.find((phase) => phase.stepIndices.includes(currentStep)) ?? null;
+  // The scale's target for this step: the sum of what the step actually calls
+  // for. Shown only when there is something to weigh, so the readout never sits
+  // there reporting a target of zero.
+  const scaleTarget = smartIngredients.reduce((sum, ing) => sum + (ing.quantity || 0), 0);
 
   return (
-    <div className="fixed inset-0 z-50 bg-paper flex flex-col items-center">
+    <div className="fixed inset-0 z-50 flex flex-col bg-ground">
       {/* Hidden Camera Elements for Motion Detection */}
       <video ref={videoRef} autoPlay playsInline muted className="opacity-0 pointer-events-none absolute w-px h-px" />
       <canvas ref={canvasRef} width="320" height="240" className="hidden" />
 
-      {/* Progress Bar */}
-      <div className="w-full h-2 bg-black/5 dark:bg-white/5 relative">
-        <div className="absolute top-0 left-0 h-full bg-accent transition-all duration-300" style={{ width: `${progress}%` }} />
-      </div>
-      
-      {/* Top Header */}
-      <div className="w-full flex justify-between items-center p-3 md:p-4 border-b border-border-subtle bg-paper z-30 sticky top-0 gap-2">
-        <div className="flex items-center gap-3 shrink-0 min-w-0">
-          <button onClick={() => navigate(`/recipe/${id}`)} className="p-2 bg-black/5 dark:bg-white/5 rounded-full hover:bg-black/10 dark:hover:bg-white/10 transition-colors shrink-0">
-            <X className="w-4 h-4 md:w-5 md:h-5" />
-          </button>
-          <h1 className="font-bold uppercase tracking-wider text-sm truncate max-w-[100px] sm:max-w-[200px]">{recipe.title}</h1>
-        </div>
-        <div className="flex flex-nowrap items-center gap-2 md:gap-4 overflow-x-auto no-scrollbar shrink-0 pr-1 md:pr-0">
-          <button onClick={connectScale} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-colors ${scaleConnected ? 'bg-blue-500/20 text-blue-600 border border-blue-500/50' : 'bg-black/5 dark:bg-white/5 border border-border-subtle hover:bg-black/10'}`}>
-            <Bluetooth className={`w-3.5 h-3.5 ${scaleConnected ? 'animate-pulse' : ''}`} />
-            {/* A live weight always shows; the idle label is dropped on narrow screens
-                so the whole control row fits without scrolling. */}
-            {scaleWeight
-              ? `${scaleWeight.weight}${scaleWeight.unit}`
-              : <span className="hidden sm:inline">{scaleConnected ? 'Connected' : 'Scale'}</span>}
-          </button>
+      {/*
+        The machine's head: what is baking, the controls that change how it is
+        driven, and the row itself. It is `shrink-0` so the step below it gets
+        every remaining pixel — on a 390px phone in landscape that is the whole
+        difference between two lines of instruction and four.
+      */}
+      <header className="shrink-0 border-b border-rule bg-panel faceplate">
+        <div className="flex items-center gap-2 px-2 py-2 sm:px-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate(`/recipe/${id}`)}
+            aria-label="Leave baking mode"
+            icon={<X className="h-4 w-4" />}
+          />
+          <h1 className="label-silkscreen min-w-0 flex-1 truncate text-ink">{recipe.title}</h1>
 
-          <button
-            onClick={() => setShowIngredients(!showIngredients)}
-            className={`px-3 md:px-5 py-1.5 rounded-full border transition-all font-bold uppercase tracking-widest text-xs md:text-sm flex items-center gap-2 shrink-0 ${showIngredients ? 'bg-accent/10 text-accent border-accent' : 'border-border-subtle hover:bg-black/5 dark:hover:bg-white/5 text-ink-muted'}`}
-          >
-            <List className="w-3.5 h-3.5 md:w-4 md:h-4" /> <span className="hidden sm:inline">Ingredients</span>
-          </button>
-
-          {voiceCommandsSetting && browserSupportsSpeechRecognition && (
-            <button 
-              onClick={toggleMic}
-              className={`shrink-0 p-2.5 rounded-full border transition-colors ${listening ? 'bg-red-500 text-white border-red-500 animate-pulse' : 'border-border-subtle hover:bg-black/5 dark:hover:bg-white/5 text-ink-muted'}`}
-              title="Toggle Voice Commands (Next, Back, Finish)"
-              aria-label="Toggle voice commands"
+          {/* Controls scroll rather than wrap: the head must stay one bar tall,
+            * and a second row of chrome is a second row stolen from the step. */}
+          <div className="no-scrollbar flex shrink-0 items-center gap-1 overflow-x-auto">
+            <Button
+              size="sm"
+              engaged={scaleConnected}
+              onClick={connectScale}
+              icon={<Bluetooth className="h-3.5 w-3.5" />}
+              title={scaleConnected ? 'Scale connected' : 'Connect a Bluetooth scale'}
             >
-              <Mic className="w-4 h-4" />
-            </button>
-          )}
-          
-          {waveToAdvanceSetting && (
-            <>
-              <button 
-                onClick={() => setCameraActive(!cameraActive)}
-                className={`p-2 rounded-full border transition-colors ${cameraActive ? 'bg-accent/10 text-accent border-accent animate-pulse' : 'border-border-subtle hover:bg-black/5 dark:hover:bg-white/5 text-ink-muted'}`}
-                title="Toggle Camera (Wave to Advance)"
-              >
-                {cameraActive ? <Video className="w-4 h-4" /> : <VideoOff className="w-4 h-4" />}
-              </button>
-              
-              {cameraActive && (
-                <button 
-                  onClick={async () => {
-                    if (videoRef.current) {
-                      try {
-                        if (document.pictureInPictureElement) {
-                          await document.exitPictureInPicture();
-                        } else {
-                          await videoRef.current.requestPictureInPicture();
+              <span className="hidden sm:inline">{scaleConnected ? 'Connected' : 'Scale'}</span>
+            </Button>
+
+            <Button
+              size="sm"
+              engaged={showIngredients}
+              onClick={() => setShowIngredients(!showIngredients)}
+              icon={<List className="h-3.5 w-3.5" />}
+            >
+              <span className="hidden sm:inline">Ingredients</span>
+            </Button>
+
+            {voiceCommandsSetting && browserSupportsSpeechRecognition && (
+              <Button
+                size="sm"
+                engaged={listening}
+                onClick={toggleMic}
+                title="Toggle Voice Commands (Next, Back, Finish)"
+                aria-label="Toggle voice commands"
+                icon={<Mic className="h-3.5 w-3.5" />}
+              />
+            )}
+
+            {waveToAdvanceSetting && (
+              <>
+                <Button
+                  size="sm"
+                  engaged={cameraActive}
+                  onClick={() => setCameraActive(!cameraActive)}
+                  title="Toggle Camera (Wave to Advance)"
+                  aria-label="Toggle wave to advance"
+                  icon={cameraActive ? <Video className="h-3.5 w-3.5" /> : <VideoOff className="h-3.5 w-3.5" />}
+                />
+
+                {cameraActive && (
+                  <Button
+                    size="sm"
+                    onClick={async () => {
+                      if (videoRef.current) {
+                        try {
+                          if (document.pictureInPictureElement) {
+                            await document.exitPictureInPicture();
+                          } else {
+                            await videoRef.current.requestPictureInPicture();
+                          }
+                        } catch (err) {
+                          console.error("PiP failed", err);
                         }
-                      } catch (err) {
-                        console.error("PiP failed", err);
                       }
-                    }
-                  }}
-                  className="p-2 rounded-full border border-border-subtle hover:bg-black/5 dark:hover:bg-white/5 text-ink-muted transition-colors"
-                  title="View Camera (Picture-in-Picture)"
-                >
-                  <PictureInPicture className="w-4 h-4" />
-                </button>
-              )}
-            </>
-          )}
-          <button 
-            onClick={() => setViewMode(prev => prev === 'focus' ? 'all' : 'focus')}
-            className="px-3 md:px-4 py-1.5 rounded-full border border-border-subtle hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-xs md:text-sm font-bold uppercase tracking-wide shrink-0 whitespace-nowrap"
-          >
-            {viewMode === 'focus' ? 'Show All' : 'Focus Mode'}
-          </button>
+                    }}
+                    title="View Camera (Picture-in-Picture)"
+                    aria-label="View camera picture in picture"
+                    icon={<PictureInPicture className="h-3.5 w-3.5" />}
+                  />
+                )}
+              </>
+            )}
+
+            <Button size="sm" onClick={() => setViewMode(prev => prev === 'focus' ? 'all' : 'focus')}>
+              {viewMode === 'focus' ? 'Show All' : 'Focus Mode'}
+            </Button>
+          </div>
         </div>
 
+        {/*
+          The row, live. Keys are controls here and nowhere else in the app:
+          the running phase is red, the phases behind it are bone, and tapping
+          one jumps to where that phase begins.
+        */}
+        <div className="border-t border-rule px-2 py-3 sm:px-3">
+          <StepRow
+            phases={phases}
+            activeStep={isFinished ? undefined : currentStep}
+            onSelect={handleSelectPhase}
+            label={`${recipe.title} phases — jump to a phase`}
+          />
+        </div>
 
-      </div>
+        {/*
+          Running timers, docked. A timer is an instrument value, so it reads on
+          segments; it turns signal red once it runs past its end, which is the
+          one moment a timer is the thing happening now.
+        */}
+        {timers.length > 0 && (
+          <div
+            className="no-scrollbar flex items-end gap-5 overflow-x-auto border-t border-rule px-3 py-2"
+            aria-label="Running timers"
+          >
+            {timers.map((timer) => (
+              <SegmentReadout
+                key={timer.id}
+                label={timer.running ? timer.name : `${timer.name} · paused`}
+                value={formatTimerClock(timer.remainingMs)}
+                size="sm"
+                tone={timer.remainingMs < 0 ? 'signal' : 'ink'}
+                className="shrink-0"
+              />
+            ))}
+          </div>
+        )}
+      </header>
 
       {/* Main Content */}
       <div
         ref={contentRef}
-        className="flex-1 flex flex-col items-center w-full max-w-4xl px-6 md:px-12 pb-32 md:pb-20 relative overflow-y-auto"
+        className="relative flex w-full flex-1 flex-col items-center overflow-y-auto px-5 pb-6 sm:px-8"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
-        {viewMode === 'focus' ? (
-          <div className="w-full flex-1 flex flex-col justify-center items-center">
-            <div className="text-3xl md:text-5xl font-medium leading-relaxed md:leading-normal text-center transition-all duration-300">
-              {isFinished ? stepText : renderWithTimers(stepText, `Step ${currentStep + 1}`)}
-            </div>
-            
-            {!isFinished && recipe.instructionLinks && recipe.instructionLinks.find(l => l.stepIndex === currentStep) && (
-              <div className="mt-8 flex justify-center">
-                {recipe.instructionLinks.filter(l => l.stepIndex === currentStep).map((link, idx) => (
-                  <button 
-                    key={idx}
-                    onClick={() => setOpenSubRecipeId(link.recipeId)}
-                    className="flex items-center gap-2 px-6 py-3 bg-black/5 dark:bg-white/5 border border-border-subtle rounded-full font-bold uppercase tracking-widest text-sm hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
-                  >
-                    <LinkIcon className="w-4 h-4" /> Open Sub-Recipe: {link.recipeTitle}
-                  </button>
-                ))}
-              </div>
-            )}
+        <div className="flex w-full max-w-3xl flex-1 flex-col">
+          {viewMode === 'focus' ? (
+            <div className="flex w-full flex-1 flex-col justify-center gap-8 py-8">
+              {!isFinished && (
+                <div className="flex items-baseline gap-3">
+                  {/* Below `sm` the row prints its own "LEVAIN — NOW" caption,
+                    * because the keys have no room for labels there. Repeating
+                    * the phase here would say it twice on the narrowest screen. */}
+                  {currentPhase ? (
+                    <span className="label-silkscreen hidden text-signal sm:inline">
+                      {currentPhase.label}
+                    </span>
+                  ) : null}
+                  {/* A step index is a count, not an instrument value, so it is
+                    * set in tabular mono rather than spent on segments. */}
+                  <span className="font-mono text-xs tabular-nums text-ink-muted">
+                    STEP {String(currentStep + 1).padStart(2, '0')} / {String(recipe.instructions.length).padStart(2, '0')}
+                  </span>
+                </div>
+              )}
 
-            {!isFinished && smartIngredients.length > 0 && (
-              <div className="mt-12 bg-black/5 dark:bg-white/5 p-6 rounded-xl border border-border-subtle w-full max-w-2xl">
-                <h4 className="text-xs font-bold uppercase tracking-widest text-ink-muted mb-4 border-b border-border-subtle pb-2">Matched Ingredients</h4>
-                <ul className="space-y-3">
-                  {smartIngredients.map((ing, idx) => (
-                    <li key={idx} className="flex justify-between font-mono text-sm md:text-base">
-                      <span>{ing.name}</span>
-                      <span className="font-bold">{ing.quantity} {ing.unit}</span>
-                    </li>
+              <div className="text-2xl leading-snug text-ink sm:text-4xl sm:leading-tight">
+                {isFinished ? (
+                  <span className="font-faceplate">Bake complete.</span>
+                ) : (
+                  renderWithTimers(stepText, `Step ${currentStep + 1}`)
+                )}
+              </div>
+
+              {!isFinished && recipe.instructionLinks && recipe.instructionLinks.find(l => l.stepIndex === currentStep) && (
+                <div className="flex flex-wrap gap-2">
+                  {recipe.instructionLinks.filter(l => l.stepIndex === currentStep).map((link, idx) => (
+                    <Button
+                      key={idx}
+                      onClick={() => setOpenSubRecipeId(link.recipeId)}
+                      icon={<LinkIcon className="h-4 w-4" />}
+                    >
+                      {link.recipeTitle}
+                    </Button>
                   ))}
-                </ul>
-              </div>
-            )}
+                </div>
+              )}
 
-            {isFinished && (
-              <button onClick={() => setShowFinishModal(true)} className="mt-12 bg-accent text-black px-10 py-4 rounded-xl font-bold text-xl transition-all shadow-lg flex items-center gap-3">
-                <Check className="w-6 h-6" /> Finish Recipe
-              </button>
-            )}
-          </div>
-        ) : (
-          <div className="w-full py-8 space-y-12">
-            {recipe.instructions.map((step, idx) => {
-              const links = recipe.instructionLinks ? recipe.instructionLinks.filter(l => l.stepIndex === idx) : [];
-              return (
-                <div key={idx} className="flex gap-6 flex-col sm:flex-row">
-                  <div className="flex gap-6 flex-1">
-                    <span className="text-3xl font-black text-ink-muted/30">{idx + 1}.</span>
-                    <div className="text-2xl md:text-3xl font-medium leading-relaxed">{renderWithTimers(step, `Step ${idx+1}`)}</div>
-                  </div>
-                  {links.length > 0 && (
-                    <div className="sm:ml-12 mt-4 sm:mt-0 flex flex-col gap-2 justify-start items-start">
-                      {links.map((link, lidx) => (
-                        <button
-                          key={lidx}
-                          onClick={() => setOpenSubRecipeId(link.recipeId)}
-                          className="flex items-center gap-2 px-4 py-2 bg-black/5 dark:bg-white/5 border border-border-subtle rounded-full font-bold uppercase tracking-wider text-xs hover:bg-black/10 dark:hover:bg-white/10 transition-colors whitespace-nowrap"
-                        >
-                          <LinkIcon className="w-4 h-4" /> {link.recipeTitle}
-                        </button>
-                      ))}
+              {/* What this step calls for, and — only when a scale is actually
+                * connected — how close the bowl is to it. */}
+              {!isFinished && (smartIngredients.length > 0 || (scaleConnected && scaleTarget > 0)) && (
+                <Panel title="This step needs" className="w-full">
+                  <ul className="flex flex-col divide-y divide-rule">
+                    {smartIngredients.map((ing, idx) => (
+                      <li key={idx} className="flex items-baseline justify-between gap-4 py-2">
+                        <span className="min-w-0 truncate text-ink">{ing.name}</span>
+                        <span className="shrink-0 font-mono text-sm tabular-nums text-ink">
+                          {ing.quantity} {ing.unit}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  {scaleConnected && scaleTarget > 0 && (
+                    <div className="mt-4 flex items-end gap-6 border-t border-rule pt-4">
+                      <SegmentReadout
+                        label="On scale"
+                        value={scaleWeight ? scaleWeight.weight : '---'}
+                        unit={scaleWeight ? scaleWeight.unit : 'G'}
+                        size="lg"
+                        tone={
+                          scaleWeight && scaleWeight.weight >= scaleTarget * 0.95 ? 'signal' : 'ink'
+                        }
+                      />
+                      <SegmentReadout label="Target" value={scaleTarget} unit="G" size="md" tone="ink" />
                     </div>
                   )}
+                </Panel>
+              )}
+
+              {isFinished && (
+                <div className="flex flex-col items-start gap-4">
+                  <p className="max-w-prose text-ink-muted">
+                    Every phase is done. Log what happened while it is still fresh — notes now are
+                    what make the next one better.
+                  </p>
+                  <Button variant="primary" size="lg" onClick={() => setShowFinishModal(true)} icon={<Check className="h-5 w-5" />}>
+                    Finish Recipe
+                  </Button>
                 </div>
-              );
-            })}
-            
-            <div className="pt-12 border-t border-border-subtle flex justify-center">
-              <button onClick={() => setShowFinishModal(true)} className="bg-accent text-black px-10 py-4 rounded-xl font-bold text-xl transition-all shadow-lg flex items-center gap-3">
-                <Check className="w-6 h-6" /> Finish Recipe
-              </button>
+              )}
             </div>
-          </div>
-        )}
+          ) : (
+            /*
+             * Show All: the whole method under the same phase headings the row
+             * draws, so the two readings of the recipe never disagree. Every
+             * step is a control — tapping one drops back into focus there.
+             */
+            <div className="flex w-full flex-col gap-8 py-8">
+              {phases.map((phase) => (
+                <div key={phase.id} className="flex flex-col gap-4">
+                  <div className="flex items-center gap-2 border-b border-rule pb-2">
+                    <span
+                      className={cn(
+                        'h-2.5 w-2.5 shrink-0 rounded-key',
+                        phase.stepIndices.includes(currentStep) ? 'bg-signal' : 'bg-key-unlit',
+                      )}
+                      aria-hidden="true"
+                    />
+                    <h2 className="label-silkscreen">{phase.label}</h2>
+                  </div>
+
+                  {phase.stepIndices.map((stepIndex) => {
+                    const links = recipe.instructionLinks
+                      ? recipe.instructionLinks.filter(l => l.stepIndex === stepIndex)
+                      : [];
+                    return (
+                      <div key={stepIndex} className="flex flex-col gap-3">
+                        <button
+                          type="button"
+                          onClick={() => { setCurrentStep(stepIndex); setViewMode('focus'); }}
+                          className={cn(
+                            'flex w-full gap-4 rounded-key border border-transparent p-2 text-left transition-colors hover:border-rule',
+                            stepIndex === currentStep && 'border-signal',
+                          )}
+                        >
+                          <span className="shrink-0 font-mono text-sm tabular-nums text-ink-muted">
+                            {String(stepIndex + 1).padStart(2, '0')}
+                          </span>
+                          <span className="text-lg leading-relaxed text-ink sm:text-xl">
+                            {recipe.instructions[stepIndex]}
+                          </span>
+                        </button>
+
+                        {links.length > 0 && (
+                          <div className="flex flex-wrap gap-2 pl-10">
+                            {links.map((link, lidx) => (
+                              <Button
+                                key={lidx}
+                                size="sm"
+                                onClick={() => setOpenSubRecipeId(link.recipeId)}
+                                icon={<LinkIcon className="h-3.5 w-3.5" />}
+                              >
+                                {link.recipeTitle}
+                              </Button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
+
+              <div className="flex justify-center border-t border-rule pt-8">
+                <Button variant="primary" size="lg" onClick={() => setShowFinishModal(true)} icon={<Check className="h-5 w-5" />}>
+                  Finish Recipe
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Navigation Arrows (Only in Focus Mode) */}
-      {viewMode === 'focus' && (
-        <>
-          {/* Desktop has room either side of the step, so keep the arrows there. */}
-          <button
-            onClick={handlePrevStep}
-            disabled={currentStep === 0}
-            aria-label="Previous step"
-            className="hidden md:block absolute z-20 left-4 top-1/2 -translate-y-1/2 p-4 rounded-full bg-paper border border-border-subtle shadow-lg hover:bg-black/10 dark:hover:bg-white/10 disabled:opacity-0 disabled:pointer-events-none transition-all"
-          >
-            <ChevronLeft className="w-8 h-8" />
-          </button>
-
-          <button
-            onClick={handleNextStep}
-            disabled={currentStep === recipe.instructions.length}
-            aria-label="Next step"
-            className="hidden md:block absolute z-20 right-4 top-1/2 -translate-y-1/2 p-4 rounded-full bg-paper border border-border-subtle shadow-lg hover:bg-black/10 dark:hover:bg-white/10 disabled:opacity-0 disabled:pointer-events-none transition-all"
-          >
-            <ChevronRight className="w-8 h-8" />
-          </button>
-
-          {/*
-            On a phone there is no such margin: a floating arrow sat on top of the
-            step and covered ingredient quantities. Give the controls their own bar
-            (matched by the content's bottom padding) so they can never occlude the
-            recipe, and make them big thumb targets for hands covered in flour.
-          */}
-          <div className="md:hidden fixed bottom-0 left-0 right-0 z-20 flex items-stretch gap-3 px-4 pt-3 pb-3 bg-paper border-t border-border-subtle pb-safe">
-            <button
+      {/*
+        The transport. One bar at every width rather than desktop arrows that
+        float beside the step and a separate mobile bar — the controls belong in
+        the same place whichever device is propped against the mixer, and a
+        floating arrow on a phone sat on top of the ingredient quantities.
+      */}
+      {!isFinished && (
+        <div className="shrink-0 border-t border-rule bg-panel faceplate px-3 py-3 pb-safe">
+          <div className="mx-auto flex max-w-3xl items-stretch gap-3">
+            <Button
+              size="lg"
+              className="flex-1"
               onClick={handlePrevStep}
               disabled={currentStep === 0}
-              aria-label="Previous step"
-              className="flex-1 flex items-center justify-center py-3 rounded-xl border border-border-subtle bg-black/5 dark:bg-white/5 disabled:opacity-30 disabled:pointer-events-none transition-all active:scale-95"
             >
-              <ChevronLeft className="w-7 h-7" />
-            </button>
-            <button
+              Back
+            </Button>
+            <Button
+              size="lg"
+              engaged
+              className="flex-[2]"
               onClick={handleNextStep}
-              disabled={currentStep === recipe.instructions.length}
-              aria-label="Next step"
-              className="flex-[2] flex items-center justify-center py-3 rounded-xl bg-ink text-paper font-bold uppercase tracking-widest text-sm disabled:opacity-30 disabled:pointer-events-none transition-all active:scale-95"
             >
-              Next <ChevronRight className="w-6 h-6 ml-1" />
-            </button>
+              Next
+            </Button>
           </div>
-        </>
+        </div>
       )}
 
-      {/* Ingredients Sidebar Overlay */}
+      {/* Ingredients sheet — the full list, over the step rather than beside it. */}
       {showIngredients && (
-        <div className="absolute left-0 top-0 bottom-0 w-80 bg-paper border-r border-border-subtle shadow-2xl z-20 flex flex-col animate-in slide-in-from-left">
-          <div className="p-6 border-b border-border-subtle flex justify-between items-center bg-black/5 dark:bg-white/5">
-            <h2 className="font-bold uppercase tracking-wider">All Ingredients</h2>
-            <button onClick={() => setShowIngredients(false)}><X className="w-5 h-5 text-ink-muted hover:text-ink" /></button>
-          </div>
-          <ul className="flex-1 overflow-y-auto p-6 space-y-4">
-            {recipe.ingredients.map((ing, i) => (
-              <li key={i} className="flex items-start gap-3">
-                <input 
-                  type="checkbox" 
-                  checked={!!checkedIngredients[i]}
-                  onChange={() => setCheckedIngredients(prev => ({...prev, [i]: !prev[i]}))}
-                  className="mt-0.5 w-6 h-6 shrink-0 rounded border-border-subtle"
-                />
-                <div className={`flex flex-col ${checkedIngredients[i] ? 'opacity-50 line-through' : ''}`}>
-                  <span className="font-bold">{ing.quantity} {ing.unit}</span>
-                  <span className="text-sm">{ing.name}</span>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
+        <>
+          <div
+            className="scrim absolute inset-0 z-20"
+            onClick={() => setShowIngredients(false)}
+            aria-hidden="true"
+          />
+          <aside className="absolute bottom-0 left-0 right-0 top-auto z-30 flex max-h-[80%] flex-col border-t border-rule bg-panel faceplate sm:right-auto sm:top-0 sm:max-h-none sm:w-96 sm:border-r sm:border-t-0">
+            <div className="flex items-center justify-between gap-3 border-b border-rule px-4 py-3">
+              <h2 className="label-silkscreen">All ingredients</h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowIngredients(false)}
+                aria-label="Close ingredients"
+                icon={<X className="h-4 w-4" />}
+              />
+            </div>
+            <ul className="flex-1 divide-y divide-rule overflow-y-auto px-4 pb-safe">
+              {recipe.ingredients.map((ing, i) => (
+                <li key={i}>
+                  <label className="flex min-h-11 cursor-pointer items-center gap-3 py-2">
+                    <input
+                      type="checkbox"
+                      checked={!!checkedIngredients[i]}
+                      onChange={() => setCheckedIngredients(prev => ({...prev, [i]: !prev[i]}))}
+                      className="h-5 w-5 shrink-0 accent-[var(--signal)]"
+                    />
+                    <span className={cn('flex min-w-0 flex-1 items-baseline justify-between gap-3', checkedIngredients[i] && 'opacity-40 line-through')}>
+                      <span className="min-w-0 truncate text-ink">{ing.name}</span>
+                      <span className="shrink-0 font-mono text-sm tabular-nums text-ink-muted">
+                        {ing.quantity} {ing.unit}
+                      </span>
+                    </span>
+                  </label>
+                </li>
+              ))}
+            </ul>
+          </aside>
+        </>
       )}
 
       {/* Finish Modal */}
       {showFinishModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-paper rounded-2xl w-full max-w-xl shadow-2xl border border-border-subtle flex flex-col max-h-[90vh]">
-            <div className="p-6 border-b border-border-subtle flex justify-between items-center">
-              <h2 className="text-2xl font-bold">Log Bake</h2>
-              <button onClick={() => setShowFinishModal(false)}><X className="w-6 h-6 hover:opacity-70" /></button>
+        <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4">
+          <div className="scrim absolute inset-0" onClick={() => setShowFinishModal(false)} aria-hidden="true" />
+          <div className="relative flex max-h-[92vh] w-full max-w-xl flex-col rounded-panel border border-rule bg-panel faceplate">
+            <div className="flex items-center justify-between gap-3 border-b border-rule px-4 py-3">
+              <h2 className="label-silkscreen">Log bake</h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowFinishModal(false)}
+                aria-label="Close bake log"
+                icon={<X className="h-4 w-4" />}
+              />
             </div>
-            
-            <form onSubmit={handleFinishSubmit} className="p-6 space-y-6 overflow-y-auto">
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <label className="block text-sm font-bold">Bake Notes</label>
+
+            <form onSubmit={handleFinishSubmit} className="flex flex-col gap-6 overflow-y-auto p-4 pb-safe">
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between gap-3">
+                  <label htmlFor="bake-notes" className="label-silkscreen">Bake notes</label>
                   {browserSupportsSpeechRecognition && (
-                    <button 
-                      type="button"
+                    <Button
+                      size="sm"
+                      engaged={isDictating}
                       onClick={toggleDictation}
-                      className={`flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-full transition-colors ${isDictating ? 'bg-red-500/20 text-red-500 border border-red-500/50 animate-pulse' : 'bg-black/5 dark:bg-white/5 border border-border-subtle hover:bg-black/10'}`}
+                      icon={isDictating ? <Mic className="h-3.5 w-3.5" /> : <MicOff className="h-3.5 w-3.5" />}
                     >
-                      {isDictating ? <Mic className="w-3.5 h-3.5" /> : <MicOff className="w-3.5 h-3.5" />}
-                      {isDictating ? 'Listening...' : 'Dictate'}
-                    </button>
+                      {isDictating ? 'Listening' : 'Dictate'}
+                    </Button>
                   )}
                 </div>
-                <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={4} className="w-full border border-border-subtle rounded-md p-3 bg-black/5 dark:bg-white/5 focus:ring-1 focus:ring-ink focus:outline-none resize-none" placeholder="How did it turn out? What would you change next time?"></textarea>
+                <textarea
+                  id="bake-notes"
+                  value={notes}
+                  onChange={e => setNotes(e.target.value)}
+                  rows={4}
+                  className="w-full resize-none rounded-control border border-rule bg-panel-sunk p-3 text-ink focus:border-ink focus:outline-none"
+                  placeholder="How did it turn out? What would you change next time?"
+                />
               </div>
 
-              <div>
-                <label className="block text-sm font-bold mb-2">Photos</label>
-                <div className="border-2 border-dashed border-border-subtle rounded-lg p-8 flex flex-col items-center justify-center bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 transition-colors cursor-pointer relative">
-                  <input 
-                    type="file" 
-                    multiple 
-                    accept="image/*" 
+              <div className="flex flex-col gap-3">
+                <span className="label-silkscreen">Photos</span>
+                <div className="relative flex min-h-24 cursor-pointer flex-col items-center justify-center gap-2 rounded-control border border-dashed border-rule bg-panel-sunk p-6 transition-colors hover:border-ink-muted">
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    aria-label="Upload photos"
                     onChange={e => {
                       const files = Array.from(e.target.files || []);
                       setImageFiles(prev => [...prev, ...files.map(f => ({ file: f, label: '' }))]);
-                    }} 
-                    className="absolute inset-0 opacity-0 cursor-pointer" 
+                    }}
+                    className="absolute inset-0 cursor-pointer opacity-0"
                   />
-                  <Upload className="w-8 h-8 text-ink-muted mb-2" />
-                  <span className="text-sm font-medium text-ink-muted">
-                    Upload Photos
-                  </span>
+                  <Upload className="h-6 w-6 text-ink-muted" />
+                  <span className="label-silkscreen">Add photos</span>
                 </div>
+
                 {imageFiles.length > 0 && (
-                  <div className="mt-4 space-y-3">
+                  <ul className="flex flex-col gap-2">
                     {imageFiles.map((img, idx) => (
-                      <div key={idx} className="flex items-center gap-3 bg-black/5 dark:bg-white/5 p-2 rounded-md border border-border-subtle">
-                        <div className="w-12 h-12 bg-black/10 dark:bg-white/10 rounded overflow-hidden flex-shrink-0">
-                          <img src={URL.createObjectURL(img.file)} alt="preview" className="w-full h-full object-cover" />
+                      <li key={idx} className="flex items-center gap-3 rounded-control border border-rule bg-panel-sunk p-2">
+                        <div className="h-12 w-12 shrink-0 overflow-hidden rounded-key bg-key-unlit">
+                          <img src={URL.createObjectURL(img.file)} alt="" className="h-full w-full object-cover" />
                         </div>
-                        <input 
-                          type="text" 
-                          value={img.label} 
+                        <input
+                          type="text"
+                          value={img.label}
                           onChange={e => {
                             const newFiles = [...imageFiles];
                             newFiles[idx].label = e.target.value;
                             setImageFiles(newFiles);
-                          }} 
-                          placeholder="Label (e.g. Before Bake)" 
-                          className="flex-1 bg-transparent border-none focus:ring-0 text-sm p-1 outline-none"
+                          }}
+                          placeholder="Label (e.g. Before Bake)"
+                          aria-label={`Label for photo ${idx + 1}`}
+                          className="min-w-0 flex-1 border-none bg-transparent p-1 text-sm text-ink outline-none"
                         />
-                        <button type="button" onClick={() => setImageFiles(prev => prev.filter((_, i) => i !== idx))} className="p-2 hover:bg-black/10 dark:hover:bg-white/10 rounded-full text-red-500">
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          onClick={() => setImageFiles(prev => prev.filter((_, i) => i !== idx))}
+                          aria-label={`Remove photo ${idx + 1}`}
+                          icon={<X className="h-4 w-4" />}
+                        />
+                      </li>
                     ))}
-                  </div>
+                  </ul>
                 )}
               </div>
 
-              <button type="submit" disabled={savingLog} className="w-full bg-accent text-black font-bold text-lg py-4 rounded-xl transition-all flex items-center justify-center gap-2">
-                {savingLog ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Save Log & Finish'}
-              </button>
+              <Button type="submit" variant="primary" size="lg" busy={savingLog} className="w-full">
+                {savingLog ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Save log & finish'}
+              </Button>
             </form>
           </div>
         </div>
@@ -833,32 +1050,46 @@ export default function BakingMode() {
 
       {/* Voice Help Modal */}
       {showVoiceHelp && (
-        <div className="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-paper rounded-2xl w-full max-w-sm shadow-2xl border border-border-subtle p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold uppercase tracking-wider">Voice Commands</h2>
-              <button onClick={() => setShowVoiceHelp(false)}><X className="w-5 h-5 text-ink-muted hover:text-ink" /></button>
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div className="scrim absolute inset-0" onClick={() => setShowVoiceHelp(false)} aria-hidden="true" />
+          <div className="relative w-full max-w-sm rounded-panel border border-rule bg-panel faceplate">
+            <div className="flex items-center justify-between gap-3 border-b border-rule px-4 py-3">
+              <h2 className="label-silkscreen">Voice Commands</h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowVoiceHelp(false)}
+                aria-label="Close voice commands"
+                icon={<X className="h-4 w-4" />}
+              />
             </div>
-            <ul className="space-y-3 text-sm">
-              <li><strong className="text-ink">"Next" / "Back"</strong> - Navigate steps</li>
-              <li><strong className="text-ink">"Read"</strong> - Reads current step aloud</li>
-              <li><strong className="text-ink">"Ingredients"</strong> - Reads ingredients for current step</li>
-              <li><strong className="text-ink">"Start timer"</strong> - Starts the first timer found in the step</li>
-              <li><strong className="text-ink">"Quiet"</strong> - Stops any ringing alarms</li>
-              <li><strong className="text-ink">"Show all"</strong> - Toggles Focus Mode / Show All</li>
-              <li><strong className="text-ink">"Up" / "Down"</strong> - Scrolls the page</li>
-              <li><strong className="text-ink">"Finish"</strong> - Opens the Bake Log modal</li>
-              <li><strong className="text-ink">"Close"</strong> - Closes open popups</li>
-            </ul>
+            <dl className="flex flex-col divide-y divide-rule px-4 py-2 text-sm">
+              {[
+                ['"Next" / "Back"', 'Navigate steps'],
+                ['"Read"', 'Reads the current step aloud'],
+                ['"Ingredients"', 'Reads what this step needs'],
+                ['"Start timer"', 'Starts the first timer in the step'],
+                ['"Quiet"', 'Stops any ringing alarms'],
+                ['"Show all"', 'Toggles Focus Mode'],
+                ['"Up" / "Down"', 'Scrolls the page'],
+                ['"Finish"', 'Opens the bake log'],
+                ['"Close"', 'Closes open panels'],
+              ].map(([command, effect]) => (
+                <div key={command} className="flex items-baseline justify-between gap-4 py-2">
+                  <dt className="font-mono text-xs text-ink">{command}</dt>
+                  <dd className="text-right text-ink-muted">{effect}</dd>
+                </div>
+              ))}
+            </dl>
           </div>
         </div>
       )}
 
       {/* Recipe Drawer Overlay */}
-      <RecipeDrawer 
-        isOpen={!!openSubRecipeId} 
-        onClose={() => setOpenSubRecipeId(null)} 
-        recipeId={openSubRecipeId || ''} 
+      <RecipeDrawer
+        isOpen={!!openSubRecipeId}
+        onClose={() => setOpenSubRecipeId(null)}
+        recipeId={openSubRecipeId || ''}
       />
 
     </div>

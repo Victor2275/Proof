@@ -12,6 +12,10 @@ This document exhaustively tracks every capability, component, and technical int
 
 ## 2. "The Kitchen Lab" (Active Baking Mode)
 - **Distraction-Free Focus Mode**: `BakingMode.tsx` provides an ultra-clean, step-by-step UI optimized for reading at a distance.
+- **The step row is the navigation** (Phase 4): the bake's phases run across the head of the screen as live keys — red for the phase running now, orange for due next, complete behind it — and pressing a key jumps to the first step of that phase. A baker returning to the kitchen mid-bulk navigates by phase rather than by hunting for instruction seventeen. The row is the same component the recipe page and the cookbook draw; this is the only place its keys are controls.
+- **Timers dock as readouts**: any running timer appears in Baking Mode's own head as a seven-segment countdown and turns signal red once it runs past its end. Previously the timer stack floated over the page, which in a full-screen overlay meant it sat on top of the instruction. `src/lib/timerBus.ts` publishes a read-only view of the timers `TimerManager` owns, so no second websocket is opened.
+- **Scale readout appears only when a scale is connected**: the live weight sits beside the step's target weight as a large readout, going signal red as it reaches target. With nothing connected there is no empty display pretending to measure.
+- **Show All reads under the same phase headings** the row draws, with the running step outlined; every step is a control that drops back into focus there.
 - **Context-Aware Smart Ingredients**: While in Focus Mode, the UI automatically highlights the exact quantities of ingredients mentioned in the current step (via `getSmartIngredients`).
 - **Hands-Free Navigation (Voice & Gesture)**:
   - Voice Commands: Integrates `react-speech-recognition` for a full hands-free experience. Supported commands: "Next", "Back", "Read" (reads step aloud), "Ingredients" (reads required ingredients), "Start timer", "Quiet" (stops alarms), "Show all / Focus mode" (toggles view), "Up/Down" (scrolls), and "Help" (shows commands overlay).
@@ -27,7 +31,7 @@ This document exhaustively tracks every capability, component, and technical int
 - **Flour-Proof Voice Dictation**: A dictation microphone button in the Log Bake modal that transcribes speech into notes, auto-highlighting mentioned ingredients in bold.
 
 ## 3. Bake Logs & Learning
-- **Visual-First Bake Logs Grid**: A clean, photography-centered CSS grid view of past bakes. Tapping a photo triggers a 3D flip animation (`framer-motion`) to reveal the dictated notes on the back.
+- **Bake logs grid**: past bakes as photo tiles; the date and notes slide over the photograph's lower half on hover and one click opens the make. Attempts are numbered from the oldest, so "Make 3" keeps meaning the same bake when a fourth is logged. A personal best is marked in text as well as an icon, and each tile offers a shareable card.
 - **Custom Image Tags**: Bake log images support custom labels, which are beautifully displayed across grids and photo comparison sliders.
 - **Interactive Before & After Photo Comparison**: A slider component to compare raw dough to baked bread.
 - **AI Photo Tagging**: Cloud functions pass uploaded bake photos to Gemini 1.5 Flash to automatically generate relevant `#tags` (like `#sourdough` or `#overproofed`).
@@ -38,9 +42,9 @@ This document exhaustively tracks every capability, component, and technical int
 - **AI Recipe Restructuring**: Paste raw text and Gemini formats it into structured ingredients and instructions, with a live diff preview before accepting.
 - **AI Ingredient Substitutions**: `AISubstitutionsModal.tsx` connects to Gemini to generate smart ratios for missing ingredients (e.g., swapping AP Flour for Whole Wheat).
 - **Smart Pantry & Barcode Scanning**:
-  - `Pantry.tsx` tracks inventory.
+  - `Pantry.tsx` tracks inventory, read as the machine's own stock panel: a lit lamp beside every item — the same lamp a recipe's ingredient list uses for "you have this" — on hairline-ruled rows, two columns on a desktop, with the count silkscreened in the head.
   - Integrates `html5-qrcode` to scan real-world UPC barcodes to log ingredients quickly.
-- **Grocery List Generator**: `GroceryList.tsx` converts missing recipe ingredients into an aggregated shopping list.
+- **Grocery List Generator**: `GroceryList.tsx` converts missing recipe ingredients into an aggregated shopping list. Recipes are a bank of latching keys with a search field above them, showing a dozen at a time — a 203-recipe cookbook rendered as 203 keys is a wall between a shopper and the list. Anything already engaged stays on the panel whatever the search says. The list keeps real checkboxes rather than lamps, because it is operated one-handed in an aisle, and carries state three ways: the box, a strike-through, and the count above the list.
 - **Baking Analytics**: `Analytics.tsx` provides graphical insights into baking habits (e.g., total hours baked, most used recipes).
 - **Automated Maintenance**:
   - `node-cron` runs a nightly script to dump the MongoDB database into a JSON backup.
@@ -52,7 +56,10 @@ This document exhaustively tracks every capability, component, and technical int
 - **Image Architecture**: Images are captured via `@capacitor/camera` (or file upload) and stored on Cloudinary (via `multer-storage-cloudinary`).
 - **Export Engine**:
   - `jspdf` and `html2canvas` generate beautiful printable PDFs and square recipe cards.
-  - **Instagram Recipe Exporter**: Exports the recipe to a Black & Gold styled 1080x1080 square image (or 3-post carousel) using `html2canvas`. Supports exporting a specific Bake Log directly from its card.
+  - **Shareable bake card** (`InstagramExporter.tsx`, full redesign in Phase 5): a 1080×1080 card, exported alone or as a carousel of up to five. The composition is the bake as the machine finished it — the photograph mounted as a plate, the name at display scale, the instrument values that are real, and the step row across the foot with every key complete, closed on the right by the site address. Further slides carry the ingredients as an instrument panel, the method, the baker's log (only when there is one), and the link.
+    - **Provenance applies here too**: no fabricated timing, and the keys are exact in every branch — labelled phase keys where the recipe proved its phases, one key per step for a short generic recipe, and phase keys again past sixteen steps where a key per step stops reading as a row.
+    - **Rendered from literals**: html2canvas rasterises outside the document's cascade, so the card's palettes, fonts and seven-segment fills are pinned values rather than tokens. It loads nothing that could fail — no remote logo, no stock fallback photograph.
+    - **Fixed**: the card was captured through the preview's CSS transform, so a card exported from a phone came out under 900px square and its size depended on the window width. The scale now comes off for the duration of the capture; every card renders at 1080 (2160 at 2× device scale).
   - `qrcode.react` creates scannable deep-links.
 
 ## 6. Security & Auth
@@ -61,6 +68,7 @@ This document exhaustively tracks every capability, component, and technical int
 - **Rate Limiting**: AI endpoints and the auth endpoint are rate-limited to prevent abuse.
 
 ## 2a. Dashboard (Phase 2 — hero surface)
+- **Bake history as iterations** (`Gallery.tsx`, Phase 5): the default reading groups a recipe's bakes into one row running oldest to newest, so the row itself is the progress — this loaf against the same loaf three attempts ago. A second reading sorts every bake newest-first, cut into months. One tile is one bake, not one photograph: a bake with three photos is still one attempt, and the extras are marked rather than counted. An attempt number is only printed where there is a sequence to count.
 - **Gallery cookbook**: The dashboard is a grid of photographs, two up on a phone and three or four on a desktop, each named underneath. Browsing a cookbook starts with "what do I feel like making," and a photograph answers that faster than any metadata.
 - **Hover reveals what a recipe can prove**: a flat panel slides up over the photograph's lower half carrying bake type, real total time, and real phases; the tile's border lights at the same moment. Nothing scales — a grid whose tiles grow under the cursor shifts while you read it. The panel is not `aria-hidden`: hover is unavailable to keyboard and screen reader users, so hiding it would make them the only people who can never reach those facts.
 - **Provenance gates the data**: `derivePhasesWithReading` reports whether a recipe's phases were *proved* (it named a levain, an autolyse, a bulk) or are merely the generic prep/cook/finish shape that fits anything; `isPlaceholderTiming` recognises the import script's `"20 mins"` / `"30 mins"` pair, which 199 of the 203 live recipes carry verbatim. Neither a step row nor a time is drawn unless it is real — otherwise the tile falls back to bake type and ingredient count, which are always true. The Recipe Viewer applies the same rule and shows an unlit `--` rather than a fabricated 50 MIN.

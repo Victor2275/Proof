@@ -506,7 +506,7 @@ export default function RecipeViewer() {
                             queryClient.invalidateQueries({ queryKey: ['bakeLogs', id] });
                           } catch(e) { alert('Failed to update status'); }
                         }} 
-                        className={`flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full border transition-all ${selectedMake.isPersonalBest ? 'bg-yellow-500 text-black border-yellow-500' : 'border-border-subtle hover:bg-black/5 dark:hover:bg-white/5 text-ink-muted'}`}
+                        className={buttonClassName({ size: 'sm', engaged: selectedMake.isPersonalBest })}
                       >
                         <Award className="w-3.5 h-3.5" />
                         {selectedMake.isPersonalBest ? 'Personal Best' : 'Mark as Personal Best'}
@@ -516,7 +516,7 @@ export default function RecipeViewer() {
                           setEditDateValue(new Date(selectedMake.date || Date.now()).toISOString().slice(0, 16));
                           setIsEditingDate(true);
                         }} 
-                        className="text-xs font-bold uppercase tracking-wider text-ink-muted hover:text-ink underline"
+                        className={buttonClassName({ variant: 'ghost', size: 'sm' })}
                       >
                         Edit Date
                       </button>
@@ -525,7 +525,7 @@ export default function RecipeViewer() {
                           setInstagramExportBakeLog(selectedMake);
                           setShowInstagramExporter(true);
                         }}
-                        className="flex items-center gap-1 text-xs font-bold uppercase tracking-wider text-pink-600 hover:text-pink-500 hover:underline"
+                        className={buttonClassName({ variant: 'ghost', size: 'sm' })}
                       >
                         <Instagram className="w-3.5 h-3.5" />
                         Export to Instagram
@@ -571,7 +571,7 @@ export default function RecipeViewer() {
                            } catch (err) {
                              alert('Failed to save tags');
                            }
-                         }} className="text-xs font-bold uppercase tracking-wider text-green-600 bg-green-50 dark:bg-green-900/30 dark:text-green-400 px-3 py-1 rounded-full border border-green-200 dark:border-green-800 transition-colors">Save</button>
+                         }} className={buttonClassName({ size: 'sm' })}>Save</button>
                        </div>
                      ) : (
                        <button onClick={() => {

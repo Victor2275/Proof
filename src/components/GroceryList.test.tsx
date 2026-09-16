@@ -40,20 +40,20 @@ describe('GroceryList Component', () => {
     vi.mocked(api.getPantry).mockResolvedValue(mockPantry as any);
   });
 
-  it('renders title and empty checklist initial state', async () => {
+  it('renders the bank of recipes and an empty checklist', async () => {
     render(<GroceryList />);
     await waitFor(() => {
-      expect(screen.getByText(/Grocery List Generator/i)).toBeDefined();
-      expect(screen.getByText(/Sourdough Bread/i)).toBeDefined();
+      expect(screen.getByRole('heading', { name: /Grocery list/i })).toBeInTheDocument();
+      expect(screen.getByText('Sourdough Bread')).toBeDefined();
     });
+    expect(screen.getByText(/Nothing to buy/i)).toBeInTheDocument();
   });
 
   it('filters out ingredients present in pantry when recipe selected', async () => {
     render(<GroceryList />);
     await waitFor(() => expect(screen.getByText('Sourdough Bread')).toBeDefined());
 
-    const recipeBtn = screen.getByText('Sourdough Bread');
-    fireEvent.click(recipeBtn);
+    fireEvent.click(screen.getByText('Sourdough Bread'));
 
     await waitFor(() => {
       expect(screen.getByText('Bread Flour')).toBeDefined();
@@ -63,36 +63,46 @@ describe('GroceryList Component', () => {
     });
   });
 
+  it('latches the recipe key while it is feeding the list', async () => {
+    render(<GroceryList />);
+    await waitFor(() => expect(screen.getByText('Sourdough Bread')).toBeDefined());
+
+    const key = screen.getByRole('button', { name: /Sourdough Bread/i });
+    expect(key).toHaveAttribute('aria-pressed', 'false');
+
+    fireEvent.click(key);
+    await waitFor(() => expect(key).toHaveAttribute('aria-pressed', 'true'));
+  });
+
   it('allows adding a custom manual item', async () => {
     render(<GroceryList />);
-    await waitFor(() => expect(screen.getByText(/Grocery List Generator/i)).toBeDefined());
+    await waitFor(() => expect(screen.getByText('Sourdough Bread')).toBeDefined());
 
     const nameInput = screen.getByPlaceholderText(/Parchment Paper/i);
     fireEvent.change(nameInput, { target: { value: 'Parchment Paper' } });
 
-    const addBtn = screen.getByRole('button', { name: /Add/i });
-    fireEvent.click(addBtn);
+    fireEvent.click(screen.getByRole('button', { name: /^Add$/i }));
 
     await waitFor(() => {
       expect(screen.getByText('Parchment Paper')).toBeDefined();
     });
+    // A hand-added item is the only kind that can be taken off again.
+    expect(
+      screen.getByRole('button', { name: /Remove Parchment Paper from the list/i }),
+    ).toBeInTheDocument();
   });
 
-  it('toggles item checked state on click', async () => {
+  it('counts down what is left as items are checked off', async () => {
     render(<GroceryList />);
     await waitFor(() => expect(screen.getByText('Sourdough Bread')).toBeDefined());
 
-    const recipeBtn = screen.getByText('Sourdough Bread');
-    fireEvent.click(recipeBtn);
+    fireEvent.click(screen.getByText('Sourdough Bread'));
+    await waitFor(() => expect(screen.getByText('2 remaining')).toBeInTheDocument());
 
-    await waitFor(() => expect(screen.getByText('Bread Flour')).toBeDefined());
+    fireEvent.click(screen.getAllByRole('checkbox')[0]);
 
-    const itemRow = screen.getByText('Bread Flour');
-    fireEvent.click(itemRow);
-
-    // Item checklist item should update state
     await waitFor(() => {
-      expect(screen.getByText(/1 items remaining/i)).toBeDefined();
+      expect(screen.getByText('1 remaining')).toBeInTheDocument();
     });
   });
 });

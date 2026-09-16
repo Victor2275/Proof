@@ -1,7 +1,21 @@
 import { useState, useEffect } from 'react';
 import { api, type PantryItem } from '../lib/api';
-import { Box, Plus, X, ScanBarcode } from 'lucide-react';
+import { Plus, X, ScanBarcode } from 'lucide-react';
 import { Html5QrcodeScanner } from 'html5-qrcode';
+import { Button, Field, Panel, Skeleton } from './ui';
+
+/*
+ * The pantry — the machine's own inventory panel.
+ *
+ * Everything listed here is in stock, so every lamp is lit. That is not
+ * decoration: a bank of lit lamps is what a full inventory looks like, and it
+ * is the same lamp a recipe's ingredient list uses to say "you have this."
+ * Learning it once here means reading it everywhere else.
+ *
+ * Two columns on a desktop and hairline rules rather than a chip per item: a
+ * pantry is a printed list, and forty bordered pills read as forty objects
+ * instead of one list.
+ */
 
 export default function Pantry() {
   const [items, setItems] = useState<PantryItem[]>([]);
@@ -78,74 +92,113 @@ export default function Pantry() {
     }
   };
 
-  if (loading) return <div className="text-center py-20 text-ink-muted">Loading pantry...</div>;
-
   return (
-    <div className="max-w-3xl mx-auto space-y-8 pb-20">
-      <div className="flex items-center gap-3 border-b border-border-subtle pb-6">
-        <Box className="w-8 h-8" />
-        <h1 className="text-3xl font-bold tracking-tight uppercase">Smart Pantry</h1>
-      </div>
+    <div className="mx-auto flex max-w-3xl flex-col gap-8 pb-20">
+      <header className="flex flex-wrap items-end justify-between gap-4 border-b border-rule pb-6">
+        <div className="flex flex-col gap-2">
+          <h1 className="font-faceplate text-3xl leading-none text-ink sm:text-4xl">Pantry</h1>
+          <p className="max-w-prose text-ink-muted">
+            What you have in stock. Recipes cross-reference it by fuzzy match, so a lamp lights
+            beside every ingredient you already own.
+          </p>
+        </div>
+        {!loading && (
+          <span className="label-silkscreen shrink-0 text-silkscreen">
+            {items.length} {items.length === 1 ? 'item' : 'items'} in stock
+          </span>
+        )}
+      </header>
 
-      <div className="bg-sidebar p-6 rounded-2xl border border-border-subtle shadow-sm">
-        <p className="text-ink-muted mb-6 font-medium">Add ingredients you currently have in stock. When viewing recipes, your pantry will automatically cross-reference what you need via fuzzy matching.</p>
-        
-        <form onSubmit={handleAddItem} className="flex flex-wrap gap-3 sm:gap-4">
-          <input
-            type="text"
+      <Panel title="Add to stock">
+        <form onSubmit={handleAddItem} className="flex flex-wrap items-end gap-3">
+          <Field
+            label="Ingredient"
+            hideLabel
             value={newItemName}
             onChange={(e) => setNewItemName(e.target.value)}
-            placeholder="e.g. Bread Flour, active dry yeast..."
-            className="w-full sm:w-auto sm:flex-1 min-w-0 bg-paper border border-border-subtle rounded-xl px-4 py-3 focus:outline-none focus:border-ink transition-colors"
+            placeholder="e.g. Bread flour, active dry yeast…"
+            className="min-w-0 flex-1 basis-full sm:basis-56"
           />
-          <button type="submit" className="flex-1 sm:flex-none justify-center bg-accent text-black px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-2 whitespace-nowrap">
-            <Plus className="w-5 h-5" /> Add
-          </button>
-          <button
-            type="button"
+          {/* Not the signal colour: the shell's New Recipe control already owns
+            * the one solid red on this screen, and adding flour to a cupboard is
+            * not the thing happening now. */}
+          <Button type="submit" icon={<Plus className="h-4 w-4" />}>
+            Add
+          </Button>
+          <Button
             onClick={() => setScanning(true)}
             aria-label="Scan barcode"
-            className="shrink-0 border border-border-subtle px-4 py-3 rounded-xl text-ink hover:bg-black/5 dark:hover:bg-white/5 transition-colors flex items-center gap-2"
-          >
-            <ScanBarcode className="w-5 h-5" />
-          </button>
+            icon={<ScanBarcode className="h-4 w-4" />}
+          />
         </form>
-        {error && <p className="text-red-500 mt-4 font-bold">{error}</p>}
-      </div>
+        {error && <p className="mt-3 text-sm text-signal">{error}</p>}
+      </Panel>
 
       {scanning && (
-        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
-          <div className="bg-paper p-6 rounded-2xl max-w-lg w-full">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold uppercase">Scan Barcode</h3>
-              <button onClick={() => setScanning(false)} className="p-2 hover:bg-black/5 rounded-full"><X className="w-5 h-5" /></button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="scrim absolute inset-0" onClick={() => setScanning(false)} aria-hidden="true" />
+          <div className="relative w-full max-w-lg rounded-panel border border-rule bg-panel faceplate">
+            <div className="flex items-center justify-between gap-3 border-b border-rule px-4 py-3">
+              <h2 className="label-silkscreen">Scan barcode</h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setScanning(false)}
+                aria-label="Close scanner"
+                icon={<X className="h-4 w-4" />}
+              />
             </div>
-            <div id="reader" className="w-full bg-black/5 rounded-xl overflow-hidden"></div>
+            <div className="p-4">
+              <div id="reader" className="w-full overflow-hidden rounded-key bg-panel-sunk" />
+            </div>
           </div>
         </div>
       )}
 
-      <div className="bg-paper p-6 rounded-2xl border border-border-subtle shadow-sm min-h-[300px]">
-        {items.length === 0 ? (
-          <div className="text-center text-ink-muted py-20 border-2 border-dashed border-border-subtle rounded-xl bg-black/5 dark:bg-white/5">
-            Your pantry is empty.
-          </div>
-        ) : (
-          <div className="flex flex-wrap gap-3">
-            {items.map(item => (
-              <div key={item._id} className="flex items-center gap-2 bg-black/5 dark:bg-white/5 border border-border-subtle pl-4 pr-2 py-2 rounded-lg font-medium shadow-sm group">
-                <span>{item.name}</span>
-                <button 
-                  onClick={() => handleDeleteItem(item._id!)}
-                  className="p-1 hover:bg-black/10 dark:hover:bg-white/10 rounded-md transition-colors text-ink-muted group-hover:text-red-500"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
+      <Panel title="In stock" flush>
+        {loading ? (
+          <div className="flex flex-col gap-3 p-4" aria-label="Loading pantry">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-5 w-48" />
             ))}
           </div>
+        ) : items.length === 0 ? (
+          <div className="flex flex-col items-start gap-3 p-4">
+            {/* A dark lamp is a designed state, not an error. */}
+            <div className="flex items-center gap-2">
+              <span className="h-2 w-2 border border-key-unlit" aria-hidden="true" />
+              <span className="label-silkscreen text-silkscreen">Nothing in stock</span>
+            </div>
+            <p className="max-w-prose text-ink-muted">
+              Add what you keep on hand and every recipe will tell you what you are missing.
+            </p>
+          </div>
+        ) : (
+          <ul className="grid grid-cols-1 sm:grid-cols-2">
+            {items.map((item) => (
+              <li
+                key={item._id}
+                className="flex min-h-11 items-center gap-3 border-b border-rule px-4 py-2 last:border-b-0 sm:odd:border-r"
+              >
+                {/* Lit, filled, bone — the same lamp a recipe uses for
+                  * "the pantry has this". Having flour is not an event, so it
+                  * is never the signal colour. */}
+                <span className="h-2 w-2 shrink-0 bg-ink" aria-hidden="true" />
+                <span className="min-w-0 flex-1 truncate text-ink">{item.name}</span>
+                <span className="sr-only">in stock</span>
+                <button
+                  type="button"
+                  onClick={() => handleDeleteItem(item._id!)}
+                  aria-label={`Remove ${item.name} from the pantry`}
+                  className="shrink-0 rounded-control p-2 text-ink-muted transition-colors hover:text-signal"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </li>
+            ))}
+          </ul>
         )}
-      </div>
+      </Panel>
     </div>
   );
 }

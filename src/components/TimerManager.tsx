@@ -4,6 +4,7 @@ import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { io, type Socket } from 'socket.io-client';
 import { API_URL } from '../lib/api';
 import { hapticsEnabled, ttsEnabled } from '../lib/settings';
+import { publishRunningTimers } from '../lib/timerBus';
 
 export interface Timer {
   id: string;
@@ -102,6 +103,24 @@ export default function TimerManager() {
       window.removeEventListener('stop-alarms', handleStopAlarms);
     };
   }, []);
+
+  /*
+   * Publish a read-only view of the timers for surfaces that display but do not
+   * own them — Baking Mode docks these as segment readouts in its own header,
+   * because a floating stack over a full-screen overlay sits on top of the step
+   * a baker is reading. `now` is a dependency so the published remaining time
+   * ticks with the clock rather than only when a timer is added or paused.
+   */
+  useEffect(() => {
+    publishRunningTimers(
+      timers.map((t) => ({
+        id: t.id,
+        name: t.name,
+        remainingMs: t.endTime !== null ? t.endTime - now : t.remainingMs,
+        running: t.endTime !== null,
+      })),
+    );
+  }, [timers, now]);
 
   const confirmAddTimer = (durationSecs: number, name: string) => {
     const newTimer: Timer = {

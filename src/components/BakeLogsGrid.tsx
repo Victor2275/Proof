@@ -1,26 +1,19 @@
-import { useState } from 'react';
 import { type BakeLog } from '../lib/api';
-import { Award, CameraOff } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Award, Share2 } from 'lucide-react';
+import { Button, RecipePlate, cn } from './ui';
 
-function Instagram({ className = "w-4 h-4" }: { className?: string }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
-      <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
-      <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
-      <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
-    </svg>
-  );
-}
+/*
+ * This recipe's own bake history.
+ *
+ * It was a grid of cards that flipped in 3D to show their notes — the previous
+ * world's flourish, and one that hid the thing a baker came here for behind an
+ * animation and a second click. It is now the same tile the Gallery uses: the
+ * photograph leads, the date and the notes slide over its lower half on hover,
+ * and one click opens the make. Learning the tile once should be enough.
+ *
+ * Attempts are numbered from the oldest, so "Make 3" means the third time this
+ * was baked and keeps meaning that when a fourth is logged.
+ */
 
 interface BakeLogsGridProps {
   logs: BakeLog[];
@@ -28,91 +21,88 @@ interface BakeLogsGridProps {
   onExportInstagram?: (log: BakeLog) => void;
 }
 
-export default function BakeLogsGrid({ logs, onSelect, onExportInstagram }: BakeLogsGridProps) {
-  const [flippedLogId, setFlippedLogId] = useState<string | null>(null);
+function formatDate(iso?: string): string {
+  const date = new Date(iso || Date.now());
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' });
+}
 
+export default function BakeLogsGrid({ logs, onSelect, onExportInstagram }: BakeLogsGridProps) {
   if (logs.length === 0) {
-    return <div className="text-ink-muted text-center py-10 font-medium">You haven't logged any bakes for this recipe yet.</div>;
+    return (
+      <div className="flex flex-col items-start gap-3">
+        <div className="flex items-center gap-2">
+          <span className="h-2 w-2 border border-key-unlit" aria-hidden="true" />
+          <span className="label-silkscreen text-silkscreen">No bakes logged</span>
+        </div>
+        <p className="max-w-prose text-ink-muted">
+          Run this recipe in Baking Mode and log it at the end. The second time you do, this turns
+          into a comparison.
+        </p>
+      </div>
+    );
   }
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+    <div className="grid grid-cols-2 gap-x-4 gap-y-6 md:grid-cols-3">
       {logs.map((log, idx) => {
-        const isFlipped = flippedLogId === log._id;
-        const mainImage = log.imageUrls?.[0];
-        
+        // `logs` arrive newest first; the attempt number counts from the oldest.
+        const attempt = logs.length - idx;
         return (
-          <div 
-            key={log._id} 
-            className="relative aspect-square cursor-pointer group"
-            style={{ perspective: '1000px' }}
-            onClick={() => {
-              if (isFlipped) {
-                // If it's already flipped, clicking it opens the details modal
-                onSelect(log);
-              } else {
-                // If it's not flipped, click flips it
-                setFlippedLogId(log._id!);
-              }
-            }}
-          >
-            <motion.div
-              className="w-full h-full relative preserve-3d"
-              initial={false}
-              animate={{ rotateY: isFlipped ? 180 : 0 }}
-              transition={{ duration: 0.6, type: "spring", stiffness: 260, damping: 20 }}
-              style={{ transformStyle: 'preserve-3d' }}
+          <div key={log._id} className="flex flex-col gap-2">
+            {/* Named explicitly: a bake with no photograph has no alt text to
+              * lend the control a name, and "Make 3" is what the control opens
+              * whether or not there is a picture of it. */}
+            <button
+              type="button"
+              onClick={() => onSelect(log)}
+              aria-label={`Make ${attempt}, ${formatDate(log.date)}`}
+              className="group relative overflow-hidden rounded-key border border-rule text-left transition-colors hover:border-ink focus-visible:border-ink"
             >
-              {/* Front Side (Photo) */}
-              <div className="absolute inset-0 backface-hidden bg-black/5 dark:bg-white/5 rounded-2xl overflow-hidden border border-border-subtle shadow-sm flex items-center justify-center group-hover:border-ink transition-colors" style={{ backfaceVisibility: 'hidden' }}>
-                {mainImage ? (
-                  <img src={mainImage} alt={`Make ${idx + 1}`} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="flex flex-col items-center justify-center text-ink-muted/50 p-4 text-center">
-                    <CameraOff className="w-8 h-8 mb-2" />
-                    <span className="text-sm font-bold uppercase">No Photo</span>
-                  </div>
-                )}
-                
-                <div className="absolute top-3 left-3 bg-paper px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow-sm flex items-center gap-1.5 border border-border-subtle">
-                  Make #{logs.length - idx}
-                  {log.isPersonalBest && <Award className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />}
-                </div>
-              </div>
+              <RecipePlate src={log.imageUrls?.[0]} alt={`Make ${attempt}, ${formatDate(log.date)}`} size="hero" />
 
-              {/* Back Side (Notes) */}
-              <div 
-                className="absolute inset-0 backface-hidden bg-paper rounded-2xl border-2 border-ink shadow-lg p-5 flex flex-col justify-between" 
-                style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
+              {/* Not aria-hidden: the notes are the whole point of a bake log,
+                * and hover is not available to everyone. */}
+              <div
+                className={cn(
+                  'pointer-events-none absolute inset-x-0 bottom-0 translate-y-full',
+                  'border-t border-rule bg-panel faceplate px-3 py-2.5',
+                  'transition-transform duration-150 ease-out',
+                  'group-hover:translate-y-0 group-focus-visible:translate-y-0',
+                )}
               >
-                <div>
-                  <div className="text-xs font-bold uppercase tracking-wider text-ink-muted mb-3 border-b border-border-subtle pb-2">
-                    {new Date(log.date || Date.now()).toLocaleDateString()}
-                  </div>
-                  <p className="text-sm line-clamp-5 leading-relaxed">
-                    {log.notes || <span className="italic text-ink-muted">No notes recorded for this bake.</span>}
-                  </p>
-                </div>
-                
-                <div className="flex flex-col gap-2 border-t border-border-subtle pt-3">
-                  {onExportInstagram && (
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onExportInstagram(log);
-                      }}
-                      className="flex items-center justify-center gap-1.5 text-xs font-bold uppercase tracking-wider text-pink-600 hover:text-pink-500 hover:underline mb-1"
-                    >
-                      <Instagram className="w-3.5 h-3.5" />
-                      Export to Instagram
-                    </button>
-                  )}
-                  <div className="text-xs font-bold uppercase tracking-wider text-ink flex items-center justify-center hover:underline">
-                    Tap to View Details
-                  </div>
-                </div>
+                <span className="label-silkscreen block truncate text-silkscreen">
+                  {formatDate(log.date)}
+                </span>
+                <p className="mt-1 line-clamp-3 text-sm leading-snug text-ink">
+                  {log.notes || 'No notes recorded.'}
+                </p>
               </div>
-            </motion.div>
+            </button>
+
+            <div className="flex items-center justify-between gap-2">
+              <span className="flex min-w-0 items-center gap-1.5">
+                <span className="font-mono text-xs tabular-nums text-ink">Make {attempt}</span>
+                {log.isPersonalBest && (
+                  <span className="flex items-center gap-1 text-ink" title="Personal best">
+                    <Award className="h-3.5 w-3.5" aria-hidden="true" />
+                    <span className="sr-only">Personal best</span>
+                  </span>
+                )}
+              </span>
+
+              {onExportInstagram && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onExportInstagram(log)}
+                  aria-label={`Export a card for make ${attempt}`}
+                  icon={<Share2 className="h-3.5 w-3.5" />}
+                >
+                  Card
+                </Button>
+              )}
+            </div>
           </div>
         );
       })}

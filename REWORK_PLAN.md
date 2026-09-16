@@ -176,29 +176,78 @@ silkscreened phase headings below; ingredients as an instrument panel with
 pantry lamps; controls onto `Button`/`Panel`, with START RECIPE the only solid
 signal-red control on the page.
 
-### Phase 4 — Baking Mode ⬜ *(next)*
+### Phase 4 — Baking Mode ✅
 
 The surface the product exists for: one baker, phone at arm's length, hands
-floured. Only the `activeBake` plumbing landed in Phase 2 — no visual work yet.
-Large type, the step row as the primary navigation element, timers as segment
-readouts, voice and wave controls kept.
+floured. Every decision made for that scene rather than for a screenshot.
 
-### Phase 5 — Gallery, Pantry, Grocery, Instagram export ⬜
+- **The step row is the navigation.** Elsewhere the row reports; here its keys
+  are controls. The running phase is the one red thing on screen, and pressing
+  "Shape" jumps to the first step of shaping — never into the middle of a
+  phase, which would be a jump nobody could predict from the label. A wide
+  NEXT bar with BACK beside it sits at the foot at every width, replacing the
+  desktop arrows that floated beside the step and the separate mobile bar.
+- **Timers dock in the head** as seven-segment countdowns, turning signal red
+  once they run past the end. The floating timer stack sat exactly where the
+  instruction is. `src/lib/timerBus.ts` publishes a read-only view of the
+  timers `TimerManager` owns rather than opening a second websocket — the
+  connection-per-consumer leak this codebase already fixed once.
+- **Only measured things are displayed.** The scale readout and its target
+  appear when a scale is connected and the step has something to weigh;
+  otherwise there is no empty display pretending to measure.
+- **Show All** groups the method under the same phase headings the row draws,
+  with the running step outlined and every step a control back into focus.
+- Ingredients sheet, bake log and voice help rebuilt on `Panel`, `Field`,
+  `Button` and `.scrim`. Voice, wave-to-advance, PiP, haptics, wake lock,
+  swipe and Bluetooth auto-advance all kept intact.
 
-The photo-heaviest surfaces. Gallery is Experience mode — the bakes lead.
-Pantry and Grocery are checklists, and should read as a machine's own inventory
-panel.
+### Phase 5 — Gallery, Pantry, Grocery, Instagram export ✅
 
-**The Instagram exporter is a full redesign, not a retheme.** It is the only
+**Gallery — bake history as iterations.** A gallery of every photograph in date
+order is a screensaver: it says a lot of baking happened and nothing about
+whether any of it got better. The default reading groups a recipe's bakes into
+one row running oldest to newest, so the row *is* the progress; sorting by date
+stays as the second reading, cut into months. One tile is one bake, not one
+photograph — counting photographs would inflate every row into a progression
+that never happened. An attempt number is printed only where there is a
+sequence to count. `BakeLogsGrid` (a recipe's own makes) was rebuilt on the same
+tile, losing a 3D flip that hid the notes behind an animation and a second
+click.
+
+**Pantry and Grocery as the machine's inventory.** The pantry is a stock panel:
+a lit lamp beside every item — the same lamp a recipe uses for "you have this" —
+on hairline-ruled rows rather than forty bordered pills. The grocery list is a
+bank and a list: recipes latch like keys, shown a dozen at a time behind a
+search field, because 203 recipes rendered as 203 keys is a wall between a
+shopper and the list. The list keeps real checkboxes rather than lamps — it is
+operated one-handed in an aisle, and the platform's checkbox is what every thumb
+and every screen reader already knows.
+
+**The Instagram exporter was a full redesign, not a retheme.** It is the only
 surface in Proof that someone who has never seen the app will look at, and it is
 seen out of context: a fixed-size image on someone else's feed, with no
 navigation, no hover, and no second screen to explain it. That makes it a
-Persuade surface inside an Operate product, and the composition itself — what a
-shared bake card actually *is* in this world — has to be designed rather than
-recoloured. The current export borrows the old world's photo-with-a-caption
-layout wholesale.
+Persuade surface inside an Operate product. The old export was a polaroid — a
+photo, a rotation, a caption — which is what every food account on earth posts.
 
-### Phase 6 — Editor + Notes ⬜
+What Proof has that they do not is the pattern, so the card is the bake as the
+machine finished it: the photograph mounted as a plate, the name at display
+scale, the instrument values that are real, and the step row across the foot
+with every key complete, the line closed on the right by the site address.
+Three rules follow from being rasterised rather than rendered — every colour is
+a literal (html2canvas rebuilds the node outside the cascade), nothing is loaded
+that could fail (the remote logo and the stock fallback photograph are gone),
+and nothing is claimed that the recipe cannot prove.
+
+Two defects were found by measuring rather than looking: the card was captured
+through the preview's CSS transform, so a card exported from a phone came out
+under 900px square and its size depended on the window width; and a row of
+sixteen touching bone keys reads as a white bar rather than as keys. The scale
+now comes off for the capture, and every branch of the key row is exact —
+labelled phase keys where the recipe proved its phases, one key per step for a
+short generic recipe, phase keys again past sixteen steps.
+
+### Phase 6 — Editor + Notes ⬜ *(next)*
 
 Recipe editor forms onto `Field`/`Panel`; markdown editor replaced with native
 controls per the earlier decision; general notes rethemed.
@@ -226,7 +275,9 @@ not from intentions, and not before the build is done.
 - No orphan or debug code.
 - The admin PIN gates writes; reads stay public.
 - Merge cadence: the branch merges to `main` — and therefore deploys live —
-  **after Phase 3**.
+  **after Phase 3**. Phases 4 and 5 landed on the branch before that merge
+  happened, so the merge now carries phases 0–5 together and still needs an
+  explicit go-ahead.
 
 ## Open items
 
@@ -248,5 +299,18 @@ not from intentions, and not before the build is done.
   is fine until it is not: there is no local copy, no resizing, and a tile
   downloads a full-size photograph to display it at 280px. Worth revisiting
   when the library holds real bake photography.
-- **No shared `Sheet`/`Dialog` primitive.** The bottom nav's More sheet is
-  bespoke. Worth formalising if Phases 4–6 need more sheets.
+- **No shared `Sheet`/`Dialog` primitive.** The bottom nav's More sheet was
+  bespoke, and Phase 4 added three more hand-rolled overlays in Baking Mode
+  alone — ingredients, bake log, voice help — plus the pantry's scanner. Four
+  copies of the same scrim-and-panel pattern is the point at which it should be
+  a primitive, and Phase 6 will want dialogs too.
+- **The selected-make detail view is still the old world.** Its offending
+  colours — a yellow personal-best pill, a pink Instagram link, a green save —
+  are now on `Button`, but the panel around them (rounded-2xl cards, 4px
+  left-border headings, shadowed photos) was not in Phase 5's scope. It sits
+  between Phases 5 and 6; fold it into whichever runs next.
+- **The bake history has almost no data to prove itself on.** The live library
+  holds three bake logs across three different recipes, so the iterations
+  reading — the whole reason the gallery groups by recipe — renders as rows of
+  one. It is correct, and it stays untested by reality until something is baked
+  twice.
