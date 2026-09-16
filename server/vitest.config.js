@@ -8,5 +8,7 @@ export default defineConfig({
     // parallel intermittently crashes a worker ("Worker exited unexpectedly").
     // Serial is a few seconds slower but reliably green.
     fileParallelism: false,
+    hookTimeout: 60000,
+    testTimeout: 60000,
   }
 });

@@ -42,3 +42,8 @@ test.txt
 
 # Impeccable transient session state (decision-page answers).
 .impeccable/questions/
+
+# Local agent/tool configuration (Claude Code, Codex, installed skills) — not project source.
+.claude/
+.codex/
+.agents/skills/

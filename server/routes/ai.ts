@@ -4,6 +4,7 @@ import * as cheerio from 'cheerio';
 import { requireAdmin } from '../middleware/auth.js';
 import { rehostImageUrls } from '../services/cloudinary.js';
 import { getFlashJsonModel, getFlashModel, isGeminiConfigured } from '../services/gemini.js';
+import { parseIngredient } from '../services/ingredientParser.js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const router = Router();
@@ -76,26 +77,6 @@ router.post('/extract', requireAdmin, async (req: Request, res: Response) => {
       if (Array.isArray(image)) return image.length > 0 ? getImageUrl(image[0]) : '';
       if (image.url) return image.url;
       return '';
-    };
-
-    const parseIngredient = (ing: string) => {
-      let qty = 1; let unit = 'x'; let name = ing;
-      const match = ing.match(/^([\d\.\s\/½¼¾]+)\s*([a-zA-Z]+)?\s+(.*)/);
-      if (match) {
-        let qtyStr = match[1].trim();
-        if (qtyStr === '½') qty = 0.5;
-        else if (qtyStr === '¼') qty = 0.25;
-        else if (qtyStr === '¾') qty = 0.75;
-        else if (qtyStr.includes('/')) {
-          const parts = qtyStr.split(' ');
-          if (parts.length === 2) { const frac = parts[1].split('/'); qty = parseFloat(parts[0]) + (parseFloat(frac[0]) / parseFloat(frac[1])); }
-          else { const frac = parts[0].split('/'); qty = parseFloat(frac[0]) / parseFloat(frac[1]); }
-        } else qty = parseFloat(qtyStr) || 1;
-        const validUnits = ['cup','cups','oz','ounce','ounces','tsp','teaspoon','teaspoons','tbsp','tablespoon','tablespoons','g','gram','grams','ml','milliliter','milliliters','lb','lbs','pound','pounds'];
-        if (match[2] && validUnits.includes(match[2].toLowerCase())) { unit = match[2].toLowerCase(); name = match[3]; }
-        else { unit = 'x'; name = match[2] ? match[2] + ' ' + match[3] : match[3]; }
-      }
-      return { name: name.trim(), quantity: qty, unit };
     };
 
     const extractSteps = (steps: any[]): string[] => {
