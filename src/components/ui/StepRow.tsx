@@ -75,7 +75,7 @@ export function StepRow({
         aria-label="No phases yet"
       >
         {Array.from({ length: 8 }).map((_, i) => (
-          <div key={i} className="flex-1 rounded-key bg-key-unlit border border-ink-muted/20" />
+          <div key={i} className="max-w-20 flex-1 rounded-key bg-key-unlit border border-ink-muted/20" />
         ))}
       </div>
     );
@@ -108,7 +108,12 @@ export function StepRow({
 
         const shared = cn(
           'relative flex flex-1 items-center justify-center rounded-key transition-colors',
-          size === 'mini' ? 'h-2 min-w-1.5' : 'h-14 min-w-6',
+          // Keys are capped as well as floored. A recipe that derives only
+          // three phases would otherwise stretch each key across a third of
+          // the row, and a 200px-wide rectangle stops reading as a key and
+          // starts reading as an empty box. A machine's keys are a fixed
+          // size; the row gets shorter when there is less to play.
+          size === 'mini' ? 'h-2 min-w-1.5 max-w-12' : 'h-14 min-w-6 max-w-20',
           KEY_TONE[state],
           state === 'now' && 'ring-1 ring-inset ring-white/70',
         );
@@ -160,7 +165,8 @@ export function StepRow({
           <span
             key={phase.id}
             className={cn(
-              'label-silkscreen min-w-6 flex-1 truncate text-center',
+              // Matches the key's own width cap so labels stay under their keys.
+              'label-silkscreen min-w-6 max-w-20 flex-1 truncate text-center',
               LABEL_TONE[phaseState(phase, activeStep)],
             )}
           >

@@ -7,15 +7,16 @@ import { useRecipes, useBakeLogs } from '../lib/queries';
 import { useActiveBake } from '../lib/useActiveBake';
 import { derivePhases } from '../lib/phases';
 import { totalRecipeMinutes, formatMinutesForSegments } from '../lib/duration';
-import { Button, Field, StepRow, SegmentReadout, buttonClassName } from './ui';
+import { Button, Field, StepRow, SegmentReadout, RecipePlate, buttonClassName } from './ui';
 import OnboardingModal from './OnboardingModal';
 
 /*
- * The hero surface. A recipe reads as a pattern — title, total time as a
- * segment readout, its method as a miniature step row — not as a photo card;
- * uneven photography coverage across 100+ recipes stops being a defect when no
- * row needs a picture to read. One row, and only one, carries a lit key: the
- * bake actually running right now.
+ * The hero surface. A recipe reads as a pattern — its photograph on a plate,
+ * its title, its total time as a segment readout, and its method as a
+ * miniature step row — rather than as a photo card in a grid. The plate makes
+ * the library warm to arrive at; the pattern beside it is what makes the
+ * library scannable, and it carries the row on its own if an image is missing.
+ * One row, and only one, carries a lit key: the bake actually running now.
  */
 
 const EMPTY_RECIPES: Recipe[] = [];
@@ -44,6 +45,7 @@ function relativeDate(iso: string): string {
 function ShelfItem({ recipe, caption }: { recipe: Recipe; caption: string }) {
   return (
     <Link to={`/recipe/${recipe._id}`} className="flex w-40 shrink-0 flex-col gap-2 sm:w-48">
+      <RecipePlate src={recipe.imageUrls?.[0]} alt={recipe.title} size="tile" />
       <h3 className="font-faceplate truncate text-sm text-ink">{recipe.title}</h3>
       <StepRow phases={derivePhases(recipe.instructions)} size="mini" />
       <span className="label-silkscreen text-ink-muted">{caption}</span>
@@ -101,22 +103,28 @@ function PatternRow({
        * ("Sourdough Bread, Bake phases: Levain, Bulk, Bake, link") and still
        * makes the entire row clickable.
        */}
-      <Link to={`/recipe/${recipe._id}`} className="flex flex-col gap-2.5">
-        <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0 flex-1">
-            <h3 className="font-faceplate truncate text-xl text-ink sm:text-2xl">{recipe.title}</h3>
-            {recipe.folder && recipe.folder !== 'Uncategorized' ? (
-              <span className="label-silkscreen text-ink-muted">{recipe.folder}</span>
-            ) : null}
+      <Link to={`/recipe/${recipe._id}`} className="flex gap-3 sm:gap-4">
+        <RecipePlate src={recipe.imageUrls?.[0]} alt={recipe.title} size="row" />
+        <div className="flex min-w-0 flex-1 flex-col gap-2.5">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0 flex-1">
+              {/* Wraps to a second line rather than truncating: at 390px beside
+                * a plate, "Mini Bundt Cakes" would lose half its name, and a
+                * recipe a baker cannot identify is not a row worth listing. */}
+              <h3 className="font-faceplate line-clamp-2 text-xl text-ink sm:text-2xl">{recipe.title}</h3>
+              {recipe.folder && recipe.folder !== 'Uncategorized' ? (
+                <span className="label-silkscreen text-ink-muted">{recipe.folder}</span>
+              ) : null}
+            </div>
+            <SegmentReadout
+              value={segment?.value ?? '--'}
+              unit={segment?.unit}
+              size="sm"
+              tone={isActive ? 'signal' : 'ink'}
+            />
           </div>
-          <SegmentReadout
-            value={segment?.value ?? '--'}
-            unit={segment?.unit}
-            size="sm"
-            tone={isActive ? 'signal' : 'ink'}
-          />
+          <StepRow phases={phases} activeStep={activeStep} />
         </div>
-        <StepRow phases={phases} activeStep={activeStep} />
       </Link>
 
       {isActive ? (

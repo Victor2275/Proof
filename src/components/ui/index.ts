@@ -11,6 +11,7 @@ export { Button, buttonClassName, type ButtonProps } from './Button';
 export { Field, type FieldProps } from './Field';
 export { SegmentReadout, type SegmentReadoutProps, type SegmentSize } from './SegmentReadout';
 export { StepRow, type StepRowProps } from './StepRow';
+export { RecipePlate, type RecipePlateProps, type PlateSize } from './RecipePlate';
 export { InstrumentRow, type InstrumentItem, type InstrumentRowProps } from './InstrumentRow';
 export { Meter, type MeterProps } from './Meter';
 export { Skeleton, SkeletonCard } from './Skeleton';

@@ -20,9 +20,14 @@ const PHASES = derivePhases([
 ]);
 
 describe('SegmentReadout', () => {
+  it('announces its silkscreened caption together with its value', () => {
+    render(<SegmentReadout value="220" unit="G" label="Flour" />);
+    expect(screen.getByRole('img', { name: 'Flour 220 G' })).toBeInTheDocument();
+  });
+
   it('reads as one value to a screen reader, not a row of glyphs', () => {
     render(<SegmentReadout value="12:40" unit="MIN" />);
-    expect(screen.getByText('12:40 MIN')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: '12:40 MIN' })).toBeInTheDocument();
   });
 
   it('draws the unlit segments as well as the lit ones', () => {

@@ -5,10 +5,16 @@ import { resolve } from 'node:path';
 /*
  * Foundation guards for the Step Row visual world.
  *
- * The world's three bans (no gradients, no backdrop blur, no glow except a lit
- * key or segment) are only worth stating if something enforces them. Every
- * previous attempt at a design system in this codebase drifted because the
- * rules lived in prose; these live in CI.
+ * The world's one ban (no glow except a lit key or segment) is only worth
+ * stating if something enforces it. Every previous attempt at a design system
+ * in this codebase drifted because the rules lived in prose; these live in CI.
+ *
+ * Gradient and backdrop blur were banned outright and are now permitted as
+ * materials: the faceplate sheen and the modal scrim, both defined once in
+ * index.css. What is still guarded is that they stay materials — a component
+ * reaching for an ad-hoc `bg-gradient-to-*` or `backdrop-blur-*` utility is
+ * how forty different button styles happened last time, so the utilities are
+ * kept out of component sources and the tokens are required to exist.
  *
  * Component sources come through Vite's raw glob. The stylesheet is read from
  * disk instead: Vitest stubs CSS modules to empty strings by default (`css:
@@ -50,11 +56,20 @@ describe('visual world bans', () => {
     expect(indexCss.length).toBeGreaterThan(1000);
   });
 
-  it('ships no gradients', () => {
-    expect(offenders(/bg-gradient-to-|from-\[|via-\[/)).toEqual([]);
+  it('defines the faceplate sheen once, as a token', () => {
+    // A panel is a moulded object, not a flat rectangle: the sheen is a ramp
+    // of a few percent across it, defined per theme.
+    expect(cssRules).toMatch(/--faceplate:\s*linear-gradient/);
+    expect(cssRules).toMatch(/\.faceplate\s*\{[^}]*background-image:\s*var\(--faceplate\)/);
   });
 
-  it('ships no backdrop blur', () => {
+  it('defines the scrim once, as a token', () => {
+    // Blur belongs only to a layer sitting over the interface.
+    expect(cssRules).toMatch(/\.scrim\s*\{[\s\S]*?backdrop-filter:\s*blur/);
+  });
+
+  it('builds gradients and blur from those tokens, not ad-hoc utilities', () => {
+    expect(offenders(/bg-gradient-to-|bg-linear-to-/)).toEqual([]);
     expect(offenders(/backdrop-blur/)).toEqual([]);
   });
 

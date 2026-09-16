@@ -1,5 +1,20 @@
 import type { Recipe } from '../lib/api';
-import { CheckCircle2, Sparkles } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
+import { Button, cn } from './ui';
+
+/*
+ * Ingredients as an instrument panel.
+ *
+ * Every quantity is a measured value, so quantities are set in mono at a fixed
+ * column width and tabular figures: the numbers line up down the list and a
+ * baker can read the scale of a recipe without reading the words. The name
+ * follows in the reading voice.
+ *
+ * The pantry lamp is a lamp, not a green tick. Lit means the pantry has it;
+ * dark is a designed state rather than an absence of feedback, and the lit
+ * state is bone rather than signal — having flour in the cupboard is not an
+ * event that is happening now.
+ */
 
 interface IngredientListProps {
   recipe: Recipe;
@@ -22,85 +37,113 @@ export default function IngredientList({
   checkedIngredients,
   toggleCheck,
   setAiSubstituteIngredient,
-  handleExportGroceryList
+  handleExportGroceryList,
 }: IngredientListProps) {
+  const ingredients = recipe.ingredients || [];
+
+  // Baker's percentages are always relative to total flour weight, so a recipe
+  // with no flour in it has no percentages to show rather than percentages of
+  // zero.
+  const flourTotal = ingredients.reduce(
+    (acc, ing) => ((ing.name || '').toLowerCase().includes('flour') ? acc + (ing.quantity || 0) : acc),
+    0,
+  );
+
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="font-bold text-lg uppercase tracking-wider">Ingredients</h3>
-        <div className="flex gap-2">
-          <button 
-            onClick={handleExportGroceryList}
-            className="text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-md border border-border-subtle text-ink-muted hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
-          >
-            Copy List
-          </button>
-          <button 
+    <section className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-rule pb-2">
+        <h2 className="label-silkscreen">Ingredients</h2>
+        <div className="flex gap-1">
+          <Button variant="ghost" size="sm" onClick={handleExportGroceryList}>
+            Copy list
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            engaged={showBakersMath}
             onClick={() => setShowBakersMath(!showBakersMath)}
-            className={`text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-xl border transition-all ${showBakersMath ? 'bg-accent/10 text-accent border-accent ' : 'border-border-subtle text-ink-muted hover:bg-white/5'}`}
           >
-            Baker's %
-          </button>
+            Baker&apos;s %
+          </Button>
         </div>
       </div>
 
-      <ul className="space-y-0">
-        {(() => {
-          const flourTotal = (recipe.ingredients || []).reduce((acc, ing) => {
-            return (ing.name || '').toLowerCase().includes('flour') ? acc + (ing.quantity || 0) : acc;
-          }, 0);
+      <ul className="flex flex-col">
+        {ingredients.map((ing, i) => {
+          const checked = !!checkedIngredients[i];
+          const pct =
+            showBakersMath && flourTotal > 0
+              ? `${((ing.quantity / flourTotal) * 100).toFixed(1)}%`
+              : null;
 
-          return (recipe.ingredients || []).map((ing, i) => {
-            let pct = '';
-            if (showBakersMath && flourTotal > 0) {
-              pct = ((ing.quantity / flourTotal) * 100).toFixed(1) + '%';
-            }
-            
-            return (
-              <li key={i} className="flex items-start py-3 border-b border-dashed border-border-subtle last:border-0 group">
-                <label className="flex items-center p-2 -ml-2 mr-2 cursor-pointer touch-manipulation">
-                  <input 
-                    type="checkbox" 
-                    checked={!!checkedIngredients[i]}
-                    onChange={() => toggleCheck(i)}
-                    className="w-6 h-6 shrink-0 rounded border-border-subtle text-ink focus:ring-ink cursor-pointer print:appearance-none print:w-5 print:h-5 print:border-2 print:border-ink"
-                  />
-                </label>
-                
-                <div className="flex-1 flex flex-wrap sm:flex-nowrap items-baseline gap-x-4 gap-y-1">
-                  <span className={`font-medium shrink-0 min-w-[4rem] ${checkedIngredients[i] ? 'text-ink-muted line-through' : ''}`}>
-                    {Number((ing.quantity * scaleMultiplier).toFixed(2))} {ing.unit}
-                  </span>
-                  
-                  {showBakersMath && (
-                    <span className="text-ink-muted font-mono text-sm shrink-0 min-w-[3rem]">
-                      {pct}
-                    </span>
-                  )}
-                  
-                  <span className={`flex-1 break-words ${checkedIngredients[i] ? 'text-ink-muted line-through' : ''}`}>
-                    {ing.name}
-                  </span>
-                  
-                  {inPantryMap[ing.name] && (
-                    <span className="flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform" title="In your pantry">
-                      <CheckCircle2 className="w-4 h-4 text-green-500/70" />
-                    </span>
-                  )}
-                </div>
+          return (
+            <li key={i} className="group flex items-center gap-3 border-b border-rule py-2.5 last:border-0">
+              <label className="flex cursor-pointer items-center p-1.5 -ml-1.5 touch-manipulation">
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={() => toggleCheck(i)}
+                  className="h-5 w-5 shrink-0 cursor-pointer rounded-key border-rule text-signal focus:ring-signal"
+                  aria-label={ing.name}
+                />
+              </label>
 
-                <button
-                  onClick={() => setAiSubstituteIngredient(ing.name)}
-                  className="ml-2 text-[10px] sm:text-xs text-accent px-2 py-1 rounded border border-accent/20 bg-accent/5 opacity-80 sm:opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 font-bold hover:bg-accent/10 shrink-0 uppercase tracking-widest mt-1 sm:mt-0"
-                  title="AI Substitutions"
-                >
-                  <Sparkles className="w-3 h-3" /> Sub
-                </button>
-              </li>
-            );
-          });
-        })()}
+              <span
+                className={cn(
+                  'w-16 shrink-0 text-right font-mono text-sm tabular-nums sm:w-20',
+                  checked ? 'text-ink-muted line-through' : 'text-ink',
+                )}
+              >
+                {Number((ing.quantity * scaleMultiplier).toFixed(2))}
+                <span className="ml-1 text-ink-muted">{ing.unit}</span>
+              </span>
+
+              {showBakersMath ? (
+                <span className="w-14 shrink-0 text-right font-mono text-xs tabular-nums text-ink-muted">
+                  {pct}
+                </span>
+              ) : null}
+
+              <span
+                className={cn(
+                  'min-w-0 flex-1 break-words',
+                  checked ? 'text-ink-muted line-through' : 'text-ink',
+                )}
+              >
+                {ing.name}
+              </span>
+
+              {/* The pantry lamp. Square and filled when the pantry has it,
+                * hollow when it does not — shape carries the state as well as
+                * fill, so it survives a colour vision difference. */}
+              <span
+                className={cn(
+                  'h-2 w-2 shrink-0',
+                  inPantryMap[ing.name] ? 'bg-ink' : 'border border-key-unlit',
+                )}
+                title={inPantryMap[ing.name] ? 'In your pantry' : 'Not in your pantry'}
+                aria-hidden="true"
+              />
+              <span className="sr-only">
+                {inPantryMap[ing.name] ? 'In your pantry' : 'Not in your pantry'}
+              </span>
+
+              <button
+                type="button"
+                onClick={() => setAiSubstituteIngredient(ing.name)}
+                title={`Substitutions for ${ing.name}`}
+                className="label-silkscreen flex shrink-0 items-center gap-1 rounded-control border border-rule px-2 py-1 text-ink-muted opacity-80 hover:text-ink sm:opacity-0 sm:group-hover:opacity-100"
+              >
+                {/* At phone width the word does not fit beside a quantity, a
+                  * name and a pantry lamp — the icon carries it, and the
+                  * button keeps its accessible name from the title. */}
+                <Sparkles className="h-3 w-3" />
+                <span className="hidden sm:inline">Sub</span>
+              </button>
+            </li>
+          );
+        })}
       </ul>
-    </div>
+    </section>
   );
 }

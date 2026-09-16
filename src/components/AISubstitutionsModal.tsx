@@ -37,7 +37,7 @@ export default function AISubstitutionsModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+    <div className="scrim fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="bg-paper rounded-xl w-full max-w-md shadow-2xl border border-border-subtle p-6 animate-in fade-in zoom-in-95">
         <div className="flex justify-between items-center border-b border-border-subtle pb-4 mb-4">
           <div className="flex items-center gap-2 text-purple-700 dark:text-purple-300 font-bold">

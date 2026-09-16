@@ -32,7 +32,7 @@ export default function RecipeDrawer({ isOpen, onClose, recipeId }: RecipeDrawer
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/60 z-[100] "
+            className="scrim fixed inset-0 z-[100] "
             data-testid="recipe-drawer-backdrop"
           />
           <motion.div

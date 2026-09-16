@@ -68,6 +68,20 @@ This is a 1-to-1 mirror of CURRENT_FEATURES.md. Use checkboxes to track manual t
 - [ ] **Bottom nav restructure**: four dock slots + working More sheet (inert while closed) + FAB New Recipe.
 - [ ] **Onboarding/PIN/status bars retheme**: PIN keypad still works exactly as before; banners read in the amber "due" tone.
 
+## 2c. Photo plates (Phase 2a)
+- [ ] **Plates on dashboard rows and shelf tiles**: every recipe shows its photograph; rows keep their geometry where one is missing.
+- [ ] **Dead or absent image**: falls back to an unlit plate, never a broken-image glyph.
+- [ ] **Scroll performance**: photographs load as rows come into view, not all at once.
+- [ ] **Step keys**: a three-phase recipe still reads as keys, not as wide empty boxes.
+
+## 3a. Recipe Viewer (Phase 3)
+- [ ] **Masthead**: title leads; the photograph reads as a framed plate at desktop and at 390px, with ingredients still reachable without a long scroll.
+- [ ] **Readouts**: total/prep/cook/serves read correctly; a recipe with no times shows `--`.
+- [ ] **Scaling**: 0.5x-3x changes quantities and the serving count, and the serving display lights while scaled.
+- [ ] **Method**: steps grouped under phase headings with numbering matching Baking Mode.
+- [ ] **Ingredients**: checkboxes, baker's percentages, pantry lamps and the substitutions button all behave as before.
+- [ ] **Controls**: share/QR/PDF, favourite, edit, start recipe and schedule bake all still work from both the desktop and mobile menus.
+
 ## 7. UI/UX Foundation
 - [ ] **"Step Row" Visual World (Phase 0 foundation)**: Rhythm-machine design language — matte panels, silkscreen labels, lit step keys, segment readouts; colour is temporal, not decorative.
 - [ ] **Three enforced bans**: No gradients, no backdrop blur, no glow except lit keys/segments; enforced by `src/designSystem.test.ts`.

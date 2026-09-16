@@ -12,6 +12,7 @@ import InstructionList from './InstructionList';
 import SideBySideCompare from './SideBySideCompare';
 import { Edit, MoreVertical, Play, X, Star, Award, Share2 } from 'lucide-react';
 import { Skeleton } from './ui/Skeleton';
+import { Button, Panel, buttonClassName, cn } from './ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { QRCodeSVG } from 'qrcode.react';
 import Fuse from 'fuse.js';
@@ -42,6 +43,13 @@ function Instagram({ className = "w-4 h-4" }: { className?: string }) {
 }
 
 
+
+/*
+ * One row of a dropdown. Menus in this world are panels with rules between
+ * their items, not floating cards with shadows.
+ */
+const MENU_ITEM =
+  'block w-full border-b border-rule px-4 py-3 text-left text-sm text-ink hover:bg-panel-sunk';
 
 const EMPTY_LOGS: BakeLog[] = [];
 const EMPTY_PANTRY: any[] = []; // or actual type if imported
@@ -250,43 +258,43 @@ export default function RecipeViewer() {
       
       {/* Top Bar */}
       <div className="flex justify-between items-start md:items-center gap-4 pb-6">
-        <h1 className="text-2xl font-bold tracking-tight uppercase">VIEW RECIPE</h1>
+        {/* The recipe's own title is the heading of this page; a second
+          * "VIEW RECIPE" above it named the route rather than the thing. */}
+        <Link to="/" className="label-silkscreen text-ink-muted hover:text-ink">
+          ← Cookbook
+        </Link>
         
         {/* Desktop Actions */}
         <div className="hidden md:flex flex-wrap items-center gap-3 relative">
-          <button 
-            onClick={() => setShowExportMenu(!showExportMenu)}
-            className="border border-border-subtle hover:bg-black/5 dark:hover:bg-white/5 text-ink-muted px-4 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-2 whitespace-nowrap"
-          >
-            <Share2 className="w-4 h-4" /> SHARE
-          </button>
+          <Button variant="ghost" size="sm" onClick={() => setShowExportMenu(!showExportMenu)}>
+            <Share2 className="w-4 h-4" /> Share
+          </Button>
           
           {showExportMenu && (
-            <div className="absolute top-full left-0 mt-2 w-56 bg-paper border border-border-subtle rounded-xl shadow-xl overflow-hidden z-50">
-              <button onClick={handleShareLink} className="block w-full text-left px-4 py-3 font-medium border-b border-border-subtle hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-                Copy Link
+            <div className="absolute top-full left-0 z-50 mt-2 w-56 overflow-hidden rounded-panel border border-rule bg-panel faceplate">
+              <button onClick={handleShareLink} className={MENU_ITEM}>
+                Copy link
               </button>
-              <button onClick={() => { setShowQrModal(true); setShowExportMenu(false); }} className="block w-full text-left px-4 py-3 font-medium border-b border-border-subtle hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-                QR Code
+              <button onClick={() => { setShowQrModal(true); setShowExportMenu(false); }} className={MENU_ITEM}>
+                QR code
               </button>
-              <button onClick={handleExportPDF} className="block w-full text-left px-4 py-3 font-medium hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
+              <button onClick={handleExportPDF} className={cn(MENU_ITEM, 'border-b-0')}>
                 Export PDF
               </button>
             </div>
           )}
 
-          <button 
+          <Button
+            variant="secondary"
+            size="sm"
+            engaged={recipe.tags?.includes('Favorite')}
             onClick={handleToggleFavorite}
-            className={`border px-4 py-1.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 whitespace-nowrap ${recipe.tags?.includes('Favorite') ? 'border-accent/50 bg-accent/10 text-accent' : 'border-border-subtle hover:bg-white/5 text-ink-muted'}`}
           >
-            <Star className={`w-4 h-4 ${recipe.tags?.includes('Favorite') ? 'fill-current' : ''}`} /> 
-            {recipe.tags?.includes('Favorite') ? 'FAVORITED' : 'FAVORITE'}
-          </button>
-          <Link 
-            to={`/edit/${recipe._id}`} 
-            className="border border-accent/30 text-accent px-4 py-1.5 rounded-xl text-sm font-bold hover:bg-accent/10 transition-all flex items-center gap-2 whitespace-nowrap"
-          >
-            <Edit className="w-4 h-4" /> EDIT RECIPE
+            <Star className={cn('w-4 h-4', recipe.tags?.includes('Favorite') && 'fill-current')} />
+            {recipe.tags?.includes('Favorite') ? 'Favorited' : 'Favorite'}
+          </Button>
+          <Link to={`/edit/${recipe._id}`} className={buttonClassName({ variant: 'ghost', size: 'sm' })}>
+            <Edit className="w-4 h-4" /> Edit
           </Link>
         </div>
 
@@ -297,70 +305,82 @@ export default function RecipeViewer() {
           </button>
           
           {showMobileMenu && (
-            <div className="absolute right-0 top-full mt-2 w-56 bg-paper border border-border-subtle rounded-xl shadow-xl overflow-hidden z-50 text-sm">
-              <button onClick={() => { setShowMobileShareModal(true); setShowMobileMenu(false); }} className="block w-full text-left px-4 py-3 font-medium border-b border-border-subtle flex items-center gap-2">
+            <div className="absolute right-0 top-full z-50 mt-2 w-56 overflow-hidden rounded-panel border border-rule bg-panel faceplate">
+              <button onClick={() => { setShowMobileShareModal(true); setShowMobileMenu(false); }} className={cn(MENU_ITEM, 'flex items-center gap-2')}>
                 <Share2 className="w-4 h-4" /> Share
               </button>
-              <button 
+              <button
                 onClick={() => { handleToggleFavorite(); setShowMobileMenu(false); }}
-                className="block w-full text-left px-4 py-3 font-medium border-b border-border-subtle flex justify-between items-center"
+                className={cn(MENU_ITEM, 'flex items-center justify-between')}
               >
-                {recipe.tags?.includes('Favorite') ? 'Remove Favorite' : 'Add Favorite'}
-                <Star className={`w-4 h-4 ${recipe.tags?.includes('Favorite') ? 'fill-yellow-500 text-yellow-500' : ''}`} />
+                {recipe.tags?.includes('Favorite') ? 'Remove favorite' : 'Add favorite'}
+                <Star className={cn('w-4 h-4', recipe.tags?.includes('Favorite') && 'fill-current')} />
               </button>
-              <Link to={`/edit/${recipe._id}`} className="block w-full text-left px-4 py-3 font-medium">
-                Edit Recipe
+              <Link to={`/edit/${recipe._id}`} className={cn(MENU_ITEM, 'block border-b-0')}>
+                Edit recipe
               </Link>
             </div>
           )}
         </div>
       </div>
       
-      <div id="recipe-export-node" className="bg-paper text-ink">
+      {/* The export node needs an opaque background for html2canvas, but it is
+        * the page itself, not a panel — painting it panel-coloured laid a
+        * lighter slab behind the whole recipe that lined up with nothing. */}
+      <div id="recipe-export-node" className="bg-ground text-ink">
         {/* Top Controls */}
-        <div className="flex flex-nowrap md:flex-wrap items-center gap-3 pb-6 overflow-x-auto no-scrollbar" data-html2canvas-ignore="true">
-            
-            <div className="flex border border-border-subtle rounded-xl overflow-hidden bg-black/5 dark:bg-white/5 p-1 text-xs font-bold uppercase tracking-wide shrink-0">
-             {[0.5, 1, 2, 3].map(m => (
-               <button 
-                 key={m}
-                 onClick={() => setScaleMultiplier(m)}
-                 className={`px-3 py-2 rounded-lg transition-all ${scaleMultiplier === m ? 'bg-accent text-black ' : 'text-ink-muted hover:text-accent hover:bg-white/5'}`}
-               >
-                 {m}x
-               </button>
-             ))}
+        <div className="no-scrollbar flex flex-nowrap items-center gap-4 overflow-x-auto pb-6 md:flex-wrap" data-html2canvas-ignore="true">
+          {/* The scale bank. A multiplier switch: one engaged at a time, and
+            * the recipe as written is 1x. */}
+          <div className="flex shrink-0 items-center gap-2" role="group" aria-label="Scale recipe">
+            <span className="label-silkscreen text-silkscreen">Scale</span>
+            <div className="flex gap-px">
+              {[0.5, 1, 2, 3].map(m => (
+                <Button
+                  key={m}
+                  variant="secondary"
+                  size="sm"
+                  engaged={scaleMultiplier === m}
+                  onClick={() => setScaleMultiplier(m)}
+                >
+                  {m}x
+                </Button>
+              ))}
+            </div>
           </div>
 
-          <div className="flex border border-border-subtle rounded-xl overflow-hidden bg-black/5 dark:bg-white/5 p-1 text-xs font-bold uppercase tracking-wide whitespace-nowrap shrink-0">
-             <button 
-               onClick={() => setActiveTab('recipe')}
-               className={`px-3 py-2 rounded-lg transition-all ${activeTab === 'recipe' ? 'bg-accent/10 text-accent' : 'text-ink-muted hover:text-accent'}`}
-             >
-               Recipe
-             </button>
-              <button 
-                onClick={() => setActiveTab('history')}
-                className={`px-3 py-2 rounded-lg transition-all ${activeTab === 'history' ? 'bg-accent/10 text-accent' : 'text-ink-muted hover:text-accent'}`}
-              >
-                Previous Makes {bakeLogs.length > 0 ? `(${bakeLogs.length})` : ''}
-              </button>
-          </div>
-
-          <div className="relative hidden md:block">
-            <button 
-              onClick={() => setShowStartMenu(!showStartMenu)}
-              className="flex bg-accent text-black px-5 py-1.5 rounded-xl text-sm font-bold transition-all uppercase tracking-wide shadow-sm whitespace-nowrap items-center gap-2"
+          <div className="flex shrink-0 gap-px">
+            <Button
+              variant="secondary"
+              size="sm"
+              engaged={activeTab === 'recipe'}
+              onClick={() => setActiveTab('recipe')}
             >
-              <Play className="w-4 h-4" fill="currentColor" /> START RECIPE
-            </button>
+              Recipe
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              engaged={activeTab === 'history'}
+              onClick={() => setActiveTab('history')}
+            >
+              Previous makes {bakeLogs.length > 0 ? `(${bakeLogs.length})` : ''}
+            </Button>
+          </div>
+
+          {/* The only solid signal-red control on the page: the one that
+            * starts something happening. */}
+          <div className="relative hidden shrink-0 md:block">
+            <Button variant="primary" size="sm" onClick={() => setShowStartMenu(!showStartMenu)}>
+              <Play className="w-4 h-4" fill="currentColor" /> Start recipe
+            </Button>
             {showStartMenu && (
-              <div className="absolute top-full right-0 mt-2 w-48 bg-paper border border-border-subtle rounded-xl shadow-xl overflow-hidden z-50">
-                <Link to={`/recipe/${recipe._id}/bake`} className="block w-full text-left px-4 py-3 font-medium border-b border-border-subtle hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-                  Start Now
+              <div className="absolute right-0 top-full z-50 mt-2 w-48 overflow-hidden rounded-panel border border-rule bg-panel faceplate">
+                <Link to={`/recipe/${recipe._id}/bake`} className={cn(MENU_ITEM, 'block')}>
+                  Start now
                 </Link>
-                <button onClick={() => { setShowReverseScheduler(true); setShowStartMenu(false); }} className="block w-full text-left px-4 py-3 font-medium hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-                  Schedule Bake
+                <button onClick={() => { setShowReverseScheduler(true); setShowStartMenu(false); }} className={cn(MENU_ITEM, 'border-b-0')}>
+                  Schedule bake
                 </button>
               </div>
             )}
@@ -398,20 +418,19 @@ export default function RecipeViewer() {
           {/* Lab Notes */}
           {recipe.labNotes && (
             <div className="pt-10">
-              <h3 className="font-bold text-lg mb-4 uppercase tracking-wider">Lab Notes & Iterations</h3>
-              <div className="bg-black/5 dark:bg-white/5 border border-border-subtle rounded-lg p-6 relative">
-                <div className="absolute top-2 right-4 text-xs text-ink-muted">markdown</div>
+              <Panel title="Lab notes & iterations">
                 <pre className="whitespace-pre-wrap font-mono text-sm leading-relaxed text-ink-muted">
                   {recipe.labNotes}
                 </pre>
-              </div>
+              </Panel>
             </div>
           )}
         </>
       ) : (
         <div className="space-y-6">
-          <div className="flex justify-between items-center border-b border-border-subtle pb-4">
-            <h2 className="text-2xl font-bold uppercase tracking-widest">Previous Makes</h2>
+          <div className="flex items-center justify-between border-b border-rule pb-2">
+            <h2 className="label-silkscreen">Previous makes</h2>
+            <span className="label-silkscreen text-ink-muted">{bakeLogs.length} logged</span>
           </div>
           
           <BakeLogsGrid 
@@ -662,7 +681,7 @@ export default function RecipeViewer() {
       )}
 
       {showMobileStartModal && (
-        <div className="fixed inset-0 z-[100] bg-black/50 flex items-end justify-center p-4 pb-12">
+        <div className="scrim fixed inset-0 z-[100] flex items-end justify-center p-4 pb-12">
           <div className="bg-paper p-6 rounded-2xl shadow-2xl relative w-full text-center animate-in slide-in-from-bottom-5">
             <h3 className="text-xl font-bold uppercase tracking-tight mb-4">Start Recipe</h3>
             <div className="space-y-3">
@@ -681,7 +700,7 @@ export default function RecipeViewer() {
       )}
 
       {showMobileShareModal && (
-        <div className="fixed inset-0 z-[100] bg-black/50 flex items-end justify-center p-4 pb-12">
+        <div className="scrim fixed inset-0 z-[100] flex items-end justify-center p-4 pb-12">
           <div className="bg-paper p-6 rounded-2xl shadow-2xl relative w-full text-center animate-in slide-in-from-bottom-5">
             <h3 className="text-xl font-bold uppercase tracking-tight mb-4">Share</h3>
             <div className="space-y-3">
@@ -705,7 +724,7 @@ export default function RecipeViewer() {
       </div>
 
       {showQrModal && (
-        <div className="fixed inset-0 z-[100] bg-black/50 flex items-center justify-center p-4">
+        <div className="scrim fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="bg-paper p-8 rounded-2xl shadow-2xl relative max-w-sm w-full text-center animate-in zoom-in-95">
             <button onClick={() => setShowQrModal(false)} className="absolute top-4 right-4 p-2 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 rounded-full transition-colors"><X className="w-5 h-5" /></button>
             <h3 className="text-xl font-bold uppercase tracking-tight mb-6">{recipe.title}</h3>

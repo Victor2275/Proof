@@ -47,7 +47,7 @@ export default function BottomNav() {
         * free, which a JS-driven animation would not get automatically. */}
       <div
         className={cn(
-          'fixed inset-0 z-40 bg-black/50 transition-opacity',
+          'scrim fixed inset-0 z-40 transition-opacity',
           moreOpen ? 'opacity-100' : 'pointer-events-none opacity-0',
         )}
         onClick={() => setMoreOpen(false)}
@@ -65,7 +65,7 @@ export default function BottomNav() {
         // native boolean prop.
         inert={!moreOpen}
         className={cn(
-          'fixed inset-x-0 bottom-0 z-50 rounded-t-panel border-t border-x border-rule bg-panel pb-safe',
+          'fixed inset-x-0 bottom-0 z-50 rounded-t-panel border-t border-x border-rule bg-panel faceplate pb-safe',
           'transition-transform duration-200 ease-out',
           moreOpen ? 'translate-y-0' : 'translate-y-full',
         )}

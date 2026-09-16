@@ -5,8 +5,9 @@ import { cn } from '../../lib/cn';
  * A matte panel with a silkscreened head.
  *
  * This replaces the rounded, translucent, glowing "card" of the previous world.
- * It is flat, squared, and bordered by a hairline rule — depth comes from the
- * rule and the ground behind it, never from a shadow.
+ * It is squared and bordered by a hairline rule; depth comes from the rule, the
+ * ground behind it, and the faceplate sheen — the few-percent ramp of a moulded
+ * panel lit from above — never from a drop shadow.
  *
  * Panels do not nest. If content inside a panel needs separating, it gets a
  * rule, not another panel.
@@ -39,7 +40,7 @@ export function Panel({
   return (
     <section
       className={cn(
-        'rounded-panel border bg-panel',
+        'rounded-panel border bg-panel faceplate',
         active ? 'border-signal' : 'border-rule',
         className,
       )}

@@ -7,12 +7,22 @@
  * labels, lit step keys, and seven-segment readouts. A recipe is a pattern; a
  * bake is a pattern running; the chase light says where "now" is.
  *
- * Three bans hold everywhere in this codebase:
- *   1. no gradients
- *   2. no backdrop-filter / blur
- *   3. no glow, except a lit key or a lit segment
- * These replace the glassmorphism and gold box-shadow halos of the previous
- * world. They also render cheaper: no per-frame backdrop compositing on scroll.
+ * One ban holds everywhere in this codebase:
+ *   no glow, except a lit key or a lit segment.
+ * Light in this world means something is on. A halo around a button that is
+ * doing nothing is the previous world's habit, and it is still out.
+ *
+ * Gradient and backdrop blur were banned here too, and are now permitted as
+ * *materials* rather than as decoration:
+ *   - `--faceplate` is the sheen of a top-lit moulded panel, a two-stop ramp
+ *     of a few percent. A real machine's faceplate is not one flat value, and
+ *     a panel drawn with this reads as an object rather than as a rectangle.
+ *     It is the only gradient in the chrome.
+ *   - backdrop blur belongs to things that genuinely sit *over* the interface
+ *     — a modal scrim, a sheet — where the blur says "the layer beneath is
+ *     still there, and is not what you are operating." It never appears on a
+ *     panel that is part of the page.
+ * Both stay off photographs: no scrim over a recipe's own plate.
  *
  * Tailwind v4 defaults the `dark:` variant to `prefers-color-scheme`, which
  * ignores the `.dark` class the in-app theme switcher toggles. Bind the variant
@@ -112,6 +122,13 @@
     --signal: #c81e14;
     --spoiled: #6d2018;
 
+    /* The faceplate sheen. Cream plastic under a room light: the ramp is
+     * lighter at the top and settles to the panel's own value, ~3% of tone
+     * across the whole panel — enough to read as moulded, not enough to read
+     * as a gradient someone chose. */
+    --faceplate: linear-gradient(180deg, #f7f5f0 0%, #f2efe9 46%, #ece8e0 100%);
+    --faceplate-sunk: linear-gradient(180deg, #d7d2c6 0%, #dcd7cc 100%);
+
     color-scheme: light;
   }
 
@@ -136,6 +153,10 @@
     --key-unlit: #2a2a2a;
     --signal: #ff3b30;
     --spoiled: #5a1a12;
+
+    /* Matte black moulding lit from above the machine, not from the front. */
+    --faceplate: linear-gradient(180deg, #212121 0%, #1a1a1a 46%, #141414 100%);
+    --faceplate-sunk: linear-gradient(180deg, #101010 0%, #0d0d0d 100%);
 
     color-scheme: dark;
   }
@@ -261,6 +282,29 @@
 }
 
 @layer utilities {
+  /*
+   * The faceplate. Applied to a panel's own surface, never to a photograph and
+   * never as a page background — a gradient that covers the whole screen is
+   * the thing this world was built to avoid.
+   */
+  .faceplate {
+    background-image: var(--faceplate);
+  }
+  .faceplate-sunk {
+    background-image: var(--faceplate-sunk);
+  }
+
+  /*
+   * The scrim. Only for a layer that sits over the interface: a modal, a
+   * sheet, a drawer. Blur is what says the panel underneath is still there and
+   * is not the thing you are operating right now.
+   */
+  .scrim {
+    background-color: color-mix(in srgb, var(--ground) 72%, transparent);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }

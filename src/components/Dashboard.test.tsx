@@ -36,6 +36,7 @@ const mockRecipes = [
     description: 'Classic',
     tags: ['sourdough', 'bread'],
     folder: 'Breads',
+    imageUrls: ['https://example.com/sourdough.jpg'],
     prepTime: '30',
     cookTime: '45',
     instructions: [
@@ -50,6 +51,7 @@ const mockRecipes = [
     description: 'Sweet',
     tags: ['cookies', 'dessert'],
     folder: 'Desserts',
+    imageUrls: [],
     prepTime: '15',
     cookTime: '12',
     instructions: ['Mix the dough.', 'Bake at 180C for 12 minutes.'],
@@ -96,7 +98,7 @@ describe('Dashboard Component', () => {
     renderWithProviders(<Dashboard />);
     await waitFor(() => expect(screen.getByText('Sourdough Bread')).toBeDefined());
     // 30 (prep) + 45 (cook) = 75 minutes = 1:15, announced as one value.
-    expect(screen.getByText('1:15 HR')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: '1:15 HR' })).toBeInTheDocument();
   });
 
   it('renders an error state with retry when the fetch fails', async () => {
@@ -181,5 +183,17 @@ describe('Dashboard Component', () => {
     const inspireButton = screen.getByRole('button', { name: /inspire me/i });
     fireEvent.click(inspireButton);
     expect(inspireButton).toBeInTheDocument();
+  });
+  it("shows each recipe's photograph on a plate, and an unlit plate where there is none", async () => {
+    renderWithProviders(<Dashboard />);
+    await waitFor(() => expect(screen.getByText('Sourdough Bread')).toBeDefined());
+
+    expect(screen.getByRole('img', { name: 'Sourdough Bread' })).toHaveAttribute(
+      'src',
+      'https://example.com/sourdough.jpg',
+    );
+    // Cookies has no image; its row still reads, with no broken image in it.
+    expect(screen.getByText('Chocolate Chip Cookies')).toBeInTheDocument();
+    expect(screen.queryByRole('img', { name: 'Chocolate Chip Cookies' })).not.toBeInTheDocument();
   });
 });

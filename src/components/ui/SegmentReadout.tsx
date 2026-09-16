@@ -121,14 +121,24 @@ export function SegmentReadout({
   const text = String(value);
 
   return (
-    <div className={cn('inline-flex flex-col gap-1', className)}>
-      {label ? <span className="label-silkscreen">{label}</span> : null}
-      <div className="inline-flex items-end" style={{ gap }}>
-        {/* The readout is one value to a screen reader, not a row of glyphs. */}
-        <span className="sr-only">
-          {text}
-          {unit ? ` ${unit}` : ''}
+    /*
+     * The readout is one value to a screen reader, not a row of glyphs — and
+     * its silkscreened caption is part of that value. A display reading 1:15
+     * under a "TOTAL" label means "total, 1:15"; announcing the caption and
+     * the number as two unrelated pieces of text leaves it to the listener to
+     * guess which display the number belonged to.
+     */
+    <div
+      className={cn('inline-flex flex-col gap-1', className)}
+      role="img"
+      aria-label={[label, text, unit].filter(Boolean).join(' ')}
+    >
+      {label ? (
+        <span className="label-silkscreen" aria-hidden="true">
+          {label}
         </span>
+      ) : null}
+      <div className="inline-flex items-end" style={{ gap }}>
         <span className="inline-flex items-end" style={{ gap }} aria-hidden="true">
           {text.split('').map((char, i) =>
             char === ':' || char === '.' ? (

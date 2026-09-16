@@ -48,7 +48,7 @@ function AuthModal({ onClose, onSuccess }: { onClose: () => void, onSuccess: () 
   };
 
   return (
-    <div className="fixed inset-0 z-[100] bg-black/60 flex items-center justify-center p-4">
+    <div className="scrim fixed inset-0 z-[100] flex items-center justify-center p-4">
       <form onSubmit={handleSubmit} className="w-full max-w-sm rounded-panel border border-rule bg-panel p-8">
         <h2 className="font-faceplate text-xl text-ink mb-2">Admin Access Required</h2>
         <p className="text-sm text-ink-muted mb-4">Please enter the PIN to perform this action.</p>
