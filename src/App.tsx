@@ -92,7 +92,7 @@ function AuthModal({ onClose, onSuccess }: { onClose: () => void, onSuccess: () 
         </div>
       </form>
       {error && (
-        <div className="fixed bottom-24 md:bottom-10 left-1/2 -translate-x-1/2 z-[200] border border-signal bg-panel px-6 py-3 rounded-panel font-bold text-signal">
+        <div className="above-nav fixed left-1/2 -translate-x-1/2 z-[200] border border-signal bg-panel px-6 py-3 rounded-panel font-bold text-signal">
           {error}
         </div>
       )}

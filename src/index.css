@@ -313,6 +313,27 @@
     scrollbar-width: none;
   }
 
+  /*
+   * Clearance above the mobile bottom nav.
+   *
+   * The nav is 65px of controls plus whatever the device reserves for its
+   * gesture bar or home indicator. Four things float above it — two floating
+   * action buttons, a status strip and the error bar — and each had guessed a
+   * fixed 6rem, which is exactly the nav's height with no inset and therefore
+   * lands *behind* the nav on any phone that has one.
+   *
+   * Written once, with the inset added rather than assumed away, and with the
+   * desktop value built in because there is no bottom nav at that width.
+   */
+  .above-nav {
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 6rem);
+  }
+  @media (min-width: 768px) {
+    .above-nav {
+      bottom: 2.5rem;
+    }
+  }
+
   /* Capacitor safe areas */
   .pb-safe {
     padding-bottom: env(safe-area-inset-bottom, 20px);

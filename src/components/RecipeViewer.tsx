@@ -473,7 +473,7 @@ export default function RecipeViewer() {
       )}
       <button 
         onClick={() => setShowMobileStartModal(true)}
-        className="md:hidden fixed bottom-[calc(env(safe-area-inset-bottom,0px)+80px)] right-4 bg-accent text-black w-14 h-14 rounded-full flex items-center justify-center z-40 transition-transform hover:scale-105 active:scale-95"
+        className="above-nav md:hidden fixed right-4 bg-accent text-black w-14 h-14 rounded-full flex items-center justify-center z-40 transition-transform hover:scale-105 active:scale-95"
       >
         <Play className="w-6 h-6 ml-1" fill="currentColor" />
       </button>
@@ -857,7 +857,7 @@ export default function RecipeViewer() {
       {copyNotice ? (
         <div
           role="status"
-          className="label-silkscreen fixed bottom-24 left-1/2 z-[130] -translate-x-1/2 rounded-panel border border-rule bg-panel px-4 py-2 text-ink md:bottom-10"
+          className="above-nav label-silkscreen fixed left-1/2 z-[130] -translate-x-1/2 rounded-panel border border-rule bg-panel px-4 py-2 text-ink"
         >
           {copyNotice}
         </div>

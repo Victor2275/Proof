@@ -137,6 +137,31 @@ describe('token layer', () => {
     }
   });
 
+  /*
+   * Capacitor safe areas.
+   *
+   * The bottom nav is 65px of controls plus whatever the device reserves for a
+   * gesture bar. Anything floating above it has to add the inset rather than
+   * assume it away — `bottom-24` is exactly the nav's height with no inset, and
+   * therefore sits behind the nav on any phone that has one. Four surfaces had
+   * guessed it.
+   */
+  it('reserves the device inset above the bottom nav rather than guessing', () => {
+    expect(indexCss).toMatch(/\.above-nav\s*\{[^}]*env\(safe-area-inset-bottom/);
+    expect(offenders(/className="[^"]*bottom-24/)).toEqual([]);
+  });
+
+  it('lets every bottom-anchored surface clear the home indicator', () => {
+    // A sheet, a drawer or a dock that ends at bottom: 0 puts its last row of
+    // content under the gesture bar unless it reserves for it.
+    for (const [path, src] of Object.entries(componentSources)) {
+      const anchored = /className="[^"]*fixed[^"]*bottom-0/.test(src) ||
+        /'[^']*fixed[^']*bottom-0/.test(src);
+      if (!anchored) continue;
+      expect(src, `${path} is anchored to the bottom edge without pb-safe`).toMatch(/pb-safe/);
+    }
+  });
+
   it('themes the browser surfaces it does not draw', () => {
     expect(indexCss).toMatch(/::selection/);
     expect(indexCss).toMatch(/caret-color/);

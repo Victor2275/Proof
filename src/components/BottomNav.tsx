@@ -108,7 +108,7 @@ export default function BottomNav() {
       <Link
         to="/new"
         aria-label="New Recipe"
-        className="fixed bottom-24 right-4 z-30 flex h-14 w-14 items-center justify-center rounded-control border border-signal bg-signal text-white active:translate-y-px"
+        className="above-nav fixed right-4 z-30 flex h-14 w-14 items-center justify-center rounded-control border border-signal bg-signal text-white active:translate-y-px"
       >
         <Plus className="h-6 w-6" />
       </Link>
