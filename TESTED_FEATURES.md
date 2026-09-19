@@ -148,6 +148,14 @@ This is a 1-to-1 mirror of CURRENT_FEATURES.md. Use checkboxes to track manual t
 - [ ] **Landing CTA**: "Open the cookbook" enters the app and the landing page does not reappear on the next visit.
 - [ ] **404**: an unlit panel with the seven-segment 404, readable in both themes, linking back to the cookbook.
 
+## 7b. Mobile targets and the last alerts
+- [ ] **375px sweep**: no horizontal scroll on the editor, notes, analytics, settings, landing or 404.
+- [ ] **Thumb targets**: the editor's row controls, Add row / Add step, the notes controls and every sheet's close control are all 44px.
+- [ ] **Known exception**: the × inside a tag chip is smaller by design; confirm it is still hittable.
+- [ ] **Mobile ingredient row**: two lines per ingredient, with units like "clove crushed" and "juice of 1" fully visible at 375px.
+- [ ] **Desktop ingredient row**: still one line — grip, quantity, unit, name, delete.
+- [ ] **Copy confirmations**: copying a link or a grocery list shows a status strip that clears itself, with no browser alert.
+
 ## 7. UI/UX Foundation
 - [ ] **"Step Row" Visual World (Phase 0 foundation)**: Rhythm-machine design language — matte panels, silkscreen labels, lit step keys, segment readouts; colour is temporal, not decorative.
 - [ ] **One enforced ban, two defined materials**: no glow except a lit key or segment; `--faceplate` and `.scrim` are the only gradient and blur, enforced by `src/designSystem.test.ts`.

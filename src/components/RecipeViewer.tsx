@@ -90,6 +90,10 @@ export default function RecipeViewer() {
   const [editingTagsFor, setEditingTagsFor] = useState<string | null>(null);
   const [tempTags, setTempTags] = useState<{url: string, label: string}[]>([]);
 
+  // Transient confirmations — copied, exported — report here rather than in a
+  // browser alert.
+  const [copyNotice, setCopyNotice] = useState('');
+
   // The make detail reports through the panel rather than through alert().
   const [makeError, setMakeError] = useState('');
   const [makeNotice, setMakeNotice] = useState('');
@@ -136,6 +140,12 @@ export default function RecipeViewer() {
     }
   }, [location.search, bakeLogs]);
 
+  useEffect(() => {
+    if (!copyNotice) return;
+    const timer = setTimeout(() => setCopyNotice(''), 2500);
+    return () => clearTimeout(timer);
+  }, [copyNotice]);
+
   const handleCloseMakeDetails = () => {
     setSelectedMake(null);
     setMakeError('');
@@ -167,10 +177,16 @@ export default function RecipeViewer() {
   };
 
 
+  /*
+   * "Copied" used to be a browser alert — a modal dialog, from the operating
+   * system, over a sheet, dismissed by a second click, to confirm something
+   * that already worked. It is a status strip that takes itself away.
+   */
   const handleShareLink = () => {
-    navigator.clipboard.writeText(window.location.href).then(() => {
-      alert('Link copied to clipboard!');
-    });
+    navigator.clipboard
+      .writeText(window.location.href)
+      .then(() => setCopyNotice('Link copied.'))
+      .catch(() => setCopyNotice('Could not reach the clipboard.'));
     setShowExportMenu(false);
     setShowMobileShareModal(false);
   };
@@ -183,11 +199,10 @@ export default function RecipeViewer() {
       listText += `- [ ] ${ing.name}: ${qty} ${ing.unit}\n`;
     });
     
-    navigator.clipboard.writeText(listText).then(() => {
-      alert('Grocery list copied to clipboard!');
-    }).catch(err => {
-      console.error('Failed to copy grocery list', err);
-    });
+    navigator.clipboard
+      .writeText(listText)
+      .then(() => setCopyNotice('Grocery list copied.'))
+      .catch(() => setCopyNotice('Could not reach the clipboard.'));
   };
 
   const handleExportPDF = async () => {
@@ -838,6 +853,15 @@ export default function RecipeViewer() {
       </Sheet>
 
       </div>
+
+      {copyNotice ? (
+        <div
+          role="status"
+          className="label-silkscreen fixed bottom-24 left-1/2 z-[130] -translate-x-1/2 rounded-panel border border-rule bg-panel px-4 py-2 text-ink md:bottom-10"
+        >
+          {copyNotice}
+        </div>
+      ) : null}
 
       <Sheet
         open={showQrModal}

@@ -124,6 +124,29 @@ describe('RecipeViewer — the selected make', () => {
     );
   });
 
+  it('confirms a copied link with a status strip, not a browser alert', async () => {
+    const user = userEvent.setup();
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    // jsdom exposes navigator.clipboard as a getter only.
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText },
+      configurable: true,
+    });
+
+    renderViewer();
+    await screen.findByRole('dialog', { name: /Make #1/i });
+    await user.keyboard('{Escape}');
+
+    const share = await screen.findByRole('button', { name: /^Share$/i });
+    await user.click(share);
+    await user.click(await screen.findByRole('button', { name: /Copy link/i }));
+
+    expect(await screen.findByRole('status')).toHaveTextContent('Link copied.');
+    expect(alertSpy).not.toHaveBeenCalled();
+    alertSpy.mockRestore();
+  });
+
   it('reports a failure in the panel rather than through alert()', async () => {
     const user = userEvent.setup();
     const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});

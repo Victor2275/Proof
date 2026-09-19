@@ -295,7 +295,11 @@ export function Sheet({
                     type="button"
                     onClick={onClose}
                     aria-label="Close"
-                    className="p-1 text-ink-muted transition-colors hover:text-ink"
+                    // The glyph stays small; the target does not. A 16px cross
+                    // with 4px of padding is a 24px target, and the floor for
+                    // anything a thumb has to hit is 44. The negative margin
+                    // keeps the head's optical spacing where it was.
+                    className="-mr-2 flex h-11 w-11 items-center justify-center rounded-control text-ink-muted transition-colors hover:text-ink"
                   >
                     <X className="h-4 w-4" />
                   </button>

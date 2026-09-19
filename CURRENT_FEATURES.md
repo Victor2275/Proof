@@ -133,6 +133,12 @@ This document exhaustively tracks every capability, component, and technical int
 - **Removed: `public/hero.jpg`**: 807KB of blurred stock photography, unreferenced once the landing page stopped using it, and precached by the service worker.
 - **404 as an unlit panel**: The number is set on a seven-segment readout with its unlit segments showing — the world's rule that absence is drawn as deliberately as light, at full scale. The readout is neutral ink rather than signal red, because nothing on the page is running.
 
+## 7b. Mobile targets and the last alerts
+- **44px targets across the rebuilt surfaces**: A sweep at 375px found the editor's row controls, its Add row / Add step keys, the notes page's controls and `Sheet`'s own close control all sitting between 24px and 36px. Everything a thumb reaches repeatedly is now 44px. The close control keeps its small cross and grows only its hit area, with a negative margin so the panel head's spacing is unchanged. The one remaining exception is the × inside a tag chip, which is a dense inline affordance the design system's `sm` size exists for — 44px there would deform the chip into a block.
+- **No horizontal scroll at 375px** on any rebuilt surface.
+- **The mobile ingredient row is two lines, not five**: Stacking every field turned a sixteen-ingredient recipe into a 3,800px scroll. Quantity and unit share the first line; the name and the row's controls share the second. The controls ride with the name rather than the unit, because three 44px targets beside the unit left it about 60px wide and that column holds words — "juice of", "cm piece", "clove crushed". `md:contents` dissolves both wrappers at desktop width, where the row fits on one line.
+- **The last two `alert()`s are gone**: "Link copied" and "Grocery list copied" were operating-system modal dialogs, raised over a sheet, needing a second click, to confirm something that had already worked. They are a status strip that takes itself away after two and a half seconds.
+
 ## 7. UI/UX Foundation
 - **Stack**: React, Vite, Tailwind CSS (`@tailwindcss/postcss`), shadcn/ui, TanStack Query for server state management.
 - **"Step Row" Visual World (Phase 0 foundation)**: The Black & Gold glassmorphic world has been replaced by an early-80s rhythm-machine design language: matte panels, silkscreened labels, lit step keys, and seven-segment readouts. Colour is temporal, never decorative — red marks *now*, orange *due*, yellow *queued*, white *complete*, and an unlit key is drawn as deliberately as a lit one.

@@ -75,7 +75,7 @@ export default function BottomNav() {
           <button
             type="button"
             onClick={() => setMoreOpen(false)}
-            className="rounded-control p-1 text-ink-muted hover:text-ink"
+            className="-mr-2 flex h-11 w-11 items-center justify-center rounded-control text-ink-muted hover:text-ink"
             aria-label="Close"
           >
             <X className="h-5 w-5" />

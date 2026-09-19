@@ -189,6 +189,18 @@ describe('Sheet', () => {
     expect(document.body.style.overflow).toBe('hidden');
   });
 
+  it('gives its close control a thumb-sized target, not a glyph-sized one', () => {
+    render(
+      <Sheet open onClose={vi.fn()} title="Ingredients">
+        <p>Flour</p>
+      </Sheet>,
+    );
+    // jsdom does not lay out, so the contract is checked as the classes that
+    // set it: 44px square, which is the floor for anything a thumb must hit.
+    expect(screen.getByRole('button', { name: 'Close' }).className).toMatch(/h-11/);
+    expect(screen.getByRole('button', { name: 'Close' }).className).toMatch(/w-11/);
+  });
+
   it('ranges its foot controls below the body', () => {
     render(
       <Sheet open onClose={vi.fn()} title="Link sub-recipe" footer={<button>Attach</button>}>

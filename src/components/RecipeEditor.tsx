@@ -415,7 +415,7 @@ export default function RecipeEditor() {
           <Panel
             title="Import from a URL"
             actions={
-              <Button variant="ghost" size="sm" onClick={() => setShowExtract(!showExtract)}>
+              <Button variant="ghost" onClick={() => setShowExtract(!showExtract)}>
                 {showExtract ? 'Close' : 'Open'}
               </Button>
             }
@@ -470,7 +470,6 @@ export default function RecipeEditor() {
           flush
           actions={
             <Button
-              size="sm"
               icon={<Plus className="h-4 w-4" />}
               onClick={() =>
                 setRecipe({
@@ -502,69 +501,89 @@ export default function RecipeEditor() {
                     draggedIngredientIdx === i && 'opacity-50',
                   )}
                 >
-                  <div className="flex items-center gap-1 md:mb-1.5">
+                  {/*
+                    * On a phone the quantity, the unit and the row's controls
+                    * share one line and the ingredient name takes the next, so
+                    * a row is two lines rather than five. Stacking every field
+                    * turned a sixteen-ingredient recipe into a 3,800px scroll.
+                    * `md:contents` dissolves the wrapper at desktop width, where
+                    * the whole row fits on one line.
+                    */}
+                  <div className="flex items-end gap-2 md:contents">
                     <GripVertical
-                      className="hidden h-4 w-4 shrink-0 cursor-move text-ink-muted md:block"
+                      className="hidden h-4 w-4 shrink-0 cursor-move text-ink-muted md:mb-3.5 md:block"
                       aria-hidden="true"
                     />
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="md:hidden"
-                      onClick={() => moveIngredient(i, -1)}
-                      aria-label={`Move ingredient ${i + 1} up`}
-                    >
-                      <ArrowUp className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="md:hidden"
-                      onClick={() => moveIngredient(i, 1)}
-                      aria-label={`Move ingredient ${i + 1} down`}
-                    >
-                      <ArrowDown className="h-4 w-4" />
-                    </Button>
+                    <Field
+                      label={`Quantity ${i + 1}`}
+                      hideLabel
+                      required
+                      type="number"
+                      inputMode="decimal"
+                      step="any"
+                      className="w-20 shrink-0 md:w-24"
+                      value={ing.quantity || ''}
+                      onChange={(e) => updateIngredient(i, 'quantity', parseFloat(e.target.value))}
+                      placeholder="Qty"
+                    />
+                    <Field
+                      label={`Unit ${i + 1}`}
+                      hideLabel
+                      required
+                      // Real units are words, not symbols: the library has
+                      // "juice of", "cm piece" and "to serve" in this column.
+                      className="min-w-0 flex-1 md:w-32 md:flex-none"
+                      value={ing.unit}
+                      onChange={(e) => updateIngredient(i, 'unit', e.target.value)}
+                      placeholder="Unit"
+                    />
                   </div>
 
-                  <Field
-                    label={`Quantity ${i + 1}`}
-                    hideLabel
-                    required
-                    type="number"
-                    inputMode="decimal"
-                    step="any"
-                    className="w-24 shrink-0"
-                    value={ing.quantity || ''}
-                    onChange={(e) => updateIngredient(i, 'quantity', parseFloat(e.target.value))}
-                    placeholder="Qty"
-                  />
-                  <Field
-                    label={`Unit ${i + 1}`}
-                    hideLabel
-                    required
-                    // Real units are words, not symbols: the library has
-                    // "juice of", "cm piece" and "to serve" in this column.
-                    className="w-32 shrink-0"
-                    value={ing.unit}
-                    onChange={(e) => updateIngredient(i, 'unit', e.target.value)}
-                    placeholder="Unit"
-                  />
-                  <Field
-                    label={`Ingredient ${i + 1}`}
-                    hideLabel
-                    required
-                    className="min-w-0 flex-1"
-                    value={ing.name}
-                    onChange={(e) => updateIngredient(i, 'name', e.target.value)}
-                    placeholder="Ingredient name"
-                  />
+                  {/*
+                    * The controls ride with the name rather than with the unit:
+                    * three 44px targets beside a unit field left it about 60px
+                    * wide, and this column holds words — "juice of", "cm piece",
+                    * "clove crushed".
+                    */}
+                  <div className="flex items-end gap-2 md:contents">
+                    <Field
+                      label={`Ingredient ${i + 1}`}
+                      hideLabel
+                      required
+                      className="min-w-0 flex-1"
+                      value={ing.name}
+                      onChange={(e) => updateIngredient(i, 'name', e.target.value)}
+                      placeholder="Ingredient name"
+                    />
+                    <div className="flex shrink-0 items-center md:hidden">
+                      <Button
+                        variant="ghost"
+                        onClick={() => moveIngredient(i, -1)}
+                        aria-label={`Move ingredient ${i + 1} up`}
+                      >
+                        <ArrowUp className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        onClick={() => moveIngredient(i, 1)}
+                        aria-label={`Move ingredient ${i + 1} down`}
+                      >
+                        <ArrowDown className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        onClick={() => removeIngredient(i)}
+                        aria-label={`Remove ingredient ${i + 1}`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
                   <Button
                     variant="ghost"
-                    size="sm"
                     onClick={() => removeIngredient(i)}
                     aria-label={`Remove ingredient ${i + 1}`}
-                    className="md:mb-1.5"
+                    className="hidden md:inline-flex"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -579,7 +598,6 @@ export default function RecipeEditor() {
           flush
           actions={
             <Button
-              size="sm"
               icon={<Plus className="h-4 w-4" />}
               onClick={() => setRecipe({ ...recipe, instructions: [...recipe.instructions, ''] })}
             >
@@ -615,7 +633,6 @@ export default function RecipeEditor() {
                     <div className="flex items-center gap-1">
                       <Button
                         variant="ghost"
-                        size="sm"
                         onClick={() => moveInstruction(i, -1)}
                         aria-label={`Move step ${i + 1} up`}
                       >
@@ -623,7 +640,6 @@ export default function RecipeEditor() {
                       </Button>
                       <Button
                         variant="ghost"
-                        size="sm"
                         onClick={() => moveInstruction(i, 1)}
                         aria-label={`Move step ${i + 1} down`}
                       >
@@ -631,7 +647,6 @@ export default function RecipeEditor() {
                       </Button>
                       <Button
                         variant="ghost"
-                        size="sm"
                         onClick={() => removeInstruction(i)}
                         aria-label={`Remove step ${i + 1}`}
                       >
@@ -670,7 +685,7 @@ export default function RecipeEditor() {
                           </button>
                         </span>
                       ))}
-                    <Button variant="ghost" size="sm" onClick={() => setLinkingStepIdx(i)}>
+                    <Button variant="ghost" onClick={() => setLinkingStepIdx(i)}>
                       <Plus className="h-3 w-3" /> Link recipe
                     </Button>
                   </div>

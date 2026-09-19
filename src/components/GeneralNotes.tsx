@@ -131,7 +131,6 @@ export default function GeneralNotes() {
             </button>
             <Button
               variant="ghost"
-              size="sm"
               onClick={() => setPendingDelete(note)}
               aria-label={`Delete ${note.title || 'Untitled note'}`}
             >
@@ -173,7 +172,6 @@ export default function GeneralNotes() {
         <div className="flex shrink-0 items-center gap-2">
           <Button
             variant="secondary"
-            size="sm"
             className="md:hidden"
             icon={<List className="h-4 w-4" />}
             onClick={() => setListOpen(true)}
@@ -182,7 +180,6 @@ export default function GeneralNotes() {
           </Button>
           <Button
             variant="secondary"
-            size="sm"
             icon={<Plus className="h-4 w-4" />}
             onClick={startNewNote}
           >
