@@ -1,93 +1,156 @@
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, type Variants } from 'framer-motion';
-import { ArrowRight, Book, Clock, Mic, Sparkles } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
+import { derivePhases } from '../lib/phases';
+import { Button, StepRow, SegmentReadout, Panel } from './ui';
+
+/*
+ * The landing page — the one Persuade surface in an Operate product.
+ *
+ * It is the only screen in Proof that someone who has never seen the app will
+ * look at, and it gets one reading before they decide. The previous version
+ * spent that reading on three feature cards claiming hands-free control, synced
+ * timers and visual bake logs — three assertions, none of them shown, under a
+ * blurred stock photograph that could have fronted any cookbook app.
+ *
+ * What Proof has that they do not is the thesis: a recipe is a pattern, and a
+ * bake is that pattern running. So the hero is the machine running. The step
+ * row chases through a real bake's phases, the readout counts the phase down,
+ * and the claim is demonstrated rather than stated. Everything below it is
+ * something the app can prove.
+ */
+
+/*
+ * A real sourdough, written the way the library writes one, so the row below is
+ * derived by exactly the code that derives every other row in the app rather
+ * than hand-placed for the demo. If `derivePhases` ever stops recognising a
+ * levain, this page stops claiming one.
+ */
+const DEMONSTRATION_STEPS = [
+  'Feed the levain and leave it until it domes, about six hours.',
+  'Autolyse the flour and water for one hour.',
+  'Mix in the salt and the ripe levain.',
+  'Bulk ferment for four hours, with a stretch and fold each hour.',
+  'Shape into a boule and bench rest for twenty minutes.',
+  'Proof in the banneton overnight in the fridge.',
+  'Bake at 250C with steam for twenty minutes, then 230C for twenty more.',
+  'Rest on a rack for at least two hours before cutting.',
+];
+
+/** How long each phase holds before the chase advances. */
+const CHASE_MS = 1600;
 
 export default function LandingPage() {
   const navigate = useNavigate();
+  const phases = useMemo(() => derivePhases(DEMONSTRATION_STEPS), []);
+  const [phaseIndex, setPhaseIndex] = useState(0);
+
+  /*
+   * The chase is the page's only motion, and it is the same clock the rest of
+   * the world runs on. Under reduced motion it does not run at all: the row
+   * holds on one lit phase, which still says "this is where now is" without
+   * anything moving. The global CSS rule cannot do this for us — it collapses
+   * CSS animation, and this is a timer.
+   */
+  useEffect(() => {
+    const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+    if (reduced?.matches) return;
+
+    const id = setInterval(() => {
+      setPhaseIndex((i) => (i + 1) % phases.length);
+    }, CHASE_MS);
+    return () => clearInterval(id);
+  }, [phases.length]);
+
+  const runningPhase = phases[phaseIndex];
+  const activeStep = runningPhase?.stepIndices[0];
 
   const handleExplore = () => {
     localStorage.setItem('hasVisited', 'true');
     navigate('/');
   };
 
-  const containerVariants: Variants = {
-    hidden: { opacity: 0 },
-    visible: { 
-      opacity: 1,
-      transition: { staggerChildren: 0.2, delayChildren: 0.3 }
-    }
-  };
-
-  const itemVariants: Variants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } }
-  };
-
   return (
-    <div className="min-h-screen bg-paper text-ink flex flex-col items-center justify-center relative overflow-hidden px-6">
-      {/* Background Image / Texture overlay */}
-      <div 
-        className="absolute inset-0 z-0 opacity-20 dark:opacity-30"
-        style={{
-          backgroundImage: 'url(/hero.jpg)',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          filter: 'grayscale(50%) blur(4px)'
-        }}
-      />
-      <div className="absolute inset-0 z-0 bg-ground/90" />
-
-      <motion.div 
-        className="z-10 max-w-4xl w-full text-center space-y-12 py-20"
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-      >
-        <motion.div variants={itemVariants} className="space-y-6">
-          <div className="inline-flex items-center gap-3 px-4 py-1.5 rounded-full bg-accent/10 border border-accent/20 text-accent font-bold uppercase tracking-widest text-sm mb-4">
-            <Sparkles className="w-4 h-4" /> The Digital Cookbook
-          </div>
-          <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight uppercase text-ink">
-            Master the art <br className="hidden md:block"/> of <span className="text-accent">Baking</span>
-          </h1>
-          <p className="text-xl md:text-2xl text-ink-muted max-w-2xl mx-auto font-medium">
-            Your personal, intelligent kitchen lab. Built for precision, designed for beauty, engineered for hands-free cooking.
+    <div className="min-h-screen bg-ground px-6 py-16 text-ink">
+      <div className="mx-auto flex max-w-3xl flex-col gap-12">
+        <header className="flex flex-col items-center gap-5 text-center">
+          <h1 className="font-faceplate text-5xl leading-none text-ink sm:text-7xl">Proof</h1>
+          <p className="max-w-prose text-lg text-ink-muted sm:text-xl">
+            A recipe is a pattern. A bake is that pattern running. This is the machine that runs
+            it, with a light that always says where <span className="text-ink">now</span> is.
           </p>
-        </motion.div>
+        </header>
 
-        <motion.div variants={itemVariants} className="flex flex-col sm:flex-row justify-center gap-6 pb-12">
-          <button 
+        {/* The claim, demonstrated. */}
+        <Panel title="A bake, running" lit>
+          <div className="flex flex-col gap-5">
+            <StepRow
+              phases={phases}
+              activeStep={activeStep}
+              label="A sourdough bake, running"
+            />
+            <div className="flex flex-wrap items-end justify-between gap-4 border-t border-rule pt-4">
+              <div className="flex flex-col gap-1">
+                <span className="label-silkscreen">Now</span>
+                <span className="font-faceplate text-xl text-signal">
+                  {runningPhase?.label ?? '—'}
+                </span>
+              </div>
+              <SegmentReadout
+                value={String(phaseIndex + 1).padStart(2, '0')}
+                unit={`OF ${String(phases.length).padStart(2, '0')}`}
+                label="Phase"
+                size="md"
+              />
+            </div>
+          </div>
+        </Panel>
+
+        <div className="flex flex-col items-center gap-3">
+          {/*
+            * Outlined, though it is the page's only call to action. Signal red
+            * means one thing in this world, and on this page that thing is the
+            * chase light above — which is the entire argument being made. A red
+            * button beside it would put two "nows" on screen and spend the
+            * demonstration to decorate a control. The button carries its weight
+            * through size and position instead.
+            */}
+          <Button
+            variant="secondary"
+            size="lg"
             onClick={handleExplore}
-            className="px-8 py-4 bg-accent text-black font-bold text-lg uppercase tracking-wider rounded-xl transition-all hover:scale-105 flex items-center justify-center gap-3"
+            icon={<ArrowRight className="h-5 w-5" />}
           >
-            Explore the Cookbook <ArrowRight className="w-5 h-5" />
-          </button>
-        </motion.div>
+            Open the cookbook
+          </Button>
+          <p className="label-silkscreen">No account. Nothing to set up.</p>
+        </div>
 
-        <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-3 gap-8 text-left border-t border-border-subtle pt-12">
-          <div className="space-y-3 p-6 rounded-2xl bg-black/5 dark:bg-white/5 border border-border-subtle ">
-            <Mic className="w-8 h-8 text-accent" />
-            <h3 className="font-bold text-lg uppercase tracking-wider">Hands-Free Mode</h3>
-            <p className="text-ink-muted text-sm leading-relaxed">
-              Covered in flour? Navigate recipes using voice commands or wave gestures over your camera.
+        {/*
+          * Three things the app does, each named as a behaviour rather than as a
+          * feature, and each one true of the build behind this page.
+          */}
+        <div className="grid gap-4 sm:grid-cols-3">
+          <Panel title="Hands free">
+            <p className="text-sm text-ink-muted">
+              Floured hands never touch the phone. Say “next”, or wave over the camera, and the
+              row advances.
             </p>
-          </div>
-          <div className="space-y-3 p-6 rounded-2xl bg-black/5 dark:bg-white/5 border border-border-subtle ">
-            <Clock className="w-8 h-8 text-accent" />
-            <h3 className="font-bold text-lg uppercase tracking-wider">Synced Timers</h3>
-            <p className="text-ink-muted text-sm leading-relaxed">
-              Start a 45-minute bake on your phone and hear the alarm on your laptop. Real-time websocket sync.
+          </Panel>
+          <Panel title="Timers that follow">
+            <p className="text-sm text-ink-muted">
+              A timer started on the phone counts down on the laptop too, docked in the head as a
+              readout and turning red once it runs past its end.
             </p>
-          </div>
-          <div className="space-y-3 p-6 rounded-2xl bg-black/5 dark:bg-white/5 border border-border-subtle ">
-            <Book className="w-8 h-8 text-accent" />
-            <h3 className="font-bold text-lg uppercase tracking-wider">Visual Bake Logs</h3>
-            <p className="text-ink-muted text-sm leading-relaxed">
-              Track your iterations. Compare raw dough to baked crumb. Learn from every single bake.
+          </Panel>
+          <Panel title="Every bake, kept">
+            <p className="text-sm text-ink-muted">
+              Photograph and note each attempt. A recipe's bakes read as one row, oldest to
+              newest, so the row is the progress.
             </p>
-          </div>
-        </motion.div>
-      </motion.div>
+          </Panel>
+        </div>
+      </div>
     </div>
   );
 }

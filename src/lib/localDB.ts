@@ -49,6 +49,24 @@ export const saveLocalBakeLog = async (log: Partial<BakeLog>, fileData: {file: F
   });
 };
 
+/**
+ * Every offline bake log, in one read.
+ *
+ * `getLocalBakeLogs` reads the whole store and then filters it to one recipe,
+ * so asking it for each recipe in turn — which the analytics page did — opens a
+ * transaction and reads the entire store once per recipe, 203 times over for
+ * this library. Anything that wants the lot asks for the lot.
+ */
+export const getAllLocalBakeLogs = async (): Promise<BakeLog[]> => {
+  const db = await initDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readonly');
+    const request = tx.objectStore(STORE_NAME).getAll();
+    request.onsuccess = () => resolve(request.result as BakeLog[]);
+    request.onerror = () => reject(request.error);
+  });
+};
+
 export const getLocalBakeLogs = async (recipeId: string): Promise<BakeLog[]> => {
   const db = await initDB();
   return new Promise((resolve, reject) => {

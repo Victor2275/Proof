@@ -283,13 +283,44 @@ step with the app's. A note is a panel and a textarea. The note list was
 `hidden md:flex`, so a phone could reach exactly one note; it is a bottom sheet
 at that width now.
 
-### Phase 7 — Analytics, Settings, Landing, 404 ⬜
+### Phase 7 — Analytics, Settings, Landing, 404 ✅
 
-Analytics charts rebuilt on the meter/segment vocabulary. The `/welcome`
-landing is the single **Persuade** surface in the app and gets its own
-treatment. 404 as an unlit panel.
+**Settings became keys.** Every preference was an iOS sliding pill: a control
+from a different machine, and the only widget in the app carrying state by a
+moving dot rather than by light. They latch now, print ON or OFF as well as
+lighting, and carry `aria-pressed`. Theme is a bank where exactly one key is
+down.
 
-### Phase 8 — Finish ⬜
+**Analytics reports only what it can prove.** Three bake logs cannot fill a
+twelve-month bar chart, and eleven empty bars beside one read as nothing at
+all. Only months containing a bake are drawn; below three of them the panel
+says there is not enough to read a trend. "Baked more than once" refuses to
+rank a three-way tie of one bake each, because printing the top three of that
+invents an order that does not exist.
+
+Three bugs came out of building it. Analytics gathered offline logs by asking
+for each recipe's logs in turn, and that helper reads the whole IndexedDB store
+and filters it — 203 transactions and 203 full reads on load. `Meter`'s `hotAt`
+defaults to 1, meaning "no hot end", but the warm band 15% below it fired
+anyway, so every meter near full grew an orange tip. And 3 of 203 rounds to
+zero lit cells, so a meter captioned "3 of 203" sat entirely dark.
+
+**The landing page demonstrates instead of asserting.** It is the only screen a
+stranger sees, and it spent that on three feature cards over a blurred stock
+photograph that could have fronted any cookbook app. The hero is the machine
+running: a step row chasing a real sourdough's phases, derived by
+`derivePhases` rather than hand-placed, so the page cannot claim a levain the
+parser would not find. Its call to action is outlined — the chase light is the
+page's one "now", and a red button beside it would spend the argument to
+decorate a control. It is routed outside the app shell now; it had been
+rendering inside a sidebar of sections a first-time visitor has not reached.
+`public/hero.jpg` (807KB, precached) went with it.
+
+**404 is an unlit panel** with the number on a seven-segment readout, ghost
+segments showing — absence drawn as deliberately as light. Neutral ink, not
+signal red: nothing on that page is running.
+
+### Phase 8 — Finish ⬜ *(next)*
 
 Copy rewrite pass, full reduced-motion audit, Capacitor safe-area check on
 Android, Playwright visual-regression baselines, the finish review against the
@@ -319,7 +350,10 @@ not from intentions, and not before the build is done.
 - **Placeholder durations in production data.** Most recipes carry
   `prepTime: "20 mins"` / `cookTime: "30 mins"` verbatim, so most rows read an
   identical 50 MIN. The parser is correct; the data is a seed-script
-  placeholder. A data question, not a UI one.
+  placeholder. A data question, not a UI one — though Phase 6 stopped the
+  editor making it worse: those fields were `type="number"`, which cannot hold
+  `"20 mins"`, so the editor rendered them empty and saving any of those 199
+  recipes wiped both times outright.
 - **The library is rendered a page at a time, not virtualised.** 48 tiles per
   page keeps in-flight image requests near what the connection pool can serve,
   but a baker who clicks Show more four times still ends up with 200 mounted

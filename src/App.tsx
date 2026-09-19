@@ -105,7 +105,6 @@ function AnimatedRoutes() {
   return (
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
-        <Route path="/welcome" element={<LandingPage />} />
         <Route path="/" element={<Dashboard />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/analytics" element={<Analytics />} />
@@ -174,6 +173,47 @@ function App() {
   return (
     <Router>
       {/*
+        * The landing page is routed beside the shell rather than inside it. It
+        * is the one surface someone sees before they have entered the app, and
+        * a sidebar of sections they have not reached yet — plus a bottom nav
+        * and a timer manager — is chrome for a product they have not agreed to
+        * use. Everything else renders in the shell.
+        */}
+      <Routes>
+        <Route path="/welcome" element={<LandingPage />} />
+        <Route
+          path="*"
+          element={
+            <AppShell
+              isOffline={isOffline}
+              showStaleBar={showStaleBar}
+              staleReason={staleReason}
+              showAuthModal={showAuthModal}
+              setShowAuthModal={setShowAuthModal}
+            />
+          }
+        />
+      </Routes>
+    </Router>
+  );
+}
+
+function AppShell({
+  isOffline,
+  showStaleBar,
+  staleReason,
+  showAuthModal,
+  setShowAuthModal,
+}: {
+  isOffline: boolean;
+  showStaleBar: boolean;
+  staleReason: string | null;
+  showAuthModal: boolean;
+  setShowAuthModal: (open: boolean) => void;
+}) {
+  return (
+    <>
+      {/*
         The status bars sit in the flow rather than fixed with a guessed pt-6: their
         text wraps to two or three lines on a phone, which a fixed offset can't
         account for, and the overflow landed on top of the page heading.
@@ -213,7 +253,7 @@ function App() {
         )}
       </div>
       </div>
-    </Router>
+    </>
   );
 }
 

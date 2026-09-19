@@ -1,37 +1,120 @@
-import { useState, useEffect } from 'react';
-import { Moon, Sun, Smartphone, Database, Download, ImageDown } from 'lucide-react';
+import { useState, useEffect, type ReactNode } from 'react';
+import { Download, ImageDown } from 'lucide-react';
 import { API_URL, api } from '../lib/api';
 import { hapticsEnabled, ttsEnabled as readTtsEnabled } from '../lib/settings';
+import { Panel, Button, cn } from './ui';
+
+/*
+ * Settings.
+ *
+ * Every preference here used to be an iOS-style sliding pill — a control from
+ * a different machine, and the one widget in the app that carried state by a
+ * moving dot rather than by light. They are latching keys now: the same key the
+ * step row draws, held down. Lit means on, which is the one thing light is
+ * allowed to mean in this world, and it is the same idiom the personal-best
+ * mark and the grocery bank already use.
+ *
+ * The key reports its state in words as well as in light, so it survives a
+ * colour-vision difference, and it carries `aria-pressed` so a screen reader
+ * announces a switch rather than a button.
+ */
+
+/** A preference: what it does, and the key that holds it. */
+function SettingRow({
+  label,
+  description,
+  on,
+  onChange,
+}: {
+  label: string;
+  description: string;
+  on: boolean;
+  onChange: (next: boolean) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-4 border-b border-rule py-3 last:border-b-0">
+      <div className="min-w-0">
+        <p className="label-silkscreen text-ink">{label}</p>
+        <p className="mt-0.5 text-sm text-ink-muted">{description}</p>
+      </div>
+      <Button
+        engaged={on}
+        onClick={() => onChange(!on)}
+        aria-label={label}
+        className="w-16 shrink-0"
+      >
+        {on ? 'On' : 'Off'}
+      </Button>
+    </div>
+  );
+}
+
+/** A bank of keys where exactly one is down. */
+function KeyBank<T extends string>({
+  legend,
+  value,
+  options,
+  onChange,
+}: {
+  legend: string;
+  value: T;
+  options: { value: T; label: string; icon?: ReactNode }[];
+  onChange: (next: T) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-2" role="group" aria-label={legend}>
+      <div className="flex flex-wrap gap-2">
+        {options.map((option) => (
+          <Button
+            key={option.value}
+            engaged={value === option.value}
+            icon={option.icon}
+            onClick={() => onChange(option.value)}
+            className={cn('flex-1', 'min-w-24')}
+          >
+            {option.label}
+          </Button>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function Settings() {
-  const [theme, setTheme] = useState<'light' | 'dark' | 'system'>(() => localStorage.getItem('theme') as any || 'system');
+  const [theme, setTheme] = useState<'light' | 'dark' | 'system'>(
+    () => (localStorage.getItem('theme') as any) || 'system',
+  );
   const [haptics, setHaptics] = useState(hapticsEnabled);
-  const [defaultBakersMath, setDefaultBakersMath] = useState(() => localStorage.getItem('defaultBakersMath') === 'true');
+  const [defaultBakersMath, setDefaultBakersMath] = useState(
+    () => localStorage.getItem('defaultBakersMath') === 'true',
+  );
 
-  
-  // Announcements have always been on in practice, so default this on rather than
-  // silencing timers for anyone who never opened Settings.
+  // Announcements have always been on in practice, so default this on rather
+  // than silencing timers for anyone who never opened Settings.
   const [ttsEnabled, setTtsEnabled] = useState(readTtsEnabled);
-  const [waveToAdvance, setWaveToAdvance] = useState(() => localStorage.getItem('waveToAdvance') === 'true');
+  const [waveToAdvance, setWaveToAdvance] = useState(
+    () => localStorage.getItem('waveToAdvance') === 'true',
+  );
+  const [voiceCommands, setVoiceCommands] = useState(
+    () => localStorage.getItem('voiceCommands') === 'true',
+  );
+
   const [rehostBusy, setRehostBusy] = useState(false);
   const [rehostMsg, setRehostMsg] = useState('');
-  const [voiceCommands, setVoiceCommands] = useState(() => localStorage.getItem('voiceCommands') === 'true');
+  const [backupBusy, setBackupBusy] = useState(false);
+  const [backupMsg, setBackupMsg] = useState('');
+  const [backupError, setBackupError] = useState('');
 
   useEffect(() => {
     if (theme === 'system') {
       localStorage.removeItem('theme');
-      if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-      }
+      document.documentElement.classList.toggle(
+        'dark',
+        window.matchMedia('(prefers-color-scheme: dark)').matches,
+      );
     } else {
       localStorage.setItem('theme', theme);
-      if (theme === 'dark') {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-      }
+      document.documentElement.classList.toggle('dark', theme === 'dark');
     }
   }, [theme]);
 
@@ -43,8 +126,6 @@ export default function Settings() {
     localStorage.setItem('defaultBakersMath', defaultBakersMath.toString());
     window.dispatchEvent(new Event('settings-changed'));
   }, [defaultBakersMath]);
-
-
 
   useEffect(() => {
     localStorage.setItem('ttsEnabled', ttsEnabled.toString());
@@ -58,180 +139,168 @@ export default function Settings() {
     localStorage.setItem('voiceCommands', voiceCommands.toString());
   }, [voiceCommands]);
 
+  const handleBackup = async () => {
+    setBackupBusy(true);
+    setBackupMsg('');
+    setBackupError('');
+    try {
+      const token = localStorage.getItem('adminToken');
+      if (!token) {
+        setBackupError('Enter the admin PIN first — a backup reads the whole database.');
+        return;
+      }
+      const res = await fetch(`${API_URL.replace('/api', '')}/api/backup`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error('Backup failed');
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'proof-backup.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      setBackupMsg('Downloaded.');
+    } catch {
+      setBackupError('The backup could not be downloaded. Check the connection and try again.');
+    } finally {
+      setBackupBusy(false);
+    }
+  };
+
   return (
-    <div className="max-w-4xl mx-auto space-y-8 pb-20">
-      <div className="flex items-center justify-between pb-6 border-b border-border-subtle">
-        <h1 className="text-3xl font-bold tracking-tight uppercase">Settings</h1>
-      </div>
-
-      <div className="bg-sidebar p-6 rounded-2xl border border-border-subtle shadow-sm space-y-6">
-        <div>
-          <h2 className="text-xl font-bold mb-4 flex items-center gap-2"><Sun className="w-5 h-5"/> Appearance</h2>
-          <div className="grid grid-cols-2 sm:flex sm:flex-row gap-3">
-            <button 
-              onClick={() => setTheme('light')}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-medium transition-all border ${theme === 'light' ? 'bg-accent/10 text-accent border-accent ' : 'bg-paper text-ink border-border-subtle hover:bg-black/5 dark:hover:bg-white/5'}`}
-            >
-              <Sun className="w-4 h-4"/> Light
-            </button>
-            <button 
-              onClick={() => setTheme('dark')}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-medium transition-all border ${theme === 'dark' ? 'bg-accent/10 text-accent border-accent ' : 'bg-paper text-ink border-border-subtle hover:bg-black/5 dark:hover:bg-white/5'}`}
-            >
-              <Moon className="w-4 h-4"/> Dark
-            </button>
-
-            <button 
-              onClick={() => setTheme('system')}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-medium transition-all border ${theme === 'system' ? 'bg-accent/10 text-accent border-accent ' : 'bg-paper text-ink border-border-subtle hover:bg-black/5 dark:hover:bg-white/5'}`}
-            >
-              System
-            </button>
-          </div>
-          <p className="text-ink-muted text-sm mt-3">Override your device's system theme.</p>
+    <div className="mx-auto flex max-w-3xl flex-col gap-8 pb-20">
+      <header className="flex flex-wrap items-end justify-between gap-4 border-b border-rule pb-6">
+        <div className="flex flex-col gap-2">
+          <h1 className="font-faceplate text-3xl leading-none text-ink sm:text-4xl">Settings</h1>
+          <p className="max-w-prose text-ink-muted">
+            How the machine behaves. Everything here is stored on this device, not on the server.
+          </p>
         </div>
-      </div>
+      </header>
 
-      <div className="bg-sidebar p-6 rounded-2xl border border-border-subtle shadow-sm space-y-6">
-        <div>
-          <h2 className="text-xl font-bold mb-4 flex items-center gap-2"><Smartphone className="w-5 h-5"/> Preferences</h2>
-          <div className="space-y-3">
-            <label className="flex items-center justify-between p-4 bg-paper border border-border-subtle rounded-xl cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-              <div>
-                <div className="font-bold">Baker's Math by Default</div>
-                <div className="text-sm text-ink-muted">Automatically show baker's percentages on recipes.</div>
-              </div>
-              <div className="relative inline-block w-12 h-6 rounded-full transition-colors ease-in-out duration-200 focus:outline-none" style={{ backgroundColor: defaultBakersMath ? 'var(--signal)' : 'var(--rule)' }}>
-                <input type="checkbox" className="sr-only" checked={defaultBakersMath} onChange={e => setDefaultBakersMath(e.target.checked)} />
-                <span className={`inline-block w-6 h-6 transform bg-paper rounded-full shadow transition duration-200 ease-in-out ${defaultBakersMath ? 'translate-x-6' : 'translate-x-0'}`} />
-              </div>
-            </label>
-
-
-
-            <label className="flex items-center justify-between p-4 bg-paper border border-border-subtle rounded-xl cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-              <div>
-                <div className="font-bold">Haptic Feedback</div>
-                <div className="text-sm text-ink-muted">Small vibrations when navigating steps or timers.</div>
-              </div>
-              <div className="relative inline-block w-12 h-6 rounded-full transition-colors ease-in-out duration-200 focus:outline-none" style={{ backgroundColor: haptics ? 'var(--signal)' : 'var(--rule)' }}>
-                <input type="checkbox" className="sr-only" checked={haptics} onChange={e => setHaptics(e.target.checked)} />
-                <span className={`inline-block w-6 h-6 transform bg-paper rounded-full shadow transition duration-200 ease-in-out ${haptics ? 'translate-x-6' : 'translate-x-0'}`} />
-              </div>
-            </label>
-
-            <label className="flex items-center justify-between p-4 bg-paper border border-border-subtle rounded-xl cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-              <div>
-                <div className="font-bold">Text-to-Speech</div>
-                <div className="text-sm text-ink-muted">Announce timers aloud when they finish.</div>
-              </div>
-              <div className="relative inline-block w-12 h-6 rounded-full transition-colors ease-in-out duration-200 focus:outline-none" style={{ backgroundColor: ttsEnabled ? 'var(--signal)' : 'var(--rule)' }}>
-                <input type="checkbox" className="sr-only" checked={ttsEnabled} onChange={e => setTtsEnabled(e.target.checked)} />
-                <span className={`inline-block w-6 h-6 transform bg-paper rounded-full shadow transition duration-200 ease-in-out ${ttsEnabled ? 'translate-x-6' : 'translate-x-0'}`} />
-              </div>
-            </label>
-
-            <label className="flex items-center justify-between p-4 bg-paper border border-border-subtle rounded-xl cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-              <div>
-                <div className="font-bold">Wave to Advance</div>
-                <div className="text-sm text-ink-muted">Wave hand over camera to go to next step.</div>
-              </div>
-              <div className="relative inline-block w-12 h-6 rounded-full transition-colors ease-in-out duration-200 focus:outline-none" style={{ backgroundColor: waveToAdvance ? 'var(--signal)' : 'var(--rule)' }}>
-                <input type="checkbox" className="sr-only" checked={waveToAdvance} onChange={e => setWaveToAdvance(e.target.checked)} />
-                <span className={`inline-block w-6 h-6 transform bg-paper rounded-full shadow transition duration-200 ease-in-out ${waveToAdvance ? 'translate-x-6' : 'translate-x-0'}`} />
-              </div>
-            </label>
-
-            <label className="flex items-center justify-between p-4 bg-paper border border-border-subtle rounded-xl cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-              <div>
-                <div className="font-bold">Voice Commands</div>
-                <div className="text-sm text-ink-muted">Say "Next step" or "Start timer" to control hands-free.</div>
-              </div>
-              <div className="relative inline-block w-12 h-6 rounded-full transition-colors ease-in-out duration-200 focus:outline-none" style={{ backgroundColor: voiceCommands ? 'var(--signal)' : 'var(--rule)' }}>
-                <input type="checkbox" className="sr-only" checked={voiceCommands} onChange={e => setVoiceCommands(e.target.checked)} />
-                <span className={`inline-block w-6 h-6 transform bg-paper rounded-full shadow transition duration-200 ease-in-out ${voiceCommands ? 'translate-x-6' : 'translate-x-0'}`} />
-              </div>
-            </label>
-          </div>
+      <Panel title="Appearance">
+        <div className="flex flex-col gap-3">
+          <KeyBank
+            legend="Theme"
+            value={theme}
+            onChange={setTheme}
+            options={[
+              { value: 'light', label: 'Light' },
+              { value: 'dark', label: 'Dark' },
+              { value: 'system', label: 'System' },
+            ]}
+          />
+          <p className="text-sm text-ink-muted">
+            Dark is the default: the scene this was built for is a kitchen before dawn, where the
+            only lit object is a propped phone. System follows the device.
+          </p>
         </div>
-      </div>
+      </Panel>
 
-      <div className="bg-sidebar p-6 rounded-2xl border border-border-subtle shadow-sm space-y-6">
-        <div>
-          <h2 className="text-xl font-bold mb-4 flex items-center gap-2"><Database className="w-5 h-5"/> Data Management</h2>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between p-4 bg-paper border border-border-subtle rounded-xl">
-              <div>
-                <div className="font-bold">Backup Database</div>
-                <div className="text-sm text-ink-muted">Download all recipes, logs, and notes as a JSON file.</div>
-              </div>
-              <button 
-                onClick={async () => {
-                  try {
-                    const token = localStorage.getItem('adminToken');
-                    if (!token) {
-                      alert('Admin access required for backup.');
-                      return;
-                    }
-                    const res = await fetch(`${API_URL.replace('/api', '')}/api/backup`, {
-                      headers: { 'Authorization': `Bearer ${token}` }
-                    });
-                    if (!res.ok) throw new Error('Backup failed');
-                    const blob = await res.blob();
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = 'culinary-lab-backup.json';
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    window.URL.revokeObjectURL(url);
-                  } catch (err) {
-                    console.error(err);
-                    alert('Failed to download backup.');
-                  }
-                }}
-                className="flex items-center gap-2 px-6 py-2.5 bg-accent text-black font-bold rounded-xl transition-all"
-              >
-                <Download className="w-4 h-4" /> Backup
-              </button>
+      <Panel title="Preferences" flush>
+        <div className="px-4">
+          <SettingRow
+            label="Baker's math"
+            description="Show baker's percentages on every recipe without asking."
+            on={defaultBakersMath}
+            onChange={setDefaultBakersMath}
+          />
+          <SettingRow
+            label="Haptics"
+            description="A tick through the case when a step advances or a timer ends."
+            on={haptics}
+            onChange={setHaptics}
+          />
+          <SettingRow
+            label="Spoken timers"
+            description="Say a timer's name aloud when it finishes, for hands that are busy."
+            on={ttsEnabled}
+            onChange={setTtsEnabled}
+          />
+          <SettingRow
+            label="Wave to advance"
+            description="Move a hand over the camera to reach the next step without touching anything."
+            on={waveToAdvance}
+            onChange={setWaveToAdvance}
+          />
+          <SettingRow
+            label="Voice commands"
+            description="Next, back, read, ingredients, start timer — spoken rather than tapped."
+            on={voiceCommands}
+            onChange={setVoiceCommands}
+          />
+        </div>
+      </Panel>
+
+      <Panel title="Data">
+        <div className="flex flex-col gap-5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="label-silkscreen text-ink">Backup</p>
+              <p className="mt-0.5 text-sm text-ink-muted">
+                Every recipe, bake log and note as one JSON file. Needs the admin PIN.
+              </p>
+              {backupMsg ? (
+                <p className="mt-1 text-sm text-ink" role="status">
+                  {backupMsg}
+                </p>
+              ) : null}
+              {backupError ? (
+                <p className="mt-1 text-sm text-signal" role="alert">
+                  {backupError}
+                </p>
+              ) : null}
             </div>
+            <Button
+              onClick={handleBackup}
+              busy={backupBusy}
+              icon={<Download className="h-4 w-4" />}
+            >
+              {backupBusy ? 'Working' : 'Download'}
+            </Button>
+          </div>
 
-            <div className="flex items-center justify-between p-4 bg-paper border border-border-subtle rounded-xl gap-4">
-              <div>
-                <div className="font-bold">Re-host External Images</div>
-                <div className="text-sm text-ink-muted">
-                  Copy any recipe or bake-log photos that still point at another site onto Cloudinary.
-                  {rehostMsg && <span className="block mt-1 text-accent font-medium">{rehostMsg}</span>}
-                </div>
-              </div>
-              <button
-                disabled={rehostBusy}
-                onClick={async () => {
-                  setRehostBusy(true);
-                  setRehostMsg('');
-                  try {
-                    const r = await api.rehostImages();
-                    setRehostMsg(
-                      r.rehostedCount === 0
-                        ? 'Nothing to do — every image is already re-hosted.'
-                        : `Re-hosted ${r.rehostedCount} image(s) across ${r.recipesUpdated} recipe(s) and ${r.bakeLogsUpdated} bake log(s).`
-                    );
-                  } catch (err: any) {
-                    setRehostMsg(err?.message || 'Failed to re-host images.');
-                  } finally {
-                    setRehostBusy(false);
-                  }
-                }}
-                className="flex items-center gap-2 px-6 py-2.5 bg-accent text-black font-bold rounded-xl transition-all disabled:opacity-50 shrink-0"
-              >
-                <ImageDown className="w-4 h-4" /> {rehostBusy ? 'Working…' : 'Re-host'}
-              </button>
+          <div className="flex flex-wrap items-start justify-between gap-3 border-t border-rule pt-5">
+            <div className="min-w-0 flex-1">
+              <p className="label-silkscreen text-ink">Re-host photographs</p>
+              <p className="mt-0.5 text-sm text-ink-muted">
+                Copy any recipe or bake-log photograph still pointing at another site onto
+                Cloudinary, so the library does not depend on it staying up.
+              </p>
+              {rehostMsg ? (
+                <p className="mt-1 text-sm text-ink" role="status">
+                  {rehostMsg}
+                </p>
+              ) : null}
             </div>
+            <Button
+              busy={rehostBusy}
+              icon={<ImageDown className="h-4 w-4" />}
+              onClick={async () => {
+                setRehostBusy(true);
+                setRehostMsg('');
+                try {
+                  const r = await api.rehostImages();
+                  setRehostMsg(
+                    r.rehostedCount === 0
+                      ? 'Nothing to do — every photograph is already re-hosted.'
+                      : `Re-hosted ${r.rehostedCount} photograph(s) across ${r.recipesUpdated} recipe(s) and ${r.bakeLogsUpdated} bake log(s).`,
+                  );
+                } catch (err: any) {
+                  setRehostMsg(err?.message || 'The photographs could not be re-hosted.');
+                } finally {
+                  setRehostBusy(false);
+                }
+              }}
+            >
+              {rehostBusy ? 'Working' : 'Re-host'}
+            </Button>
           </div>
         </div>
-      </div>
-
+      </Panel>
     </div>
   );
 }

@@ -42,7 +42,16 @@ export function Meter({
 }: MeterProps) {
   const safeMax = max > 0 ? max : 1;
   const ratio = Math.min(Math.max(value / safeMax, 0), 1);
-  const filled = Math.round(ratio * cells);
+  // A present-but-tiny value lights one cell rather than none. 3 of 203
+  // recipes rounds to zero cells across the row, and a meter that reads "3 of
+  // 203" beside an entirely dark row is reporting the wrong thing: some is not
+  // none, and the difference is the whole point of the reading.
+  const scaled = Math.round(ratio * cells);
+  const filled = value > 0 && scaled === 0 ? 1 : scaled;
+  // `hotAt` of 1 means the scale has no hot end at all, so the warm band below
+  // it must not appear either — otherwise every meter that runs near full grows
+  // an orange tip it was never asked for.
+  const hasHotEnd = hotAt < 1;
 
   return (
     <div className={cn('flex flex-col gap-1.5', className)}>
@@ -72,11 +81,13 @@ export function Meter({
                 // meter reads as a level first and a warning only when it is one.
                 !isFilled
                   ? 'bg-key-unlit'
-                  : position > hotAt
-                    ? 'bg-key-now'
-                    : position > hotAt - 0.15
-                      ? 'bg-key-due'
-                      : 'bg-key-done',
+                  : !hasHotEnd
+                    ? 'bg-key-done'
+                    : position > hotAt
+                      ? 'bg-key-now'
+                      : position > hotAt - 0.15
+                        ? 'bg-key-due'
+                        : 'bg-key-done',
               )}
             />
           );

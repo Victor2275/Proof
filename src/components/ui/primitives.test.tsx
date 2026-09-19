@@ -191,6 +191,34 @@ describe('Meter', () => {
     expect(container.querySelector('[role="meter"]')?.children).toHaveLength(10);
   });
 
+  it('shows no hot end at all when it was not given one', () => {
+    // hotAt defaults to 1, meaning "this scale has no dangerous end". The warm
+    // band 15% below it used to fire anyway, so any meter running near full
+    // grew an orange tip nobody asked for.
+    const { container } = render(<Meter value={20} max={20} cells={20} />);
+    expect(container.querySelectorAll('.bg-key-due')).toHaveLength(0);
+    expect(container.querySelectorAll('.bg-key-now')).toHaveLength(0);
+    expect(container.querySelectorAll('.bg-key-done')).toHaveLength(20);
+  });
+
+  it('still climbs into the hot colours when it is given a hot end', () => {
+    const { container } = render(<Meter value={280} max={280} cells={20} hotAt={0.85} />);
+    expect(container.querySelectorAll('.bg-key-now').length).toBeGreaterThan(0);
+    expect(container.querySelectorAll('.bg-key-due').length).toBeGreaterThan(0);
+  });
+
+  it('lights one cell for a real but tiny value rather than reading empty', () => {
+    // 3 of 203 rounds to zero cells across the row. "Some" and "none" are the
+    // difference this reading exists to show.
+    const { container } = render(<Meter value={3} max={203} cells={24} />);
+    expect(container.querySelectorAll('.bg-key-done')).toHaveLength(1);
+  });
+
+  it('stays dark at zero', () => {
+    const { container } = render(<Meter value={0} max={203} cells={24} />);
+    expect(container.querySelectorAll('.bg-key-unlit')).toHaveLength(24);
+  });
+
   it('survives a zero maximum without dividing by zero', () => {
     const { container } = render(<Meter value={0} max={0} cells={8} />);
     expect(container.querySelectorAll('.bg-key-unlit')).toHaveLength(8);

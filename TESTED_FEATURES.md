@@ -132,6 +132,22 @@ This is a 1-to-1 mirror of CURRENT_FEATURES.md. Use checkboxes to track manual t
 - [ ] **QR dialog**: readable in dark mode — the code keeps its white surround.
 - [ ] **Stacked sheets announce separately**: with the delete confirmation open over the make, each dialog carries its own name.
 
+## 7a. Analytics, Settings, Landing, 404 (Phase 7)
+- [ ] **Settings keys latch**: each preference reads ON or OFF, lights when on, and persists across a reload.
+- [ ] **Theme bank**: exactly one of Light/Dark/System is down; picking System forgets the stored preference and follows the device.
+- [ ] **Settings on a phone**: every key is a 44px target at 375px.
+- [ ] **Backup without a PIN**: names the admin PIN as the recovery rather than failing silently.
+- [ ] **Analytics with three bakes**: only months containing a bake are drawn, and the panel says there is not enough to read a trend.
+- [ ] **Analytics with nothing logged**: says so rather than drawing an empty chart.
+- [ ] **Baked more than once**: stays empty until a recipe has actually been baked twice, then ranks it.
+- [ ] **Library meter**: 3 of 203 lights one cell, not zero, and shows no orange at the top.
+- [ ] **Analytics load**: a skeleton, not the word "loading", and no long pause from reading the offline store repeatedly.
+- [ ] **Landing hero**: the step row chases through the phases and the readout counts them off.
+- [ ] **Landing under reduced motion**: with the OS setting on, the row holds on one phase and nothing moves.
+- [ ] **Landing has no app chrome**: no sidebar, no bottom nav, at every width.
+- [ ] **Landing CTA**: "Open the cookbook" enters the app and the landing page does not reappear on the next visit.
+- [ ] **404**: an unlit panel with the seven-segment 404, readable in both themes, linking back to the cookbook.
+
 ## 7. UI/UX Foundation
 - [ ] **"Step Row" Visual World (Phase 0 foundation)**: Rhythm-machine design language — matte panels, silkscreen labels, lit step keys, segment readouts; colour is temporal, not decorative.
 - [ ] **One enforced ban, two defined materials**: no glow except a lit key or segment; `--faceplate` and `.scrim` are the only gradient and blur, enforced by `src/designSystem.test.ts`.
