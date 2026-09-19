@@ -11,6 +11,8 @@
     "test": "vitest run",
     "test:server": "npm --prefix server run test",
     "test:all": "npm run test && npm run test:server",
+    "test:visual": "playwright test",
+    "test:visual:update": "playwright test --update-snapshots",
     "build:apk": "npm run build && npx cap sync android && cd android && ./gradlew assembleDebug",
     "start": "cd server && npm install && npx tsx index.js",
     "adb:reverse": "%LOCALAPPDATA%\\Android\\Sdk\\platform-tools\\adb.exe reverse tcp:3001 tcp:3001"
@@ -50,6 +52,7 @@
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^8.5.0",
+    "@playwright/test": "^1.62.1",
     "@tailwindcss/postcss": "^4.3.3",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^7.0.1",

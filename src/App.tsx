@@ -1,6 +1,6 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, MotionConfig } from 'framer-motion';
 import LandingPage from './components/LandingPage';
 import NotFound from './components/NotFound';
 import Sidebar from './components/Sidebar';
@@ -171,6 +171,18 @@ function App() {
   const showStaleBar = !!staleReason && !isOffline;
 
   return (
+    /*
+     * Reduced motion, for the half of the app's motion that CSS cannot reach.
+     *
+     * The global rule in index.css collapses CSS animation and transition, which
+     * covers the chase light, the sheets and every skeleton. framer-motion does
+     * not go through CSS — it writes inline styles from a rAF loop — so the
+     * recipe drawer still sprang up the screen and the onboarding modal still
+     * slid, for someone who had asked the operating system for neither.
+     * `reducedMotion="user"` makes every framer-motion animation in the app,
+     * including ones not written yet, honour that setting.
+     */
+    <MotionConfig reducedMotion="user">
     <Router>
       {/*
         * The landing page is routed beside the shell rather than inside it. It
@@ -195,6 +207,7 @@ function App() {
         />
       </Routes>
     </Router>
+    </MotionConfig>
   );
 }
 

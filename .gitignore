@@ -47,3 +47,10 @@ test.txt
 .claude/
 .codex/
 .agents/skills/
+
+# Playwright run artifacts. The baselines in e2e/__screenshots__ are the point
+# and stay tracked; these are per-run output.
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/

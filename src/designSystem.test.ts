@@ -109,6 +109,34 @@ describe('token layer', () => {
     expect(indexCss).toMatch(/@media \(prefers-reduced-motion: reduce\)/);
   });
 
+  /*
+   * The CSS rule above only reaches CSS. framer-motion writes inline styles
+   * from its own loop, so the recipe drawer sprang up the screen and the
+   * onboarding modal slid for someone who had asked for neither. MotionConfig
+   * is what makes the JS half honour the setting, and it has to stay mounted
+   * above everything that animates.
+   */
+  it('makes framer-motion honour reduced motion too, which CSS cannot do', () => {
+    const app = componentSources['./App.tsx'];
+    expect(app).toBeDefined();
+    expect(app).toMatch(/<MotionConfig\s+reducedMotion="user">/);
+  });
+
+  /*
+   * A JS timer is outside both. Anything driving motion from setInterval has to
+   * ask for itself — the landing page's chase light is the one that does.
+   */
+  it('guards every decorative interval with its own reduced-motion check', () => {
+    const drivers = Object.entries(componentSources).filter(
+      ([path, src]) => src.includes('setInterval') && !path.includes('Timer'),
+    );
+    for (const [path, src] of drivers) {
+      expect(src, `${path} animates on a timer without checking reduced motion`).toMatch(
+        /prefers-reduced-motion/,
+      );
+    }
+  });
+
   it('themes the browser surfaces it does not draw', () => {
     expect(indexCss).toMatch(/::selection/);
     expect(indexCss).toMatch(/caret-color/);
