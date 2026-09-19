@@ -239,6 +239,54 @@ describe('BakingMode Component', () => {
     });
   });
 
+  /*
+   * Baking Mode is operated at arm's length with floured hands. An operating
+   * system dialog appearing mid-bake has to be dismissed with a precise tap
+   * before anything else can happen, and cannot be read from across a counter.
+   * Three of them used to live here.
+   */
+  it('asks about finishing on the panel, not through a browser confirm', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    render(<MemoryRouter><BakingMode /></MemoryRouter>);
+    await waitFor(() => expect(screen.getByText('Step 1: Mix')).toBeDefined());
+
+    const finishCmd = registeredCommands.find((c) => c.command.includes('finish'));
+    expect(finishCmd).toBeDefined();
+
+    act(() => {
+      finishCmd.callback();
+    });
+
+    expect(confirmSpy).not.toHaveBeenCalled();
+    expect(
+      await screen.findByRole('dialog', { name: /Finish the bake/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Keep baking/i })).toBeInTheDocument();
+    confirmSpy.mockRestore();
+  });
+
+  it('reports a failed bake log in the panel, keeping what was typed', async () => {
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    vi.mocked(api.createBakeLog).mockRejectedValueOnce(new Error('offline'));
+    render(<MemoryRouter><BakingMode /></MemoryRouter>);
+    await waitFor(() => expect(screen.getByText('Step 1: Mix')).toBeDefined());
+
+    const finishCmd = registeredCommands.find((c) => c.command.includes('finish'));
+    act(() => {
+      finishCmd.callback();
+    });
+    fireEvent.click(await screen.findByRole('button', { name: /^Finish$/i }));
+
+    const form = await screen.findByLabelText(/Bake notes/i);
+    fireEvent.change(form, { target: { value: 'Crumb still tight.' } });
+    fireEvent.click(screen.getByRole('button', { name: /Log bake|Save/i }));
+
+    await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument());
+    expect(screen.getByRole('alert')).toHaveTextContent(/still here/i);
+    expect(alertSpy).not.toHaveBeenCalled();
+    alertSpy.mockRestore();
+  });
+
   it('registers advanced voice commands including read, timer, and help', async () => {
     render(<MemoryRouter><BakingMode /></MemoryRouter>);
     await waitFor(() => expect(screen.getByText('Step 1: Mix')).toBeDefined());

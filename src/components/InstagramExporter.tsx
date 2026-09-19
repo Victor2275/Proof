@@ -215,6 +215,9 @@ export default function InstagramExporter({ recipe, bakeLog, onClose }: Instagra
   const [exportMode, setExportMode] = useState<'carousel' | 'single'>('carousel');
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
   const [exporting, setExporting] = useState(false);
+  // Reported on the panel: this surface is already full-screen, and a system
+  // dialog over it is a second modal the user has to clear before retrying.
+  const [exportError, setExportError] = useState('');
   const nodes = useRef<Record<string, HTMLDivElement | null>>({});
 
   const palette = PALETTES[theme];
@@ -673,7 +676,7 @@ export default function InstagramExporter({ recipe, bakeLog, onClose }: Instagra
       });
     } catch (err) {
       console.error(err);
-      alert('Could not render the cards. Try again, or switch off the browser extension blocking images.');
+      setExportError('The cards could not be rendered. Try again — and if it keeps failing, an extension blocking images is the usual cause.');
     } finally {
       setExporting(false);
     }
@@ -691,6 +694,15 @@ export default function InstagramExporter({ recipe, bakeLog, onClose }: Instagra
           icon={<X className="h-4 w-4" />}
         />
       </header>
+
+      {exportError ? (
+        <p
+          role="alert"
+          className="shrink-0 border-b border-signal bg-panel px-4 py-2 text-sm text-signal"
+        >
+          {exportError}
+        </p>
+      ) : null}
 
       <div className="flex flex-1 flex-col items-center gap-8 overflow-y-auto p-4 md:p-8">
         <div className="flex flex-wrap items-center justify-center gap-2">

@@ -14,7 +14,7 @@ import { hapticsEnabled, voiceCommandsEnabled, waveToAdvanceEnabled } from '../l
 import { getActiveBake, startActiveBake, clearActiveBake } from '../lib/activeBake';
 import { derivePhases, type Phase } from '../lib/phases';
 import { subscribeRunningTimers, getRunningTimers, formatTimerClock } from '../lib/timerBus';
-import { Button, Panel, SegmentReadout, Skeleton, StepRow, cn } from './ui';
+import { Button, Panel, SegmentReadout, Sheet, Skeleton, StepRow, cn } from './ui';
 
 /*
  * Baking Mode — the surface the whole product exists for.
@@ -64,6 +64,16 @@ export default function BakingMode() {
 
   // Finish Modal State
   const [showFinishModal, setShowFinishModal] = useState(false);
+  /*
+   * Baking Mode reports in the panel, never through the browser.
+   *
+   * This surface is used at arm's length with floured hands. An operating
+   * system dialog appearing mid-bake — which is what alert() and confirm() are
+   * — has to be dismissed with a precise tap before anything else can happen,
+   * and it cannot be read from across a counter. Three of them lived here.
+   */
+  const [bakeNotice, setBakeNotice] = useState('');
+  const [confirmingFinish, setConfirmingFinish] = useState(false);
   const [showVoiceHelp, setShowVoiceHelp] = useState(false);
 
   // Bluetooth Scale State
@@ -98,9 +108,10 @@ export default function BakingMode() {
       {
         command: ['finish', 'done', 'complete'],
         callback: () => {
-          if (window.confirm("Are you sure you want to finish the recipe and log this bake?")) {
-            setShowFinishModal(true);
-          }
+          // Spoken "finish" still asks, because it is the one voice command
+          // that ends the bake — but it asks on the panel, in the world's own
+          // voice, where it can be answered by voice or by a large key.
+          setConfirmingFinish(true);
         }
       },
       {
@@ -289,7 +300,7 @@ export default function BakingMode() {
         setScaleWeight(null);
       });
     } catch (err) {
-      alert('Failed to connect to scale. Ensure Bluetooth is enabled and the site has permissions.');
+      setBakeNotice('The scale did not connect. Check that Bluetooth is on and that this site is allowed to use it, then press Connect again.');
     }
   };
 
@@ -529,7 +540,7 @@ export default function BakingMode() {
       }
     } catch (err) {
       console.error(err);
-      alert('Failed to save bake log');
+      setBakeNotice('The bake log did not save. Your notes and photographs are still here — try again once the connection is back.');
     } finally {
       setSavingLog(false);
     }
@@ -565,7 +576,9 @@ export default function BakingMode() {
   }
 
   const isFinished = currentStep === recipe.instructions.length;
-  const stepText = isFinished ? "You're done!" : recipe.instructions[currentStep];
+  // The last card. The machine reports that the pattern has finished running;
+  // it does not congratulate anyone.
+  const stepText = isFinished ? 'Every step is complete.' : recipe.instructions[currentStep];
   const smartIngredients = isFinished ? [] : getSmartIngredients(stepText);
   const currentPhase = isFinished
     ? null
@@ -580,6 +593,28 @@ export default function BakingMode() {
       {/* Hidden Camera Elements for Motion Detection */}
       <video ref={videoRef} autoPlay playsInline muted className="opacity-0 pointer-events-none absolute w-px h-px" />
       <canvas ref={canvasRef} width="320" height="240" className="hidden" />
+
+      {/*
+        A report from the machine: the scale would not connect, the bake log
+        would not save. A bar under the head rather than an overlay, because
+        nothing here should have to be dismissed before baking can continue,
+        and it must be readable from across a counter.
+      */}
+      {bakeNotice ? (
+        <div
+          role="alert"
+          className="flex shrink-0 items-start gap-3 border-b border-signal bg-panel px-3 py-2 text-sm text-signal"
+        >
+          <span className="flex-1">{bakeNotice}</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setBakeNotice('')}
+            aria-label="Dismiss"
+            icon={<X className="h-4 w-4" />}
+          />
+        </div>
+      ) : null}
 
       {/*
         The machine's head: what is baking, the controls that change how it is
@@ -950,6 +985,32 @@ export default function BakingMode() {
       )}
 
       {/* Finish Modal */}
+      <Sheet
+        open={confirmingFinish}
+        onClose={() => setConfirmingFinish(false)}
+        title="Finish the bake"
+        size="sm"
+        footer={
+          <>
+            <Button variant="secondary" size="lg" onClick={() => setConfirmingFinish(false)}>
+              Keep baking
+            </Button>
+            <Button
+              variant="primary"
+              size="lg"
+              onClick={() => {
+                setConfirmingFinish(false);
+                setShowFinishModal(true);
+              }}
+            >
+              Finish
+            </Button>
+          </>
+        }
+      >
+        <p className="text-ink">Finish the recipe and log this bake?</p>
+      </Sheet>
+
       {showFinishModal && (
         <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4">
           <div className="scrim absolute inset-0" onClick={() => setShowFinishModal(false)} aria-hidden="true" />

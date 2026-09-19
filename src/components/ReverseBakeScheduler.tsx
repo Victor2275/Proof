@@ -27,6 +27,9 @@ export default function ReverseBakeScheduler({ recipe, onClose }: ReverseBakeSch
 
   const [targetDateTime, setTargetDateTime] = useState(defaultTarget);
   const [scheduled, setScheduled] = useState(false);
+  // Reported on the panel rather than through a browser dialog, which on a
+  // phone is a system modal over a schedule the baker is reading.
+  const [scheduleNotice, setScheduleNotice] = useState('');
 
   const scheduleSteps = useMemo<ScheduleStep[]>(() => {
     if (!recipe.instructions || recipe.instructions.length === 0) return [];
@@ -70,8 +73,10 @@ export default function ReverseBakeScheduler({ recipe, onClose }: ReverseBakeSch
   }, [recipe, targetDateTime]);
 
   const handleScheduleNotifications = async () => {
+    setScheduleNotice('');
+
     if (!Capacitor.isNativePlatform()) {
-      alert('Local notifications are active on native Android devices.');
+      setScheduleNotice('Alerts only fire in the installed Android app. The schedule below is still yours to work from.');
       setScheduled(true);
       return;
     }
@@ -79,7 +84,7 @@ export default function ReverseBakeScheduler({ recipe, onClose }: ReverseBakeSch
     try {
       const perm = await LocalNotifications.requestPermissions();
       if (perm.display !== 'granted') {
-        alert('Notification permission required.');
+        setScheduleNotice('Android has not granted notification permission. Allow it in the system settings for Proof, then press this again.');
         return;
       }
 
@@ -94,7 +99,7 @@ export default function ReverseBakeScheduler({ recipe, onClose }: ReverseBakeSch
       setScheduled(true);
     } catch (err: any) {
       console.error('Notification error:', err);
-      alert('Failed to schedule notifications.');
+      setScheduleNotice('The alerts could not be scheduled. The schedule below is unaffected.');
     }
   };
 
@@ -129,10 +134,16 @@ export default function ReverseBakeScheduler({ recipe, onClose }: ReverseBakeSch
           onClick={handleScheduleNotifications}
           className="bg-accent text-black px-6 py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all"
         >
-          {scheduled ? <Check className="w-4 h-4 text-green-400" /> : <Bell className="w-4 h-4" />}
-          {scheduled ? 'Notifications Scheduled!' : 'Set Phone Notification Alerts'}
+          {scheduled ? <Check className="w-4 h-4" /> : <Bell className="w-4 h-4" />}
+          {scheduled ? 'Alerts set' : 'Alert me on my phone'}
         </button>
       </div>
+
+      {scheduleNotice ? (
+        <p className="border border-rule bg-panel p-3 text-sm text-ink" role="status">
+          {scheduleNotice}
+        </p>
+      ) : null}
 
       {scheduleSteps.length > 0 && (
         <div className="space-y-4 pt-2">

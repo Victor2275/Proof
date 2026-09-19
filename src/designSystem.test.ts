@@ -39,6 +39,31 @@ const indexCss = readFileSync(resolve(process.cwd(), 'src/index.css'), 'utf8');
  * were removed and would otherwise match themselves. */
 const cssRules = indexCss.replace(/\/\*[\s\S]*?\*\//g, '');
 
+/*
+ * Some bans are about what the code *does*, not what it mentions. The comments
+ * in this codebase explain which patterns were removed and would otherwise
+ * match themselves — the same reason `cssRules` exists above.
+ */
+function stripComments(source: string): string {
+  return source
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    // Leaves `https://` alone.
+    .replace(/(^|[^:])\/\/.*$/gm, '$1');
+}
+
+/** Like `offenders`, but blind to prose. */
+function codeOffenders(pattern: RegExp): string[] {
+  const hits: string[] = [];
+  for (const [path, source] of components) {
+    stripComments(source)
+      .split('\n')
+      .forEach((line, i) => {
+        if (pattern.test(line)) hits.push(`${path.slice(2)}:${i + 1}`);
+      });
+  }
+  return hits;
+}
+
 /** Report offenders as "path:line" so a failure points at the edit to make. */
 function offenders(pattern: RegExp): string[] {
   const hits: string[] = [];
@@ -160,6 +185,21 @@ describe('token layer', () => {
       if (!anchored) continue;
       expect(src, `${path} is anchored to the bottom edge without pb-safe`).toMatch(/pb-safe/);
     }
+  });
+
+  /*
+   * The browser's own dialogs.
+   *
+   * alert(), confirm() and prompt() are operating-system modals drawn in the
+   * platform's typeface, over the top of everything, dismissible only by a
+   * precise tap. There were eleven of them, three inside Baking Mode — which is
+   * operated at arm's length with floured hands, and is the worst place in the
+   * product for one. Every surface reports in its own panel now.
+   */
+  it('never reports through a browser dialog', () => {
+    expect(codeOffenders(/(?<![.\w])alert\(/)).toEqual([]);
+    expect(codeOffenders(/(?<![.\w])confirm\(/)).toEqual([]);
+    expect(codeOffenders(/(?<![.\w])prompt\(/)).toEqual([]);
   });
 
   it('themes the browser surfaces it does not draw', () => {
