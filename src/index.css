@@ -57,6 +57,7 @@
   --color-key-done: var(--key-done);
   --color-key-unlit: var(--key-unlit);
   --color-signal: var(--signal);
+  --color-on-signal: var(--on-signal);
   --color-spoiled: var(--spoiled);
 
   --font-display: 'Archivo Variable', ui-sans-serif, system-ui, sans-serif;
@@ -120,6 +121,12 @@
     --key-done: #b0aba1;
     --key-unlit: #d2cdc2;
     --signal: #c81e14;
+    /* The legend on a lit key. It flips with the theme because the red does
+     * not: the light theme's signal is deep enough that white reads on it at
+     * 5.75:1, while the dark theme's is bright enough that white drops to
+     * 3.53:1 and black rises to 5.94:1. One literal for both would fail one of
+     * them, which is how "Start recipe" shipped under the floor. */
+    --on-signal: #ffffff;
     --spoiled: #6d2018;
 
     /* The faceplate sheen. Cream plastic under a room light: the ramp is
@@ -152,6 +159,7 @@
     --key-done: #57564f;
     --key-unlit: #2a2a2a;
     --signal: #ff3b30;
+    --on-signal: #000000;
     --spoiled: #5a1a12;
 
     /* Matte black moulding lit from above the machine, not from the front. */

@@ -18,8 +18,18 @@ type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
 type Size = 'sm' | 'md' | 'lg';
 
 const VARIANTS: Record<Variant, string> = {
+  /*
+   * The legend on a lit key.
+   *
+   * White on the dark theme's signal red is 3.55:1, under the 4.5 that text
+   * this size needs, and the direction contract flags arm's-length legibility
+   * as the product working rather than as a checkbox. `--on-signal` flips with
+   * the theme because the red does not: black on the dark theme's bright red
+   * is 5.94:1, white on the light theme's deeper red is 5.75:1, and either
+   * value alone would fail the other theme.
+   */
   primary:
-    'border-signal bg-signal text-white hover:opacity-90 active:opacity-100',
+    'border-signal bg-signal text-on-signal hover:opacity-90 active:opacity-100',
   secondary:
     'border-rule bg-transparent text-ink hover:border-ink-muted active:bg-ink active:text-ground',
   ghost:

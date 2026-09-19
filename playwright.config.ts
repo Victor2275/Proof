@@ -42,8 +42,14 @@ export default defineConfig({
     toHaveScreenshot: {
       animations: 'disabled',
       caret: 'hide',
-      // Font antialiasing differs by a hair between runs on the same machine.
-      maxDiffPixelRatio: 0.01,
+      /*
+       * An absolute budget, not a ratio. A ratio scales with the page, so 1% of
+       * a full-page desktop shot is roughly 29,000 pixels — enough to hide an
+       * entire button's worth of text changing colour, which is exactly what it
+       * did hide when the signal control's legend was fixed. 150 pixels covers
+       * antialiasing jitter and nothing that anyone would call a design change.
+       */
+      maxDiffPixels: 150,
     },
   },
 

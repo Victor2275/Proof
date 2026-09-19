@@ -267,7 +267,11 @@ describe('BakingMode Component', () => {
 
   it('reports a failed bake log in the panel, keeping what was typed', async () => {
     const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
-    vi.mocked(api.createBakeLog).mockRejectedValueOnce(new Error('offline'));
+    // The bake log posts through fetch rather than the api client.
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue({ ok: false, status: 503 } as Response);
+
     render(<MemoryRouter><BakingMode /></MemoryRouter>);
     await waitFor(() => expect(screen.getByText('Step 1: Mix')).toBeDefined());
 
@@ -277,13 +281,17 @@ describe('BakingMode Component', () => {
     });
     fireEvent.click(await screen.findByRole('button', { name: /^Finish$/i }));
 
-    const form = await screen.findByLabelText(/Bake notes/i);
-    fireEvent.change(form, { target: { value: 'Crumb still tight.' } });
-    fireEvent.click(screen.getByRole('button', { name: /Log bake|Save/i }));
+    const notes = await screen.findByLabelText(/Bake notes/i);
+    fireEvent.change(notes, { target: { value: 'Crumb still tight.' } });
+    fireEvent.submit(notes.closest('form')!);
 
-    await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument());
-    expect(screen.getByRole('alert')).toHaveTextContent(/still here/i);
+    const alertBar = await screen.findByRole('alert');
+    expect(alertBar).toHaveTextContent(/still here/i);
     expect(alertSpy).not.toHaveBeenCalled();
+    // What was typed survives the failure — there is nothing to retype.
+    expect(notes).toHaveValue('Crumb still tight.');
+
+    fetchSpy.mockRestore();
     alertSpy.mockRestore();
   });
 

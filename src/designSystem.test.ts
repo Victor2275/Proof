@@ -202,6 +202,47 @@ describe('token layer', () => {
     expect(codeOffenders(/(?<![.\w])prompt\(/)).toEqual([]);
   });
 
+  /*
+   * The one contrast the direction contract singles out.
+   *
+   * "Contrast held on body text and Baking Mode regardless of the looks-right
+   * preference, because arm's-length legibility is the product working." The
+   * solid signal control is where that was being lost: white on the dark
+   * theme's #FF3B30 is 3.55:1, under the 4.5 that text this size needs. The
+   * legend flips with the theme because the red does not.
+   */
+  it('keeps the legend on a lit key readable in both themes', () => {
+    const channel = (v: number) => {
+      const c = v / 255;
+      return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    };
+    const luminance = (hex: string) => {
+      const n = hex.replace('#', '');
+      const full = n.length === 3 ? n.split('').map((c) => c + c).join('') : n;
+      const [r, g, b] = [0, 2, 4].map((i) => channel(parseInt(full.slice(i, i + 2), 16)));
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    };
+    const contrast = (a: string, b: string) => {
+      const [x, y] = [luminance(a), luminance(b)];
+      return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
+    };
+    const valueIn = (block: string, name: string) => {
+      // Built without escapes: a template literal swallows the backslash in \s.
+      const match = block.match(new RegExp('--' + name + ':[^#]*(#[0-9a-fA-F]{3,8})'));
+      if (!match) throw new Error(`${name} not found`);
+      return match[1];
+    };
+
+    const light = indexCss.slice(indexCss.indexOf(':root {'), indexCss.indexOf('.dark {'));
+    const dark = indexCss.slice(indexCss.indexOf('.dark {'));
+
+    for (const [name, block] of [['light', light], ['dark', dark]] as const) {
+      const ratio = contrast(valueIn(block, 'signal'), valueIn(block, 'on-signal'));
+      expect(ratio, `${name} theme: legend on the signal control is ${ratio.toFixed(2)}:1`)
+        .toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
   it('themes the browser surfaces it does not draw', () => {
     expect(indexCss).toMatch(/::selection/);
     expect(indexCss).toMatch(/caret-color/);
