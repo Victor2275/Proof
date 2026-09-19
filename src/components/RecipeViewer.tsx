@@ -10,9 +10,9 @@ import RecipeHeader from './RecipeHeader';
 import IngredientList from './IngredientList';
 import InstructionList from './InstructionList';
 import SideBySideCompare from './SideBySideCompare';
-import { Edit, MoreVertical, Play, X, Star, Award, Share2 } from 'lucide-react';
+import { Edit, MoreVertical, Play, Star, Award, Share2 } from 'lucide-react';
 import { Skeleton } from './ui/Skeleton';
-import { Button, Panel, buttonClassName, cn } from './ui';
+import { Button, Panel, PanelRow, Field, Sheet, buttonClassName, cn } from './ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { QRCodeSVG } from 'qrcode.react';
 import Fuse from 'fuse.js';
@@ -90,6 +90,11 @@ export default function RecipeViewer() {
   const [editingTagsFor, setEditingTagsFor] = useState<string | null>(null);
   const [tempTags, setTempTags] = useState<{url: string, label: string}[]>([]);
 
+  // The make detail reports through the panel rather than through alert().
+  const [makeError, setMakeError] = useState('');
+  const [makeNotice, setMakeNotice] = useState('');
+  const [confirmingMakeDelete, setConfirmingMakeDelete] = useState(false);
+
   const inPantryMap = useMemo(() => {
     if (!recipe || !pantryData.length) return {};
     const map: Record<string, boolean> = {};
@@ -133,6 +138,9 @@ export default function RecipeViewer() {
 
   const handleCloseMakeDetails = () => {
     setSelectedMake(null);
+    setMakeError('');
+    setMakeNotice('');
+    setEditingTagsFor(null);
     navigate(`/recipe/${id}`, { replace: true });
   };
 
@@ -455,291 +463,399 @@ export default function RecipeViewer() {
         <Play className="w-6 h-6 ml-1" fill="currentColor" />
       </button>
 
-      {/* Make Details Full Screen Modal */}
-      {selectedMake && (
-        <div className="fixed inset-0 z-[100] bg-paper overflow-y-auto animate-in slide-in-from-bottom-5">
-           <div className="max-w-4xl mx-auto p-4 md:p-8 pt-8">
-              <div className="flex justify-between items-center mb-8 pb-4 border-b border-border-subtle">
-                <div>
-                  <h2 className="text-3xl font-bold uppercase tracking-tight">Make #{bakeLogs.findIndex(l => l._id === selectedMake._id) !== -1 ? bakeLogs.length - bakeLogs.findIndex(l => l._id === selectedMake._id) : ''}</h2>
-                  {isEditingDate ? (
-                    <div className="flex items-center gap-2 mt-2">
-                      <input 
-                        type="datetime-local" 
-                        value={editDateValue} 
-                        onChange={e => setEditDateValue(e.target.value)} 
-                        className="border border-border-subtle rounded px-2 py-1.5 bg-black/5 dark:bg-white/5 text-ink focus:outline-none focus:ring-1 focus:ring-ink"
-                      />
-                      <button 
+      {/*
+        * The selected make.
+        *
+        * Phase 5 rebuilt the grid of makes and left this detail behind: rounded
+        * cards, 4px left-border headings, shadowed photographs — the previous
+        * world, reachable in two clicks from a page that is not. It is a Sheet
+        * on the primitives now, and the alert()s and confirm()s it reported
+        * through are panels and a confirmation sheet.
+        */}
+      <Sheet
+        open={selectedMake !== null}
+        onClose={handleCloseMakeDetails}
+        title={
+          selectedMake && bakeLogs.findIndex((l) => l._id === selectedMake._id) !== -1
+            ? `Make #${bakeLogs.length - bakeLogs.findIndex((l) => l._id === selectedMake._id)}`
+            : 'Make'
+        }
+        size="xl"
+        actions={
+          <Button variant="ghost" size="sm" onClick={handleCloseMakeDetails}>
+            Go to recipe
+          </Button>
+        }
+        footer={
+          selectedMake ? (
+            <>
+              <Button
+                variant="secondary"
+                onClick={async () => {
+                  const photoUrl = selectedMake.images?.[0]?.url || selectedMake.imageUrls?.[0];
+                  if (!photoUrl || !recipe) return;
+                  try {
+                    await api.updateRecipe(recipe._id!, {
+                      imageUrls: [
+                        photoUrl,
+                        ...(recipe.imageUrls || []).filter((u) => u !== photoUrl),
+                      ],
+                    });
+                    queryClient.invalidateQueries({ queryKey: ['recipe', id] });
+                    setMakeNotice('This bake is now the cover photograph.');
+                  } catch {
+                    setMakeError('Could not set the cover photograph.');
+                  }
+                }}
+              >
+                Set as cover
+              </Button>
+              <Button variant="danger" onClick={() => setConfirmingMakeDelete(true)}>
+                Delete entry
+              </Button>
+            </>
+          ) : null
+        }
+      >
+        {selectedMake ? (
+          <div className="flex flex-col gap-5">
+            {makeError ? (
+              <p className="border border-signal bg-panel p-3 text-sm text-signal" role="alert">
+                {makeError}
+              </p>
+            ) : null}
+            {makeNotice ? (
+              <p className="border border-rule bg-panel-sunk p-3 text-sm text-ink" role="status">
+                {makeNotice}
+              </p>
+            ) : null}
+
+            <Panel title="Bake">
+              <div className="flex flex-col gap-3">
+                {isEditingDate ? (
+                  <div className="flex flex-wrap items-end gap-2">
+                    <Field
+                      label="Date and time"
+                      type="datetime-local"
+                      className="flex-1"
+                      value={editDateValue}
+                      onChange={(e) => setEditDateValue(e.target.value)}
+                    />
+                    <Button
+                      onClick={async () => {
+                        try {
+                          const patch = { date: new Date(editDateValue).toISOString() };
+                          const updated = selectedMake._id!.startsWith('local-')
+                            ? await updateLocalBakeLog(selectedMake._id!, patch)
+                            : await api.updateBakeLog(selectedMake._id!, patch);
+                          setSelectedMake(updated);
+                          queryClient.invalidateQueries({ queryKey: ['bakeLogs', id] });
+                          setIsEditingDate(false);
+                        } catch {
+                          setMakeError('Could not change the date of this bake.');
+                        }
+                      }}
+                    >
+                      Save
+                    </Button>
+                    <Button variant="ghost" onClick={() => setIsEditingDate(false)}>
+                      Cancel
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    <PanelRow
+                      label="Baked"
+                      value={new Date(selectedMake.date || Date.now()).toLocaleString()}
+                    />
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button
+                        size="sm"
+                        engaged={selectedMake.isPersonalBest}
+                        icon={<Award className="h-3.5 w-3.5" />}
                         onClick={async () => {
                           try {
-                            let updated;
-                            if (selectedMake._id!.startsWith('local-')) {
-                              updated = await updateLocalBakeLog(selectedMake._id!, { date: new Date(editDateValue).toISOString() });
-                            } else {
-                              updated = await api.updateBakeLog(selectedMake._id!, { date: new Date(editDateValue).toISOString() });
-                            }
+                            const patch = { isPersonalBest: !selectedMake.isPersonalBest };
+                            const updated = selectedMake._id!.startsWith('local-')
+                              ? await updateLocalBakeLog(selectedMake._id!, patch)
+                              : await api.updateBakeLog(selectedMake._id!, patch);
                             setSelectedMake(updated);
                             queryClient.invalidateQueries({ queryKey: ['bakeLogs', id] });
-                            setIsEditingDate(false);
-                          } catch(e) { alert('Failed to update date'); }
+                          } catch {
+                            setMakeError('Could not change the personal-best mark.');
+                          }
                         }}
-                        className="bg-accent text-black px-4 py-1.5 rounded-xl text-sm font-bold transition-all"
-                      >Save</button>
-                      <button onClick={() => setIsEditingDate(false)} className="text-sm font-medium hover:underline text-ink-muted hover:text-ink px-2">Cancel</button>
-                    </div>
-                  ) : (
-                    <div>
-                      <p className="text-ink-muted text-lg">{new Date(selectedMake.date || Date.now()).toLocaleString()}</p>
-                      <div className="flex flex-wrap items-center gap-4 mt-2">
-                      <button 
-                        onClick={async () => {
-                          try {
-                            const newStatus = !selectedMake.isPersonalBest;
-                            let updated;
-                            if (selectedMake._id!.startsWith('local-')) {
-                              updated = await updateLocalBakeLog(selectedMake._id!, { isPersonalBest: newStatus });
-                            } else {
-                              updated = await api.updateBakeLog(selectedMake._id!, { isPersonalBest: newStatus });
-                            }
-                            setSelectedMake(updated);
-                            queryClient.invalidateQueries({ queryKey: ['bakeLogs', id] });
-                          } catch(e) { alert('Failed to update status'); }
-                        }} 
-                        className={buttonClassName({ size: 'sm', engaged: selectedMake.isPersonalBest })}
                       >
-                        <Award className="w-3.5 h-3.5" />
-                        {selectedMake.isPersonalBest ? 'Personal Best' : 'Mark as Personal Best'}
-                      </button>
-                      <button 
+                        {selectedMake.isPersonalBest ? 'Personal best' : 'Mark as personal best'}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={() => {
-                          setEditDateValue(new Date(selectedMake.date || Date.now()).toISOString().slice(0, 16));
+                          setEditDateValue(
+                            new Date(selectedMake.date || Date.now()).toISOString().slice(0, 16),
+                          );
                           setIsEditingDate(true);
-                        }} 
-                        className={buttonClassName({ variant: 'ghost', size: 'sm' })}
+                        }}
                       >
-                        Edit Date
-                      </button>
-                      <button 
+                        Edit date
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        icon={<Instagram className="h-3.5 w-3.5" />}
                         onClick={() => {
                           setInstagramExportBakeLog(selectedMake);
                           setShowInstagramExporter(true);
                         }}
-                        className={buttonClassName({ variant: 'ghost', size: 'sm' })}
                       >
-                        <Instagram className="w-3.5 h-3.5" />
-                        Export to Instagram
-                      </button>
-                      </div>
+                        Export
+                      </Button>
                     </div>
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
-                  <button onClick={handleCloseMakeDetails} className="p-2 border border-border-subtle hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors text-sm font-bold uppercase tracking-wide px-4 hidden md:block">Go to Recipe</button>
-                  <button onClick={handleCloseMakeDetails} className="p-2 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 rounded-full transition-colors"><X className="w-6 h-6" /></button>
-                </div>
+                  </>
+                )}
               </div>
-             
-             <div className="space-y-8">
-               {selectedMake.notes && (
-                 <div>
-                   <h3 className="font-bold text-xl mb-3 uppercase tracking-wider border-l-4 border-ink pl-3">Notes & Observations</h3>
-                   <div className="bg-black/5 dark:bg-white/5 border border-border-subtle rounded-2xl p-6">
-                     <p className="whitespace-pre-wrap leading-relaxed text-lg">{selectedMake.notes}</p>
-                   </div>
-                 </div>
-               )}
+            </Panel>
 
-               {(selectedMake.images && selectedMake.images.length > 0) || (selectedMake.imageUrls && selectedMake.imageUrls.length > 0) ? (
-                 <div>
-                   <div className="flex justify-between items-end mb-4">
-                     <h3 className="font-bold text-xl uppercase tracking-wider border-l-4 border-ink pl-3">Photos</h3>
-                     {editingTagsFor === selectedMake._id ? (
-                       <div className="flex gap-4">
-                         <button onClick={() => setEditingTagsFor(null)} className="text-xs font-bold uppercase tracking-wider text-ink-muted hover:text-ink">Cancel</button>
-                         <button onClick={async () => {
-                           try {
-                             let updated;
-                             if (selectedMake._id!.startsWith('local-')) {
-                               updated = await updateLocalBakeLog(selectedMake._id!, { images: tempTags });
-                             } else {
-                               updated = await api.updateBakeLog(selectedMake._id!, { images: tempTags });
-                             }
-                             setSelectedMake(updated);
-                             queryClient.invalidateQueries({ queryKey: ['bakeLogs', id] });
-                             setEditingTagsFor(null);
-                           } catch (err) {
-                             alert('Failed to save tags');
-                           }
-                         }} className={buttonClassName({ size: 'sm' })}>Save</button>
-                       </div>
-                     ) : (
-                       <button onClick={() => {
-                         setEditingTagsFor(selectedMake._id!);
-                         const initial = selectedMake.images ? [...selectedMake.images] : selectedMake.imageUrls!.map(url => ({url, label: ''}));
-                         setTempTags(initial);
-                       }} className="text-xs font-bold uppercase tracking-wider text-ink/50 hover:text-ink transition-colors">Edit Tags</button>
-                     )}
-                   </div>
+            {selectedMake.notes ? (
+              <Panel title="Notes">
+                <p className="font-prose whitespace-pre-wrap text-ink">{selectedMake.notes}</p>
+              </Panel>
+            ) : null}
 
-                   {editingTagsFor === selectedMake._id ? (
-                     <div className="grid grid-cols-1 gap-6">
-                       {tempTags.map((img, i) => (
-                         <div key={i} className="relative flex flex-col gap-3">
-                           <div className="relative">
-                             <img src={img.url} alt={`Photo ${i+1}`} className="w-full rounded-2xl border border-border-subtle shadow-md" />
-                           </div>
-                           <input 
-                             type="text" 
-                             value={img.label} 
-                             onChange={(e) => {
-                               const newTags = [...tempTags];
-                               newTags[i].label = e.target.value;
-                               setTempTags(newTags);
-                             }}
-                             placeholder="Enter tag (e.g. Dough, After Bake)"
-                             className="w-full bg-black/5 dark:bg-white/5 border border-border-subtle rounded-xl focus:border-ink outline-none px-4 py-3 font-bold uppercase tracking-wider text-sm transition-colors"
-                           />
-                         </div>
-                       ))}
-                     </div>
-                   ) : (
-                     selectedMake.images && selectedMake.images.length > 0 ? (
-                       selectedMake.images.length >= 2 ? (
-                         <SideBySideCompare 
-                           doughUrl={selectedMake.images[0].url} 
-                           bakedUrl={selectedMake.images[1].url} 
-                           doughLabel={selectedMake.images[0].label || 'Before'}
-                           bakedLabel={selectedMake.images[1].label || 'After'}
-                         />
-                       ) : (
-                         <div className="grid grid-cols-1 gap-6">
-                           {selectedMake.images.map((img, i) => (
-                             <div key={i} className="relative">
-                               <img src={img.url} alt={img.label || `Photo ${i+1}`} className="w-full rounded-2xl border border-border-subtle shadow-md" />
-                               {img.label && <span className="absolute bottom-3 right-3 text-xs font-bold uppercase tracking-wider bg-black/70 text-white px-2.5 py-1 rounded-full">{img.label}</span>}
-                             </div>
-                           ))}
-                         </div>
-                       )
-                     ) : (
-                       selectedMake.imageUrls!.length >= 2 ? (
-                         <SideBySideCompare doughUrl={selectedMake.imageUrls![0]} bakedUrl={selectedMake.imageUrls![1]} />
-                       ) : (
-                         <div className="grid grid-cols-1 gap-6">
-                           {selectedMake.imageUrls!.map((url, i) => (
-                             <img key={i} src={url} alt={`Make photo ${i+1}`} className="w-full rounded-2xl border border-border-subtle shadow-md" />
-                           ))}
-                         </div>
-                       )
-                     )
-                   )}
-                 </div>
-               ) : null}
-              </div>
-              <div className="pt-8 mt-8 border-t border-border-subtle flex flex-col md:flex-row justify-between items-center gap-4">
-                <button onClick={handleCloseMakeDetails} className="w-full md:w-auto px-6 py-3 border border-border-subtle hover:bg-black/5 dark:hover:bg-white/5 rounded-xl transition-colors font-bold uppercase tracking-wide md:hidden">
-                  Go to Recipe
-                </button>
-                <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-                  <button 
-                    onClick={async () => {
-                      const photoUrl = selectedMake.images?.[0]?.url || selectedMake.imageUrls?.[0];
-                      if (!photoUrl || !recipe) return;
-                      try {
-                        await api.updateRecipe(recipe._id!, {
-                           imageUrls: [photoUrl, ...(recipe.imageUrls || []).filter(u => u !== photoUrl)]
-                        });
-                        queryClient.invalidateQueries({ queryKey: ['recipe', id] });
-                        alert('Cover photo updated successfully!');
-                      } catch (err) {
-                        alert('Failed to update cover photo.');
-                      }
-                    }} 
-                    className="w-full sm:w-auto px-6 py-3 border border-ink text-ink hover:bg-ink hover:text-paper dark:border-white dark:text-white dark:hover:bg-white dark:hover:text-black rounded-xl transition-colors font-bold uppercase tracking-wide"
-                  >
-                    Set as Cover
-                  </button>
-                  <button 
-                    onClick={async () => {
-                      if (!confirm('Are you sure you want to delete this bake log entry?')) return;
-                      try {
-                        if (selectedMake._id!.startsWith('local-')) {
-                          await deleteLocalBakeLog(selectedMake._id!);
-                        } else {
-                          await api.deleteBakeLog(selectedMake._id!);
-                        }
-                        queryClient.invalidateQueries({ queryKey: ['bakeLogs', id] });
-                        handleCloseMakeDetails();
-                      } catch (e) {
-                        alert('Failed to delete log entry.');
-                      }
-                    }} 
-                    className="w-full sm:w-auto px-6 py-3 text-red-600 border border-red-600/30 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors font-bold uppercase tracking-wide"
-                  >
-                    Delete Entry
-                  </button>
-                </div>
-              </div>
-            </div>
-        </div>
-      )}
-
-      {showMobileStartModal && (
-        <div className="scrim fixed inset-0 z-[100] flex items-end justify-center p-4 pb-12">
-          <div className="bg-paper p-6 rounded-2xl shadow-2xl relative w-full text-center animate-in slide-in-from-bottom-5">
-            <h3 className="text-xl font-bold uppercase tracking-tight mb-4">Start Recipe</h3>
-            <div className="space-y-3">
-              <Link to={`/recipe/${recipe._id}/bake`} className="block w-full py-4 bg-accent text-black font-bold rounded-xl text-lg transition-all">
-                Start Now
-              </Link>
-              <button onClick={() => { setShowReverseScheduler(true); setShowMobileStartModal(false); }} className="block w-full py-4 border border-border-subtle font-bold rounded-xl text-lg hover:bg-black/5 dark:hover:bg-white/5">
-                Schedule Bake
-              </button>
-              <button onClick={() => setShowMobileStartModal(false)} className="block w-full py-4 font-bold rounded-xl text-lg text-ink-muted mt-2">
-                Cancel
-              </button>
-            </div>
+            {(selectedMake.images && selectedMake.images.length > 0) ||
+            (selectedMake.imageUrls && selectedMake.imageUrls.length > 0) ? (
+              <Panel
+                title="Photographs"
+                actions={
+                  editingTagsFor === selectedMake._id ? (
+                    <>
+                      <Button variant="ghost" size="sm" onClick={() => setEditingTagsFor(null)}>
+                        Cancel
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={async () => {
+                          try {
+                            const updated = selectedMake._id!.startsWith('local-')
+                              ? await updateLocalBakeLog(selectedMake._id!, { images: tempTags })
+                              : await api.updateBakeLog(selectedMake._id!, { images: tempTags });
+                            setSelectedMake(updated);
+                            queryClient.invalidateQueries({ queryKey: ['bakeLogs', id] });
+                            setEditingTagsFor(null);
+                          } catch {
+                            setMakeError('Could not save those labels.');
+                          }
+                        }}
+                      >
+                        Save
+                      </Button>
+                    </>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setEditingTagsFor(selectedMake._id!);
+                        setTempTags(
+                          selectedMake.images
+                            ? [...selectedMake.images]
+                            : selectedMake.imageUrls!.map((url) => ({ url, label: '' })),
+                        );
+                      }}
+                    >
+                      Label them
+                    </Button>
+                  )
+                }
+              >
+                {editingTagsFor === selectedMake._id ? (
+                  <div className="flex flex-col gap-4">
+                    {tempTags.map((img, i) => (
+                      <div key={i} className="flex flex-col gap-2">
+                        <img
+                          src={img.url}
+                          alt={`Photograph ${i + 1}`}
+                          className="w-full border border-rule"
+                        />
+                        <Field
+                          label={`Label for photograph ${i + 1}`}
+                          hideLabel
+                          value={img.label}
+                          onChange={(e) => {
+                            const next = [...tempTags];
+                            next[i] = { ...next[i], label: e.target.value };
+                            setTempTags(next);
+                          }}
+                          placeholder="Dough, after bake, crumb…"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                ) : selectedMake.images && selectedMake.images.length > 0 ? (
+                  selectedMake.images.length >= 2 ? (
+                    <SideBySideCompare
+                      doughUrl={selectedMake.images[0].url}
+                      bakedUrl={selectedMake.images[1].url}
+                      doughLabel={selectedMake.images[0].label || 'Before'}
+                      bakedLabel={selectedMake.images[1].label || 'After'}
+                    />
+                  ) : (
+                    <div className="flex flex-col gap-4">
+                      {selectedMake.images.map((img, i) => (
+                        <figure key={i} className="relative">
+                          <img
+                            src={img.url}
+                            alt={img.label || `Photograph ${i + 1}`}
+                            className="w-full border border-rule"
+                          />
+                          {img.label ? (
+                            <figcaption className="label-silkscreen absolute bottom-2 right-2 border border-rule bg-panel px-2 py-1 text-ink">
+                              {img.label}
+                            </figcaption>
+                          ) : null}
+                        </figure>
+                      ))}
+                    </div>
+                  )
+                ) : selectedMake.imageUrls!.length >= 2 ? (
+                  <SideBySideCompare
+                    doughUrl={selectedMake.imageUrls![0]}
+                    bakedUrl={selectedMake.imageUrls![1]}
+                  />
+                ) : (
+                  <div className="flex flex-col gap-4">
+                    {selectedMake.imageUrls!.map((url, i) => (
+                      <img
+                        key={i}
+                        src={url}
+                        alt={`Photograph ${i + 1}`}
+                        className="w-full border border-rule"
+                      />
+                    ))}
+                  </div>
+                )}
+              </Panel>
+            ) : null}
           </div>
-        </div>
-      )}
+        ) : null}
+      </Sheet>
 
-      {showMobileShareModal && (
-        <div className="scrim fixed inset-0 z-[100] flex items-end justify-center p-4 pb-12">
-          <div className="bg-paper p-6 rounded-2xl shadow-2xl relative w-full text-center animate-in slide-in-from-bottom-5">
-            <h3 className="text-xl font-bold uppercase tracking-tight mb-4">Share</h3>
-            <div className="space-y-3">
-              <button onClick={handleShareLink} className="block w-full py-4 bg-accent text-black font-bold rounded-xl text-lg transition-all">
-                Copy Link
-              </button>
-              <button onClick={() => { setShowQrModal(true); setShowMobileShareModal(false); }} className="block w-full py-4 border border-border-subtle font-bold rounded-xl text-lg hover:bg-black/5 dark:hover:bg-white/5">
-                QR Code
-              </button>
-              <button onClick={handleExportPDF} className="block w-full py-4 border border-border-subtle font-bold rounded-xl text-lg hover:bg-black/5 dark:hover:bg-white/5">
-                Export PDF
-              </button>
-              <button onClick={() => setShowMobileShareModal(false)} className="block w-full py-4 font-bold rounded-xl text-lg text-ink-muted mt-2">
-                Cancel
-              </button>
-            </div>
-          </div>
+      <Sheet
+        open={confirmingMakeDelete}
+        onClose={() => setConfirmingMakeDelete(false)}
+        title="Delete this bake"
+        size="sm"
+        layer={120}
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setConfirmingMakeDelete(false)}>
+              Keep
+            </Button>
+            <Button
+              variant="danger"
+              onClick={async () => {
+                if (!selectedMake) return;
+                setConfirmingMakeDelete(false);
+                try {
+                  if (selectedMake._id!.startsWith('local-')) {
+                    await deleteLocalBakeLog(selectedMake._id!);
+                  } else {
+                    await api.deleteBakeLog(selectedMake._id!);
+                  }
+                  queryClient.invalidateQueries({ queryKey: ['bakeLogs', id] });
+                  handleCloseMakeDetails();
+                } catch {
+                  setMakeError('Could not delete that bake log.');
+                }
+              }}
+            >
+              Delete
+            </Button>
+          </>
+        }
+      >
+        <p className="text-sm text-ink">
+          Delete this bake log? Its notes and photographs go with it, and the recipe keeps its
+          remaining bakes.
+        </p>
+      </Sheet>
+
+      {/*
+        * The phone's start and share sheets. Both rise from the bottom edge,
+        * which is where the thumb already is, and both are one decision.
+        */}
+      <Sheet
+        open={showMobileStartModal}
+        onClose={() => setShowMobileStartModal(false)}
+        title="Start recipe"
+        placement="bottom"
+      >
+        <div className="flex flex-col gap-2">
+          <Link
+            to={`/recipe/${recipe._id}/bake`}
+            className={buttonClassName({ variant: 'primary', size: 'lg', className: 'w-full' })}
+          >
+            Start now
+          </Link>
+          <Button
+            size="lg"
+            className="w-full"
+            onClick={() => {
+              setShowReverseScheduler(true);
+              setShowMobileStartModal(false);
+            }}
+          >
+            Schedule bake
+          </Button>
         </div>
-      )}
+      </Sheet>
+
+      <Sheet
+        open={showMobileShareModal}
+        onClose={() => setShowMobileShareModal(false)}
+        title="Share"
+        placement="bottom"
+      >
+        <div className="flex flex-col gap-2">
+          <Button variant="primary" size="lg" className="w-full" onClick={handleShareLink}>
+            Copy link
+          </Button>
+          <Button
+            size="lg"
+            className="w-full"
+            onClick={() => {
+              setShowQrModal(true);
+              setShowMobileShareModal(false);
+            }}
+          >
+            QR code
+          </Button>
+          <Button size="lg" className="w-full" onClick={handleExportPDF}>
+            Export PDF
+          </Button>
+        </div>
+      </Sheet>
 
       </div>
 
-      {showQrModal && (
-        <div className="scrim fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="bg-paper p-8 rounded-2xl shadow-2xl relative max-w-sm w-full text-center animate-in zoom-in-95">
-            <button onClick={() => setShowQrModal(false)} className="absolute top-4 right-4 p-2 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 rounded-full transition-colors"><X className="w-5 h-5" /></button>
-            <h3 className="text-xl font-bold uppercase tracking-tight mb-6">{recipe.title}</h3>
-            <div className="bg-white p-4 rounded-xl inline-block shadow-sm border border-border-subtle">
-              <QRCodeSVG value={window.location.href} size={200} level="M" />
-            </div>
-            <p className="mt-6 text-sm text-ink-muted font-medium">Scan to open on your mobile device</p>
+      <Sheet
+        open={showQrModal}
+        onClose={() => setShowQrModal(false)}
+        title={recipe.title}
+        size="sm"
+      >
+        <div className="flex flex-col items-center gap-4">
+          {/*
+            * The code keeps its white quiet zone in both themes: a scanner reads
+            * contrast, not taste, and an inverted code is an unreadable one.
+            */}
+          <div className="border border-rule bg-white p-4">
+            <QRCodeSVG value={window.location.href} size={200} level="M" />
           </div>
+          <p className="text-sm text-ink-muted">Scan to open this recipe on a phone.</p>
         </div>
-      )}
+      </Sheet>
 
       {aiSubstituteIngredient && (
         <AISubstitutionsModal

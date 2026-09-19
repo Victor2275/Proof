@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { cn } from '../../lib/cn';
@@ -136,6 +136,11 @@ export function Sheet({
   const [entered, setEntered] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const openerRef = useRef<HTMLElement | null>(null);
+  // Not a fixed string: two sheets can be open at once — a confirmation over
+  // the sheet that raised it — and `aria-labelledby` resolves to the first
+  // matching id in the document, so both dialogs would take the lower one's
+  // name.
+  const titleId = useId();
   const idRef = useRef<symbol>(undefined as unknown as symbol);
   if (idRef.current === undefined) idRef.current = Symbol('sheet');
 
@@ -256,7 +261,7 @@ export function Sheet({
           role="dialog"
           aria-modal="true"
           aria-label={title ? undefined : label}
-          aria-labelledby={title ? 'sheet-title' : undefined}
+          aria-labelledby={title ? titleId : undefined}
           tabIndex={-1}
           onKeyDown={handleKeyDown}
           className={cn(
@@ -278,7 +283,7 @@ export function Sheet({
               <div className="flex min-w-0 items-center gap-2">
                 <span className="h-2 w-2 shrink-0 bg-key-unlit" aria-hidden="true" />
                 {title ? (
-                  <h2 id="sheet-title" className="label-silkscreen truncate">
+                  <h2 id={titleId} className="label-silkscreen truncate">
                     {title}
                   </h2>
                 ) : null}

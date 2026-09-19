@@ -68,7 +68,13 @@ export function buttonClassName({
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant;
   size?: Size;
-  /** Renders the engaged state — a toggle that is currently on. */
+  /**
+   * Toggle state. Passing it at all declares the control a toggle, so it is
+   * left undefined by default: `aria-pressed="false"` on every ordinary button
+   * would announce the whole app as a panel of switches, and omitting it on a
+   * latched control announces a switch as a plain button. Only a control that
+   * actually latches passes this.
+   */
   engaged?: boolean;
   /** Blocks interaction and names why, for a screen reader as well as visually. */
   busy?: boolean;
@@ -78,7 +84,7 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 export function Button({
   variant = 'secondary',
   size = 'md',
-  engaged = false,
+  engaged,
   busy = false,
   icon,
   className,
@@ -92,8 +98,8 @@ export function Button({
       type={type}
       disabled={disabled || busy}
       aria-busy={busy || undefined}
-      aria-pressed={engaged || undefined}
-      className={buttonClassName({ variant, size, engaged, className })}
+      aria-pressed={engaged}
+      className={buttonClassName({ variant, size, engaged: engaged ?? false, className })}
       {...props}
     >
       {icon}

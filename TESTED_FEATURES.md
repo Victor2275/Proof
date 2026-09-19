@@ -120,6 +120,18 @@ This is a 1-to-1 mirror of CURRENT_FEATURES.md. Use checkboxes to track manual t
 - [ ] **Notes save state**: the head LED lights on an unsaved edit; the Save control appears only when there is something to save, and reads "Saved" otherwise.
 - [ ] **Notes save failure**: with the server unreachable, the typed text stays on screen and the error names the recovery.
 
+## 6b. The selected make, and the viewer's overlays
+- [ ] **Make detail as a sheet**: open a bake from a recipe's Previous makes — panels for the bake, its notes and its photographs, with a fixed foot.
+- [ ] **Before/after comparison**: a make with two photographs still shows the side-by-side compare.
+- [ ] **Labelling photographs**: Label them, type a label, Save — the label shows on the photograph afterwards.
+- [ ] **Deleting a bake asks first**: no browser confirm; Keep leaves it alone, Delete removes it.
+- [ ] **Personal best latches**: the key reads as engaged when on, and a screen reader announces it as a pressed toggle.
+- [ ] **Set as cover**: confirms in the panel rather than through an alert box.
+- [ ] **Failures report in the panel**: with the server down, deleting shows a named error inside the sheet rather than an alert box.
+- [ ] **Phone start and share sheets**: both rise from the bottom edge and close on Escape and on the scrim.
+- [ ] **QR dialog**: readable in dark mode — the code keeps its white surround.
+- [ ] **Stacked sheets announce separately**: with the delete confirmation open over the make, each dialog carries its own name.
+
 ## 7. UI/UX Foundation
 - [ ] **"Step Row" Visual World (Phase 0 foundation)**: Rhythm-machine design language — matte panels, silkscreen labels, lit step keys, segment readouts; colour is temporal, not decorative.
 - [ ] **One enforced ban, two defined materials**: no glow except a lit key or segment; `--faceplate` and `.scrim` are the only gradient and blur, enforced by `src/designSystem.test.ts`.

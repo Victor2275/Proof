@@ -113,6 +113,13 @@ This document exhaustively tracks every capability, component, and technical int
 - **Notes reachable on a phone**: The note list was `hidden md:flex`, so a phone could see whichever note loaded first and reach no other. The same list is a bottom sheet at that width.
 - **Notes report their own save state**: The panel's head LED lights while there are unsaved edits, and the head shows a Save control only when there is something to save — otherwise it reads "Saved" rather than offering a disabled button. A failed save keeps the typed text and says so.
 
+## 6b. The selected make, and the viewer's overlays
+- **The selected-make detail rebuilt**: Phase 5 rebuilt the grid of makes and left its detail view in the previous world — rounded cards, 4px left-border headings, shadowed photographs — reachable in two clicks from a page that had already moved. It is a `Sheet` composed of panels now: the bake and its controls, the notes, and the photographs with their before/after comparison.
+- **Its failures are reported, not alerted**: Six `alert()` calls and one `window.confirm` are gone. Errors appear in the panel as a named problem with its recovery; deleting a bake asks in a confirmation sheet.
+- **The viewer's last three hand-rolled overlays**: the phone's start sheet, its share sheet and the QR dialog are all `Sheet` now, so they trap focus and close on Escape like everything else. The QR code keeps a white quiet zone in both themes — a scanner reads contrast, not taste.
+- **Fixed — two open sheets shared one accessible name**: `Sheet` wrote a fixed `id` on its title, and `aria-labelledby` resolves to the first match in the document, so a confirmation opened over another sheet announced itself with the lower sheet's name. The id is generated per sheet.
+- **Fixed — latching controls were not announced as toggles**: `Button` emitted `aria-pressed` only when engaged, so a screen reader heard "personal best" as an ordinary button when it was off, and could not tell it was a switch at all. `engaged` is now undefined unless a control actually latches, and toggles report both states.
+
 ## 7. UI/UX Foundation
 - **Stack**: React, Vite, Tailwind CSS (`@tailwindcss/postcss`), shadcn/ui, TanStack Query for server state management.
 - **"Step Row" Visual World (Phase 0 foundation)**: The Black & Gold glassmorphic world has been replaced by an early-80s rhythm-machine design language: matte panels, silkscreened labels, lit step keys, and seven-segment readouts. Colour is temporal, never decorative — red marks *now*, orange *due*, yellow *queued*, white *complete*, and an unlit key is drawn as deliberately as a lit one.
