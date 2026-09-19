@@ -26,7 +26,6 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@tanstack/react-query": "^5.102.8",
-    "@uiw/react-md-editor": "^4.1.1",
     "adb": "^0.2.0",
     "class-variance-authority": "^0.7.1",
     "cloudinary": "^2.10.0",
@@ -45,7 +44,6 @@
     "react-router-dom": "^7.18.1",
     "react-speech-recognition": "^4.0.1",
     "regenerator-runtime": "^0.14.1",
-    "rehype-sanitize": "^6.0.0",
     "socket.io-client": "^4.8.3",
     "tailwind-merge": "^3.6.0"
   },

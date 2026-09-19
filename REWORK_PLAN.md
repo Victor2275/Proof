@@ -247,10 +247,41 @@ now comes off for the capture, and every branch of the key row is exact —
 labelled phase keys where the recipe proved its phases, one key per step for a
 short generic recipe, phase keys again past sixteen steps.
 
-### Phase 6 — Editor + Notes ⬜ *(next)*
+### Phase 6 — Editor + Notes ✅
 
-Recipe editor forms onto `Field`/`Panel`; markdown editor replaced with native
-controls per the earlier decision; general notes rethemed.
+**A `Sheet` primitive first.** The same scrim-and-panel had been hand-rolled
+eleven times, and this phase would have added five more. It is one component
+now, and it carries what none of the eleven copies had: a focus trap, Escape,
+focus returned to whatever opened it, and a counted scroll lock so a sheet over
+a sheet behaves. `TextArea` and `Select` joined `Field` for the same reason —
+forms are this phase's subject, and a bare browser control is a second design
+system.
+
+**The editor keeps its single scroll** — authoring means moving between the
+ingredients and the step that uses them — but every section is a panel with a
+silkscreened head, and a sticky bar reports the name, ingredient count and step
+count as they are typed, in tabular mono rather than segments.
+
+**The AI diff became a review.** A git-style JSON diff, in purple, with green
+additions and red deletions, broke the one rule the palette has and offered a
+single all-or-nothing decision. It is now one panel per field that actually
+differs, current reading beside proposed, each kept or rejected on its own.
+
+**A data-loss bug came out of it.** The prep and cook fields were
+`type="number"` while 199 of the 203 live recipes store `"20 mins"` /
+`"30 mins"`. The browser rendered both fields empty, so saving any of those 199
+recipes silently wiped both times. They read through `parseDurationMinutes` now
+and write back bare minutes, so an edited recipe leaves in the schema's own
+convention — which also means the placeholder-timing problem below shrinks by
+one recipe every time one is edited.
+
+**Notes lost the markdown editor.** `@uiw/react-md-editor` and
+`rehype-sanitize` are out of the dependency tree along with the `editor-vendor`
+chunk. The widget carried its own toolbar, split pane and colour system, and
+watched the document element with a `MutationObserver` to keep its theme in
+step with the app's. A note is a panel and a textarea. The note list was
+`hidden md:flex`, so a phone could reach exactly one note; it is a bottom sheet
+at that width now.
 
 ### Phase 7 — Analytics, Settings, Landing, 404 ⬜
 
@@ -274,10 +305,9 @@ not from intentions, and not before the build is done.
 - `CURRENT_FEATURES.md` and `TESTED_FEATURES.md` mirror every change.
 - No orphan or debug code.
 - The admin PIN gates writes; reads stay public.
-- Merge cadence: the branch merges to `main` — and therefore deploys live —
-  **after Phase 3**. Phases 4 and 5 landed on the branch before that merge
-  happened, so the merge now carries phases 0–5 together and still needs an
-  explicit go-ahead.
+- Merge cadence: phases 0–5 were merged to `main` together and are live.
+  `main`, `rework/step-row` and `ui-bugfixes` are all at the same commit.
+  Phase 6 onward commits to `main` at each green checkpoint, which deploys.
 
 ## Open items
 
@@ -299,11 +329,12 @@ not from intentions, and not before the build is done.
   is fine until it is not: there is no local copy, no resizing, and a tile
   downloads a full-size photograph to display it at 280px. Worth revisiting
   when the library holds real bake photography.
-- **No shared `Sheet`/`Dialog` primitive.** The bottom nav's More sheet was
-  bespoke, and Phase 4 added three more hand-rolled overlays in Baking Mode
-  alone — ingredients, bake log, voice help — plus the pantry's scanner. Four
-  copies of the same scrim-and-panel pattern is the point at which it should be
-  a primitive, and Phase 6 will want dialogs too.
+- **The older overlays have not moved onto `Sheet` yet.** Phase 6 built the
+  primitive and put the editor's five and the notes' two on it. The bottom nav's
+  More sheet, the pantry scanner, the AI substitutions modal and Baking Mode's
+  three are still hand-rolled, and still lack the focus trap and the Escape key
+  that the primitive provides. Migrating them is mechanical and wants its own
+  pass, because Baking Mode's overlays are the ones most worth getting right.
 - **The selected-make detail view is still the old world.** Its offending
   colours — a yellow personal-best pill, a pink Instagram link, a green save —
   are now on `Button`, but the panel around them (rounded-2xl cards, 4px

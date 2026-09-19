@@ -8,12 +8,20 @@
  */
 export { Panel, PanelRow, type PanelProps } from './Panel';
 export { Button, buttonClassName, type ButtonProps } from './Button';
-export { Field, type FieldProps } from './Field';
+export {
+  Field,
+  TextArea,
+  Select,
+  type FieldProps,
+  type TextAreaProps,
+  type SelectProps,
+} from './Field';
 export { SegmentReadout, type SegmentReadoutProps, type SegmentSize } from './SegmentReadout';
 export { StepRow, type StepRowProps } from './StepRow';
 export { RecipePlate, type RecipePlateProps, type PlateSize } from './RecipePlate';
 export { RecipeTile, type RecipeTileProps } from './RecipeTile';
 export { InstrumentRow, type InstrumentItem, type InstrumentRowProps } from './InstrumentRow';
 export { Meter, type MeterProps } from './Meter';
+export { Sheet, type SheetProps, type SheetPlacement, type SheetSize } from './Sheet';
 export { Skeleton, SkeletonCard } from './Skeleton';
 export { cn } from '../../lib/cn';

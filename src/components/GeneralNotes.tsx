@@ -1,175 +1,273 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { api, type Note } from '../lib/api';
-import { Save, Loader2, Plus, Trash2, FileText } from 'lucide-react';
-import MDEditor from '@uiw/react-md-editor';
+import { Plus, Trash2, List } from 'lucide-react';
+import { Panel, Button, Field, TextArea, Sheet, Skeleton, cn } from './ui';
+
+/*
+ * General notes.
+ *
+ * The markdown editor that used to live here is gone. It shipped its own
+ * toolbar, its own split pane and its own colour system — a second design
+ * system inside the faceplate — and it tracked the app's theme by watching the
+ * document element with a MutationObserver to keep the two in step. A note in
+ * this product is a thing you wrote at the bench, not a document you publish,
+ * so it is a panel and a textarea.
+ *
+ * The notes list was `hidden md:flex`, which meant a phone could see whichever
+ * note happened to load first and reach no other. On a phone the same list is
+ * a bottom sheet now.
+ */
 
 export default function GeneralNotes() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [activeNoteId, setActiveNoteId] = useState<string | null>(null);
   const [content, setContent] = useState('');
   const [title, setTitle] = useState('');
-  
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [listOpen, setListOpen] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<Note | null>(null);
 
-  // Theme tracking
-  const [colorMode, setColorMode] = useState<'light' | 'dark'>('light');
+  // What is on screen versus what is stored. The head LED reports it, so the
+  // question "did that save?" is answered by the panel rather than by a
+  // disappearing toast.
+  const [saved, setSaved] = useState({ title: '', content: '' });
+  const dirty = title !== saved.title || content !== saved.content;
 
-  useEffect(() => {
-    const isDark = document.documentElement.classList.contains('dark');
-    setColorMode(isDark ? 'dark' : 'light');
-
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.attributeName === 'class') {
-          const currentlyDark = document.documentElement.classList.contains('dark');
-          setColorMode(currentlyDark ? 'dark' : 'light');
-        }
-      });
-    });
-
-    observer.observe(document.documentElement, { attributes: true });
-    return () => observer.disconnect();
-  }, []);
-
-  // Mobile split pane mode tracking
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-
-  useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 768);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  const fetchNotes = async () => {
-    try {
-      const data = await api.getNotes();
-      setNotes(data);
-      if (data.length > 0 && !activeNoteId) {
-        selectNote(data[0]);
-      } else if (data.length === 0) {
-        handleNewNote();
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchNotes();
-  }, []);
-
-  const selectNote = (note: Note) => {
+  const selectNote = useCallback((note: Note) => {
     setActiveNoteId(note._id!);
     setTitle(note.title);
     setContent(note.content);
-  };
+    setSaved({ title: note.title, content: note.content });
+    setListOpen(false);
+  }, []);
 
-  const handleNewNote = () => {
+  const startNewNote = useCallback(() => {
     setActiveNoteId(null);
-    setTitle('Untitled Note');
+    setTitle('');
     setContent('');
-  };
+    setSaved({ title: '', content: '' });
+    setListOpen(false);
+  }, []);
+
+  const fetchNotes = useCallback(
+    async (select?: 'first') => {
+      try {
+        const data = await api.getNotes();
+        setNotes(data);
+        if (select === 'first') {
+          if (data.length > 0) selectNote(data[0]);
+          else startNewNote();
+        }
+      } catch {
+        setError('Could not reach the notebook. Your unsaved text is still here.');
+      } finally {
+        setLoading(false);
+      }
+    },
+    [selectNote, startNewNote],
+  );
+
+  useEffect(() => {
+    fetchNotes('first');
+  }, [fetchNotes]);
 
   const handleSave = async () => {
+    if (!title.trim() && !content.trim()) return;
     setSaving(true);
+    setError('');
+    const next = { title: title.trim() || 'Untitled note', content };
     try {
       if (activeNoteId) {
-        await api.updateNote(activeNoteId, { title, content });
+        await api.updateNote(activeNoteId, next);
       } else {
-        const newNote = await api.createNote({ title, content });
-        setActiveNoteId(newNote._id!);
+        const created = await api.createNote(next);
+        setActiveNoteId(created._id!);
       }
+      setTitle(next.title);
+      setSaved(next);
       await fetchNotes();
-    } catch (err) {
-      console.error(err);
-      alert('Failed to save note');
+    } catch {
+      setError('Could not save. Check the connection and try again — nothing has been lost.');
     } finally {
       setSaving(false);
     }
   };
 
-  const handleDelete = async (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (window.confirm('Delete this note?')) {
-      try {
-        await api.deleteNote(id);
-        if (activeNoteId === id) {
-          setActiveNoteId(null);
-        }
-        await fetchNotes();
-      } catch (err) {
-        console.error(err);
-        alert('Failed to delete note');
-      }
+  const confirmDelete = async () => {
+    const note = pendingDelete;
+    if (!note?._id) return;
+    setPendingDelete(null);
+    try {
+      await api.deleteNote(note._id);
+      if (activeNoteId === note._id) startNewNote();
+      await fetchNotes();
+    } catch {
+      setError('Could not delete that note.');
     }
   };
 
-  if (loading) return <div className="text-center py-20 text-ink-muted">Loading notes...</div>;
+  const noteList = (
+    <div className="divide-y divide-rule">
+      {notes.map((note) => {
+        const active = activeNoteId === note._id;
+        return (
+          <div key={note._id} className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => selectNote(note)}
+              aria-current={active ? 'true' : undefined}
+              className="flex min-w-0 flex-1 items-center gap-2.5 py-2.5 text-left"
+            >
+              {/* The same lamp the pantry uses for "you have this". */}
+              <span
+                className={cn('h-2 w-2 shrink-0', active ? 'bg-signal' : 'bg-key-unlit')}
+                aria-hidden="true"
+              />
+              <span className={cn('truncate text-sm', active ? 'text-ink' : 'text-ink-muted')}>
+                {note.title || 'Untitled note'}
+              </span>
+            </button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setPendingDelete(note)}
+              aria-label={`Delete ${note.title || 'Untitled note'}`}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        );
+      })}
+      {notes.length === 0 ? (
+        <p className="py-3 text-sm text-ink-muted">No notes yet. The one open is your first.</p>
+      ) : null}
+    </div>
+  );
+
+  if (loading) {
+    return (
+      <div className="mx-auto flex max-w-6xl gap-6">
+        <Skeleton className="hidden h-96 w-64 shrink-0 md:block" />
+        <div className="flex-1 space-y-3">
+          <Skeleton className="h-11 w-full" />
+          <Skeleton className="h-96 w-full" />
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-6xl mx-auto flex gap-6 h-[85vh]">
-      {/* Sidebar */}
-      <div className="w-64 bg-sidebar border border-border-subtle rounded-xl p-4 flex flex-col hidden md:flex shrink-0 shadow-sm">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="font-bold uppercase tracking-wider text-sm">My Notes</h2>
-          <button onClick={handleNewNote} className="p-1 hover:bg-black/5 dark:hover:bg-white/5 rounded transition-colors">
-            <Plus className="w-4 h-4" />
-          </button>
+    <div className="mx-auto flex max-w-6xl flex-col gap-8 pb-20">
+      <header className="flex flex-wrap items-end justify-between gap-4 border-b border-rule pb-6">
+        <div className="flex flex-col gap-2">
+          <h1 className="font-faceplate text-3xl leading-none text-ink sm:text-4xl">
+            General Notes
+          </h1>
+          <p className="max-w-prose text-ink-muted">
+            The bench notebook. Anything that is not a recipe — a starter's timing, an oven's
+            true temperature, what to try next.
+          </p>
         </div>
-        <div className="flex-1 overflow-y-auto space-y-2 pr-1">
-          {notes.map(note => (
-            <div 
-              key={note._id}
-              onClick={() => selectNote(note)}
-              className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors ${activeNoteId === note._id ? 'bg-ink/5 border border-ink/10 font-medium' : 'hover:bg-black/5 dark:hover:bg-white/5 border border-transparent'}`}
-            >
-              <div className="flex items-center gap-2 overflow-hidden">
-                <FileText className="w-4 h-4 text-ink-muted shrink-0" />
-                <span className="truncate text-sm">{note.title || 'Untitled Note'}</span>
-              </div>
-              <button onClick={(e) => handleDelete(note._id!, e)} className="text-ink-muted/50 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
-                <Trash2 className="w-3 h-3" />
-              </button>
-            </div>
-          ))}
-          {notes.length === 0 && <p className="text-sm text-ink-muted text-center pt-4">No notes found.</p>}
-        </div>
-      </div>
-
-      {/* Editor Main */}
-      <div className="flex-1 flex flex-col min-w-0 bg-paper">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-4">
-          <input 
-            type="text" 
-            value={title} 
-            onChange={(e) => setTitle(e.target.value)}
-            className="text-2xl font-bold tracking-tight bg-transparent border-0 border-b border-transparent hover:border-border-subtle focus:border-ink focus:ring-0 px-0 py-1 transition-colors w-full sm:w-1/2"
-            placeholder="Note Title"
-          />
-          <button 
-            onClick={handleSave} 
-            disabled={saving}
-            className="border border-green-600/30 text-green-700 dark:text-green-400 px-6 py-2 rounded-md font-medium hover:bg-green-50 dark:hover:bg-green-900/20 flex items-center justify-center gap-2 shadow-sm transition-colors shrink-0"
+        <div className="flex shrink-0 items-center gap-2">
+          <Button
+            variant="secondary"
+            size="sm"
+            className="md:hidden"
+            icon={<List className="h-4 w-4" />}
+            onClick={() => setListOpen(true)}
           >
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} 
-            Save Note
-          </button>
+            All notes
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={<Plus className="h-4 w-4" />}
+            onClick={startNewNote}
+          >
+            New
+          </Button>
+        </div>
+      </header>
+
+      {error ? (
+        <p className="mb-4 border border-signal bg-panel p-3 text-sm text-signal" role="alert">
+          {error}
+        </p>
+      ) : null}
+
+      <div className="flex gap-6">
+        <div className="hidden w-64 shrink-0 md:block">
+          <Panel title={`Notes · ${notes.length}`} flush>
+            <div className="px-4">{noteList}</div>
+          </Panel>
         </div>
 
-        <div className="flex-1 border border-border-subtle rounded-lg overflow-hidden shadow-sm" data-color-mode={colorMode}>
-          <MDEditor
-            value={content}
-            onChange={(val) => setContent(val || '')}
-            height="100%"
-            preview={isMobile ? 'edit' : 'live'}
-            className="h-full"
-            textareaProps={{ placeholder: 'Start typing in Markdown...' }}
-          />
-        </div>
+        <Panel
+          className="min-w-0 flex-1"
+          title={activeNoteId ? 'Note' : 'New note'}
+          lit={dirty}
+          actions={
+            // A control appears when there is something to do with it. With
+            // nothing unsaved the panel reports rather than offering a button
+            // that does nothing — a disabled control is still a control.
+            dirty || saving ? (
+              <Button variant="secondary" size="sm" onClick={handleSave} busy={saving}>
+                {saving ? 'Saving' : 'Save'}
+              </Button>
+            ) : (
+              <span className="label-silkscreen pr-1">Saved</span>
+            )
+          }
+        >
+          <div className="flex flex-col gap-4">
+            <Field
+              label="Title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Starter timing"
+            />
+            <TextArea
+              label="Note"
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              rows={18}
+              placeholder="Fed at 0700. Doubled by 1130, so about four and a half hours at 22C."
+            />
+          </div>
+        </Panel>
       </div>
+
+      <Sheet
+        open={listOpen}
+        onClose={() => setListOpen(false)}
+        title={`Notes · ${notes.length}`}
+        placement="bottom"
+      >
+        {noteList}
+      </Sheet>
+
+      <Sheet
+        open={pendingDelete !== null}
+        onClose={() => setPendingDelete(null)}
+        title="Delete note"
+        size="sm"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setPendingDelete(null)}>
+              Keep
+            </Button>
+            <Button variant="danger" onClick={confirmDelete}>
+              Delete
+            </Button>
+          </>
+        }
+      >
+        <p className="text-sm text-ink">
+          Delete “{pendingDelete?.title || 'Untitled note'}”? This cannot be undone.
+        </p>
+      </Sheet>
     </div>
   );
 }

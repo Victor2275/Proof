@@ -100,6 +100,26 @@ This is a 1-to-1 mirror of CURRENT_FEATURES.md. Use checkboxes to track manual t
 - [ ] **Controls**: share/QR/PDF, favourite, edit, start recipe and schedule bake all still work from both the desktop and mobile menus.
 - [ ] **Start recipe menu**: opens fully rather than being clipped by the control row.
 
+## 6a. Recipe Editor and Notes (Phase 6)
+- [ ] **Shared `Sheet` primitive**: Tab stays inside an open sheet, Escape closes it, focus returns to the control that opened it, and the page behind does not scroll.
+- [ ] **Sheet stacking**: a sheet opened over another sheet — Escape closes only the top one, and the page stays locked until both are shut.
+- [ ] **`TextArea` and `Select`**: multi-line fields and the difficulty picker match `Field`'s outline, focus signal and error wiring.
+- [ ] **Editor instrument bar**: reports the recipe's name, ingredient count and step count live as they are typed; singular/plural is correct at one.
+- [ ] **Editor controls on a phone**: 44px targets, labels collapse to icons below `sm`, and the bar stays usable at 375px.
+- [ ] **Field-by-field AI review**: only changed fields are drawn; each can be kept or rejected alone; applying takes exactly what was kept.
+- [ ] **AI review with nothing to say**: a model that proposes no change says so rather than showing an empty diff.
+- [ ] **Prep and cook times survive a save**: open a recipe storing `"20 mins"`, confirm the field reads 20, save without touching it, and confirm the value is still there.
+- [ ] **Retyped times normalise**: typing 45 into prep time and saving stores `"45"`, not `"45 mins"`.
+- [ ] **Photographs panel**: Add photographs opens the file dialog from a real button; the empty state names the unlit plate.
+- [ ] **Sub-recipe link search**: the sheet searches rather than listing all 203 recipes, and caps the list.
+- [ ] **Step reordering carries its links**: move a step with a linked sub-recipe and confirm the link moved with it.
+- [ ] **Editor overlays**: AI review, link, crop, past bakes and delete confirmation all behave as sheets.
+- [ ] **Delete asks first**: no `window.confirm`; the sheet's Keep leaves the recipe alone.
+- [ ] **Notes without the markdown editor**: a note is a title field and a textarea, with no toolbar or split pane.
+- [ ] **Notes on a phone**: All notes opens the list as a bottom sheet, and switching notes works at 390px.
+- [ ] **Notes save state**: the head LED lights on an unsaved edit; the Save control appears only when there is something to save, and reads "Saved" otherwise.
+- [ ] **Notes save failure**: with the server unreachable, the typed text stays on screen and the error names the recovery.
+
 ## 7. UI/UX Foundation
 - [ ] **"Step Row" Visual World (Phase 0 foundation)**: Rhythm-machine design language — matte panels, silkscreen labels, lit step keys, segment readouts; colour is temporal, not decorative.
 - [ ] **One enforced ban, two defined materials**: no glow except a lit key or segment; `--faceplate` and `.scrim` are the only gradient and blur, enforced by `src/designSystem.test.ts`.
@@ -115,6 +135,5 @@ This is a 1-to-1 mirror of CURRENT_FEATURES.md. Use checkboxes to track manual t
 - [ ] **Retired: global font switcher**: sans/serif/mono preference removed.
 - [ ] **Onboarding & Landing**: A dedicated hero landing page with a 3-step carousel modal to introduce new users to the app functionality.
 - [ ] **Skeletons & Empty States**: Polished animated skeleton loaders for data fetching, custom illustrated 404 pages, and a tailored empty state for the gallery.
-- [ ] **XSS Sanitization**: rehype-sanitize on user markdown.
 - [ ] **Error Boundary**: Catches unhandled render errors gracefully.
 - [ ] **Server Architecture**: Modular Express server architecture with separated routes and services.

@@ -1,6 +1,19 @@
 import { useState } from 'react';
-import { Panel, PanelRow, Button, Field, SegmentReadout, StepRow, InstrumentRow, Meter } from './ui';
+import {
+  Panel,
+  PanelRow,
+  Button,
+  Field,
+  TextArea,
+  Select,
+  SegmentReadout,
+  StepRow,
+  InstrumentRow,
+  Meter,
+  Sheet,
+} from './ui';
 import { derivePhases } from '../lib/phases';
+import AIReviewSheet from './AIReviewSheet';
 
 /*
  * Primitives gallery — development only.
@@ -44,6 +57,8 @@ export default function Lab() {
   const phases = derivePhases(SOURDOUGH);
   const [activeStep, setActiveStep] = useState(3);
   const [engaged, setEngaged] = useState(false);
+  const [sheet, setSheet] = useState<'center' | 'bottom' | null>(null);
+  const [review, setReview] = useState(false);
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-10 px-4 py-10">
@@ -127,7 +142,69 @@ export default function Lab() {
           <Field label="Flour" unit="G" defaultValue="900" />
           <Field label="Hydration" unit="%" defaultValue="112" error="Must be 50–100. Try 78." />
           <Field label="Recipe name" hint="Shown across the cookbook." placeholder="Country loaf" />
+          <Select label="Difficulty" defaultValue="Medium">
+            <option>Easy</option>
+            <option>Medium</option>
+            <option>Hard</option>
+          </Select>
+          <TextArea label="Lab notes" rows={3} placeholder="Half the salt next time." />
+          <TextArea label="Step text" prose rows={3} defaultValue="Shape into a boule and rest." />
         </div>
+      </Section>
+
+      <Section name="Sheets">
+        <div className="flex flex-wrap gap-3">
+          <Button onClick={() => setSheet('center')}>Open a dialog</Button>
+          <Button onClick={() => setSheet('bottom')}>Open a bottom sheet</Button>
+        </div>
+        <Sheet
+          open={sheet !== null}
+          onClose={() => setSheet(null)}
+          placement={sheet === 'bottom' ? 'bottom' : 'center'}
+          title={sheet === 'bottom' ? 'More sections' : 'Delete recipe'}
+          size={sheet === 'bottom' ? 'md' : 'sm'}
+          footer={
+            <>
+              <Button onClick={() => setSheet(null)}>Keep</Button>
+              <Button variant="danger" onClick={() => setSheet(null)}>
+                Delete
+              </Button>
+            </>
+          }
+        >
+          <p className="text-sm text-ink">
+            The scrim is the one place backdrop blur belongs: it says the panel beneath is still
+            there and is not what you are operating.
+          </p>
+        </Sheet>
+      </Section>
+
+      <Section name="AI review">
+        <Button onClick={() => setReview(true)}>Open a proposal</Button>
+        <AIReviewSheet
+          open={review}
+          current={{
+            title: 'Prawn stir-fry',
+            prepTime: '20 mins',
+            servings: 4,
+            ingredients: [
+              { name: 'Prawns', quantity: 400, unit: 'g' },
+              { name: 'Ginger', quantity: 3, unit: 'cm piece' },
+            ],
+            instructions: ['Put the prawns in a bowl.', 'Heat the wok.'],
+          }}
+          proposed={{
+            title: 'Thai Prawn Stir-Fry',
+            prepTime: '15',
+            ingredients: [
+              { name: 'King prawns, raw', quantity: 400, unit: 'g' },
+              { name: 'Ginger, grated', quantity: 3, unit: 'cm' },
+              { name: 'Groundnut oil', quantity: 2, unit: 'tbsp' },
+            ],
+          }}
+          onApply={() => setReview(false)}
+          onClose={() => setReview(false)}
+        />
       </Section>
 
       <Section name="Instrument row">
