@@ -154,11 +154,23 @@ test.describe('375px floor', () => {
       await page.goto(surface.path);
       await settle(page, surface.settle);
 
-      const overflow = await page.evaluate(() => {
-        const el = document.scrollingElement!;
-        return { scrollWidth: el.scrollWidth, clientWidth: el.clientWidth };
-      });
-      expect(overflow.scrollWidth).toBeLessThanOrEqual(overflow.clientWidth);
+      /*
+       * Polled rather than measured once. Under a full parallel run the layout
+       * can still be settling when a single evaluate lands — an image sizing, a
+       * font swapping — and a one-shot read turned this into a flake that
+       * passed on its own and failed in the suite. The claim is about the
+       * settled layout, so the assertion waits for one.
+       */
+      await expect
+        .poll(
+          () =>
+            page.evaluate(() => {
+              const el = document.scrollingElement!;
+              return el.scrollWidth - el.clientWidth;
+            }),
+          { timeout: 5_000, message: 'the page still scrolls sideways at 375px' },
+        )
+        .toBeLessThanOrEqual(0);
     });
   }
 });

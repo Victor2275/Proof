@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 /*
@@ -128,6 +128,40 @@ describe('token layer', () => {
     expect(indexCss).toMatch(/url\('\/fonts\/archivo-latin-variable\.woff2'\)/);
     expect(indexCss).toMatch(/url\('\/fonts\/jetbrains-mono-latin-variable\.woff2'\)/);
     expect(cssRules).not.toMatch(/fonts\.googleapis\.com|fonts\.gstatic\.com/);
+  });
+
+  /*
+   * The stylesheet was the only thing being checked, so index.html went on
+   * preconnecting to Google Fonts and pulling Inter — a face this design does
+   * not use — on every single load, for the whole of the rework. Self-hosting
+   * exists because the scene is a kitchen with no signal; a blocking request to
+   * a third party undoes it whether or not the CSS is clean.
+   */
+  it('reaches for no web font CDN in the document either', () => {
+    const html = readFileSync(resolve(process.cwd(), 'index.html'), 'utf8');
+    expect(html).not.toMatch(/fonts\.googleapis\.com|fonts\.gstatic\.com/);
+  });
+
+  /*
+   * The manifest named pwa-192x192.png, pwa-512x512.png, favicon.ico,
+   * apple-touch-icon.png and masked-icon.svg. None of the five existed, so an
+   * installed Proof had no icon at all.
+   */
+  it('ships every icon the manifest and the document promise', () => {
+    const html = readFileSync(resolve(process.cwd(), 'index.html'), 'utf8');
+    const config = readFileSync(resolve(process.cwd(), 'vite.config.ts'), 'utf8');
+    const named = new Set<string>();
+    for (const m of config.matchAll(/(?:src|includeAssets[^\]]*)['\s:[]+([\w.-]+\.(?:png|svg|ico))/g)) {
+      named.add(m[1]);
+    }
+    for (const m of html.matchAll(/href="\/([\w.-]+\.(?:png|svg|ico))"/g)) named.add(m[1]);
+    expect(named.size).toBeGreaterThan(3);
+    for (const file of named) {
+      expect(
+        existsSync(resolve(process.cwd(), 'public', file)),
+        `public/${file} is promised but not shipped`,
+      ).toBe(true);
+    }
   });
 
   it('honours prefers-reduced-motion globally', () => {

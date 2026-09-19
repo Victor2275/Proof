@@ -8,13 +8,17 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
+      // Files that exist. The previous list named favicon.ico and friends,
+      // none of which were ever in public/, so the installed app had no icon.
+      includeAssets: ['favicon.svg', 'apple-touch-icon.png', 'masked-icon.svg'],
       manifest: {
         name: 'Proof',
         short_name: 'Proof',
         description: 'A private digital laboratory for recipe formulation.',
         theme_color: '#000000',
-        background_color: '#ffffff',
+        // Dark is the default and the ground is true black; a white splash
+        // was a flash of the wrong world on every cold start.
+        background_color: '#000000',
         display: 'standalone',
         icons: [
           {
