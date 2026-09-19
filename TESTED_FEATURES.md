@@ -156,6 +156,18 @@ This is a 1-to-1 mirror of CURRENT_FEATURES.md. Use checkboxes to track manual t
 - [ ] **Desktop ingredient row**: still one line — grip, quantity, unit, name, delete.
 - [ ] **Copy confirmations**: copying a link or a grocery list shows a status strip that clears itself, with no browser alert.
 
+## 8. Finish (Phase 8)
+- [ ] **Reduced motion**: with the OS setting on, the landing chase holds still, the recipe drawer does not spring, and the onboarding modal does not slide.
+- [ ] **Visual baselines**: `npm run test:visual` passes on a clean checkout; `npm run test:visual:update` regenerates.
+- [ ] **375px floor**: no horizontal scroll on any of the ten routes.
+- [ ] **Safe areas on a real Android device**: the floating action button and the notice bars clear the gesture bar; the recipe drawer's last row is not under it. *(Only simulated so far.)*
+- [ ] **Signal control contrast**: "Start recipe" is legible at arm's length in both themes.
+- [ ] **App icon**: install the PWA and confirm the step-row mark appears; rebuild the APK and confirm the launcher icon is not the old chef's hat.
+- [ ] **Offline fonts**: load with the network off and confirm no request to fonts.googleapis.com and no fallback typeface.
+- [ ] **PWA splash**: a cold start shows black, not a white flash.
+- [ ] **Baking Mode reports in the panel**: force a scale failure and a bake-log failure; both appear as a bar under the head, neither is a browser dialog, and typed notes survive.
+- [ ] **Finish by voice**: say "finish" and confirm the panel asks rather than the browser.
+
 ## 7. UI/UX Foundation
 - [ ] **"Step Row" Visual World (Phase 0 foundation)**: Rhythm-machine design language — matte panels, silkscreen labels, lit step keys, segment readouts; colour is temporal, not decorative.
 - [ ] **One enforced ban, two defined materials**: no glow except a lit key or segment; `--faceplate` and `.scrim` are the only gradient and blur, enforced by `src/designSystem.test.ts`.

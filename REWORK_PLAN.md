@@ -320,12 +320,44 @@ rendering inside a sidebar of sections a first-time visitor has not reached.
 segments showing — absence drawn as deliberately as light. Neutral ink, not
 signal red: nothing on that page is running.
 
-### Phase 8 — Finish ⬜ *(next)*
+### Phase 8 — Finish ✅
 
-Copy rewrite pass, full reduced-motion audit, Capacitor safe-area check on
-Android, Playwright visual-regression baselines, the finish review against the
-direction contract, and finally **DESIGN.md written from the built artifact** —
-not from intentions, and not before the build is done.
+**Reduced motion, in three layers.** The CSS rule only reaches CSS.
+framer-motion writes inline styles from its own loop, so the recipe drawer
+still sprang up the screen for someone who had asked for no motion;
+`MotionConfig reducedMotion="user"` covers it. A JS timer is outside both, so
+the guard fails any decorative `setInterval` that does not check for itself.
+
+**Visual baselines.** 47 images — ten surfaces, two themes, desktop and phone,
+plus the sheet as a dialog and as a bottom sheet — against fixtures that never
+touch the live database or the image CDN, with the clock pinned. The 375px
+floor is asserted on every route rather than photographed. Also closes the
+"Playwright is installed but there are no specs" gap from ImprovementPlan.md.
+
+**Capacitor safe areas.** The nav reserved the device inset correctly; the four
+things floating above it did not, each hard-coding `bottom-24` — exactly the
+nav's height with no inset, and therefore behind the nav on any phone with one.
+One `.above-nav` utility, verified by simulating a 34px inset. Not verified on
+a physical device.
+
+**Copy.** Every remaining browser dialog is gone — seven, three of them inside
+Baking Mode, which is the worst place in the product for an OS modal.
+
+**The finish review** found three things worth more than the review itself:
+
+- White on the signal red is 3.55:1, under the floor, on the app's most
+  important control. The legend flips with the theme now and is guarded at 4.5.
+- The baselines could not see that fix. A 1% ratio on a full-page shot is
+  ~29,000 pixels of silent allowance; it had also been hiding a floating action
+  button moving 16px. The budget is 150 absolute pixels.
+- The PWA manifest named five icon files, none of which existed, so an
+  installed Proof had no icon — and the artwork that did exist was a gold chef's
+  hat from the Black & Gold world. The mark is the step row now, drawn from the
+  tokens by `scripts/generate-icons.mjs`. `index.html` was also still pulling
+  Inter from Google Fonts on every load, for a face the design does not use.
+
+**[DESIGN.md](DESIGN.md)** is written from the artifact, including four
+deviations from the direction contract and the known gaps.
 
 ---
 
@@ -354,6 +386,10 @@ not from intentions, and not before the build is done.
   editor making it worse: those fields were `type="number"`, which cannot hold
   `"20 mins"`, so the editor rendered them empty and saving any of those 199
   recipes wiped both times outright.
+- **No CI.** The guards exist and pass — `designSystem.test.ts`, 275 unit
+  tests, 47 visual baselines — but nothing runs them automatically. With the
+  rework finished this is the largest remaining gap, and it is the last
+  unfinished item of ImprovementPlan.md Phase 4 alongside a LICENSE.
 - **The library is rendered a page at a time, not virtualised.** 48 tiles per
   page keeps in-flight image requests near what the connection pool can serve,
   but a baker who clicks Show more four times still ends up with 200 mounted

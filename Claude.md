@@ -14,7 +14,8 @@ order below decides — later entries are newer decisions.
 |---|---|---|
 | [.agents/VISION.md](.agents/VISION.md) | Original concept | **Stale on two counts.** Its "Black & Gold" design section is dead — see *The visual world* below. Its "private instance / single-user" framing is superseded by LAUNCH_PLAN.md. Read it for the product's intent, not for its design or its scope. |
 | [ROADMAP.md](ROADMAP.md) / [ImprovementPlan.md](ImprovementPlan.md) | The resume-ready sprint | Largely delivered. Its UI sections describe the Black & Gold design that was replaced. Phases 4–5 (CI, E2E, LICENSE) were never finished and are still open. |
-| [REWORK_PLAN.md](REWORK_PLAN.md) | **The visual design, entirely** | Live. Phases 0–7 shipped; Phase 8 (finish) is next. Supersedes the UI sections of the two documents above. |
+| [REWORK_PLAN.md](REWORK_PLAN.md) | How the visual design was arrived at | Complete. All eight phases shipped. Supersedes the UI sections of the two documents above. Read it for the reasoning; read DESIGN.md for the rules. |
+| [DESIGN.md](DESIGN.md) | **The visual design, entirely** | Live, written from the built artifact. The reference for anything you draw. |
 | [LAUNCH_PLAN.md](LAUNCH_PLAN.md) | **Distribution, the local/global split, accounts, money** | Live, decided 2026-09-18. The authority on the public multi-user direction and its phasing. Where an older document disagrees on multi-user scope, this one wins. |
 
 `CURRENT_FEATURES.md` describes what exists. `TESTED_FEATURES.md` mirrors it as
@@ -40,10 +41,10 @@ a manual-testing checklist.
 
 # The visual world
 
-**The design language is the Step Row system, recorded in
-[REWORK_PLAN.md](REWORK_PLAN.md).** The reference world is an early-80s rhythm
-machine: matte panels, silkscreened labels, lit step keys, seven-segment
-readouts.
+**The design language is the Step Row system, documented in full in
+[DESIGN.md](DESIGN.md)** — read it before drawing anything. The reference world
+is an early-80s rhythm machine: matte panels, silkscreened labels, lit step
+keys, seven-segment readouts.
 
 **The previous "Black & Gold" design — pitch black with gold accents,
 glassmorphism, gradients, glows — was deliberately removed.** VISION.md and
