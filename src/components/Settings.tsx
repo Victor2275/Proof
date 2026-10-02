@@ -249,7 +249,7 @@ export default function Settings() {
                 </p>
               ) : null}
               {backupError ? (
-                <p className="mt-1 text-sm text-signal" role="alert">
+                <p className="mt-1 text-sm text-fault" role="alert">
                   {backupError}
                 </p>
               ) : null}

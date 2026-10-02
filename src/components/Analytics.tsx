@@ -144,7 +144,7 @@ export default function Analytics() {
       </header>
 
       {error ? (
-        <p className="border border-signal bg-panel p-3 text-sm text-signal" role="alert">
+        <p className="border border-fault bg-panel p-3 text-sm text-fault" role="alert">
           {error}
         </p>
       ) : null}

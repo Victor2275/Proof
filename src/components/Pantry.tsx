@@ -131,7 +131,7 @@ export default function Pantry() {
             icon={<ScanBarcode className="h-4 w-4" />}
           />
         </form>
-        {error && <p className="mt-3 text-sm text-signal">{error}</p>}
+        {error && <p className="mt-3 text-sm text-fault" role="alert">{error}</p>}
       </Panel>
 
       {scanning && (
@@ -190,7 +190,7 @@ export default function Pantry() {
                   type="button"
                   onClick={() => handleDeleteItem(item._id!)}
                   aria-label={`Remove ${item.name} from the pantry`}
-                  className="shrink-0 rounded-control p-2 text-ink-muted transition-colors hover:text-signal"
+                  className="shrink-0 rounded-control p-2 text-ink-muted transition-colors hover:text-ink"
                 >
                   <X className="h-4 w-4" />
                 </button>

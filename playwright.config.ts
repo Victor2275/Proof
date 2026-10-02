@@ -22,6 +22,8 @@ import { defineConfig, devices } from '@playwright/test';
  */
 export default defineConfig({
   testDir: './e2e',
+  // The Phase 0 audit records rather than compares; it has its own config.
+  testIgnore: '**/audit/**',
   // The whole point is comparing against a committed image, so a run that
   // silently wrote new baselines would be worthless.
   updateSnapshots: 'missing',

@@ -59,6 +59,7 @@
   --color-signal: var(--signal);
   --color-on-signal: var(--on-signal);
   --color-spoiled: var(--spoiled);
+  --color-fault: var(--fault);
 
   --font-display: 'Archivo Variable', ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'JetBrains Mono Variable', ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -128,6 +129,12 @@
      * them, which is how "Start recipe" shipped under the floor. */
     --on-signal: #ffffff;
     --spoiled: #6d2018;
+    /* The caution lamp: something went wrong and needs attention, but it is
+     * not a bake happening now, so it cannot be red. Same lamp as the due key,
+     * deepened for the light faceplate because the due amber itself reads at
+     * 2.6:1 on a panel and this colour carries sentences. 5.7:1 on --panel,
+     * 4.6:1 on --panel-sunk. */
+    --fault: #8f4c00;
 
     /* The faceplate sheen. Cream plastic under a room light: the ramp is
      * lighter at the top and settles to the panel's own value, ~3% of tone
@@ -161,6 +168,7 @@
     --signal: #ff3b30;
     --on-signal: #000000;
     --spoiled: #5a1a12;
+    --fault: #ff9a00;
 
     /* Matte black moulding lit from above the machine, not from the front. */
     --faceplate: linear-gradient(180deg, #212121 0%, #1a1a1a 46%, #141414 100%);

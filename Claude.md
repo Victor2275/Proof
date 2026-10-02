@@ -53,11 +53,13 @@ restore any of it.
 
 ### Colour is temporal, never decorative
 
-Red means a thing is happening **now**, and one thing per screen may be red.
-Orange is due next, yellow is queued, bone is complete, and an unlit key is a
-phase not reached — drawn as deliberately as a lit one. Colour is never spent
-on decoration, on branding, or on a control that merely wants attention. A save
-button is not "now".
+Red means a thing is happening **now** — and, per Launch Plan decision B3, it
+may also mark the **one** solid primary control on a screen. Nothing else is
+red. Orange is due next, yellow is queued, bone is complete, and an unlit key is
+a phase not reached — drawn as deliberately as a lit one. Errors take `--fault`,
+the caution lamp, never red; destructive controls carry the `--spoiled` rule.
+Colour is never spent on decoration, on branding, or on a control that merely
+wants attention. `src/designSystem.test.ts` enforces which files may draw red.
 
 ### One ban, two materials
 

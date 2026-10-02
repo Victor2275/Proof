@@ -122,7 +122,7 @@ export default function GeneralNotes() {
             >
               {/* The same lamp the pantry uses for "you have this". */}
               <span
-                className={cn('h-2 w-2 shrink-0', active ? 'bg-signal' : 'bg-key-unlit')}
+                className={cn('h-2 w-2 shrink-0', active ? 'bg-ink' : 'bg-key-unlit')}
                 aria-hidden="true"
               />
               <span className={cn('truncate text-sm', active ? 'text-ink' : 'text-ink-muted')}>
@@ -189,7 +189,7 @@ export default function GeneralNotes() {
       </header>
 
       {error ? (
-        <p className="mb-4 border border-signal bg-panel p-3 text-sm text-signal" role="alert">
+        <p className="mb-4 border border-fault bg-panel p-3 text-sm text-fault" role="alert">
           {error}
         </p>
       ) : null}

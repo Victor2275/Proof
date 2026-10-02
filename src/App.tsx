@@ -92,7 +92,7 @@ function AuthModal({ onClose, onSuccess }: { onClose: () => void, onSuccess: () 
         </div>
       </form>
       {error && (
-        <div className="above-nav fixed left-1/2 -translate-x-1/2 z-[200] border border-signal bg-panel px-6 py-3 rounded-panel font-bold text-signal">
+        <div role="alert" className="above-nav fixed left-1/2 -translate-x-1/2 z-[200] border border-fault bg-panel px-6 py-3 rounded-panel font-bold text-fault">
           {error}
         </div>
       )}
@@ -235,12 +235,12 @@ function AppShell({
       {/* The caution lamp bar: connectivity issues are the one non-bake state
         * that earns the "due" amber, since they genuinely need attention. */}
       {isOffline && (
-        <div className="label-silkscreen shrink-0 z-[200] border-b border-key-due bg-panel text-key-due text-center py-2 px-4">
+        <div className="label-silkscreen shrink-0 z-[200] border-b border-fault bg-panel text-fault text-center py-2 px-4">
           Offline — viewing cached recipes. Changes won't save until you reconnect.
         </div>
       )}
       {showStaleBar && (
-        <div className="label-silkscreen shrink-0 z-[200] border-b border-key-due bg-panel text-key-due text-center py-2 px-4">
+        <div className="label-silkscreen shrink-0 z-[200] border-b border-fault bg-panel text-fault text-center py-2 px-4">
           {staleReason} Showing your last saved copy — changes won't save until it's back.
         </div>
       )}

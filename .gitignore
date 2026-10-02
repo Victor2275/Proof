@@ -54,3 +54,9 @@ test.txt
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+
+# Phase 0 UI audit: a snapshot of the live library and the shots taken against
+# it. Inputs and outputs of a run, regenerated each time; the findings live in
+# .agents/UI_AUDIT.md.
+/e2e/audit/.data/
+/audit-shots/

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api, type Recipe } from '../lib/api';
 import { X, Check } from 'lucide-react';
+import { Button } from './ui';
 
 interface RecipeDrawerProps {
   isOpen: boolean;
@@ -90,19 +91,22 @@ export default function RecipeDrawer({ isOpen, onClose, recipeId }: RecipeDrawer
                   </section>
                 </div>
               ) : (
-                <div className="text-red-500 font-bold">Failed to load sub-recipe.</div>
+                <div className="text-fault" role="alert">Failed to load sub-recipe.</div>
               )}
             </div>
 
             {/* Footer */}
             {!loading && recipe && (
               <div className="p-4 bg-paper border-t border-border-subtle">
-                <button
+                <Button
+                  variant="primary"
+                  size="lg"
+                  className="w-full"
                   onClick={onClose}
-                  className="w-full bg-accent text-black font-bold text-lg py-4 rounded-xl transition-all flex justify-center items-center gap-2"
+                  icon={<Check className="h-5 w-5" aria-hidden="true" />}
                 >
-                  <Check className="w-5 h-5" /> Finish {recipe.title}
-                </button>
+                  Finish {recipe.title}
+                </Button>
               </div>
             )}
           </motion.div>

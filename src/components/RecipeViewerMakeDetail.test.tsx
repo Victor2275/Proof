@@ -81,7 +81,10 @@ beforeEach(() => {
 describe('RecipeViewer — the selected make', () => {
   it('opens the make named in the URL as a dialog, not a bare overlay', async () => {
     renderViewer();
-    const dialog = await screen.findByRole('dialog', { name: /Make #1/i });
+    // The first render in this file pays for importing the whole viewer. Under
+    // a full parallel run that alone can pass the default one-second wait, and
+    // the assertion then fails on load rather than on behaviour.
+    const dialog = await screen.findByRole('dialog', { name: /Make #1/i }, { timeout: 5000 });
     expect(dialog).toBeInTheDocument();
     expect(screen.getByText('Bananas should be less ripe.')).toBeInTheDocument();
   });

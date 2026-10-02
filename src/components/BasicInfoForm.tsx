@@ -139,7 +139,7 @@ export default function BasicInfoForm({
                         setRecipe({ ...recipe, tags: tags.filter((t) => t !== tag) })
                       }
                       aria-label={`Remove tag ${tag}`}
-                      className="text-ink-muted transition-colors hover:text-signal"
+                      className="text-ink-muted transition-colors hover:text-ink"
                     >
                       <X className="h-3 w-3" />
                     </button>

@@ -168,6 +168,19 @@ This is a 1-to-1 mirror of CURRENT_FEATURES.md. Use checkboxes to track manual t
 - [ ] **Baking Mode reports in the panel**: force a scale failure and a bake-log failure; both appear as a bar under the head, neither is a browser dialog, and typed notes survive.
 - [ ] **Finish by voice**: say "finish" and confirm the panel asks rather than the browser.
 
+## 9. Public launch — Phase 0 UI audit
+- [ ] **Red means now**: on a recipe, the timer chips in the method are outlined, not red; only the Start key is red.
+- [ ] **New Recipe key**: lit on the cookbook with nothing baking; unlit on every other screen, and unlit on the cookbook while a bake runs.
+- [ ] **Now Baking**: the panel's border, lamp and running key are red; the total and Resume are not; the sidebar shows only the lamp.
+- [ ] **Faults**: an error (e.g. Analytics with the server down) reads in the amber fault colour in both themes, legible in light.
+- [ ] **Offline bar in light theme**: legible amber-brown, not pale orange.
+- [ ] **Delete**: the editor's Delete shows a dark red rule with an ink legend; it fills on hover.
+- [ ] **AI substitutions**: no purple; the generate control is the standard primary key.
+- [ ] **Audit snapshot**: `npm run audit:snapshot` writes the live library to `e2e/audit/.data/` and reports the record counts.
+- [ ] **Audit matrix**: `npm run audit:ui` shoots every cell into `audit-shots/`; a stopped run continues with `AUDIT_RESUME=1`.
+- [ ] **Audit report**: `npm run audit:report` writes `audit-shots/report.md` and a contact sheet per surface and theme.
+- [ ] **Separate from the baselines**: `npm run test:visual` does not pick up the audit specs.
+
 ## 7. UI/UX Foundation
 - [ ] **"Step Row" Visual World (Phase 0 foundation)**: Rhythm-machine design language — matte panels, silkscreen labels, lit step keys, segment readouts; colour is temporal, not decorative.
 - [ ] **One enforced ban, two defined materials**: no glow except a lit key or segment; `--faceplate` and `.scrim` are the only gradient and blur, enforced by `src/designSystem.test.ts`.

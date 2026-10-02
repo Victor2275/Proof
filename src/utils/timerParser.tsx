@@ -31,10 +31,14 @@ export const renderWithTimers = (text: string, title = "Timer") => {
               detail: { durationSecs, name: `${title} (${fullMatch})` } 
             }));
           }}
-          className="inline-flex items-center gap-1 bg-accent/10 text-accent px-2 py-0.5 rounded-md text-sm font-bold hover:bg-accent/20 transition-colors mx-1 border border-accent/30 shadow-sm print:hidden align-baseline"
-          title="Start Timer"
+          // A timer written into the method is queued, not running: an unlit
+          // key the baker can press. It lights only once it is counting, in the
+          // timer readout — red here put a dozen "nows" on a page where
+          // nothing had started.
+          className="mx-1 inline-flex items-center gap-1 rounded-key border border-rule px-1.5 py-0.5 align-baseline font-mono text-[0.9em] tabular-nums text-ink transition-colors hover:border-ink print:hidden"
+          title="Start timer"
         >
-          <Clock className="w-3.5 h-3.5" />
+          <Clock className="h-3.5 w-3.5 text-ink-muted" aria-hidden="true" />
           {fullMatch}
         </button>
       );

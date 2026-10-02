@@ -400,13 +400,13 @@ export default function RecipeEditor() {
 
       <div className="flex flex-col gap-6">
         {saveError ? (
-          <p className="border border-signal bg-panel p-3 text-sm text-signal" role="alert">
+          <p className="border border-fault bg-panel p-3 text-sm text-fault" role="alert">
             {saveError}
           </p>
         ) : null}
 
         {aiError ? (
-          <p className="border border-signal bg-panel p-3 text-sm text-signal" role="alert">
+          <p className="border border-fault bg-panel p-3 text-sm text-fault" role="alert">
             {aiError}
           </p>
         ) : null}
@@ -679,7 +679,7 @@ export default function RecipeEditor() {
                             type="button"
                             onClick={() => removeSubRecipe(i, link.recipeId)}
                             aria-label={`Unlink ${link.recipeTitle} from step ${i + 1}`}
-                            className="text-ink-muted transition-colors hover:text-signal"
+                            className="text-ink-muted transition-colors hover:text-ink"
                           >
                             <X className="h-3 w-3" />
                           </button>
@@ -830,7 +830,7 @@ export default function RecipeEditor() {
                     }}
                     className={cn(
                       'relative block aspect-square w-full overflow-hidden border transition-colors',
-                      isSelected ? 'border-signal' : 'border-rule hover:border-ink-muted',
+                      isSelected ? 'border-ink' : 'border-rule hover:border-ink-muted',
                     )}
                   >
                     <img
@@ -841,7 +841,7 @@ export default function RecipeEditor() {
                     />
                     {isSelected ? (
                       <span className="absolute inset-0 flex items-center justify-center bg-ground/70">
-                        <Check className="h-6 w-6 text-signal" aria-hidden="true" />
+                        <Check className="h-6 w-6 text-ink" aria-hidden="true" />
                       </span>
                     ) : null}
                   </button>

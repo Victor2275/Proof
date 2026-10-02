@@ -603,7 +603,7 @@ export default function BakingMode() {
       {bakeNotice ? (
         <div
           role="alert"
-          className="flex shrink-0 items-start gap-3 border-b border-signal bg-panel px-3 py-2 text-sm text-signal"
+          className="flex shrink-0 items-start gap-3 border-b border-fault bg-panel px-3 py-2 text-sm text-fault"
         >
           <span className="flex-1">{bakeNotice}</span>
           <Button

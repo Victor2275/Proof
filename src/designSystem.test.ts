@@ -207,15 +207,15 @@ describe('token layer', () => {
    */
   it('reserves the device inset above the bottom nav rather than guessing', () => {
     expect(indexCss).toMatch(/\.above-nav\s*\{[^}]*env\(safe-area-inset-bottom/);
-    expect(offenders(/className="[^"]*bottom-24/)).toEqual([]);
+    expect(offenders(/className="[^"]*\bbottom-24\b/)).toEqual([]);
   });
 
   it('lets every bottom-anchored surface clear the home indicator', () => {
     // A sheet, a drawer or a dock that ends at bottom: 0 puts its last row of
     // content under the gesture bar unless it reserves for it.
     for (const [path, src] of Object.entries(componentSources)) {
-      const anchored = /className="[^"]*fixed[^"]*bottom-0/.test(src) ||
-        /'[^']*fixed[^']*bottom-0/.test(src);
+      const anchored = /className="[^"]*\bfixed\b[^"]*\bbottom-0\b/.test(src) ||
+        /'[^']*\bfixed\b[^']*\bbottom-0\b/.test(src);
       if (!anchored) continue;
       expect(src, `${path} is anchored to the bottom edge without pb-safe`).toMatch(/pb-safe/);
     }
@@ -277,6 +277,36 @@ describe('token layer', () => {
     }
   });
 
+  it('defines a fault lamp readable as text on a panel in both themes', () => {
+    const channel = (v: number) => {
+      const c = v / 255;
+      return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    };
+    const luminance = (hex: string) => {
+      const [r, g, b] = [1, 3, 5].map((i) => channel(parseInt(hex.slice(i, i + 2), 16)));
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    };
+    const contrast = (a: string, b: string) => {
+      const [x, y] = [luminance(a), luminance(b)];
+      return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
+    };
+    const valueIn = (block: string, name: string) => {
+      const match = block.match(new RegExp('--' + name + ':[^#]*(#[0-9a-fA-F]{6})'));
+      if (!match) throw new Error(`${name} not found`);
+      return match[1];
+    };
+    const light = indexCss.slice(indexCss.indexOf(':root {'), indexCss.indexOf('.dark {'));
+    const dark = indexCss.slice(indexCss.indexOf('.dark {'));
+
+    expect(cssRules).toMatch(/--color-fault:\s*var\(--fault\)/);
+    for (const [name, block] of [['light', light], ['dark', dark]] as const) {
+      for (const surface of ['panel', 'panel-sunk']) {
+        const ratio = contrast(valueIn(block, 'fault'), valueIn(block, surface));
+        expect(ratio, `${name} theme: fault on --${surface} is ${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(4.5);
+      }
+    }
+  });
+
   it('themes the browser surfaces it does not draw', () => {
     expect(indexCss).toMatch(/::selection/);
     expect(indexCss).toMatch(/caret-color/);
@@ -286,6 +316,73 @@ describe('token layer', () => {
 
   it('no longer forces a global border radius with !important', () => {
     expect(cssRules).not.toMatch(/border-radius:\s*12px\s*!important/);
+  });
+});
+
+/*
+ * Red is temporal (DESIGN.md, and Launch Plan decision B3).
+ *
+ * Red means a thing is happening now, plus at most one solid primary control on
+ * a screen. Every previous drift spent it on attention instead — idle timer
+ * chips, checkboxes, delete legends, error text, a scaled serving count — until
+ * a single recipe page carried sixteen red regions and the lit key was no
+ * longer the brightest thing on it. These keep it spent where it means "now".
+ */
+describe('red is temporal', () => {
+  const RED = /\b(?:bg|text|border|fill|ring|outline|decoration)-(?:signal|key-now)\b/;
+
+  /*
+   * The files allowed to draw red, each for a reason that is about time:
+   * the lit step key and its label (StepRow, Meter, BakingMode, LandingPage),
+   * the running bake wherever it shows (Dashboard's Now Baking panel, the
+   * Sidebar lamp, an active RecipeTile, an active Panel), a timer counting past
+   * zero (TimerManager), the focused field — the "now" of a form (Field) — and
+   * the one primary control (Button, the lit New Recipe key in BottomNav, the
+   * phone's Start key in RecipeViewer). SegmentReadout owns the segment fill.
+   * Lab is the gallery of every lit state.
+   */
+  const ALLOWED = new Set([
+    'components/ui/StepRow.tsx',
+    'components/ui/Meter.tsx',
+    'components/ui/Panel.tsx',
+    'components/ui/RecipeTile.tsx',
+    'components/ui/Field.tsx',
+    'components/ui/Button.tsx',
+    'components/ui/SegmentReadout.tsx',
+    'components/BakingMode.tsx',
+    'components/LandingPage.tsx',
+    'components/Dashboard.tsx',
+    'components/Sidebar.tsx',
+    'components/TimerManager.tsx',
+    'components/BottomNav.tsx',
+    'components/RecipeViewer.tsx',
+    'components/Lab.tsx',
+  ]);
+
+  it('is drawn only by the surfaces that report something happening now', () => {
+    const files = new Set(codeOffenders(RED).map((hit) => hit.split(':')[0]));
+    expect([...files].filter((file) => !ALLOWED.has(file))).toEqual([]);
+  });
+
+  it('never carries an error: faults use the caution lamp', () => {
+    expect(codeOffenders(/role="alert".*(?:text|border)-signal|(?:text|border)-signal.*role="alert"/)).toEqual([]);
+  });
+
+  it('marks a destructive control with the spoiled rule, not with red text', () => {
+    const danger = readFileSync(resolve(process.cwd(), 'src/components/ui/Button.tsx'), 'utf8')
+      .match(/danger:\s*'([^']*)'/);
+    expect(danger?.[1]).toMatch(/border-spoiled/);
+    expect(danger?.[1]).not.toMatch(/text-signal/);
+  });
+
+  it('reaches for no stock Tailwind palette colour, only the tokens', () => {
+    const palette =
+      /\b(?:bg|text|border|ring|fill|stroke|from|to|via|outline|decoration|shadow)-(?:red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-\d{2,3}\b/;
+    expect(codeOffenders(palette)).toEqual([]);
+  });
+
+  it('no longer reaches for the legacy accent alias', () => {
+    expect(codeOffenders(/\b(?:bg|text|border)-accent\b|\baccent\//)).toEqual([]);
   });
 });
 

@@ -83,7 +83,7 @@ export default function IngredientList({
                   type="checkbox"
                   checked={checked}
                   onChange={() => toggleCheck(i)}
-                  className="h-5 w-5 shrink-0 cursor-pointer rounded-key border-rule text-signal focus:ring-signal"
+                  className="h-5 w-5 shrink-0 cursor-pointer rounded-key border-rule accent-ink"
                   aria-label={ing.name}
                 />
               </label>

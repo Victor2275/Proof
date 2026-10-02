@@ -234,7 +234,7 @@ export default function Gallery() {
             <section key={group.recipeId} className="flex flex-col gap-3">
               <div className="flex items-baseline justify-between gap-4 border-b border-rule pb-2">
                 <Link to={`/recipe/${group.recipeId}`} className="min-w-0">
-                  <h2 className="font-faceplate truncate text-lg text-ink hover:text-signal sm:text-xl">
+                  <h2 className="font-faceplate truncate text-lg text-ink decoration-1 underline-offset-4 hover:underline sm:text-xl">
                     {group.title}
                   </h2>
                 </Link>

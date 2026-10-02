@@ -5,6 +5,7 @@ import { io, type Socket } from 'socket.io-client';
 import { API_URL } from '../lib/api';
 import { hapticsEnabled, ttsEnabled } from '../lib/settings';
 import { publishRunningTimers } from '../lib/timerBus';
+import { Button } from './ui';
 
 export interface Timer {
   id: string;
@@ -180,7 +181,7 @@ export default function TimerManager() {
           const isNegative = currentRemaining < 0;
 
           return (
-            <div key={t.id} className={`p-3 rounded-lg shadow-xl border flex flex-col gap-2 ${isNegative ? 'bg-red-500 text-white border-red-600 animate-pulse' : 'bg-paper text-ink border-border-subtle'}`}>
+            <div key={t.id} className={`p-3 rounded-lg shadow-xl border flex flex-col gap-2 ${isNegative ? 'bg-signal text-on-signal border-signal' : 'bg-paper text-ink border-border-subtle'}`}>
               <div className="flex justify-between items-center">
                 <span className="font-bold text-sm truncate pr-2">{t.name}</span>
                 <button onClick={() => removeTimer(t.id)} className="hover:opacity-70"><X className="w-4 h-4" /></button>
@@ -213,12 +214,12 @@ export default function TimerManager() {
               Start a timer for <strong className="text-ink">{pendingTimer.name}</strong> ({formatTime(pendingTimer.durationSecs * 1000)})?
             </p>
             <div className="flex gap-3">
-              <button onClick={() => setPendingTimer(null)} className="flex-1 py-3 font-medium hover:bg-black/5 dark:hover:bg-white/5 rounded-xl transition-colors">
+              <Button variant="ghost" size="lg" className="flex-1" onClick={() => setPendingTimer(null)}>
                 Cancel
-              </button>
-              <button onClick={() => confirmAddTimer(pendingTimer.durationSecs, pendingTimer.name)} className="flex-1 bg-accent text-black py-3 font-bold rounded-xl transition-all">
+              </Button>
+              <Button variant="primary" size="lg" className="flex-1" onClick={() => confirmAddTimer(pendingTimer.durationSecs, pendingTimer.name)}>
                 Start
-              </button>
+              </Button>
             </div>
           </div>
         </div>

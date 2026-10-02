@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { NavLink, Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Image as ImageIcon, Box, MoreHorizontal, Plus, BarChart3, ShoppingBag, Lightbulb, Settings as SettingsIcon, X } from 'lucide-react';
 import { cn } from '../lib/cn';
+import { useActiveBake } from '../lib/useActiveBake';
 
 /*
  * Four fixed slots plus a More sheet, not the previous five-icon dock.
@@ -30,6 +31,8 @@ const MORE_ITEMS = [
 export default function BottomNav() {
   const location = useLocation();
   const [moreOpen, setMoreOpen] = useState(false);
+  const activeBake = useActiveBake();
+  const plusIsLit = location.pathname === '/' && !activeBake;
 
   // Baking Mode is a distraction-free fullscreen surface — the nav would cover its
   // controls and defeat the point, so stay out of the way there.
@@ -104,11 +107,21 @@ export default function BottomNav() {
       </div>
 
       {/* Floating action button. Starting a recipe is an action, not a place
-        * to navigate to, so it sits apart from the dock rather than in it. */}
+        * to navigate to, so it sits apart from the dock rather than in it.
+        *
+        * It is lit only where writing a new recipe is the page's main action:
+        * the cookbook, with nothing baking. Everywhere else the screen has its
+        * own one red control — or a bake running, which owns red outright — so
+        * the key stays unlit rather than becoming a second "now". */}
       <Link
         to="/new"
         aria-label="New Recipe"
-        className="above-nav fixed right-4 z-30 flex h-14 w-14 items-center justify-center rounded-control border border-signal bg-signal text-white active:translate-y-px"
+        className={cn(
+          'above-nav fixed right-4 z-30 flex h-14 w-14 items-center justify-center rounded-control border active:translate-y-px',
+          plusIsLit
+            ? 'border-signal bg-signal text-on-signal'
+            : 'border-rule bg-panel text-ink hover:border-ink',
+        )}
       >
         <Plus className="h-6 w-6" />
       </Link>

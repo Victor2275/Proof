@@ -136,7 +136,7 @@ function PatternRow({
               value={segment?.value ?? '--'}
               unit={segment?.unit}
               size="sm"
-              tone={isActive ? 'signal' : 'ink'}
+              tone="ink"
             />
           </div>
           <StepRow phases={phases} activeStep={activeStep} />
@@ -146,7 +146,7 @@ function PatternRow({
       {isActive ? (
         <Link
           to={`/recipe/${recipe._id}/bake`}
-          className={buttonClassName({ variant: 'primary', size: 'sm', className: 'self-start' })}
+          className={buttonClassName({ variant: 'secondary', size: 'sm', className: 'self-start' })}
         >
           Resume
         </Link>
@@ -371,7 +371,7 @@ export default function Dashboard() {
             <section className="border border-signal rounded-panel p-4">
               <div className="mb-3 flex items-center gap-2">
                 <span className="h-2 w-2 bg-signal" aria-hidden="true" />
-                <span className="label-silkscreen text-signal">Now baking</span>
+                <span className="label-silkscreen">Now baking</span>
               </div>
               {/* The running bake is the one place a full step row belongs on
                 * this page: its keys are lit, so they are reporting rather
@@ -398,7 +398,7 @@ export default function Dashboard() {
                 ))}
               </div>
             ) : loadError ? (
-              <div className="border border-signal rounded-panel px-6 py-16 text-center">
+              <div className="border border-fault rounded-panel px-6 py-16 text-center" role="alert">
                 <p className="font-faceplate text-lg text-ink">Couldn't load your cookbook</p>
                 <p className="mt-2 text-sm text-ink-muted">{loadError}</p>
                 <Button variant="secondary" className="mt-6" onClick={() => refetch()}>

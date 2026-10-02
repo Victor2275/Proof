@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { api } from '../lib/api';
 import { Sparkles, X, Loader2, AlertCircle } from 'lucide-react';
+import { Button } from './ui';
 
 export interface AISubstitutionsModalProps {
   ingredientName: string;
@@ -40,8 +41,8 @@ export default function AISubstitutionsModal({
     <div className="scrim fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="bg-paper rounded-xl w-full max-w-md shadow-2xl border border-border-subtle p-6 animate-in fade-in zoom-in-95">
         <div className="flex justify-between items-center border-b border-border-subtle pb-4 mb-4">
-          <div className="flex items-center gap-2 text-purple-700 dark:text-purple-300 font-bold">
-            <Sparkles className="w-5 h-5" />
+          <div className="label-silkscreen flex items-center gap-2 text-ink">
+            <Sparkles className="h-4 w-4" aria-hidden="true" />
             <span>AI Substitutions</span>
           </div>
           <button onClick={onClose} className="text-ink-muted hover:text-ink">
@@ -55,24 +56,26 @@ export default function AISubstitutionsModal({
 
         {!substitutions && !loading && (
           <div className="text-center py-6">
-            <button
+            <Button
+              variant="primary"
               onClick={handleFetchSubstitutions}
-              className="bg-signal text-white font-bold px-6 py-3 rounded-control hover:opacity-90 transition-opacity flex items-center gap-2 mx-auto"
+              icon={<Sparkles className="h-4 w-4" aria-hidden="true" />}
+              className="mx-auto"
             >
-              <Sparkles className="w-4 h-4" /> Generate Substitutions
-            </button>
+              Generate substitutions
+            </Button>
             <p className="text-xs text-ink-muted mt-3">Admin PIN required</p>
           </div>
         )}
 
         {loading && (
-          <div className="flex items-center justify-center py-10 text-purple-600">
+          <div className="flex items-center justify-center py-10 text-ink-muted">
             <Loader2 className="w-8 h-8 animate-spin mr-3" /> Consulting AI Chef...
           </div>
         )}
 
         {error && (
-          <div className="bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 p-4 rounded-xl text-sm font-medium flex items-center gap-2 mb-4">
+          <div className="mb-4 flex items-center gap-2 rounded-control border border-fault bg-panel p-3 text-sm text-fault" role="alert">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{error}</span>
           </div>
@@ -84,7 +87,7 @@ export default function AISubstitutionsModal({
               <div key={idx} className="bg-black/5 dark:bg-white/5 border border-border-subtle p-3.5 rounded-lg space-y-1">
                 <div className="flex justify-between items-center">
                   <span className="font-bold text-base text-ink">{sub.substitute}</span>
-                  <span className="text-xs bg-purple-500/10 text-purple-700 dark:text-purple-300 font-mono px-2 py-0.5 rounded">
+                  <span className="label-silkscreen shrink-0 rounded-key border border-rule px-2 py-0.5 text-ink-muted">
                     Ratio: {sub.ratio}
                   </span>
                 </div>

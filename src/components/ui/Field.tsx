@@ -59,7 +59,7 @@ export function Field({
         className={cn(
           'group flex items-center gap-2 rounded-control border bg-panel-sunk px-3',
           'focus-within:border-signal',
-          error ? 'border-signal' : 'border-rule',
+          error ? 'border-fault' : 'border-rule',
         )}
       >
         {leading ? <span className="shrink-0 text-ink-muted">{leading}</span> : null}
@@ -77,7 +77,7 @@ export function Field({
           <span
             className={cn(
               'label-silkscreen shrink-0',
-              error ? 'text-signal' : 'group-focus-within:text-signal',
+              error ? 'text-fault' : 'group-focus-within:text-signal',
             )}
           >
             {unit}
@@ -88,7 +88,7 @@ export function Field({
       {message ? (
         <p
           id={messageId}
-          className={cn('text-xs', error ? 'text-signal' : 'text-ink-muted')}
+          className={cn('text-xs', error ? 'text-fault' : 'text-ink-muted')}
         >
           {message}
         </p>
@@ -146,12 +146,12 @@ export function TextArea({
           'w-full resize-y rounded-control border bg-panel-sunk p-3 text-ink placeholder:text-ink-muted',
           'focus:border-signal focus:outline-none',
           prose && 'font-prose',
-          error ? 'border-signal' : 'border-rule',
+          error ? 'border-fault' : 'border-rule',
         )}
         {...props}
       />
       {message ? (
-        <p id={messageId} className={cn('text-xs', error ? 'text-signal' : 'text-ink-muted')}>
+        <p id={messageId} className={cn('text-xs', error ? 'text-fault' : 'text-ink-muted')}>
           {message}
         </p>
       ) : null}

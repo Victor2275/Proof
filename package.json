@@ -13,6 +13,9 @@
     "test:all": "npm run test && npm run test:server",
     "test:visual": "playwright test",
     "test:visual:update": "playwright test --update-snapshots",
+    "audit:snapshot": "node scripts/audit-snapshot.mjs",
+    "audit:ui": "playwright test -c playwright.audit.config.ts",
+    "audit:report": "node scripts/audit-report.mjs",
     "build:apk": "npm run build && npx cap sync android && cd android && ./gradlew assembleDebug",
     "start": "cd server && npm install && npx tsx index.js",
     "adb:reverse": "%LOCALAPPDATA%\\Android\\Sdk\\platform-tools\\adb.exe reverse tcp:3001 tcp:3001"

@@ -698,7 +698,7 @@ export default function InstagramExporter({ recipe, bakeLog, onClose }: Instagra
       {exportError ? (
         <p
           role="alert"
-          className="shrink-0 border-b border-signal bg-panel px-4 py-2 text-sm text-signal"
+          className="shrink-0 border-b border-fault bg-panel px-4 py-2 text-sm text-fault"
         >
           {exportError}
         </p>

@@ -1,5 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import BottomNav from './BottomNav';
 
@@ -47,6 +47,36 @@ describe('BottomNav', () => {
   it('provides a floating action button to start a new recipe', () => {
     renderNav();
     expect(screen.getByRole('link', { name: /new recipe/i })).toHaveAttribute('href', '/new');
+  });
+
+  /*
+   * Red is spent once per screen. The New Recipe key is the cookbook's main
+   * action, so it is lit there — and only there, and only while nothing is
+   * baking, because a running bake owns red outright.
+   */
+  describe('the New Recipe key', () => {
+    afterEach(() => localStorage.removeItem('activeBake'));
+    const key = () => screen.getByRole('link', { name: /new recipe/i });
+
+    it('is lit on the cookbook while nothing is baking', () => {
+      renderNav('/');
+      expect(key()).toHaveClass('bg-signal');
+    });
+
+    it('stays unlit on every other screen, which has its own primary control', () => {
+      renderNav('/gallery');
+      expect(key()).not.toHaveClass('bg-signal');
+      expect(key()).toHaveClass('bg-panel');
+    });
+
+    it('stays unlit on the cookbook while a bake is running', () => {
+      localStorage.setItem(
+        'activeBake',
+        JSON.stringify({ recipeId: 'r1', recipeTitle: 'Rye', stepIndex: 2, startedAt: '2026-10-01T06:00:00.000Z' }),
+      );
+      renderNav('/');
+      expect(key()).not.toHaveClass('bg-signal');
+    });
   });
 
   it('hides entirely on the Baking Mode route so it never covers its controls', () => {

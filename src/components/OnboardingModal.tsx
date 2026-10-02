@@ -13,17 +13,17 @@ export default function OnboardingModal({ onClose }: OnboardingModalProps) {
   const steps = [
     {
       title: "Browse & Discover",
-      icon: <Search className="w-10 h-10 text-signal" />,
+      icon: <Search className="w-10 h-10 text-ink" />,
       description: "Search across all recipes instantly. Use folders and tags to organize your cookbook exactly how you like."
     },
     {
       title: "Cook Hands-Free",
-      icon: <Zap className="w-10 h-10 text-signal" />,
+      icon: <Zap className="w-10 h-10 text-ink" />,
       description: "Enter The Kitchen Lab. Control the recipe with your voice, wave to advance steps, and sync timers across devices."
     },
     {
       title: "Log Your Bakes",
-      icon: <Book className="w-10 h-10 text-signal" />,
+      icon: <Book className="w-10 h-10 text-ink" />,
       description: "Record your results. Snap photos, dictate notes, and compare your iterations to perfect your craft."
     }
   ];
@@ -93,7 +93,7 @@ export default function OnboardingModal({ onClose }: OnboardingModalProps) {
                 key={i}
                 role="tab"
                 aria-selected={i === step}
-                className={`h-1.5 transition-all ${i === step ? 'w-6 bg-signal' : 'w-1.5 bg-rule'}`}
+                className={`h-1.5 transition-all ${i === step ? 'w-6 bg-ink' : 'w-1.5 bg-rule'}`}
               />
             ))}
           </div>

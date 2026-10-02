@@ -90,13 +90,15 @@ export default function RecipeHeader({ recipe, heroImage, scaleMultiplier }: Rec
             <SegmentReadout label="Total" value={totalSeg.value} unit={totalSeg.unit} size="md" tone="ink" />
             <SegmentReadout label="Prep" value={prep.value} unit={prep.unit} size="sm" tone="ink" />
             <SegmentReadout label="Cook" value={cook.value} unit={cook.unit} size="sm" tone="ink" />
-            {/* Servings lights up when the recipe is being scaled: the number
-              * on screen is no longer the number the recipe was written at. */}
+            {/* A scaled recipe says so in its label: the number on screen is no
+              * longer the number the recipe was written at. It does not light
+              * up — scaling is a setting, not something happening now, and red
+              * here was a second "now" beside the Start key. */}
             <SegmentReadout
               label={scaleMultiplier === 1 ? 'Serves' : `Serves · ${scaleMultiplier}×`}
               value={servings}
               size="sm"
-              tone={scaleMultiplier === 1 ? 'ink' : 'signal'}
+              tone="ink"
             />
           </div>
 

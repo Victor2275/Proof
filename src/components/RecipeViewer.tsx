@@ -471,11 +471,15 @@ export default function RecipeViewer() {
           />
         </div>
       )}
-      <button 
+      {/* The phone's Start key: the page's one red control, drawn as the same
+        * square key as New Recipe, which it sits over in this corner. */}
+      <button
+        type="button"
         onClick={() => setShowMobileStartModal(true)}
-        className="above-nav md:hidden fixed right-4 bg-accent text-black w-14 h-14 rounded-full flex items-center justify-center z-40 transition-transform hover:scale-105 active:scale-95"
+        aria-label="Start recipe"
+        className="above-nav md:hidden fixed right-4 z-40 flex h-14 w-14 items-center justify-center rounded-control border border-signal bg-signal text-on-signal active:translate-y-px"
       >
-        <Play className="w-6 h-6 ml-1" fill="currentColor" />
+        <Play className="h-6 w-6" fill="currentColor" aria-hidden="true" />
       </button>
 
       {/*
@@ -535,7 +539,7 @@ export default function RecipeViewer() {
         {selectedMake ? (
           <div className="flex flex-col gap-5">
             {makeError ? (
-              <p className="border border-signal bg-panel p-3 text-sm text-signal" role="alert">
+              <p className="border border-fault bg-panel p-3 text-sm text-fault" role="alert">
                 {makeError}
               </p>
             ) : null}

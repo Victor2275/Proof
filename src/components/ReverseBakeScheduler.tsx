@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { type Recipe } from '../lib/api';
 import { Calendar, Bell, Check, X } from 'lucide-react';
+import { Button } from './ui';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { Capacitor } from '@capacitor/core';
 
@@ -130,13 +131,13 @@ export default function ReverseBakeScheduler({ recipe, onClose }: ReverseBakeSch
           />
         </div>
 
-        <button
+        <Button
+          variant="primary"
           onClick={handleScheduleNotifications}
-          className="bg-accent text-black px-6 py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all"
+          icon={scheduled ? <Check className="h-4 w-4" aria-hidden="true" /> : <Bell className="h-4 w-4" aria-hidden="true" />}
         >
-          {scheduled ? <Check className="w-4 h-4" /> : <Bell className="w-4 h-4" />}
           {scheduled ? 'Alerts set' : 'Alert me on my phone'}
-        </button>
+        </Button>
       </div>
 
       {scheduleNotice ? (

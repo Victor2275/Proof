@@ -380,7 +380,7 @@ export default function GroceryList() {
                     type="button"
                     onClick={() => removeManualItem(item.id)}
                     aria-label={`Remove ${item.name} from the list`}
-                    className="shrink-0 rounded-control p-2 text-ink-muted transition-colors hover:text-signal"
+                    className="shrink-0 rounded-control p-2 text-ink-muted transition-colors hover:text-ink"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>

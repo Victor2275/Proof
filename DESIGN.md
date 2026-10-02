@@ -41,9 +41,10 @@ categories, or on a control that merely wants attention.
 | `--key-queued` | `#cbbc84` | `#7a6000` | Queued, not yet reached. |
 | `--key-done` | `#b0aba1` | `#57564f` | Complete. |
 | `--key-unlit` | `#d2cdc2` | `#2a2a2a` | Not reached — a designed absence. |
-| `--signal` | `#c81e14` | `#ff3b30` | The one solid control that is *now*. |
+| `--signal` | `#c81e14` | `#ff3b30` | The one solid control on a screen: the action that starts or commits. |
 | `--on-signal` | `#ffffff` | `#000000` | The legend on a lit key. |
-| `--spoiled` | `#6d2018` | `#5a1a12` | Destructive. |
+| `--spoiled` | `#6d2018` | `#5a1a12` | Destructive. A rule around the control, never its legend. |
+| `--fault` | `#8f4c00` | `#ff9a00` | The caution lamp: an error, an outage, a refused save. Needs attention, is not *now*. |
 
 ### The ground
 
@@ -65,7 +66,11 @@ visual baselines; neither is allowed to rot.
 
 ### What red costs
 
-Red means one thing, so it can only be spent once per screen. In practice:
+Red is spent on two things only: **what is happening now** (a lit step key and
+its label, the running bake wherever it appears, a timer counting past zero, the
+scale reaching its target, the focused field) and **the one solid primary control
+on a screen** (Launch Plan decision B3). A screen whose *now* is already lit
+should not add a red control beside it. In practice:
 
 - The editor's **Save** is outlined, not filled. Nothing in the editor is
   running; it writes a pattern, it does not play one.
@@ -75,6 +80,17 @@ Red means one thing, so it can only be spent once per screen. In practice:
 - The Recipe Viewer's **START RECIPE** *is* solid red. It starts the machine.
 - Inside a `Sheet`, the confirming action may be primary: a modal is its own
   screen.
+- The **New Recipe** key is lit only on the cookbook with nothing baking. On any
+  other screen it is an unlit key, and the phone's **Start** key takes that
+  corner on the Recipe Viewer.
+- A **timer written into the method** is a queued key — outlined, ink — until it
+  is started. Lighting every one put sixteen red regions on a recipe where
+  nothing had begun.
+- The **Now Baking** panel is lit by its border, its lamp and its running key.
+  Its total and its Resume control stay ink; the sidebar shows only the lamp.
+- **Errors are faults, not now.** They take `--fault`, the same caution lamp as
+  the offline bar. Destructive controls carry the `--spoiled` rule with an ink
+  legend. A scaled serving count says so in its label rather than lighting up.
 
 ---
 
@@ -239,6 +255,7 @@ Worked examples in the build:
 
 | Guard | Covers |
 |---|---|
+| `src/designSystem.test.ts` — *red is temporal* | Red drawn only by the files that report something happening now; no error in red; a destructive control on the spoiled rule; no stock Tailwind palette colour and no legacy `accent` alias; `--fault` readable on a panel in both themes. |
 | `src/designSystem.test.ts` | The ban, both material tokens, self-hosted faces in CSS *and* HTML, reduced motion in all three layers, no browser dialogs, the contrast floor, safe-area reservation, every promised icon shipping. |
 | `e2e/visual.spec.ts` | 47 baselines: ten surfaces × two themes × desktop and phone, plus the sheet as dialog and as bottom sheet. Budget is **150 absolute pixels** — a ratio scales with the page and hid a whole button's legend changing colour. |
 | `scripts/generate-icons.mjs` | Every shipping raster, drawn from the tokens. Re-running reproduces them exactly. |

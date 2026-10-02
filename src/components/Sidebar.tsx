@@ -45,11 +45,11 @@ export default function Sidebar({ className = "", onAdminRequired }: { className
       {activeBake ? (
         <Link
           to={`/recipe/${activeBake.recipeId}/bake`}
-          className="mx-4 mb-2 flex items-center gap-2 rounded-control border border-signal px-3 py-2 hover:bg-panel-sunk"
+          className="mx-4 mb-2 flex items-center gap-2 rounded-control border border-rule px-3 py-2 hover:bg-panel-sunk"
         >
           <span className="h-2 w-2 shrink-0 bg-signal" aria-hidden="true" />
           <span className="min-w-0 flex-1 truncate text-xs text-ink">{activeBake.recipeTitle}</span>
-          <span className="label-silkscreen shrink-0 text-signal">Resume</span>
+          <span className="label-silkscreen shrink-0 text-ink-muted">Resume</span>
         </Link>
       ) : null}
 
