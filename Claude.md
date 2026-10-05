@@ -90,7 +90,7 @@ temperatures, timers, totals. Counts, servings and dates use tabular mono.
 # The component layer
 
 `src/components/ui` is the whole vocabulary: `Panel`/`PanelRow`, `Button`,
-`Field`/`TextArea`/`Select`, `Sheet`, `SegmentReadout`, `StepRow`,
+`Field`/`TextArea`/`Select`, `Sheet`, `Menu`, `SegmentReadout`, `StepRow`,
 `RecipePlate`, `RecipeTile`, `InstrumentRow`, `Meter`, `Skeleton`.
 
 - **Compose these rather than hand-rolling inline Tailwind** for a panel, a
@@ -166,7 +166,7 @@ Whenever any changes are made to the codebase, you MUST:
 
 ### Interface
 - **Two themes only**: Light + Dark. OLED Black was consolidated into Dark.
-- **No sidebar auto-hide**: Sidebar is always visible on desktop.
+- **No sidebar auto-hide**: Sidebar is always visible on desktop. Between `md` and `lg` it narrows to a 64px icon rail (names kept as screen-reader text and tooltips); it never disappears.
 - **No markdown editor**: Notes are a panel and a textarea. The markdown widget brought its own toolbar, split pane and colour system, and was removed along with its dependencies.
 
 ---

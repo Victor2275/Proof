@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
-import ReverseBakeScheduler from './ReverseBakeScheduler';
+import ReverseBakeScheduler, { toLocalInputValue } from './ReverseBakeScheduler';
 
 const mockRecipe = {
   _id: 'r1',
@@ -43,5 +43,12 @@ describe('ReverseBakeScheduler Component', () => {
     fireEvent.change(dateTimeInput, { target: { value: futureDate } });
 
     expect((dateTimeInput as HTMLInputElement).value).toBe(futureDate);
+  });
+});
+
+describe('toLocalInputValue', () => {
+  it('writes wall-clock time, not UTC, for a datetime-local input', () => {
+    // 9:00 local stays 9:00 whatever the machine's zone.
+    expect(toLocalInputValue(new Date(2026, 9, 2, 9, 0))).toBe('2026-10-02T09:00');
   });
 });

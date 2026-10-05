@@ -26,6 +26,16 @@ const recipe: Recipe = {
 };
 
 describe('RecipeHeader', () => {
+  it('prints a description someone wrote', () => {
+    render(<RecipeHeader recipe={recipe} scaleMultiplier={1} />);
+    expect(screen.getByText('A long-fermented loaf.')).toBeInTheDocument();
+  });
+
+  it("does not print the seed script's template description as if it described the recipe", () => {
+    render(<RecipeHeader recipe={{ ...recipe, description: 'A delicious Venezuela Beef dish.' }} scaleMultiplier={1} />);
+    expect(screen.queryByText(/A delicious/)).not.toBeInTheDocument();
+  });
+
   it('leads with the title, not the photograph', () => {
     render(<RecipeHeader recipe={recipe} scaleMultiplier={1} />);
     expect(screen.getByRole('heading', { level: 1, name: 'Country Sourdough' })).toBeInTheDocument();

@@ -164,7 +164,8 @@ hand-roll inline Tailwind for a panel, a control, a readout or an overlay.
 | `Panel` / `PanelRow` | A matte panel with a silkscreened head and a status lamp. Panels do not nest — content inside a panel gets a rule, not another panel. |
 | `Button` | `primary` / `secondary` / `ghost` / `danger`; `sm` 36px, `md` 44px, `lg` 56px. Real press travel. `engaged` declares a toggle and is undefined otherwise, so ordinary buttons are not announced as switches. |
 | `Field` / `TextArea` / `Select` | Outlined at rest; rule and unit turn signal on focus. Errors wired via `aria-describedby`. `Select` keeps the platform's own popup. |
-| `Sheet` | Every overlay in the app. `center` is a dialog, `bottom` is a thumb-reachable sheet. |
+| `Sheet` | Every overlay in the app. `center` is a dialog, `bottom` is a thumb-reachable sheet (centred on a wide screen when sized). `initialFocus` names the control that takes focus on open — the PIN field, not the close control above it. |
+| `Menu` / `MenuItem` | A dropdown hung from its trigger — not an overlay, so not a `Sheet`. Escape closes it and returns focus to the trigger, a press outside closes it, the arrow keys walk it. Items are ruled, not floated. On a phone, prefer a bottom `Sheet` of full-width buttons. |
 | `SegmentReadout` | Seven-segment digits with ghost segments. `sm`/`md`/`lg`/`xl`, tone `signal` or `ink`. |
 | `StepRow` | The signature. One key per **phase**, not per instruction. `mini` for a dashboard signature, `full` for a labelled, operable row. |
 | `RecipePlate` / `RecipeTile` | A square image plate mounted in the panel's own border, and the gallery tile built from it. |
@@ -177,7 +178,10 @@ states. New primitives go in it.
 
 ### Sheet is not optional
 
-`Sheet` replaced **eleven** hand-rolled scrim-and-panel overlays. Not one of
+`Sheet` replaced **eleven** hand-rolled scrim-and-panel overlays, and later
+the eleven that had been missed — onboarding, the PIN prompt, AI substitutions,
+the sub-recipe drawer, the barcode scanner, the timer prompt, the bottom nav's
+More sheet, three in Baking Mode and the exporter's fallback. Not one of
 them trapped focus, closed on Escape, returned focus to whatever opened it, or
 stopped the page behind from scrolling. A modal you cannot leave by keyboard is
 a trap. It also handles the cases that only appear in a real app: Escape belongs
@@ -218,10 +222,19 @@ These are not preferences. The direction contract calls arm's-length legibility
 - **Touch targets**: **44px** for anything a thumb reaches repeatedly. `sm`
   (36px) is for dense desktop chrome and for inline affordances inside a chip.
 - **Width**: every surface works at **375px** with no horizontal scroll,
-  asserted on all ten routes.
+  asserted on all ten routes. The tablet band is a width of its own, not a
+  stretched phone or a squeezed desktop: from 768 to 1023px the sidebar is a
+  64px icon rail, and the full sidebar returns at 1024. A two-column panel
+  decides by **its own width** (a container query), not the viewport's — the
+  Recipe Viewer's ingredients sit beside the method only when its column is
+  48rem or wider. The audit matrix checks 375, 768, 1024 and 1280.
+- **Hover is an enhancement**: anything revealed on hover is gated on
+  `(hover: hover)`, never on a width. A tablet is wide and cannot hover.
 - **Safe areas**: the bottom nav reserves the device inset, and the `.above-nav`
   utility adds it for everything floating above the nav rather than guessing a
-  fixed offset.
+  fixed offset. `pt-safe` is the top inset **plus 1.5rem**, declared with
+  `@utility` so a breakpoint beside it can override it — browsers report the
+  inset as 0, so a fallback inside `env()` never applies.
 - **No browser dialogs**: no `alert`, `confirm` or `prompt`. Every surface
   reports in its own panel, and errors name the problem **and** the recovery.
 
@@ -248,6 +261,25 @@ Worked examples in the build:
 - **The Instagram export** claims nothing the recipe cannot prove.
 - **The landing page** derives its demonstration from `derivePhases`, the app's
   own vocabulary, so it cannot claim a levain the parser would not find.
+- **A bread is a leavened dough that rises.** `derivePhasesWithReading` reads a
+  recipe as bread only when its method names a leavening agent and a rise, and
+  its steps resolve to more than one phase. The looser rule filed eighteen of
+  the live recipes as bread — a beef arepa opened baking mode on LEVAIN — NOW —
+  while the Danish rye read generic. Opening steps that name nothing join the
+  phase the bread actually starts in, not Levain.
+- **The seed's descriptions are not descriptions.** `isPlaceholderDescription`
+  recognises `A delicious {area} {category} dish.`, which 200 of 203 recipes
+  carry, and neither the recipe header nor the Instagram card prints it.
+- **Baker's percentages are by weight or not at all** (`lib/bakersMath.ts`).
+  Flour measured in cups gives no percentages and a sentence saying why, where
+  the old sum printed 6153.8%.
+- **"This step needs" names only what the step names** (`lib/stepIngredients.ts`):
+  every distinguishing word, whole words only. The Bluetooth scale gets a target
+  only when every ingredient in the step is weighed.
+- **The reverse schedule labels its guesses** (`lib/schedule.ts`): a step's own
+  time when it names one, a share of the recorded total otherwise, and a flat
+  15 minutes marked *assumed* — with a sentence saying how many — when there is
+  no real total. The placeholder pair is never spread as if it were measured.
 
 ---
 
@@ -301,10 +333,6 @@ lit and therefore reporting rather than decorating.
 
 Honest about what is not done:
 
-- **Six overlays are still hand-rolled** — the bottom nav's More sheet, the
-  pantry scanner, the AI substitutions modal, and three in Baking Mode. They
-  predate `Sheet` and still lack its focus trap and Escape handling. Migrating
-  them is mechanical and wants its own pass.
 - **The selected-make detail's layout is rebuilt but untested by reality** — the
   library holds three bake logs across three recipes, so the iteration reading
   renders as rows of one.

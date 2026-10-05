@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense } from 'react';
+import { useState, useEffect, useId, useRef, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { AnimatePresence, MotionConfig } from 'framer-motion';
 import LandingPage from './components/LandingPage';
@@ -8,7 +8,8 @@ import TimerManager from './components/TimerManager';
 import BottomNav from './components/BottomNav';
 import { api } from './lib/api';
 import ErrorBoundary from './components/ErrorBoundary';
-import { Button, Field } from './components/ui';
+import { Delete } from 'lucide-react';
+import { Button, Field, Sheet, Skeleton } from './components/ui';
 
 // Route components are split out of the initial bundle: each screen (and the heavy
 // libraries it pulls — the markdown editor, html2canvas/jspdf, framer-motion) now
@@ -27,10 +28,26 @@ const Pantry = lazy(() => import('./components/Pantry'));
 // build; see components/Lab.tsx.
 const Lab = import.meta.env.DEV ? lazy(() => import('./components/Lab')) : null;
 
-function AuthModal({ onClose, onSuccess }: { onClose: () => void, onSuccess: () => void }) {
+/*
+ * The PIN prompt. A `Sheet`, so it traps focus, closes on Escape and hands focus
+ * back to whatever asked for it; it used to be a hand-rolled scrim with none of
+ * that, and its error floated in a toast outside the dialog it belonged to.
+ */
+function AuthModal({ open, onClose, onSuccess }: { open: boolean, onClose: () => void, onSuccess: () => void }) {
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const fieldRef = useRef<HTMLInputElement>(null);
+  const formId = useId();
+
+  // A fresh prompt each time: a PIN left in the field from the last attempt,
+  // or the last attempt's error, is not this attempt's state.
+  useEffect(() => {
+    if (open) {
+      setPin('');
+      setError('');
+    }
+  }, [open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,54 +65,76 @@ function AuthModal({ onClose, onSuccess }: { onClose: () => void, onSuccess: () 
   };
 
   return (
-    <div className="scrim fixed inset-0 z-[100] flex items-center justify-center p-4">
-      <form onSubmit={handleSubmit} className="w-full max-w-sm rounded-panel border border-rule bg-panel p-8">
-        <h2 className="font-faceplate text-xl text-ink mb-2">Admin Access Required</h2>
-        <p className="text-sm text-ink-muted mb-4">Please enter the PIN to perform this action.</p>
-        <div className="mb-6">
-          <Field
-            label="PIN"
-            hideLabel
-            type="password"
-            value={pin}
-            onChange={(e) => setPin(e.target.value)}
-            placeholder="Enter PIN"
-            className="mb-2 hidden md:block"
-            autoFocus
-          />
-          {/* The mobile numeric keypad — kept exactly as it was interaction-wise. */}
-          <div className="md:hidden grid grid-cols-3 gap-2">
-            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 'C', 0, '<'].map((key) => (
+    <Sheet
+      open={open}
+      onClose={onClose}
+      title="Admin access required"
+      size="sm"
+      initialFocus={fieldRef}
+      footer={
+        <>
+          <Button type="button" variant="ghost" size="lg" onClick={onClose}>Cancel</Button>
+          <Button type="submit" form={formId} variant="primary" size="lg" className="min-w-32" busy={loading}>
+            {loading ? 'Verifying…' : 'Submit'}
+          </Button>
+        </>
+      }
+    >
+      <form id={formId} onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <p className="text-sm text-ink-muted">Please enter the PIN to perform this action.</p>
+        <Field
+          ref={fieldRef}
+          label="PIN"
+          hideLabel
+          type="password"
+          autoComplete="current-password"
+          value={pin}
+          onChange={(e) => setPin(e.target.value)}
+          placeholder="Enter PIN"
+          error={error || undefined}
+          className="hidden md:flex"
+        />
+        {/* The mobile keypad, with its own readout of how many digits are in. */}
+        <div className="flex flex-col gap-3 md:hidden">
+          <output
+            aria-label={`${pin.length} ${pin.length === 1 ? 'digit' : 'digits'} entered`}
+            className="flex h-12 items-center justify-center rounded-control border border-rule bg-panel-sunk font-mono text-2xl tracking-[0.5em] text-ink"
+          >
+            {pin.replace(/./g, '•')}
+          </output>
+          <div className="grid grid-cols-3 gap-px">
+            {['1', '2', '3', '4', '5', '6', '7', '8', '9', 'C', '0', '<'].map((key) => (
               <button
                 key={key}
                 type="button"
+                aria-label={key === 'C' ? 'Clear' : key === '<' ? 'Delete last digit' : undefined}
                 onClick={() => {
                   if (key === 'C') setPin('');
                   else if (key === '<') setPin(pin.slice(0, -1));
                   else setPin(pin + key);
                 }}
-                className="rounded-control border border-rule bg-panel-sunk py-4 text-xl font-medium text-ink transition-colors hover:border-ink-muted"
+                className="h-14 rounded-key border border-rule bg-panel font-mono text-xl text-ink transition-colors active:bg-ink active:text-ground"
               >
-                {key}
+                {key === '<' ? <Delete className="mx-auto h-5 w-5" aria-hidden="true" /> : key}
               </button>
             ))}
           </div>
-          <div className="md:hidden text-center mt-4 tracking-[0.5em] text-2xl font-mono h-8 text-ink">
-            {pin.replace(/./g, '•')}
-          </div>
-        </div>
-        <div className="flex gap-3">
-          <Button type="button" variant="secondary" size="lg" className="flex-1" onClick={onClose}>Cancel</Button>
-          <Button type="submit" variant="primary" size="lg" className="flex-1" busy={loading}>
-            {loading ? 'Verifying…' : 'Submit'}
-          </Button>
+          {error ? (
+            <p role="alert" className="text-sm text-fault">{error}</p>
+          ) : null}
         </div>
       </form>
-      {error && (
-        <div role="alert" className="above-nav fixed left-1/2 -translate-x-1/2 z-[200] border border-fault bg-panel px-6 py-3 rounded-panel font-bold text-fault">
-          {error}
-        </div>
-      )}
+    </Sheet>
+  );
+}
+
+/* While a screen's code arrives: the shape of a page, never the word "Loading". */
+function RouteSkeleton() {
+  return (
+    <div className="mx-auto flex max-w-4xl flex-col gap-4 pt-6" role="status" aria-label="Opening">
+      <Skeleton className="h-9 w-2/3" />
+      <Skeleton className="h-4 w-1/2" />
+      <Skeleton className="mt-4 h-48 w-full" />
     </div>
   );
 }
@@ -246,24 +285,23 @@ function AppShell({
       )}
       <div className="flex flex-1 min-h-0">
         <Sidebar onAdminRequired={() => setShowAuthModal(true)} className="hidden md:flex" />
-        <main className="flex-1 overflow-y-auto overscroll-y-auto w-full relative pb-24 md:pb-12 pt-safe md:pt-12 px-4 md:px-12 transition-all duration-300 md:ml-64">
+        <main className="flex-1 overflow-y-auto overscroll-y-auto w-full relative pb-24 md:pb-12 pt-safe md:pt-0 px-4 md:px-8 lg:px-12 transition-all duration-300 md:ml-16 lg:ml-64">
           <ErrorBoundary>
-            <Suspense fallback={<div className="pt-12 text-center text-ink-muted text-sm">Loading…</div>}>
+            <Suspense fallback={<RouteSkeleton />}>
               <AnimatedRoutes />
             </Suspense>
           </ErrorBoundary>
         </main>
         <BottomNav />
         <TimerManager />
-        {showAuthModal && (
-          <AuthModal
-            onClose={() => setShowAuthModal(false)}
-            onSuccess={() => {
-              setShowAuthModal(false);
-              window.dispatchEvent(new Event('auth-success'));
-            }}
-          />
-        )}
+        <AuthModal
+          open={showAuthModal}
+          onClose={() => setShowAuthModal(false)}
+          onSuccess={() => {
+            setShowAuthModal(false);
+            window.dispatchEvent(new Event('auth-success'));
+          }}
+        />
       </div>
       </div>
     </>

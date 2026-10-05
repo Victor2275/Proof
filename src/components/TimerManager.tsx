@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
-import { Play, Pause, X, Bell } from 'lucide-react';
+import { Play, Pause, X } from 'lucide-react';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { io, type Socket } from 'socket.io-client';
 import { API_URL } from '../lib/api';
 import { hapticsEnabled, ttsEnabled } from '../lib/settings';
-import { publishRunningTimers } from '../lib/timerBus';
-import { Button } from './ui';
+import { publishRunningTimers, formatTimerClock } from '../lib/timerBus';
+import { Button, SegmentReadout, Sheet, cn } from './ui';
 
 export interface Timer {
   id: string;
@@ -46,7 +46,9 @@ export default function TimerManager() {
       setTimers(prev => prev.map(t => {
         if (t.endTime !== null && !t.hasRung && Date.now() >= t.endTime) {
           const audio = new Audio('/alarm.mp3');
-          audio.play().catch(e => console.error("Audio play failed:", e));
+          // A browser that blocks autoplay still gets the speech, the
+          // notification and the flash below.
+          audio.play().catch(() => {});
           
           if (window.speechSynthesis && ttsEnabled()) {
             const msg = new SpeechSynthesisUtterance(`${t.name} timer has completed.`);
@@ -153,51 +155,62 @@ export default function TimerManager() {
     socketRef.current?.emit('timer:remove', id);
   };
 
-  const formatTime = (ms: number) => {
-    const isNegative = ms < 0;
-    const absMs = Math.abs(ms);
-    const totalSec = Math.floor(absMs / 1000);
-    const h = Math.floor(totalSec / 3600);
-    const m = Math.floor((totalSec % 3600) / 60);
-    const s = totalSec % 60;
-
-    let res = '';
-    if (h > 0) res += `${h}:`;
-    res += `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-    return isNegative ? `+${res}` : res;
-  };
-
   if (timers.length === 0 && !pendingTimer) return null;
 
   return (
     <>
-      <div className="fixed top-16 right-4 md:top-auto md:bottom-4 z-50 flex flex-col gap-2 max-h-[80vh] overflow-y-auto w-72">
+      {/*
+        * The running timers, docked as small panels. Each reads its time on a
+        * segment display, as every instrument value in the app does; a timer
+        * past zero lights its display and its rule, rather than flooding the
+        * whole panel red.
+        */}
+      <div className="fixed top-16 right-4 md:top-auto md:bottom-4 z-50 flex flex-col gap-2 max-h-[80vh] overflow-y-auto w-72" aria-label="Timers">
         {timers.map(t => {
-          let currentRemaining = t.remainingMs;
-          if (t.endTime !== null) {
-            currentRemaining = t.endTime - now;
-          }
-
+          const currentRemaining = t.endTime !== null ? t.endTime - now : t.remainingMs;
           const isNegative = currentRemaining < 0;
+          const paused = t.endTime === null;
 
           return (
-            <div key={t.id} className={`p-3 rounded-lg shadow-xl border flex flex-col gap-2 ${isNegative ? 'bg-signal text-on-signal border-signal' : 'bg-paper text-ink border-border-subtle'}`}>
-              <div className="flex justify-between items-center">
-                <span className="font-bold text-sm truncate pr-2">{t.name}</span>
-                <button onClick={() => removeTimer(t.id)} className="hover:opacity-70"><X className="w-4 h-4" /></button>
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <span className="font-mono text-xl font-bold tracking-wider">
-                  {formatTime(currentRemaining)}
-                </span>
-                
-                <button onClick={() => togglePause(t.id)} className={`p-2 rounded-full ${isNegative ? 'hover:bg-black/20' : 'hover:bg-black/5 dark:hover:bg-white/5'}`}>
-                  {t.endTime === null ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
+            <section
+              key={t.id}
+              className={cn(
+                'flex flex-col rounded-panel border bg-panel faceplate',
+                isNegative ? 'border-signal' : 'border-rule',
+              )}
+            >
+              <header className={cn('flex items-center justify-between gap-2 border-b pl-3', isNegative ? 'border-signal' : 'border-rule')}>
+                <h2 className="label-silkscreen min-w-0 truncate">
+                  {t.name}
+                  {paused ? ' · paused' : ''}
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => removeTimer(t.id)}
+                  aria-label={`Remove ${t.name} timer`}
+                  className="flex h-11 w-11 shrink-0 items-center justify-center text-ink-muted transition-colors hover:text-ink"
+                >
+                  <X className="h-4 w-4" aria-hidden="true" />
+                </button>
+              </header>
+
+              <div className="flex items-center justify-between gap-3 py-2 pl-3 pr-1">
+                <SegmentReadout
+                  value={formatTimerClock(currentRemaining)}
+                  size="md"
+                  tone={isNegative ? 'signal' : 'ink'}
+                  label={isNegative ? 'Overtime' : undefined}
+                />
+                <button
+                  type="button"
+                  onClick={() => togglePause(t.id)}
+                  aria-label={paused ? `Resume ${t.name} timer` : `Pause ${t.name} timer`}
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control border border-rule text-ink transition-colors hover:border-ink"
+                >
+                  {paused ? <Play className="h-4 w-4" aria-hidden="true" /> : <Pause className="h-4 w-4" aria-hidden="true" />}
                 </button>
               </div>
-              {isNegative && <div className="text-xs font-bold uppercase tracking-widest text-center mt-1 flex items-center justify-center gap-1"><Bell className="w-3 h-3" /> Overtime</div>}
-            </div>
+            </section>
           );
         })}
       </div>
@@ -206,24 +219,36 @@ export default function TimerManager() {
         <div className="fixed inset-0 z-[9999] bg-ink/30 dark:bg-paper pointer-events-none animate-pulse transition-opacity duration-300" />
       )}
 
-      {pendingTimer && (
-        <div className="fixed inset-0 z-[100] bg-black/50 flex items-end md:items-center justify-center p-0 md:p-4 animate-in slide-in-from-bottom md:slide-in-from-bottom-4">
-          <div className="bg-paper w-full md:max-w-sm md:rounded-2xl rounded-t-3xl shadow-2xl p-6 pb-safe">
-            <h3 className="text-xl font-bold mb-2">Start Timer</h3>
-            <p className="text-ink-muted mb-6">
-              Start a timer for <strong className="text-ink">{pendingTimer.name}</strong> ({formatTime(pendingTimer.durationSecs * 1000)})?
+      <Sheet
+        open={!!pendingTimer}
+        onClose={() => setPendingTimer(null)}
+        title="Start timer"
+        size="sm"
+        footer={
+          <>
+            <Button variant="ghost" size="lg" onClick={() => setPendingTimer(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              size="lg"
+              className="min-w-32"
+              onClick={() => pendingTimer && confirmAddTimer(pendingTimer.durationSecs, pendingTimer.name)}
+            >
+              Start
+            </Button>
+          </>
+        }
+      >
+        {pendingTimer ? (
+          <div className="flex flex-col gap-4">
+            <p className="text-ink-muted">
+              Start a timer for <strong className="font-medium text-ink">{pendingTimer.name}</strong>?
             </p>
-            <div className="flex gap-3">
-              <Button variant="ghost" size="lg" className="flex-1" onClick={() => setPendingTimer(null)}>
-                Cancel
-              </Button>
-              <Button variant="primary" size="lg" className="flex-1" onClick={() => confirmAddTimer(pendingTimer.durationSecs, pendingTimer.name)}>
-                Start
-              </Button>
-            </div>
+            <SegmentReadout value={formatTimerClock(pendingTimer.durationSecs * 1000)} size="lg" tone="ink" />
           </div>
-        </div>
-      )}
+        ) : null}
+      </Sheet>
     </>
   );
 }

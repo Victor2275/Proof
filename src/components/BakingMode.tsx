@@ -13,6 +13,7 @@ import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognitio
 import { hapticsEnabled, voiceCommandsEnabled, waveToAdvanceEnabled } from '../lib/settings';
 import { getActiveBake, startActiveBake, clearActiveBake } from '../lib/activeBake';
 import { derivePhases, type Phase } from '../lib/phases';
+import { ingredientsForStep, scaleTargetGrams } from '../lib/stepIngredients';
 import { subscribeRunningTimers, getRunningTimers, formatTimerClock } from '../lib/timerBus';
 import { Button, Panel, SegmentReadout, Sheet, Skeleton, StepRow, cn } from './ui';
 
@@ -426,24 +427,17 @@ export default function BakingMode() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cameraActive]);
 
-  const getSmartIngredients = (stepText: string): Component[] => {
-    if (!recipe) return [];
-    const textLower = stepText.toLowerCase();
-    return recipe.ingredients.filter(ing => {
-      const ingNameLower = ing.name.toLowerCase();
-      const words = ingNameLower.split(' ').filter(w => w.length > 2);
-      return words.some(w => textLower.includes(w));
-    });
-  };
+  const getSmartIngredients = (stepText: string): Component[] =>
+    recipe ? ingredientsForStep(stepText, recipe.ingredients) : [];
 
   useEffect(() => {
     if (scaleWeight && recipe && currentStep < recipe.instructions.length) {
       const stepText = recipe.instructions[currentStep];
       const smartIngs = getSmartIngredients(stepText);
-      const targetWeight = smartIngs.reduce((sum, ing) => sum + (ing.quantity || 0), 0);
+      // Only a step whose every ingredient is weighed has a target to reach.
+      const targetWeight = scaleTargetGrams(smartIngs) ?? 0;
 
       if (targetWeight > 0) {
-        // Assume grams for simplicity for the generic implementation
         // Auto-advance if weight is within 5% of target
         const threshold = targetWeight * 0.95;
         if (scaleWeight.weight >= threshold) {
@@ -455,7 +449,9 @@ export default function BakingMode() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (showFinishModal) return;
+      // An open sheet owns the keyboard: Escape closes it rather than leaving
+      // Baking Mode, and the arrows do not turn the step hidden behind it.
+      if (showFinishModal || showIngredients || showVoiceHelp || confirmingFinish || openSubRecipeId) return;
       if (e.key === 'Escape') navigate(`/recipe/${id}`);
 
       if (viewMode === 'focus') {
@@ -465,7 +461,7 @@ export default function BakingMode() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentStep, recipe, navigate, id, showFinishModal, viewMode]);
+  }, [currentStep, recipe, navigate, id, showFinishModal, showIngredients, showVoiceHelp, confirmingFinish, openSubRecipeId, viewMode]);
 
   const touchStartX = useRef<number | null>(null);
   const touchEndX = useRef<number | null>(null);
@@ -586,7 +582,7 @@ export default function BakingMode() {
   // The scale's target for this step: the sum of what the step actually calls
   // for. Shown only when there is something to weigh, so the readout never sits
   // there reporting a target of zero.
-  const scaleTarget = smartIngredients.reduce((sum, ing) => sum + (ing.quantity || 0), 0);
+  const scaleTarget = scaleTargetGrams(smartIngredients) ?? 0;
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-ground">
@@ -942,47 +938,36 @@ export default function BakingMode() {
       )}
 
       {/* Ingredients sheet — the full list, over the step rather than beside it. */}
-      {showIngredients && (
-        <>
-          <div
-            className="scrim absolute inset-0 z-20"
-            onClick={() => setShowIngredients(false)}
-            aria-hidden="true"
-          />
-          <aside className="absolute bottom-0 left-0 right-0 top-auto z-30 flex max-h-[80%] flex-col border-t border-rule bg-panel faceplate sm:right-auto sm:top-0 sm:max-h-none sm:w-96 sm:border-r sm:border-t-0">
-            <div className="flex items-center justify-between gap-3 border-b border-rule px-4 py-3">
-              <h2 className="label-silkscreen">All ingredients</h2>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowIngredients(false)}
-                aria-label="Close ingredients"
-                icon={<X className="h-4 w-4" />}
-              />
-            </div>
-            <ul className="flex-1 divide-y divide-rule overflow-y-auto px-4 pb-safe">
-              {recipe.ingredients.map((ing, i) => (
-                <li key={i}>
-                  <label className="flex min-h-11 cursor-pointer items-center gap-3 py-2">
-                    <input
-                      type="checkbox"
-                      checked={!!checkedIngredients[i]}
-                      onChange={() => setCheckedIngredients(prev => ({...prev, [i]: !prev[i]}))}
-                      className="h-5 w-5 shrink-0 accent-[var(--signal)]"
-                    />
-                    <span className={cn('flex min-w-0 flex-1 items-baseline justify-between gap-3', checkedIngredients[i] && 'opacity-40 line-through')}>
-                      <span className="min-w-0 truncate text-ink">{ing.name}</span>
-                      <span className="shrink-0 font-mono text-sm tabular-nums text-ink-muted">
-                        {ing.quantity} {ing.unit}
-                      </span>
-                    </span>
-                  </label>
-                </li>
-              ))}
-            </ul>
-          </aside>
-        </>
-      )}
+      <Sheet
+        open={showIngredients}
+        onClose={() => setShowIngredients(false)}
+        title="All ingredients"
+        placement="bottom"
+        size="md"
+        flush
+      >
+        <ul className="divide-y divide-rule px-4">
+          {recipe.ingredients.map((ing, i) => (
+            <li key={i}>
+              <label className="flex min-h-11 cursor-pointer items-center gap-3 py-2">
+                {/* Ink, not signal: a ticked ingredient is done, not happening now. */}
+                <input
+                  type="checkbox"
+                  checked={!!checkedIngredients[i]}
+                  onChange={() => setCheckedIngredients(prev => ({...prev, [i]: !prev[i]}))}
+                  className="h-5 w-5 shrink-0 accent-ink"
+                />
+                <span className={cn('flex min-w-0 flex-1 items-baseline justify-between gap-3', checkedIngredients[i] && 'opacity-40 line-through')}>
+                  <span className="min-w-0 truncate text-ink">{ing.name}</span>
+                  <span className="shrink-0 font-mono text-sm tabular-nums text-ink-muted">
+                    {ing.quantity} {ing.unit}
+                  </span>
+                </span>
+              </label>
+            </li>
+          ))}
+        </ul>
+      </Sheet>
 
       {/* Finish Modal */}
       <Sheet
@@ -1011,140 +996,116 @@ export default function BakingMode() {
         <p className="text-ink">Finish the recipe and log this bake?</p>
       </Sheet>
 
-      {showFinishModal && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4">
-          <div className="scrim absolute inset-0" onClick={() => setShowFinishModal(false)} aria-hidden="true" />
-          <div className="relative flex max-h-[92vh] w-full max-w-xl flex-col rounded-panel border border-rule bg-panel faceplate">
-            <div className="flex items-center justify-between gap-3 border-b border-rule px-4 py-3">
-              <h2 className="label-silkscreen">Log bake</h2>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowFinishModal(false)}
-                aria-label="Close bake log"
-                icon={<X className="h-4 w-4" />}
+      <Sheet
+        open={showFinishModal}
+        onClose={() => setShowFinishModal(false)}
+        title="Log bake"
+        size="md"
+        layer={110}
+        footer={
+          <Button type="submit" form="bake-log-form" variant="primary" size="lg" busy={savingLog} className="w-full">
+            {savingLog ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Save log & finish'}
+          </Button>
+        }
+      >
+        <form id="bake-log-form" onSubmit={handleFinishSubmit} className="flex flex-col gap-6">
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between gap-3">
+              <label htmlFor="bake-notes" className="label-silkscreen">Bake notes</label>
+              {browserSupportsSpeechRecognition && (
+                <Button
+                  size="sm"
+                  engaged={isDictating}
+                  onClick={toggleDictation}
+                  icon={isDictating ? <Mic className="h-3.5 w-3.5" /> : <MicOff className="h-3.5 w-3.5" />}
+                >
+                  {isDictating ? 'Listening' : 'Dictate'}
+                </Button>
+              )}
+            </div>
+            <textarea
+              id="bake-notes"
+              value={notes}
+              onChange={e => setNotes(e.target.value)}
+              rows={4}
+              className="w-full resize-none rounded-control border border-rule bg-panel-sunk p-3 text-ink focus:border-ink focus:outline-none"
+              placeholder="How did it turn out? What would you change next time?"
+            />
+          </div>
+
+          <div className="flex flex-col gap-3">
+            <span className="label-silkscreen">Photos</span>
+            <div className="relative flex min-h-24 cursor-pointer flex-col items-center justify-center gap-2 rounded-control border border-dashed border-rule bg-panel-sunk p-6 transition-colors hover:border-ink-muted">
+              <input
+                type="file"
+                multiple
+                accept="image/*"
+                aria-label="Upload photos"
+                onChange={e => {
+                  const files = Array.from(e.target.files || []);
+                  setImageFiles(prev => [...prev, ...files.map(f => ({ file: f, label: '' }))]);
+                }}
+                className="absolute inset-0 cursor-pointer opacity-0"
               />
+              <Upload className="h-6 w-6 text-ink-muted" />
+              <span className="label-silkscreen">Add photos</span>
             </div>
 
-            <form onSubmit={handleFinishSubmit} className="flex flex-col gap-6 overflow-y-auto p-4 pb-safe">
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center justify-between gap-3">
-                  <label htmlFor="bake-notes" className="label-silkscreen">Bake notes</label>
-                  {browserSupportsSpeechRecognition && (
+            {imageFiles.length > 0 && (
+              <ul className="flex flex-col gap-2">
+                {imageFiles.map((img, idx) => (
+                  <li key={idx} className="flex items-center gap-3 rounded-control border border-rule bg-panel-sunk p-2">
+                    <div className="h-12 w-12 shrink-0 overflow-hidden rounded-key bg-key-unlit">
+                      <img src={URL.createObjectURL(img.file)} alt="" className="h-full w-full object-cover" />
+                    </div>
+                    <input
+                      type="text"
+                      value={img.label}
+                      onChange={e => {
+                        const newFiles = [...imageFiles];
+                        newFiles[idx].label = e.target.value;
+                        setImageFiles(newFiles);
+                      }}
+                      placeholder="Label (e.g. Before Bake)"
+                      aria-label={`Label for photo ${idx + 1}`}
+                      className="min-w-0 flex-1 border-none bg-transparent p-1 text-sm text-ink outline-none"
+                    />
                     <Button
+                      variant="danger"
                       size="sm"
-                      engaged={isDictating}
-                      onClick={toggleDictation}
-                      icon={isDictating ? <Mic className="h-3.5 w-3.5" /> : <MicOff className="h-3.5 w-3.5" />}
-                    >
-                      {isDictating ? 'Listening' : 'Dictate'}
-                    </Button>
-                  )}
-                </div>
-                <textarea
-                  id="bake-notes"
-                  value={notes}
-                  onChange={e => setNotes(e.target.value)}
-                  rows={4}
-                  className="w-full resize-none rounded-control border border-rule bg-panel-sunk p-3 text-ink focus:border-ink focus:outline-none"
-                  placeholder="How did it turn out? What would you change next time?"
-                />
-              </div>
-
-              <div className="flex flex-col gap-3">
-                <span className="label-silkscreen">Photos</span>
-                <div className="relative flex min-h-24 cursor-pointer flex-col items-center justify-center gap-2 rounded-control border border-dashed border-rule bg-panel-sunk p-6 transition-colors hover:border-ink-muted">
-                  <input
-                    type="file"
-                    multiple
-                    accept="image/*"
-                    aria-label="Upload photos"
-                    onChange={e => {
-                      const files = Array.from(e.target.files || []);
-                      setImageFiles(prev => [...prev, ...files.map(f => ({ file: f, label: '' }))]);
-                    }}
-                    className="absolute inset-0 cursor-pointer opacity-0"
-                  />
-                  <Upload className="h-6 w-6 text-ink-muted" />
-                  <span className="label-silkscreen">Add photos</span>
-                </div>
-
-                {imageFiles.length > 0 && (
-                  <ul className="flex flex-col gap-2">
-                    {imageFiles.map((img, idx) => (
-                      <li key={idx} className="flex items-center gap-3 rounded-control border border-rule bg-panel-sunk p-2">
-                        <div className="h-12 w-12 shrink-0 overflow-hidden rounded-key bg-key-unlit">
-                          <img src={URL.createObjectURL(img.file)} alt="" className="h-full w-full object-cover" />
-                        </div>
-                        <input
-                          type="text"
-                          value={img.label}
-                          onChange={e => {
-                            const newFiles = [...imageFiles];
-                            newFiles[idx].label = e.target.value;
-                            setImageFiles(newFiles);
-                          }}
-                          placeholder="Label (e.g. Before Bake)"
-                          aria-label={`Label for photo ${idx + 1}`}
-                          className="min-w-0 flex-1 border-none bg-transparent p-1 text-sm text-ink outline-none"
-                        />
-                        <Button
-                          variant="danger"
-                          size="sm"
-                          onClick={() => setImageFiles(prev => prev.filter((_, i) => i !== idx))}
-                          aria-label={`Remove photo ${idx + 1}`}
-                          icon={<X className="h-4 w-4" />}
-                        />
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-
-              <Button type="submit" variant="primary" size="lg" busy={savingLog} className="w-full">
-                {savingLog ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Save log & finish'}
-              </Button>
-            </form>
+                      onClick={() => setImageFiles(prev => prev.filter((_, i) => i !== idx))}
+                      aria-label={`Remove photo ${idx + 1}`}
+                      icon={<X className="h-4 w-4" />}
+                    />
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
-        </div>
-      )}
+        </form>
+      </Sheet>
 
-      {/* Voice Help Modal */}
-      {showVoiceHelp && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-          <div className="scrim absolute inset-0" onClick={() => setShowVoiceHelp(false)} aria-hidden="true" />
-          <div className="relative w-full max-w-sm rounded-panel border border-rule bg-panel faceplate">
-            <div className="flex items-center justify-between gap-3 border-b border-rule px-4 py-3">
-              <h2 className="label-silkscreen">Voice Commands</h2>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowVoiceHelp(false)}
-                aria-label="Close voice commands"
-                icon={<X className="h-4 w-4" />}
-              />
+      {/* Voice Help */}
+      <Sheet open={showVoiceHelp} onClose={() => setShowVoiceHelp(false)} title="Voice commands" size="sm" flush>
+        <dl className="flex flex-col divide-y divide-rule px-4 py-2 text-sm">
+          {[
+            ['"Next" / "Back"', 'Navigate steps'],
+            ['"Read"', 'Reads the current step aloud'],
+            ['"Ingredients"', 'Reads what this step needs'],
+            ['"Start timer"', 'Starts the first timer in the step'],
+            ['"Quiet"', 'Stops any ringing alarms'],
+            ['"Show all"', 'Toggles Focus Mode'],
+            ['"Up" / "Down"', 'Scrolls the page'],
+            ['"Finish"', 'Opens the bake log'],
+            ['"Close"', 'Closes open panels'],
+          ].map(([command, effect]) => (
+            <div key={command} className="flex items-baseline justify-between gap-4 py-2">
+              <dt className="font-mono text-xs text-ink">{command}</dt>
+              <dd className="text-right text-ink-muted">{effect}</dd>
             </div>
-            <dl className="flex flex-col divide-y divide-rule px-4 py-2 text-sm">
-              {[
-                ['"Next" / "Back"', 'Navigate steps'],
-                ['"Read"', 'Reads the current step aloud'],
-                ['"Ingredients"', 'Reads what this step needs'],
-                ['"Start timer"', 'Starts the first timer in the step'],
-                ['"Quiet"', 'Stops any ringing alarms'],
-                ['"Show all"', 'Toggles Focus Mode'],
-                ['"Up" / "Down"', 'Scrolls the page'],
-                ['"Finish"', 'Opens the bake log'],
-                ['"Close"', 'Closes open panels'],
-              ].map(([command, effect]) => (
-                <div key={command} className="flex items-baseline justify-between gap-4 py-2">
-                  <dt className="font-mono text-xs text-ink">{command}</dt>
-                  <dd className="text-right text-ink-muted">{effect}</dd>
-                </div>
-              ))}
-            </dl>
-          </div>
-        </div>
-      )}
+          ))}
+        </dl>
+      </Sheet>
 
       {/* Recipe Drawer Overlay */}
       <RecipeDrawer

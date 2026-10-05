@@ -6,7 +6,7 @@ import { type Recipe, type BakeLog } from '../lib/api';
 import { useRecipes, useBakeLogs } from '../lib/queries';
 import { useActiveBake } from '../lib/useActiveBake';
 import { derivePhases } from '../lib/phases';
-import { totalRecipeMinutes, formatMinutesForSegments } from '../lib/duration';
+import { totalRecipeMinutes, formatMinutesForSegments, isPlaceholderTiming } from '../lib/duration';
 import { Button, Field, StepRow, SegmentReadout, RecipePlate, RecipeTile, buttonClassName } from './ui';
 import OnboardingModal from './OnboardingModal';
 
@@ -102,7 +102,9 @@ function PatternRow({
   activeStep?: number;
 }) {
   const phases = useMemo(() => derivePhases(recipe.instructions), [recipe.instructions]);
-  const totalMinutes = totalRecipeMinutes(recipe);
+  // The seed's placeholder pair is not a measurement: the running bake's total
+  // reads as unknown, the way the cookbook tiles already do.
+  const totalMinutes = isPlaceholderTiming(recipe) ? null : totalRecipeMinutes(recipe);
   const segment = totalMinutes !== null ? formatMinutesForSegments(totalMinutes) : null;
 
   return (
@@ -268,10 +270,14 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="space-y-8 pt-4 md:pt-6">
-      {showOnboarding && <OnboardingModal onClose={handleCloseOnboarding} />}
+    <div className="space-y-8 md:pt-6">
+      <OnboardingModal open={showOnboarding} onClose={handleCloseOnboarding} />
 
-      <div className="flex flex-col gap-4 border-b border-rule pb-6 sm:flex-row sm:items-center sm:justify-between">
+      {/* The title and the search share a row only from `xl`. Below it the
+        * search takes the full width under the title: the row needs the
+        * title, a 288px field and Inspire Me side by side, which ran 245px off
+        * the page at 768 and still pushed Inspire Me past the edge at 1024. */}
+      <div className="flex flex-col gap-4 border-b border-rule pb-6 xl:flex-row xl:items-center xl:justify-between">
         <div>
           <h1 className="font-faceplate text-3xl text-ink md:text-4xl">
             {bank !== ALL_BANK ? bank : 'My Cookbook'}
@@ -280,7 +286,7 @@ export default function Dashboard() {
             {recipes.length} {recipes.length === 1 ? 'recipe' : 'recipes'}
           </p>
         </div>
-        <div className="flex w-full gap-3 sm:w-auto">
+        <div className="flex w-full gap-3 xl:w-auto">
           <Field
             label="Search"
             hideLabel
@@ -288,7 +294,7 @@ export default function Dashboard() {
             placeholder="Search recipes or tags…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="flex-1 sm:w-72"
+            className="flex-1 xl:w-72"
           />
           {allRecipes.length > 0 && (
             <Button variant="secondary" onClick={handleInspireMe} icon={<Shuffle className="h-4 w-4" />}>

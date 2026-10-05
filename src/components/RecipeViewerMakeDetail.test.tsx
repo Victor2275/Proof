@@ -143,7 +143,8 @@ describe('RecipeViewer — the selected make', () => {
 
     const share = await screen.findByRole('button', { name: /^Share$/i });
     await user.click(share);
-    await user.click(await screen.findByRole('button', { name: /Copy link/i }));
+    // Share is a menu now: Escape and a click elsewhere close it.
+    await user.click(await screen.findByRole('menuitem', { name: /Copy link/i }));
 
     expect(await screen.findByRole('status')).toHaveTextContent('Link copied.');
     expect(alertSpy).not.toHaveBeenCalled();

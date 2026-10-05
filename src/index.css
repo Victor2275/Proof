@@ -354,13 +354,24 @@
   .pb-safe {
     padding-bottom: env(safe-area-inset-bottom, 20px);
   }
-  .pt-safe {
-    padding-top: env(safe-area-inset-top, 20px);
-  }
   .px-safe {
     padding-left: env(safe-area-inset-left, 0px);
     padding-right: env(safe-area-inset-right, 0px);
   }
+}
+
+/*
+ * The notch inset plus breathing room. The old rule was the inset alone with a
+ * 20px fallback — but browsers define the inset as 0 rather than leave it
+ * undefined, so the fallback never applied and every phone-browser page put its
+ * headline flush against the top edge.
+ *
+ * Declared with @utility, not as a plain class in the utilities layer: a plain
+ * class there outranks Tailwind's own utilities, so the shell's `md:` override
+ * beside it never applied.
+ */
+@utility pt-safe {
+  padding-top: calc(env(safe-area-inset-top, 0px) + 1.5rem);
 }
 
 @media print {

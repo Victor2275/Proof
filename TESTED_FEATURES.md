@@ -169,6 +169,29 @@ This is a 1-to-1 mirror of CURRENT_FEATURES.md. Use checkboxes to track manual t
 - [ ] **Finish by voice**: say "finish" and confirm the panel asks rather than the browser.
 
 ## 9. Public launch — Phase 0 UI audit
+- [ ] **Bread phases**: Arepa pelua opens baking mode on COOK, not LEVAIN; Challah reads Mix → Bulk → Bake.
+- [ ] **Template descriptions**: Danish Rye Bread's page shows no "A delicious Side dish." line; the three real descriptions still show.
+- [ ] **Baker's %**: on Danish Rye Bread it says the flour needs to be weighed and shows no percentages; on a recipe weighed in grams it shows them.
+- [ ] **This step needs**: Danish Rye step 1 lists Rye Grain and Water only; "Allow the bread to cool" lists nothing.
+- [ ] **Scale target**: with a scale connected, a step with any un-weighed ingredient shows no target.
+- [ ] **Reverse schedule**: Arepa's schedule marks steps without a stated time as assumed and explains it above the list.
+- [ ] **Now Baking total**: a running bake of a placeholder-timed recipe shows dashes, not 50 MIN.
+- [ ] **Tablet rail**: at 768–1023px the sidebar is an icon rail with tooltips; at 1024+ it has labels; the running bake's lamp still shows in the rail.
+- [ ] **Recipe Viewer at 768 and 1024**: ingredients read in one column above the method, names on one line; at 1280 they sit side by side.
+- [ ] **Cookbook header**: at 768 and 1024 the search sits full width under the title with Inspire Me beside it; at 1280 they share the title's row; nothing scrolls sideways.
+- [ ] **Sub on a touch tablet**: the ingredient Sub control is visible without hovering.
+- [ ] **Phone browser top**: every page's headline has space above it, not flush to the top edge.
+- [ ] **Onboarding**: at 375px nothing overlaps; the step row lights the current screen; Back, Skip, Next, Escape and the × all work; it does not come back after closing.
+- [ ] **PIN prompt**: desktop focuses the PIN field; the phone keypad's C and ⌫ keys clear and delete; a wrong PIN shows the error inside the dialog; reopening starts empty.
+- [ ] **AI substitutions**: a skeleton while waiting; a sentence if nothing comes back; Try again after a failure; Escape closes.
+- [ ] **Sub-recipe drawer**: rises from the bottom, shows a skeleton then the recipe; with the server down it says so and offers Try again.
+- [ ] **Baking Mode sheets**: Ingredients, Log bake and Voice commands open as sheets; Escape closes the sheet without leaving Baking Mode; the arrow keys do not change the step while one is open.
+- [ ] **Barcode scanner**: the camera view opens in a sheet and closes on Escape.
+- [ ] **Bottom nav More**: on a phone, More opens a sheet; Escape and × close it and focus returns to More.
+- [ ] **Timer prompt and docked timers**: the prompt shows the duration on a segment display; docked timers read on segments, light red only past zero, and their buttons are named.
+- [ ] **Recipe Viewer menus**: Share and Start recipe open menus that close on Escape or a click outside and walk with the arrow keys; on a phone, ⋮ opens More actions with share, favorite and edit.
+- [ ] **Reverse scheduler**: drawn as a panel with a timetable; the default target reads 09:00 tomorrow in local time.
+- [ ] **No "Loading" text**: navigating to a new screen and opening the Instagram exporter show skeletons.
 - [ ] **Red means now**: on a recipe, the timer chips in the method are outlined, not red; only the Start key is red.
 - [ ] **New Recipe key**: lit on the cookbook with nothing baking; unlit on every other screen, and unlit on the cookbook while a bake runs.
 - [ ] **Now Baking**: the panel's border, lamp and running key are red; the total and Resume are not; the sidebar shows only the lamp.

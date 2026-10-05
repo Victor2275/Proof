@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import type { ButtonHTMLAttributes, ReactNode, Ref } from 'react';
 import { cn } from '../../lib/cn';
 
 /*
@@ -65,6 +65,9 @@ export function buttonClassName({
 } = {}) {
   return cn(
     'label-silkscreen inline-flex items-center justify-center gap-2 rounded-control border',
+    // Buttons ranged edge to edge in a bank (gap-px) paint over each other's
+    // focus ring; lifting the focused one keeps its whole ring visible.
+    'relative focus-visible:z-10',
     'transition-[background-color,border-color,color,transform] duration-75',
     'active:translate-y-px',
     'disabled:cursor-not-allowed disabled:opacity-40 disabled:active:translate-y-0',
@@ -89,6 +92,8 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /** Blocks interaction and names why, for a screen reader as well as visually. */
   busy?: boolean;
   icon?: ReactNode;
+  /** Reaches the button itself, for a menu that returns focus to its trigger. */
+  ref?: Ref<HTMLButtonElement>;
 }
 
 export function Button({

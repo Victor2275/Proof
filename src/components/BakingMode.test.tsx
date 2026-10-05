@@ -310,8 +310,8 @@ describe('BakingMode Component', () => {
       helpCmd.callback();
     });
     
-    // Check if Voice Commands modal opened
-    expect(screen.getByText('Voice Commands')).toBeInTheDocument();
+    // Check if Voice Commands sheet opened
+    expect(await screen.findByRole('dialog', { name: /voice commands/i })).toBeInTheDocument();
     
     // Check close command
     const closeCmd = registeredCommands.find(c => c.command.includes('close'));

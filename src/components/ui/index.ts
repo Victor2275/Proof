@@ -23,5 +23,6 @@ export { RecipeTile, type RecipeTileProps } from './RecipeTile';
 export { InstrumentRow, type InstrumentItem, type InstrumentRowProps } from './InstrumentRow';
 export { Meter, type MeterProps } from './Meter';
 export { Sheet, type SheetProps, type SheetPlacement, type SheetSize } from './Sheet';
+export { Menu, MenuItem, type MenuProps, type MenuItemProps } from './Menu';
 export { Skeleton, SkeletonCard } from './Skeleton';
 export { cn } from '../../lib/cn';

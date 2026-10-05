@@ -23,8 +23,35 @@ describe('RecipeDrawer', () => {
     (api.getRecipe as any).mockImplementation(() => new Promise(() => {})); // Never resolves
     render(<RecipeDrawer isOpen={true} onClose={() => {}} recipeId="123" />);
     
-    expect(screen.getByText('Loading...')).toBeInTheDocument();
-    expect(screen.getByText('Loading sub-recipe...')).toBeInTheDocument();
+    // A skeleton, never the word "Loading".
+    expect(screen.getByRole('status', { name: /loading sub-recipe/i })).toBeInTheDocument();
+    expect(screen.queryByText(/loading/i)).not.toBeInTheDocument();
+  });
+
+  it('is a dialog that names the sub-recipe once it has loaded', async () => {
+    (api.getRecipe as any).mockResolvedValue({
+      _id: '123',
+      title: 'Vanilla Frosting',
+      ingredients: [],
+      instructions: [],
+    });
+    render(<RecipeDrawer isOpen={true} onClose={() => {}} recipeId="123" />);
+    expect(await screen.findByRole('dialog', { name: 'Vanilla Frosting' })).toBeInTheDocument();
+  });
+
+  it('names the failure and offers a retry instead of failing silently', async () => {
+    (api.getRecipe as any).mockRejectedValueOnce(new Error('offline'));
+    render(<RecipeDrawer isOpen={true} onClose={() => {}} recipeId="123" />);
+    expect(await screen.findByRole('alert')).toHaveTextContent(/couldn't load this sub-recipe/i);
+
+    (api.getRecipe as any).mockResolvedValue({
+      _id: '123',
+      title: 'Vanilla Frosting',
+      ingredients: [],
+      instructions: [],
+    });
+    fireEvent.click(screen.getByRole('button', { name: /try again/i }));
+    expect(await screen.findByRole('dialog', { name: 'Vanilla Frosting' })).toBeInTheDocument();
   });
 
   it('renders recipe data correctly', async () => {

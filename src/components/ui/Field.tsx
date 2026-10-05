@@ -2,6 +2,7 @@ import {
   useId,
   type InputHTMLAttributes,
   type ReactNode,
+  type Ref,
   type SelectHTMLAttributes,
   type TextareaHTMLAttributes,
 } from 'react';
@@ -21,6 +22,8 @@ import { cn } from '../../lib/cn';
 
 export interface FieldProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size'> {
   label: string;
+  /** Reaches the input itself, for a sheet that must focus it on open. */
+  ref?: Ref<HTMLInputElement>;
   /** Silkscreened unit printed at the right edge of the field, e.g. "G", "°F". */
   unit?: string;
   /** Names the problem and the recovery. Presence switches the field to error. */

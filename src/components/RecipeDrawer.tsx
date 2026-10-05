@@ -1,8 +1,7 @@
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect, useCallback } from 'react';
 import { api, type Recipe } from '../lib/api';
-import { X, Check } from 'lucide-react';
-import { Button } from './ui';
+import { Check } from 'lucide-react';
+import { Button, Sheet, Skeleton } from './ui';
 
 interface RecipeDrawerProps {
   isOpen: boolean;
@@ -10,108 +9,100 @@ interface RecipeDrawerProps {
   recipeId: string;
 }
 
+/*
+ * A sub-recipe opened from inside Baking Mode — the frosting a cake step
+ * names. It rises from the bottom edge over the step being worked, and is
+ * printed the way the recipe page prints: a ruled ingredient list with the
+ * quantities in mono, then the method.
+ */
 export default function RecipeDrawer({ isOpen, onClose, recipeId }: RecipeDrawerProps) {
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [loading, setLoading] = useState(false);
+  const [failed, setFailed] = useState(false);
+
+  const load = useCallback(() => {
+    setLoading(true);
+    setFailed(false);
+    api.getRecipe(recipeId)
+      .then(setRecipe)
+      .catch(() => {
+        setRecipe(null);
+        setFailed(true);
+      })
+      .finally(() => setLoading(false));
+  }, [recipeId]);
 
   useEffect(() => {
-    if (isOpen && recipeId) {
-      setLoading(true);
-      api.getRecipe(recipeId)
-        .then(setRecipe)
-        .catch(console.error)
-        .finally(() => setLoading(false));
-    }
-  }, [isOpen, recipeId]);
+    if (isOpen && recipeId) load();
+  }, [isOpen, recipeId, load]);
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+    <Sheet
+      open={isOpen}
+      onClose={onClose}
+      title={recipe && !loading ? recipe.title : 'Sub-recipe'}
+      placement="bottom"
+      size="xl"
+      layer={110}
+      footer={
+        !loading && recipe ? (
+          <Button
+            variant="primary"
+            size="lg"
+            className="w-full"
             onClick={onClose}
-            className="scrim fixed inset-0 z-[100] "
-            data-testid="recipe-drawer-backdrop"
-          />
-          <motion.div
-            initial={{ y: '100%' }}
-            animate={{ y: 0 }}
-            exit={{ y: '100%' }}
-            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed inset-x-0 bottom-0 z-[101] h-[85vh] bg-paper rounded-t-3xl shadow-2xl flex flex-col overflow-hidden border-t border-border-subtle pb-safe"
-            data-testid="recipe-drawer-content"
+            icon={<Check className="h-5 w-5" aria-hidden="true" />}
           >
-            {/* Header */}
-            <div className="flex justify-between items-center p-6 border-b border-border-subtle bg-black/5 dark:bg-white/5">
-              <h2 className="text-2xl font-bold truncate pr-4 text-ink">
-                {loading ? 'Loading...' : recipe?.title || 'Sub-Recipe'}
-              </h2>
-              <button 
-                onClick={onClose} 
-                className="p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-ink transition-colors"
-                aria-label="Close Drawer"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
+            Finish {recipe.title}
+          </Button>
+        ) : undefined
+      }
+    >
+      <div data-testid="recipe-drawer-content">
+        {loading ? (
+          <div className="flex flex-col gap-3" role="status" aria-label="Loading sub-recipe">
+            <Skeleton className="h-4 w-24" />
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-5 w-full" />
+            ))}
+          </div>
+        ) : recipe ? (
+          <div className="flex flex-col gap-8">
+            <section className="flex flex-col gap-2">
+              <h3 className="label-silkscreen">Ingredients</h3>
+              <ul className="flex flex-col border-t border-rule">
+                {recipe.ingredients.map((ing, idx) => (
+                  <li key={idx} className="flex items-baseline justify-between gap-4 border-b border-rule py-2">
+                    <span className="text-ink">{ing.name}</span>
+                    <span className="shrink-0 font-mono tabular-nums text-ink">
+                      {ing.quantity} {ing.unit}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </section>
 
-            {/* Body */}
-            <div className="flex-1 overflow-y-auto p-6">
-              {loading ? (
-                <div className="flex justify-center py-12"><span className="animate-pulse font-bold text-ink-muted">Loading sub-recipe...</span></div>
-              ) : recipe ? (
-                <div className="space-y-8 pb-24">
-                  {/* Ingredients */}
-                  <section>
-                    <h3 className="text-sm font-bold uppercase tracking-widest text-ink-muted mb-4 border-b border-border-subtle pb-2">Ingredients</h3>
-                    <ul className="space-y-3">
-                      {recipe.ingredients.map((ing, idx) => (
-                        <li key={idx} className="flex justify-between font-mono border-b border-black/5 dark:border-white/5 pb-2">
-                          <span className="text-ink">{ing.name}</span>
-                          <span className="font-bold text-ink">{ing.quantity} {ing.unit}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </section>
-
-                  {/* Instructions */}
-                  <section>
-                    <h3 className="text-sm font-bold uppercase tracking-widest text-ink-muted mb-4 border-b border-border-subtle pb-2">Instructions</h3>
-                    <div className="space-y-6">
-                      {recipe.instructions.map((step, idx) => (
-                        <div key={idx} className="flex gap-4">
-                          <span className="font-black text-ink-muted/30 text-xl">{idx + 1}.</span>
-                          <div className="text-lg leading-relaxed text-ink">{step}</div>
-                        </div>
-                      ))}
-                    </div>
-                  </section>
-                </div>
-              ) : (
-                <div className="text-fault" role="alert">Failed to load sub-recipe.</div>
-              )}
-            </div>
-
-            {/* Footer */}
-            {!loading && recipe && (
-              <div className="p-4 bg-paper border-t border-border-subtle">
-                <Button
-                  variant="primary"
-                  size="lg"
-                  className="w-full"
-                  onClick={onClose}
-                  icon={<Check className="h-5 w-5" aria-hidden="true" />}
-                >
-                  Finish {recipe.title}
-                </Button>
-              </div>
-            )}
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
+            <section className="flex flex-col gap-2">
+              <h3 className="label-silkscreen">Method</h3>
+              <ol className="flex flex-col gap-4">
+                {recipe.instructions.map((step, idx) => (
+                  <li key={idx} className="flex gap-4">
+                    <span className="w-6 shrink-0 pt-1 font-mono text-sm tabular-nums text-ink-muted">
+                      {idx + 1}
+                    </span>
+                    <p className="max-w-prose text-lg leading-relaxed text-ink">{step}</p>
+                  </li>
+                ))}
+              </ol>
+            </section>
+          </div>
+        ) : failed ? (
+          <div className="flex flex-col items-start gap-3" role="alert">
+            <p className="text-fault">Couldn't load this sub-recipe. Check the connection and try again.</p>
+            <Button onClick={load}>Try again</Button>
+          </div>
+        ) : null}
+      </div>
+    </Sheet>
   );
 }

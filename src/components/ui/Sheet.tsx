@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useId, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { cn } from '../../lib/cn';
@@ -109,6 +109,12 @@ export interface SheetProps {
    * inside another sheet passes a higher layer.
    */
   layer?: number;
+  /**
+   * The control that takes focus on open, when it is not simply the first —
+   * the PIN field rather than the close control above it. Not `autoFocus`,
+   * which fires before the sheet has recorded who opened it.
+   */
+  initialFocus?: RefObject<HTMLElement | null>;
   children: ReactNode;
   className?: string;
 }
@@ -125,6 +131,7 @@ export function Sheet({
   flush = false,
   dismissible = true,
   layer = 100,
+  initialFocus,
   children,
   className,
 }: SheetProps) {
@@ -168,6 +175,11 @@ export function Sheet({
     const frame = requestAnimationFrame(() => {
       const panel = panelRef.current;
       if (!panel) return;
+      const wanted = initialFocus?.current;
+      if (wanted && isReachable(wanted)) {
+        wanted.focus();
+        return;
+      }
       const first = panel.querySelector<HTMLElement>(FOCUSABLE);
       (first ?? panel).focus();
     });
@@ -179,6 +191,8 @@ export function Sheet({
       releaseScroll();
       openerRef.current?.focus?.();
     };
+    // `initialFocus` is a ref, read once on open; it is not a reason to re-run.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   /*
@@ -247,7 +261,9 @@ export function Sheet({
       <div
         className={cn(
           'absolute inset-0 flex',
-          isBottom ? 'items-end' : 'items-center justify-center p-4',
+          // A sized bottom sheet rises from the middle of the edge on a wide
+          // screen, not from its left corner.
+          isBottom ? 'items-end justify-center' : 'items-center justify-center p-4',
         )}
       >
         {/*

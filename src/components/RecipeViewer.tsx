@@ -12,7 +12,7 @@ import InstructionList from './InstructionList';
 import SideBySideCompare from './SideBySideCompare';
 import { Edit, MoreVertical, Play, Star, Award, Share2 } from 'lucide-react';
 import { Skeleton } from './ui/Skeleton';
-import { Button, Panel, PanelRow, Field, Sheet, buttonClassName, cn } from './ui';
+import { Button, Menu, MenuItem, Panel, PanelRow, Field, Sheet, buttonClassName, cn } from './ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { QRCodeSVG } from 'qrcode.react';
 import Fuse from 'fuse.js';
@@ -44,13 +44,6 @@ function Instagram({ className = "w-4 h-4" }: { className?: string }) {
 
 
 
-/*
- * One row of a dropdown. Menus in this world are panels with rules between
- * their items, not floating cards with shadows.
- */
-const MENU_ITEM =
-  'block w-full border-b border-rule px-4 py-3 text-left text-sm text-ink hover:bg-panel-sunk';
-
 const EMPTY_LOGS: BakeLog[] = [];
 const EMPTY_PANTRY: any[] = []; // or actual type if imported
 
@@ -72,12 +65,9 @@ export default function RecipeViewer() {
   const [editDateValue, setEditDateValue] = useState('');
   const [showBakersMath, setShowBakersMath] = useState(() => localStorage.getItem('defaultBakersMath') === 'true');
   const [showMobileMenu, setShowMobileMenu] = useState(false);
-  const [showExportMenu, setShowExportMenu] = useState(false);
   const [showQrModal, setShowQrModal] = useState(false);
   const [showReverseScheduler, setShowReverseScheduler] = useState(false);
-  const [showStartMenu, setShowStartMenu] = useState(false);
   const [showMobileStartModal, setShowMobileStartModal] = useState(false);
-  const [showMobileShareModal, setShowMobileShareModal] = useState(false);
   const [heroImage, setHeroImage] = useState<string>('');
   const [showInstagramExporter, setShowInstagramExporter] = useState(false);
   const [instagramExportBakeLog, setInstagramExportBakeLog] = useState<BakeLog | undefined>(undefined);
@@ -171,8 +161,8 @@ export default function RecipeViewer() {
     
     try {
       await updateRecipe({ id, data: { tags: newTags } as any });
-    } catch (err) {
-      console.error('Failed to toggle favorite', err);
+    } catch {
+      setCopyNotice("Couldn't save the favorite. Try again.");
     }
   };
 
@@ -187,8 +177,7 @@ export default function RecipeViewer() {
       .writeText(window.location.href)
       .then(() => setCopyNotice('Link copied.'))
       .catch(() => setCopyNotice('Could not reach the clipboard.'));
-    setShowExportMenu(false);
-    setShowMobileShareModal(false);
+    setShowMobileMenu(false);
   };
 
   const handleExportGroceryList = () => {
@@ -245,15 +234,14 @@ export default function RecipeViewer() {
       const pdfHeight = pdf.internal.pageSize.getHeight();
       pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
       pdf.save(`${recipe?.title.replace(/\s+/g, '-').toLowerCase()}.pdf`);
-    } catch (err) {
-      console.error('Failed to export PDF', err);
+    } catch {
+      setCopyNotice("Couldn't build the PDF. Try again.");
     }
-    setShowExportMenu(false);
     setShowMobileMenu(false);
   };
 
   if (loading) return (
-    <div className="max-w-4xl mx-auto space-y-10 pb-20 pt-6">
+    <div className="@container max-w-4xl mx-auto space-y-10 pb-20 pt-6">
       <div className="flex justify-between items-center mb-6">
         <Skeleton className="h-8 w-48" />
         <div className="hidden md:flex gap-3">
@@ -262,7 +250,7 @@ export default function RecipeViewer() {
         </div>
       </div>
       <Skeleton className="h-[40vh] w-full rounded-2xl" />
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-12 pt-8">
+      <div className="grid grid-cols-1 @3xl:grid-cols-2 gap-12 pt-8">
         <div className="space-y-4">
           <Skeleton className="h-6 w-32 mb-6" />
           {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
@@ -277,7 +265,7 @@ export default function RecipeViewer() {
   if (!recipe) return <div className="text-center py-20 text-ink-muted">Recipe not found.</div>;
 
   return (
-    <div className="max-w-4xl mx-auto space-y-10 pb-20">
+    <div className="@container max-w-4xl mx-auto space-y-10 pb-20">
       
       {/* Top Bar */}
       <div className="flex justify-between items-start md:items-center gap-4 pb-6">
@@ -288,24 +276,20 @@ export default function RecipeViewer() {
         </Link>
         
         {/* Desktop Actions */}
-        <div className="hidden md:flex flex-wrap items-center gap-3 relative">
-          <Button variant="ghost" size="sm" onClick={() => setShowExportMenu(!showExportMenu)}>
-            <Share2 className="w-4 h-4" /> Share
-          </Button>
-          
-          {showExportMenu && (
-            <div className="absolute top-full left-0 z-50 mt-2 w-56 overflow-hidden rounded-panel border border-rule bg-panel faceplate">
-              <button onClick={handleShareLink} className={MENU_ITEM}>
-                Copy link
-              </button>
-              <button onClick={() => { setShowQrModal(true); setShowExportMenu(false); }} className={MENU_ITEM}>
-                QR code
-              </button>
-              <button onClick={handleExportPDF} className={cn(MENU_ITEM, 'border-b-0')}>
-                Export PDF
-              </button>
-            </div>
-          )}
+        <div className="hidden md:flex flex-wrap items-center gap-3">
+          <Menu
+            label="Share"
+            align="right"
+            trigger={(props) => (
+              <Button variant="ghost" size="sm" {...props}>
+                <Share2 className="w-4 h-4" aria-hidden="true" /> Share
+              </Button>
+            )}
+          >
+            <MenuItem onSelect={handleShareLink}>Copy link</MenuItem>
+            <MenuItem onSelect={() => setShowQrModal(true)}>QR code</MenuItem>
+            <MenuItem onSelect={handleExportPDF}>Export PDF</MenuItem>
+          </Menu>
 
           <Button
             variant="secondary"
@@ -321,30 +305,16 @@ export default function RecipeViewer() {
           </Link>
         </div>
 
-        {/* Mobile Actions */}
-        <div className="md:hidden relative">
-          <button onClick={() => setShowMobileMenu(!showMobileMenu)} className="p-2 -mr-2 text-ink">
-            <MoreVertical className="w-6 h-6" />
-          </button>
-          
-          {showMobileMenu && (
-            <div className="absolute right-0 top-full z-50 mt-2 w-56 overflow-hidden rounded-panel border border-rule bg-panel faceplate">
-              <button onClick={() => { setShowMobileShareModal(true); setShowMobileMenu(false); }} className={cn(MENU_ITEM, 'flex items-center gap-2')}>
-                <Share2 className="w-4 h-4" /> Share
-              </button>
-              <button
-                onClick={() => { handleToggleFavorite(); setShowMobileMenu(false); }}
-                className={cn(MENU_ITEM, 'flex items-center justify-between')}
-              >
-                {recipe.tags?.includes('Favorite') ? 'Remove favorite' : 'Add favorite'}
-                <Star className={cn('w-4 h-4', recipe.tags?.includes('Favorite') && 'fill-current')} />
-              </button>
-              <Link to={`/edit/${recipe._id}`} className={cn(MENU_ITEM, 'block border-b-0')}>
-                Edit recipe
-              </Link>
-            </div>
-          )}
-        </div>
+        {/* Mobile Actions — one bottom sheet, where the thumb already is. */}
+        <button
+          type="button"
+          onClick={() => setShowMobileMenu(true)}
+          aria-label="More actions"
+          aria-haspopup="dialog"
+          className="-mr-2 flex h-11 w-11 items-center justify-center rounded-control text-ink md:hidden"
+        >
+          <MoreVertical className="w-6 h-6" aria-hidden="true" />
+        </button>
       </div>
       
       {/* The export node needs an opaque background for html2canvas, but it is
@@ -398,21 +368,19 @@ export default function RecipeViewer() {
 
           {/* The only solid signal-red control on the page: the one that
             * starts something happening. */}
-          <div className="relative hidden shrink-0 md:block">
-            <Button variant="primary" size="sm" onClick={() => setShowStartMenu(!showStartMenu)}>
-              <Play className="w-4 h-4" fill="currentColor" /> Start recipe
-            </Button>
-            {showStartMenu && (
-              <div className="absolute right-0 top-full z-50 mt-2 w-48 overflow-hidden rounded-panel border border-rule bg-panel faceplate">
-                <Link to={`/recipe/${recipe._id}/bake`} className={cn(MENU_ITEM, 'block')}>
-                  Start now
-                </Link>
-                <button onClick={() => { setShowReverseScheduler(true); setShowStartMenu(false); }} className={cn(MENU_ITEM, 'border-b-0')}>
-                  Schedule bake
-                </button>
-              </div>
+          <Menu
+            label="Start recipe"
+            align="right"
+            className="hidden shrink-0 md:block"
+            trigger={(props) => (
+              <Button variant="primary" size="sm" {...props}>
+                <Play className="w-4 h-4" fill="currentColor" aria-hidden="true" /> Start recipe
+              </Button>
             )}
-          </div>
+          >
+            <MenuItem to={`/recipe/${recipe._id}/bake`}>Start now</MenuItem>
+            <MenuItem onSelect={() => setShowReverseScheduler(true)}>Schedule bake</MenuItem>
+          </Menu>
         </div>
 
 
@@ -428,7 +396,7 @@ export default function RecipeViewer() {
           )}
 
           {/* Ingredients and Steps */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 pt-8">
+          <div className="grid grid-cols-1 @3xl:grid-cols-2 gap-12 pt-8">
             <IngredientList 
               recipe={recipe}
               scaleMultiplier={scaleMultiplier}
@@ -801,8 +769,8 @@ export default function RecipeViewer() {
       </Sheet>
 
       {/*
-        * The phone's start and share sheets. Both rise from the bottom edge,
-        * which is where the thumb already is, and both are one decision.
+        * The phone's start and more-actions sheets. Both rise from the bottom
+        * edge, which is where the thumb already is.
         */}
       <Sheet
         open={showMobileStartModal}
@@ -831,28 +799,56 @@ export default function RecipeViewer() {
       </Sheet>
 
       <Sheet
-        open={showMobileShareModal}
-        onClose={() => setShowMobileShareModal(false)}
-        title="Share"
+        open={showMobileMenu}
+        onClose={() => setShowMobileMenu(false)}
+        title="More actions"
         placement="bottom"
       >
-        <div className="flex flex-col gap-2">
-          <Button variant="primary" size="lg" className="w-full" onClick={handleShareLink}>
-            Copy link
-          </Button>
-          <Button
-            size="lg"
-            className="w-full"
-            onClick={() => {
-              setShowQrModal(true);
-              setShowMobileShareModal(false);
-            }}
-          >
-            QR code
-          </Button>
-          <Button size="lg" className="w-full" onClick={handleExportPDF}>
-            Export PDF
-          </Button>
+        <div className="flex flex-col gap-5">
+          <div className="flex flex-col gap-2" role="group" aria-labelledby="mobile-share-label">
+            <span id="mobile-share-label" className="label-silkscreen">Share</span>
+            <Button size="lg" className="w-full" onClick={handleShareLink}>
+              Copy link
+            </Button>
+            <Button
+              size="lg"
+              className="w-full"
+              onClick={() => {
+                setShowMobileMenu(false);
+                setShowQrModal(true);
+              }}
+            >
+              QR code
+            </Button>
+            <Button
+              size="lg"
+              className="w-full"
+              onClick={() => {
+                setShowMobileMenu(false);
+                handleExportPDF();
+              }}
+            >
+              Export PDF
+            </Button>
+          </div>
+          <div className="flex flex-col gap-2 border-t border-rule pt-5" role="group" aria-labelledby="mobile-recipe-label">
+            <span id="mobile-recipe-label" className="label-silkscreen">Recipe</span>
+            <Button
+              size="lg"
+              className="w-full"
+              engaged={recipe.tags?.includes('Favorite')}
+              onClick={handleToggleFavorite}
+              icon={<Star className={cn('h-4 w-4', recipe.tags?.includes('Favorite') && 'fill-current')} aria-hidden="true" />}
+            >
+              {recipe.tags?.includes('Favorite') ? 'Favorited' : 'Favorite'}
+            </Button>
+            <Link
+              to={`/edit/${recipe._id}`}
+              className={buttonClassName({ size: 'lg', className: 'w-full' })}
+            >
+              <Edit className="h-4 w-4" aria-hidden="true" /> Edit recipe
+            </Link>
+          </div>
         </div>
       </Sheet>
 
@@ -893,8 +889,17 @@ export default function RecipeViewer() {
         />
       )}
 
+      {/* The exporter is full-screen on the ground colour, so its fallback is
+        * that same empty ground with a skeleton of its preview, not a black
+        * slab with the word "Loading" in it. */}
       {showInstagramExporter && (
-        <Suspense fallback={<div className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center text-white/70 text-sm">Loading exporter…</div>}>
+        <Suspense
+          fallback={
+            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-ground p-6" role="status" aria-label="Opening the exporter">
+              <Skeleton className="aspect-square w-full max-w-sm" />
+            </div>
+          }
+        >
           <InstagramExporter
             recipe={recipe}
             bakeLog={instagramExportBakeLog}

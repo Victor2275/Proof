@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { api, type PantryItem } from '../lib/api';
 import { Plus, X, ScanBarcode } from 'lucide-react';
 import { Html5QrcodeScanner } from 'html5-qrcode';
-import { Button, Field, Panel, Skeleton } from './ui';
+import { Button, Field, Panel, Sheet, Skeleton } from './ui';
 
 /*
  * The pantry — the machine's own inventory panel.
@@ -134,25 +134,13 @@ export default function Pantry() {
         {error && <p className="mt-3 text-sm text-fault" role="alert">{error}</p>}
       </Panel>
 
+      {/* Rendered only while scanning, rather than kept mounted and toggled
+        * open, so that #reader is in the document by the time the effect above
+        * hands it to the scanner library. */}
       {scanning && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="scrim absolute inset-0" onClick={() => setScanning(false)} aria-hidden="true" />
-          <div className="relative w-full max-w-lg rounded-panel border border-rule bg-panel faceplate">
-            <div className="flex items-center justify-between gap-3 border-b border-rule px-4 py-3">
-              <h2 className="label-silkscreen">Scan barcode</h2>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setScanning(false)}
-                aria-label="Close scanner"
-                icon={<X className="h-4 w-4" />}
-              />
-            </div>
-            <div className="p-4">
-              <div id="reader" className="w-full overflow-hidden rounded-key bg-panel-sunk" />
-            </div>
-          </div>
-        </div>
+        <Sheet open onClose={() => setScanning(false)} title="Scan barcode" size="md">
+          <div id="reader" className="w-full overflow-hidden rounded-key bg-panel-sunk" />
+        </Sheet>
       )}
 
       <Panel title="In stock" flush>
@@ -178,7 +166,7 @@ export default function Pantry() {
             {items.map((item) => (
               <li
                 key={item._id}
-                className="flex min-h-11 items-center gap-3 border-b border-rule px-4 py-2 last:border-b-0 sm:odd:border-r"
+                className="flex min-h-11 items-center gap-3 border-b border-rule pl-4 pr-2 last:border-b-0 sm:odd:border-r"
               >
                 {/* Lit, filled, bone — the same lamp a recipe uses for
                   * "the pantry has this". Having flour is not an event, so it
@@ -190,7 +178,7 @@ export default function Pantry() {
                   type="button"
                   onClick={() => handleDeleteItem(item._id!)}
                   aria-label={`Remove ${item.name} from the pantry`}
-                  className="shrink-0 rounded-control p-2 text-ink-muted transition-colors hover:text-ink"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control text-ink-muted transition-colors hover:text-ink"
                 >
                   <X className="h-4 w-4" />
                 </button>

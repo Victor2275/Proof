@@ -50,4 +50,26 @@ describe('AISubstitutionsModal Component', () => {
       expect(screen.getByText(/Curdles in 5 mins/i)).toBeDefined();
     });
   });
+
+  it('says so when nothing comes back, rather than drawing an empty dialog', async () => {
+    localStorage.setItem('adminToken', 'admin-token');
+    vi.mocked(api.getAISubstitutions).mockResolvedValue({ substitutions: [] });
+    render(<AISubstitutionsModal ingredientName="Buttermilk" onClose={() => {}} />);
+    fireEvent.click(screen.getByRole('button', { name: /Generate Substitutions/i }));
+    expect(await screen.findByText(/No substitutions came back for Buttermilk/i)).toBeInTheDocument();
+  });
+
+  it('names a failure and offers the request again', async () => {
+    localStorage.setItem('adminToken', 'admin-token');
+    vi.mocked(api.getAISubstitutions).mockRejectedValue(new Error('The AI service is unavailable.'));
+    render(<AISubstitutionsModal ingredientName="Buttermilk" onClose={() => {}} />);
+    fireEvent.click(screen.getByRole('button', { name: /Generate Substitutions/i }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(/unavailable/i);
+    expect(screen.getByRole('button', { name: /try again/i })).toBeInTheDocument();
+  });
+
+  it('is a dialog, so it can be left by keyboard', () => {
+    render(<AISubstitutionsModal ingredientName="Buttermilk" onClose={() => {}} />);
+    expect(screen.getByRole('dialog', { name: /AI substitutions/i })).toBeInTheDocument();
+  });
 });

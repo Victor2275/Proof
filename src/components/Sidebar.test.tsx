@@ -41,4 +41,24 @@ describe('Sidebar', () => {
     expect(screen.getByRole('link', { name: /resume/i })).toHaveAttribute('href', '/recipe/r1/bake');
     clearActiveBake();
   });
+
+  /*
+   * Between md and lg the sidebar is a rail of icons. The names are hidden
+   * visually there, so each item must still carry one for a screen reader and
+   * a tooltip for a pointer.
+   */
+  it('keeps every section named, as text and as a tooltip, when it is a rail', () => {
+    renderSidebar();
+    ['My Cookbook', 'Gallery', 'Analytics', 'Pantry', 'Grocery List', 'General Notes', 'Settings'].forEach(
+      (name) => expect(screen.getByRole('link', { name })).toHaveAttribute('title', name),
+    );
+    expect(screen.getByRole('link', { name: 'New Recipe' })).toHaveAttribute('title', 'New Recipe');
+    // The labels collapse to screen-reader text below lg, and come back at lg.
+    expect(screen.getByText('Gallery')).toHaveClass('sr-only', 'lg:not-sr-only');
+  });
+
+  it('narrows to a rail below lg rather than hiding', () => {
+    const { container } = renderSidebar();
+    expect(container.querySelector('aside')).toHaveClass('w-16', 'lg:w-64');
+  });
 });

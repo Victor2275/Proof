@@ -3,6 +3,7 @@ import html2canvas from 'html2canvas';
 import { Download, LayoutGrid, Image as ImageIcon, X, Sun, Moon } from 'lucide-react';
 import { type Recipe, type BakeLog } from '../lib/api';
 import { derivePhasesWithReading } from '../lib/phases';
+import { meaningfulDescription } from '../lib/description';
 import { totalRecipeMinutes, formatMinutesForSegments, isPlaceholderTiming } from '../lib/duration';
 import { SEGMENT_GLYPHS, SEGMENT_SHAPES } from '../lib/sevenSegment';
 import { Button } from './ui';
@@ -256,7 +257,9 @@ export default function InstagramExporter({ recipe, bakeLog, onClose }: Instagra
     .toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' })
     .toUpperCase();
 
-  const noteText = (bakeLog?.notes?.trim()) || (recipe.description?.trim()) || '';
+  // The card claims nothing the recipe cannot prove, and the seed's template
+  // description is not something it can.
+  const noteText = (bakeLog?.notes?.trim()) || meaningfulDescription(recipe.description) || '';
   const noteHeading = bakeLog?.notes?.trim() ? "Baker's log" : 'About this bake';
 
   const shareUrl = `${window.location.origin}/recipe/${recipe._id}`;

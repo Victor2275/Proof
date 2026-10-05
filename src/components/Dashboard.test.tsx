@@ -182,6 +182,21 @@ describe('Dashboard Component', () => {
     expect(screen.getAllByText('Sourdough Bread')).toHaveLength(1);
   });
 
+  it("does not print the seed's placeholder total on the running bake", async () => {
+    // 199 of the live recipes carry "20 mins" / "30 mins" verbatim; the running
+    // bake read 50 MIN while the tiles already drew the time as unknown.
+    vi.mocked(api.getRecipes).mockResolvedValue([
+      { ...mockRecipes[0], prepTime: '20 mins', cookTime: '30 mins' },
+      ...mockRecipes.slice(1),
+    ] as any);
+    startActiveBake('1', 'Sourdough Bread', 1);
+    renderWithProviders(<Dashboard />);
+
+    await waitFor(() => expect(screen.getByText(/Now baking/i)).toBeInTheDocument());
+    expect(screen.queryByRole('img', { name: /50 MIN/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('img', { name: /-- MIN|--/ })).toBeInTheDocument();
+  });
+
   it('does not show a Now Baking panel or Resume control when nothing is running', async () => {
     renderWithProviders(<Dashboard />);
     await waitFor(() => expect(screen.getByText('Sourdough Bread')).toBeDefined());

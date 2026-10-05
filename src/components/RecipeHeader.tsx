@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import type { Recipe } from '../lib/api';
 import { derivePhases } from '../lib/phases';
+import { meaningfulDescription } from '../lib/description';
 import {
   parseDurationMinutes,
   totalRecipeMinutes,
@@ -66,8 +67,10 @@ export default function RecipeHeader({ recipe, heroImage, scaleMultiplier }: Rec
           {recipe.title}
         </h1>
 
-        {recipe.description ? (
-          <p className="max-w-prose text-ink-muted">{recipe.description}</p>
+        {/* The seed script's "A delicious {area} {category} dish." is not a
+          * description, so it is not printed as one. */}
+        {meaningfulDescription(recipe.description) ? (
+          <p className="max-w-prose text-ink-muted">{meaningfulDescription(recipe.description)}</p>
         ) : null}
       </div>
 

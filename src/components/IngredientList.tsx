@@ -1,4 +1,5 @@
 import type { Recipe } from '../lib/api';
+import { bakersMath, bakersMathUnavailable } from '../lib/bakersMath';
 import { Sparkles } from 'lucide-react';
 import { Button, cn } from './ui';
 
@@ -41,13 +42,10 @@ export default function IngredientList({
 }: IngredientListProps) {
   const ingredients = recipe.ingredients || [];
 
-  // Baker's percentages are always relative to total flour weight, so a recipe
-  // with no flour in it has no percentages to show rather than percentages of
-  // zero.
-  const flourTotal = ingredients.reduce(
-    (acc, ing) => ((ing.name || '').toLowerCase().includes('flour') ? acc + (ing.quantity || 0) : acc),
-    0,
-  );
+  // Baker's percentages are relative to total flour *by weight*. A recipe that
+  // has no flour, or measures it in cups, has no percentages to show — and
+  // says so, rather than drawing a figure built from cups and grams together.
+  const math = bakersMath(ingredients);
 
   return (
     <section className="flex flex-col gap-4">
@@ -68,13 +66,18 @@ export default function IngredientList({
         </div>
       </div>
 
+      {showBakersMath && !math.ok ? (
+        <p className="text-sm text-ink-muted" role="status">{bakersMathUnavailable(math)}</p>
+      ) : null}
+
       <ul className="flex flex-col">
         {ingredients.map((ing, i) => {
           const checked = !!checkedIngredients[i];
-          const pct =
-            showBakersMath && flourTotal > 0
-              ? `${((ing.quantity / flourTotal) * 100).toFixed(1)}%`
-              : null;
+          const share = math.ok ? math.percentages[i] : null;
+          // An ingredient that is not weighed has no share of the flour: a
+          // dash says "not computable" rather than leaving a gap that reads as
+          // zero.
+          const pct = share === null ? '—' : `${share.toFixed(1)}%`;
 
           return (
             <li key={i} className="group flex items-center gap-3 border-b border-rule py-2.5 last:border-0">
@@ -98,7 +101,7 @@ export default function IngredientList({
                 <span className="ml-1 text-ink-muted">{ing.unit}</span>
               </span>
 
-              {showBakersMath ? (
+              {showBakersMath && math.ok ? (
                 <span className="w-14 shrink-0 text-right font-mono text-xs tabular-nums text-ink-muted">
                   {pct}
                 </span>
@@ -132,11 +135,13 @@ export default function IngredientList({
                 type="button"
                 onClick={() => setAiSubstituteIngredient(ing.name)}
                 title={`Substitutions for ${ing.name}`}
-                className="label-silkscreen flex shrink-0 items-center gap-1 rounded-control border border-rule px-2 py-1 text-ink-muted opacity-80 hover:text-ink sm:opacity-0 sm:group-hover:opacity-100"
+                className="label-silkscreen flex shrink-0 items-center gap-1 rounded-control border border-rule px-2 py-1 text-ink-muted opacity-80 hover:text-ink focus-visible:opacity-100 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100"
               >
                 {/* At phone width the word does not fit beside a quantity, a
                   * name and a pantry lamp — the icon carries it, and the
-                  * button keeps its accessible name from the title. */}
+                  * button keeps its accessible name from the title. It hides
+                  * until hover only where there is a hover: keyed to `sm`, it
+                  * was invisible on every touch tablet. */}
                 <Sparkles className="h-3 w-3" />
                 <span className="hidden sm:inline">Sub</span>
               </button>

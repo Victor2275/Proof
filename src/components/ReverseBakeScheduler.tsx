@@ -1,7 +1,8 @@
 import { useState, useMemo } from 'react';
 import { type Recipe } from '../lib/api';
-import { Calendar, Bell, Check, X } from 'lucide-react';
-import { Button } from './ui';
+import { Bell, Check, X } from 'lucide-react';
+import { Button, Field, Panel } from './ui';
+import { stepDurations, scheduleCaveat, type DurationSource } from '../lib/schedule';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { Capacitor } from '@capacitor/core';
 
@@ -14,8 +15,20 @@ export interface ScheduleStep {
   stepIndex: number;
   text: string;
   durationMinutes: number;
+  /** Whether the step named this time, shared the recipe's total, or was assumed. */
+  source: DurationSource;
   startTime: Date;
   endTime: Date;
+}
+
+/*
+ * A `datetime-local` input reads and writes wall-clock time with no zone. The
+ * default used to come from toISOString(), which is UTC, so "tomorrow at 9:00"
+ * appeared as 16:00 in California and 10:00 in Paris.
+ */
+export function toLocalInputValue(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 export default function ReverseBakeScheduler({ recipe, onClose }: ReverseBakeSchedulerProps) {
@@ -23,7 +36,7 @@ export default function ReverseBakeScheduler({ recipe, onClose }: ReverseBakeSch
     const d = new Date();
     d.setDate(d.getDate() + 1);
     d.setHours(9, 0, 0, 0); // Tomorrow at 9:00 AM
-    return d.toISOString().slice(0, 16);
+    return toLocalInputValue(d);
   }, []);
 
   const [targetDateTime, setTargetDateTime] = useState(defaultTarget);
@@ -37,10 +50,7 @@ export default function ReverseBakeScheduler({ recipe, onClose }: ReverseBakeSch
     const targetDate = new Date(targetDateTime);
     if (isNaN(targetDate.getTime())) return [];
 
-    // Parse prep & cook time as fallback step durations
-    const totalPrep = parseInt(recipe.prepTime) || 30;
-    const totalCook = parseInt(recipe.cookTime) || 45;
-    const perStepMinutes = Math.max(15, Math.round((totalPrep + totalCook) / recipe.instructions.length));
+    const durations = stepDurations(recipe);
 
     // Calculate timelines backwards from targetDate
     let currentEnd = new Date(targetDate);
@@ -48,14 +58,7 @@ export default function ReverseBakeScheduler({ recipe, onClose }: ReverseBakeSch
 
     for (let i = recipe.instructions.length - 1; i >= 0; i--) {
       const text = recipe.instructions[i];
-      // Search text for timer patterns like (30m) or (2h)
-      const timerMatch = text.match(/\((\d+)\s*(m|min|mins|h|hr|hours)\)/i);
-      let stepMins = perStepMinutes;
-      if (timerMatch) {
-        const val = parseInt(timerMatch[1]);
-        const unit = timerMatch[2].toLowerCase();
-        stepMins = unit.startsWith('h') ? val * 60 : val;
-      }
+      const { minutes: stepMins, source } = durations[i];
 
       const stepStart = new Date(currentEnd.getTime() - stepMins * 60 * 1000);
 
@@ -63,6 +66,7 @@ export default function ReverseBakeScheduler({ recipe, onClose }: ReverseBakeSch
         stepIndex: i,
         text,
         durationMinutes: stepMins,
+        source,
         startTime: stepStart,
         endTime: new Date(currentEnd)
       });
@@ -72,6 +76,11 @@ export default function ReverseBakeScheduler({ recipe, onClose }: ReverseBakeSch
 
     return stepsReversed.reverse();
   }, [recipe, targetDateTime]);
+
+  const caveat = useMemo(
+    () => scheduleCaveat(scheduleSteps.map((step) => ({ minutes: step.durationMinutes, source: step.source }))),
+    [scheduleSteps],
+  );
 
   const handleScheduleNotifications = async () => {
     setScheduleNotice('');
@@ -98,86 +107,89 @@ export default function ReverseBakeScheduler({ recipe, onClose }: ReverseBakeSch
 
       await LocalNotifications.schedule({ notifications });
       setScheduled(true);
-    } catch (err: any) {
-      console.error('Notification error:', err);
+    } catch {
       setScheduleNotice('The alerts could not be scheduled. The schedule below is unaffected.');
     }
   };
 
   return (
-    <div className="bg-paper border border-border-subtle rounded-xl p-6 space-y-6 shadow-sm">
-      <div className="flex justify-between items-center border-b border-border-subtle pb-4">
-        <div className="flex items-center gap-2">
-          <Calendar className="w-5 h-5 text-ink" />
-          <h2 className="text-xl font-bold uppercase tracking-wider">Reverse Bake Timeline Scheduler</h2>
-        </div>
-        {onClose && (
-          <button onClick={onClose} className="text-ink-muted hover:text-ink">
-            <X className="w-5 h-5" />
+    <Panel
+      title="Reverse bake timeline scheduler"
+      actions={
+        onClose ? (
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close scheduler"
+            className="-mr-2 flex h-11 w-11 items-center justify-center rounded-control text-ink-muted transition-colors hover:text-ink"
+          >
+            <X className="h-4 w-4" aria-hidden="true" />
           </button>
-        )}
-      </div>
-
-      <div className="flex flex-col sm:flex-row gap-4 sm:items-center justify-between bg-sidebar p-4 rounded-xl border border-border-subtle">
-        <div>
-          <label className="block text-xs font-bold uppercase tracking-widest text-ink-muted mb-1">
-            Target Completion Time (Want to serve at)
-          </label>
-          <input
+        ) : undefined
+      }
+    >
+      <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <Field
+            label="Target completion time"
+            hint="When you want to serve it."
             type="datetime-local"
             value={targetDateTime}
             onChange={e => setTargetDateTime(e.target.value)}
-            className="px-3 py-2 bg-paper border border-border-subtle rounded-lg text-sm font-semibold focus:outline-none focus:ring-1 focus:ring-ink"
+            className="sm:w-64"
           />
+
+          {/* Secondary: the scheduler opens inline on the recipe page, beside
+            * Start Recipe, which is that screen's one red control. */}
+          <Button
+            variant="secondary"
+            onClick={handleScheduleNotifications}
+            icon={scheduled ? <Check className="h-4 w-4" aria-hidden="true" /> : <Bell className="h-4 w-4" aria-hidden="true" />}
+          >
+            {scheduled ? 'Alerts set' : 'Alert me on my phone'}
+          </Button>
         </div>
 
-        <Button
-          variant="primary"
-          onClick={handleScheduleNotifications}
-          icon={scheduled ? <Check className="h-4 w-4" aria-hidden="true" /> : <Bell className="h-4 w-4" aria-hidden="true" />}
-        >
-          {scheduled ? 'Alerts set' : 'Alert me on my phone'}
-        </Button>
+        {scheduleNotice ? (
+          <p className="border-l border-rule pl-3 text-sm text-ink" role="status">
+            {scheduleNotice}
+          </p>
+        ) : null}
+
+        {scheduleSteps.length > 0 && (
+          <section className="flex flex-col gap-3">
+            <h3 className="label-silkscreen">Recommended start schedule (working backwards)</h3>
+            {caveat ? (
+              <p className="max-w-prose text-sm text-ink-muted" role="note">{caveat}</p>
+            ) : null}
+
+            {/* A printed timetable: the start time ranged left in mono, as a
+              * clock would print it, and the step it starts beside it. */}
+            <ol className="flex flex-col border-t border-rule">
+              {scheduleSteps.map((step) => {
+                const startStr = step.startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                const dateStr = step.startTime.toLocaleDateString([], { month: 'short', day: 'numeric' });
+
+                return (
+                  <li key={step.stepIndex} className="grid grid-cols-[5.5rem_1fr] gap-4 border-b border-rule py-3">
+                    <div className="flex flex-col font-mono tabular-nums">
+                      <span className="text-ink">{startStr}</span>
+                      <span className="text-xs text-ink-muted">{dateStr}</span>
+                    </div>
+                    <div className="flex min-w-0 flex-col gap-1">
+                      <span className="label-silkscreen">
+                        Step {step.stepIndex + 1} · {step.source === 'shared' ? '≈ ' : ''}{step.durationMinutes} min
+                        {step.source === 'assumed' ? ' · assumed' : ''}
+                      </span>
+                      <p className="max-w-prose text-ink">{step.text}</p>
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
+          </section>
+        )}
       </div>
-
-      {scheduleNotice ? (
-        <p className="border border-rule bg-panel p-3 text-sm text-ink" role="status">
-          {scheduleNotice}
-        </p>
-      ) : null}
-
-      {scheduleSteps.length > 0 && (
-        <div className="space-y-4 pt-2">
-          <h3 className="text-sm font-bold uppercase tracking-wider text-ink-muted">
-            Recommended Start Schedule (Working Backwards)
-          </h3>
-
-          <div className="space-y-3 relative before:absolute before:left-4 before:top-2 before:bottom-2 before:w-0.5 before:bg-border-subtle">
-            {scheduleSteps.map((step) => {
-              const startStr = step.startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-              const dateStr = step.startTime.toLocaleDateString([], { month: 'short', day: 'numeric' });
-
-              return (
-                <div key={step.stepIndex} className="relative pl-10 flex items-start justify-between bg-black/5 dark:bg-white/5 p-4 rounded-xl border border-border-subtle">
-                  <div className="absolute left-2.5 top-5 w-3 h-3 rounded-full bg-ink -translate-x-1/2 ring-4 ring-paper" />
-                  
-                  <div className="space-y-1">
-                    <span className="text-xs font-mono font-bold text-ink-muted uppercase tracking-wider">
-                      Step {step.stepIndex + 1} ({step.durationMinutes} mins)
-                    </span>
-                    <p className="font-semibold text-base text-ink">{step.text}</p>
-                  </div>
-
-                  <div className="text-right shrink-0 ml-4 font-mono">
-                    <div className="font-bold text-base text-ink">{startStr}</div>
-                    <div className="text-xs text-ink-muted">{dateStr}</div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-    </div>
+    </Panel>
   );
 }

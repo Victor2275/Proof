@@ -1,112 +1,92 @@
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Book, CheckCircle2, Search, Zap, X } from 'lucide-react';
-import { Button } from './ui';
+import { Button, Sheet, StepRow } from './ui';
+import type { Phase } from '../lib/phases';
+
+/*
+ * The three-screen tour a new visitor sees on their first dashboard.
+ *
+ * Its progress is a step row rather than a pager of dots: the tour is a
+ * pattern running, so it is drawn the way every bake is — the screen you are
+ * on is lit, the next one is due, the ones behind you are done. The first
+ * thing a stranger learns is how to read the machine.
+ *
+ * It used to be a hand-rolled scrim with a fixed-height text box, which at
+ * 375px let the pager and the Next button print over a description cut off
+ * mid-sentence, and which had no focus trap and no way out by keyboard.
+ */
+
+const STEPS = [
+  {
+    id: 'browse',
+    label: 'Browse',
+    title: 'Browse & Discover',
+    description:
+      'Search across all recipes instantly. Use folders and tags to organize your cookbook exactly how you like.',
+  },
+  {
+    id: 'cook',
+    label: 'Cook',
+    title: 'Cook Hands-Free',
+    description:
+      'Enter The Kitchen Lab. Control the recipe with your voice, wave to advance steps, and sync timers across devices.',
+  },
+  {
+    id: 'log',
+    label: 'Log',
+    title: 'Log Your Bakes',
+    description:
+      'Record your results. Snap photos, dictate notes, and compare your iterations to perfect your craft.',
+  },
+];
+
+const PHASES: Phase[] = STEPS.map((s, i) => ({ id: s.id, label: s.label, stepIndices: [i] }));
 
 interface OnboardingModalProps {
+  open: boolean;
   onClose: () => void;
 }
 
-export default function OnboardingModal({ onClose }: OnboardingModalProps) {
+export default function OnboardingModal({ open, onClose }: OnboardingModalProps) {
   const [step, setStep] = useState(0);
-
-  const steps = [
-    {
-      title: "Browse & Discover",
-      icon: <Search className="w-10 h-10 text-ink" />,
-      description: "Search across all recipes instantly. Use folders and tags to organize your cookbook exactly how you like."
-    },
-    {
-      title: "Cook Hands-Free",
-      icon: <Zap className="w-10 h-10 text-ink" />,
-      description: "Enter The Kitchen Lab. Control the recipe with your voice, wave to advance steps, and sync timers across devices."
-    },
-    {
-      title: "Log Your Bakes",
-      icon: <Book className="w-10 h-10 text-ink" />,
-      description: "Record your results. Snap photos, dictate notes, and compare your iterations to perfect your craft."
-    }
-  ];
-
-  const handleNext = () => {
-    if (step < steps.length - 1) {
-      setStep(step + 1);
-    } else {
-      onClose();
-    }
-  };
+  const last = step === STEPS.length - 1;
+  const current = STEPS[step];
 
   return (
-    <div className="scrim fixed inset-0 z-[200] flex items-center justify-center p-4">
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: 12 }}
-        transition={{ duration: 0.15 }}
-        className="relative w-full max-w-lg overflow-hidden rounded-panel border border-rule bg-panel"
-      >
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 z-10 text-ink-muted transition-colors hover:text-ink"
-          aria-label="Close"
-        >
-          <X className="w-5 h-5" />
-        </button>
-
-        <div className="p-8 pb-4 text-center">
-          <div className="mb-6 flex justify-center">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={step}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.15 }}
-              >
-                {steps[step].icon}
-              </motion.div>
-            </AnimatePresence>
-          </div>
-
-          <div className="h-24">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={step}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.15 }}
-              >
-                <h2 className="font-faceplate mb-3 text-2xl text-ink">{steps[step].title}</h2>
-                <p className="text-ink-muted leading-relaxed">
-                  {steps[step].description}
-                </p>
-              </motion.div>
-            </AnimatePresence>
-          </div>
-        </div>
-
-        <div className="flex flex-col items-center border-t border-rule p-8 pt-6">
-          <div className="mb-6 flex gap-2" role="tablist" aria-label="Onboarding progress">
-            {steps.map((_, i) => (
-              <span
-                key={i}
-                role="tab"
-                aria-selected={i === step}
-                className={`h-1.5 transition-all ${i === step ? 'w-6 bg-ink' : 'w-1.5 bg-rule'}`}
-              />
-            ))}
-          </div>
-
-          <Button variant="primary" size="lg" className="w-full" onClick={handleNext}>
-            {step === steps.length - 1 ? (
-              <>Let's Bake <CheckCircle2 className="w-5 h-5" /></>
-            ) : (
-              'Next'
-            )}
+    <Sheet
+      open={open}
+      onClose={onClose}
+      title={`Getting started · ${step + 1} of ${STEPS.length}`}
+      size="md"
+      layer={200}
+      footer={
+        <>
+          {step === 0 ? (
+            <Button variant="ghost" size="lg" onClick={onClose}>
+              Skip
+            </Button>
+          ) : (
+            <Button variant="ghost" size="lg" onClick={() => setStep(step - 1)}>
+              Back
+            </Button>
+          )}
+          <Button
+            variant="primary"
+            size="lg"
+            className="min-w-32"
+            onClick={() => (last ? onClose() : setStep(step + 1))}
+          >
+            {last ? "Let's Bake" : 'Next'}
           </Button>
+        </>
+      }
+    >
+      <div className="flex flex-col gap-6">
+        <StepRow phases={PHASES} activeStep={step} label="Tour" />
+        <div className="flex flex-col gap-2" aria-live="polite">
+          <h3 className="font-faceplate text-2xl leading-tight text-ink">{current.title}</h3>
+          <p className="max-w-prose leading-relaxed text-ink-muted">{current.description}</p>
         </div>
-      </motion.div>
-    </div>
+      </div>
+    </Sheet>
   );
 }

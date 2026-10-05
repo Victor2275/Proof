@@ -56,13 +56,15 @@ describe('derivePhases', () => {
   });
 
   it('groups consecutive steps of one phase into a single key', () => {
+    // A bread names what makes it rise; without the levain this would read generic.
     const phases = derivePhases([
+      'Mix the ripe levain into the dough.',
       'Bulk ferment for 4 hours.',
       'Stretch and fold once an hour.',
       'Bake at 230C for 35 minutes.',
     ]);
     const bulk = phases.find((p) => p.id === 'bulk');
-    expect(bulk?.stepIndices).toEqual([0, 1]);
+    expect(bulk?.stepIndices).toEqual([1, 2]);
   });
 
   it('falls back to a generic vocabulary for a recipe that is not bread', () => {
@@ -127,5 +129,85 @@ describe('derivePhasesWithReading', () => {
   it('reports no reading at all for a recipe with no instructions', () => {
     expect(derivePhasesWithReading([]).reading).toBe('none');
     expect(derivePhasesWithReading(undefined).reading).toBe('none');
+  });
+
+  /*
+   * Regressions from the live library. The previous rule filed eighteen of its
+   * recipes as bread — a beef arepa opened baking mode on LEVAIN — NOW — while
+   * the Danish rye read generic. A bread is a leavened dough that rises.
+   */
+  describe('against the live library', () => {
+    it('does not read a beef arepa as bread because its dough is divided and shaped', () => {
+      const result = derivePhasesWithReading([
+        'Cook the meat: place the flank steak in a pot with broth and cook over low heat for about 2 hours.',
+        'Shred the meat using two forks.',
+        'Make the dough: in a bowl, mix the cornmeal with warm water and salt.',
+        'Form the arepas: divide the dough into 6 portions and shape into balls.',
+        'Cook the arepas on a griddle over medium heat.',
+        'Fill: slice the arepas open and fill with the shredded beef.',
+      ]);
+      expect(result.reading).toBe('generic');
+      expect(result.phases.map((p) => p.id)).not.toContain('levain');
+    });
+
+    it('does not treat a steak marinated overnight as proofed', () => {
+      const result = derivePhasesWithReading([
+        'Marinate the steak overnight.',
+        'Mix the breadcrumbs and shape into patties.',
+        'Fry until golden.',
+      ]);
+      expect(result.reading).toBe('generic');
+    });
+
+    it('reads a home-yeasted bread that says "let it rise" rather than "bulk"', () => {
+      const result = derivePhasesWithReading([
+        'Dissolve the yeast in the warm milk.',
+        'Knead for 10 minutes until smooth.',
+        'Cover and leave to rise until doubled.',
+        'Shape into a braid.',
+        'Bake at 190C for 30 minutes.',
+      ]);
+      expect(result.reading).toBe('bread');
+      expect(result.phases.map((p) => p.id)).toEqual(['mix', 'bulk', 'shape', 'bake']);
+    });
+
+    it('files an unnamed opening step under the phase the bread actually starts in, not Levain', () => {
+      const result = derivePhasesWithReading([
+        'Warm the milk.',
+        'Add the yeast and knead the dough.',
+        'Let the dough rise for an hour.',
+        'Bake until golden.',
+      ]);
+      expect(result.phases[0]).toEqual({ id: 'mix', label: 'Mix', stepIndices: [0, 1] });
+    });
+
+    it('counts a rise named in a step that was filed under an earlier phase', () => {
+      // "Mix … shape … let rise" is filed under Mix, but it still proves the rise.
+      const result = derivePhasesWithReading([
+        'Mix the semolina, sugar, yeast and salt.',
+        'Mix the dough, shape into a round loaf and let rise for 1 hour.',
+        'Bake until golden brown.',
+      ]);
+      expect(result.reading).toBe('bread');
+    });
+
+    it('reads a bread whose steps all collapse into one phase as generic', () => {
+      // The first step mentions the oven, assignment cannot move backwards,
+      // and every step would be "Bake" — a one-key row that says nothing.
+      const result = derivePhasesWithReading([
+        'Preheat the oven to 220C.',
+        'Combine the flour and yeast.',
+        'Let it rise until doubled.',
+      ]);
+      expect(result.reading).toBe('generic');
+    });
+
+    it('keeps an unnamed opening step in Prep for a recipe that is not bread', () => {
+      const result = derivePhasesWithReading([
+        'Put the prawns in a bowl.',
+        'Heat the wok and fry for two minutes.',
+      ]);
+      expect(result.phases[0]).toEqual({ id: 'prep', label: 'Prep', stepIndices: [0] });
+    });
   });
 });

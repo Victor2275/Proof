@@ -396,3 +396,19 @@ describe('retired preferences', () => {
     expect(offenders(/var\(--accent-gold\)|var\(--paper-bg\)|var\(--sidebar-bg\)/)).toEqual([]);
   });
 });
+
+/*
+ * Browsers define env(safe-area-inset-top) as 0 rather than leaving it
+ * undefined, so a fallback inside env() never applies outside Capacitor — the
+ * old `.pt-safe` put every phone-browser headline flush against the top edge.
+ */
+describe('safe-area padding', () => {
+  it('adds a floor to the top inset instead of relying on its fallback', () => {
+    const rule = indexCss.match(/@utility pt-safe\s*\{([^}]*)\}/)?.[1] ?? '';
+    expect(rule).toMatch(/calc\(env\(safe-area-inset-top[^)]*\)\s*\+\s*[\d.]+rem\)/);
+  });
+
+  it('is a real utility, so a breakpoint beside it can override it', () => {
+    expect(indexCss).not.toMatch(/^\s*\.pt-safe\s*\{/m);
+  });
+});

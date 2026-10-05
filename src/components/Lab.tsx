@@ -11,6 +11,8 @@ import {
   InstrumentRow,
   Meter,
   Sheet,
+  Menu,
+  MenuItem,
 } from './ui';
 import { derivePhases } from '../lib/phases';
 import AIReviewSheet from './AIReviewSheet';
@@ -177,6 +179,14 @@ export default function Lab() {
             there and is not what you are operating.
           </p>
         </Sheet>
+      </Section>
+
+      <Section name="Menu">
+        <Menu label="Share" trigger={(props) => <Button {...props}>Share</Button>}>
+          <MenuItem onSelect={() => {}}>Copy link</MenuItem>
+          <MenuItem onSelect={() => {}}>QR code</MenuItem>
+          <MenuItem onSelect={() => {}}>Export PDF</MenuItem>
+        </Menu>
       </Section>
 
       <Section name="AI review">

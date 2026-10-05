@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Sheet } from './Sheet';
@@ -209,5 +209,18 @@ describe('Sheet', () => {
     );
     expect(screen.getByRole('button', { name: 'Attach' })).toBeInTheDocument();
     expect(screen.getByText('Pick a recipe.')).toBeInTheDocument();
+  });
+
+  it('gives focus to a named control instead of the first, when asked', async () => {
+    function WithField() {
+      const ref = useRef<HTMLInputElement>(null);
+      return (
+        <Sheet open onClose={vi.fn()} title="Admin access" initialFocus={ref}>
+          <input ref={ref} aria-label="PIN" />
+        </Sheet>
+      );
+    }
+    render(<WithField />);
+    await waitFor(() => expect(screen.getByRole('textbox', { name: 'PIN' })).toHaveFocus());
   });
 });

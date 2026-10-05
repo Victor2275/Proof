@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, afterEach } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import BottomNav from './BottomNav';
@@ -20,28 +20,30 @@ describe('BottomNav', () => {
     expect(screen.queryByText('New Recipe')).not.toBeInTheDocument();
   });
 
-  it('offers Analytics, Grocery List, Notes and Settings only behind More', () => {
+  it('offers Analytics, Grocery List, Notes and Settings only behind More', async () => {
     renderNav();
-    // The sheet stays mounted (for the slide transition) but inert while
-    // closed, so its content exists in the DOM without being reachable.
-    const sheet = screen.getByRole('dialog', { hidden: true });
-    expect(sheet).toHaveAttribute('inert');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.queryByText('Analytics')).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: /more/i }));
 
-    expect(sheet).not.toHaveAttribute('inert');
+    expect(await screen.findByRole('dialog', { name: 'More' })).toBeInTheDocument();
     ['Analytics', 'Grocery List', 'General Notes', 'Settings'].forEach((label) =>
       expect(screen.getByText(label)).toBeInTheDocument(),
     );
   });
 
-  it('closes the More sheet from its own close button', () => {
+  it('closes the More sheet from its own close button, and on Escape', async () => {
     renderNav();
-    fireEvent.click(screen.getByRole('button', { name: /more/i }));
-    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    const more = screen.getByRole('button', { name: /more/i });
+    fireEvent.click(more);
+    fireEvent.click(await screen.findByRole('button', { name: /close/i }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
 
-    fireEvent.click(screen.getByRole('button', { name: /close/i }));
-    expect(screen.getByRole('dialog')).toHaveClass('translate-y-full');
+    fireEvent.click(more);
+    await screen.findByRole('dialog', { name: 'More' });
+    fireEvent.keyDown(document, { key: 'Escape' });
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
 
   it('provides a floating action button to start a new recipe', () => {

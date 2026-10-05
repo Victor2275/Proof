@@ -37,12 +37,23 @@ const BREAD_VOCABULARY: PhaseDefinition[] = [
   { id: 'levain', label: 'Levain', pattern: /\b(levain|starter|pre-?ferment|poolish|biga|sponge)\b/i },
   { id: 'autolyse', label: 'Autolyse', pattern: /\b(autolyse|autolysis)\b/i },
   { id: 'mix', label: 'Mix', pattern: /\b(mix|combine|knead|incorporat\w*|dough hook|add the salt)\b/i },
-  { id: 'bulk', label: 'Bulk', pattern: /\b(bulk|first rise|stretch and fold|stretch & fold|coil fold|lamination)\b/i },
+  // Home recipes name a rise rather than a bulk ferment: "let the dough rise",
+  // "leave to rise until doubled". Bulk and Proof share that wording on
+  // purpose — assignment only moves forward, so a rise before shaping lands in
+  // Bulk and the same words after it land in Proof.
+  { id: 'bulk', label: 'Bulk', pattern: /\b(bulk|first rise|stretch and fold|stretch & fold|coil fold|lamination|let (?:\w+ ){0,2}rise|leave (?:\w+ ){0,2}to rise|rise (?:in|until|for)|until doubled|doubled in (?:size|volume))\b/i },
   { id: 'shape', label: 'Shape', pattern: /\b(shape|pre-?shape|divide|scale into|round the|form into)\b/i },
-  { id: 'proof', label: 'Proof', pattern: /\b(proof|prove|final rise|second rise|retard|banneton|couche|overnight)\b/i },
+  // Not "overnight": that names a duration, not a phase. A steak marinated
+  // overnight was reading as proofed, which turned dinners into breads.
+  { id: 'proof', label: 'Proof', pattern: /\b(proof|prove|final rise|second rise|retard|banneton|couche|let (?:\w+ ){0,2}rise|leave (?:\w+ ){0,2}to rise|rise (?:in|until|for|again)|until (?:puffy|doubled))\b/i },
   { id: 'bake', label: 'Bake', pattern: /\b(bake|oven|score|dutch oven|steam|preheat)\b/i },
   { id: 'rest', label: 'Rest', pattern: /\b(cool|wire rack|slice|rest before|serve)\b/i },
 ];
+
+/** What makes a dough rise. Without one of these a recipe is not a bread bake. */
+// "Starter" alone is also a course of a meal, so it counts only when it is
+// plainly the culture: fed, ripe, active, bubbly, yours.
+const LEAVEN = /\b(yeast|levain|sourdough|poolish|biga|(?:active|ripe|fed|bubbly|your) starter)\b/i;
 
 /** Fallback for anything that is not a bread bake. */
 const GENERIC_VOCABULARY: PhaseDefinition[] = [
@@ -68,10 +79,29 @@ interface Assignment {
   matched: Set<string>;
 }
 
-function assign(instructions: string[], vocabulary: PhaseDefinition[]): Assignment {
+function assign(
+  instructions: string[],
+  vocabulary: PhaseDefinition[],
+  { leadIntoFirstMatch }: { leadIntoFirstMatch: boolean },
+): Assignment {
   const byPhase = new Map<string, number[]>();
   const matched = new Set<string>();
+  const add = (id: string, index: number) => {
+    const existing = byPhase.get(id);
+    if (existing) existing.push(index);
+    else byPhase.set(id, [index]);
+  };
+
   let floor = 0;
+  /*
+   * Steps before the first one that names anything. In the bread vocabulary
+   * they used to fall into its first phase, Levain — a specific claim — so
+   * "Dissolve the yeast in the milk" opened a challah on LEVAIN — NOW. There
+   * they belong to the phase the recipe actually starts in: the first one its
+   * own words name. The generic vocabulary's first phase is Prep, which is an
+   * honest home for an unnamed opening step, so it keeps them.
+   */
+  let leading: number[] = [];
 
   instructions.forEach((instruction, index) => {
     let hit = -1;
@@ -82,18 +112,24 @@ function assign(instructions: string[], vocabulary: PhaseDefinition[]): Assignme
       }
     }
 
+    if (leadIntoFirstMatch && hit === -1 && matched.size === 0) {
+      leading.push(index);
+      return;
+    }
+
     // No match at or after the floor: the step continues whatever came before.
-    // Leading steps that match nothing fall into the first phase, which is why
-    // an inherited assignment is never counted as evidence below.
+    // An inherited assignment is never counted as evidence below.
     const resolved = hit === -1 ? floor : hit;
     floor = resolved;
-
     const { id } = vocabulary[resolved];
     if (hit !== -1) matched.add(id);
-    const existing = byPhase.get(id);
-    if (existing) existing.push(index);
-    else byPhase.set(id, [index]);
+    leading.forEach((i) => add(id, i));
+    leading = [];
+    add(id, index);
   });
+
+  // Nothing named a phase at all: the whole recipe is its first phase.
+  leading.forEach((i) => add(vocabulary[0].id, i));
 
   return { byPhase, matched };
 }
@@ -135,22 +171,37 @@ export function derivePhasesWithReading(
 ): DerivedPhases {
   if (!instructions || instructions.length === 0) return { phases: [], reading: 'none' };
 
-  const bread = assign(instructions, BREAD_VOCABULARY);
+  const bread = assign(instructions, BREAD_VOCABULARY, { leadIntoFirstMatch: true });
   /*
-   * `mix`, `bake` and `rest` appear in almost any recipe, so matching them
-   * proves nothing. Bread wins only when the text names something a bread bake
-   * actually has — a levain, an autolyse, a bulk, a shaping, a proof — and
-   * names at least two phases outright. Without that a chicken soup would be
-   * assigned a levain it does not have.
+   * A bread is a leavened dough that rises. That is the whole test: a
+   * leavening agent named somewhere in the method, and a step that is a
+   * fermentation — a levain, an autolyse, a bulk, a proof.
+   *
+   * Phase words on their own prove nothing. `mix`, `bake` and `rest` appear in
+   * almost any recipe; arepas, dumplings and kebabs are all divided and shaped;
+   * a steak can sit overnight. The looser rule this replaced filed eighteen of
+   * the live library's recipes as bread and most of them were dinners, while
+   * the Danish rye read generic because it said "let the dough rise" rather
+   * than "bulk". Below the test the recipe reads generic, which is true of it.
+   *
+   * The rise is looked for in any step, not only in the steps assignment
+   * credited: "Mix the dough, shape it and let it rise" is filed under Mix,
+   * because a step takes its earliest phase, but it still proves a rise.
+   *
+   * And a bread whose steps all land in one phase is no reading at all. When
+   * the first step happens to mention cooling the milk or preheating the oven,
+   * assignment cannot move backwards, so every step after it becomes "Rest" or
+   * "Bake" — a one-key row that says nothing true about the bake.
    */
-  const signature = ['levain', 'autolyse', 'bulk', 'shape', 'proof'];
-  const readsAsBread =
-    bread.matched.size >= 2 && signature.some((id) => bread.matched.has(id));
-  if (readsAsBread) {
-    return { phases: toPhases(bread.byPhase, BREAD_VOCABULARY), reading: 'bread' };
+  const fermentation = BREAD_VOCABULARY.filter((d) => ['levain', 'autolyse', 'bulk', 'proof'].includes(d.id));
+  const leavened = instructions.some((step) => LEAVEN.test(step));
+  const rises = instructions.some((step) => fermentation.some((d) => d.pattern.test(step)));
+  const breadPhases = toPhases(bread.byPhase, BREAD_VOCABULARY);
+  if (leavened && rises && breadPhases.length >= 2) {
+    return { phases: breadPhases, reading: 'bread' };
   }
 
-  const generic = assign(instructions, GENERIC_VOCABULARY);
+  const generic = assign(instructions, GENERIC_VOCABULARY, { leadIntoFirstMatch: false });
   return { phases: toPhases(generic.byPhase, GENERIC_VOCABULARY), reading: 'generic' };
 }
 

@@ -33,9 +33,11 @@ describe('Gallery Component', () => {
   it('groups a recipe\'s bakes into one row and counts the attempts', async () => {
     render(<MemoryRouter><Gallery /></MemoryRouter>);
 
+    // The first test to wait on the fetch pays for the cold start; under the full
+    // suite's parallel load that overran waitFor's one-second default.
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: 'Sourdough' })).toBeInTheDocument();
-    });
+    }, { timeout: 5000 });
 
     // Three Sourdough logs exist but one has no photograph, so the row is two
     // attempts — the count has to match what is actually drawn.
