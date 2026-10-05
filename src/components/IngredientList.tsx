@@ -20,6 +20,8 @@ import { Button, cn } from './ui';
 interface IngredientListProps {
   recipe: Recipe;
   scaleMultiplier: number;
+  /** Drawn as a scale bank under the heading when given. */
+  setScaleMultiplier?: (multiplier: number) => void;
   showBakersMath: boolean;
   setShowBakersMath: (val: boolean) => void;
   inPantryMap: Record<string, boolean>;
@@ -32,6 +34,7 @@ interface IngredientListProps {
 export default function IngredientList({
   recipe,
   scaleMultiplier,
+  setScaleMultiplier,
   showBakersMath,
   setShowBakersMath,
   inPantryMap,
@@ -66,6 +69,30 @@ export default function IngredientList({
         </div>
       </div>
 
+      {/* The scale bank sits on the quantities it changes. It used to sit
+        * above the title, the first thing on the page, setting a value for a
+        * list the baker could not yet see. A multiplier switch: one engaged at
+        * a time, and the recipe as written is 1x. A PDF prints the quantities,
+        * not the switch. */}
+      {setScaleMultiplier ? (
+        <div className="flex items-center gap-3" role="group" aria-label="Scale recipe" data-html2canvas-ignore="true">
+          <span className="label-silkscreen text-silkscreen">Scale</span>
+          <div className="flex gap-px">
+            {[0.5, 1, 2, 3].map((m) => (
+              <Button
+                key={m}
+                variant="secondary"
+                size="sm"
+                engaged={scaleMultiplier === m}
+                onClick={() => setScaleMultiplier(m)}
+              >
+                {m}x
+              </Button>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
       {showBakersMath && !math.ok ? (
         <p className="text-sm text-ink-muted" role="status">{bakersMathUnavailable(math)}</p>
       ) : null}
@@ -91,14 +118,19 @@ export default function IngredientList({
                 />
               </label>
 
+              {/* The quantity column is a fixed width so the figures line up. A
+                * long unit ("tablespoon heaped", "cm piece") wraps under its
+                * figure inside that width instead of running into the name. */}
               <span
                 className={cn(
-                  'w-16 shrink-0 text-right font-mono text-sm tabular-nums sm:w-20',
+                  'flex w-[4.5rem] shrink-0 flex-wrap items-baseline justify-end gap-x-1 text-right font-mono text-sm tabular-nums sm:w-24',
                   checked ? 'text-ink-muted line-through' : 'text-ink',
                 )}
               >
-                {Number((ing.quantity * scaleMultiplier).toFixed(2))}
-                <span className="ml-1 text-ink-muted">{ing.unit}</span>
+                <span>{Number((ing.quantity * scaleMultiplier).toFixed(2))}</span>
+                <span className="min-w-0 text-xs leading-snug text-ink-muted hyphens-auto [overflow-wrap:anywhere]">
+                  {ing.unit}
+                </span>
               </span>
 
               {showBakersMath && math.ok ? (

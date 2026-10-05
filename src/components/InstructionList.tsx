@@ -24,7 +24,11 @@ export default function InstructionList({ recipe }: InstructionListProps) {
 
   return (
     <section className="flex flex-col gap-4">
-      <h2 className="label-silkscreen border-b border-rule pb-2">Method</h2>
+      {/* Held to the height of the controls in the ingredients head, so where
+        * the two columns sit side by side their rules draw one line. */}
+      <h2 className="label-silkscreen border-b border-rule pb-2">
+        <span className="flex min-h-9 items-center">Method</span>
+      </h2>
 
       <div className="flex flex-col gap-6">
         {phases.map((phase) => (

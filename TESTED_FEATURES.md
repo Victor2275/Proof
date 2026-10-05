@@ -98,7 +98,17 @@ This is a 1-to-1 mirror of CURRENT_FEATURES.md. Use checkboxes to track manual t
 - [ ] **Method**: steps grouped under phase headings with numbering matching Baking Mode.
 - [ ] **Ingredients**: checkboxes, baker's percentages, pantry lamps and the substitutions button all behave as before.
 - [ ] **Controls**: share/QR/PDF, favourite, edit, start recipe and schedule bake all still work from both the desktop and mobile menus.
-- [ ] **Start recipe menu**: opens fully rather than being clipped by the control row.
+- [ ] **Start recipe menu**: opens fully rather than being clipped by the transport strip.
+- [ ] **Layout pass — reading order**: the title comes first; the scale bank sits under the Ingredients heading and is missing from an exported PDF; folder and difficulty sit beside the tags, not above the title.
+- [ ] **Transport strip**: Recipe / Previous makes and (from `md`) Start recipe sit in one ruled strip below the masthead; at 375px both view keys are fully visible with no sideways scroll.
+- [ ] **Masthead persists**: switching to Previous makes keeps the title, plate and readouts above the history.
+- [ ] **Wide masthead**: at 1280px and up the step row sits in the plate's column on the plate's bottom edge; at 768 and 1024 it runs full width under the plate.
+- [ ] **Lab notes with ingredients**: lab notes follow the ingredient list (beside the method when two-column), and the Ingredients and Method heads' rules line up.
+- [ ] **Schedule from anywhere**: on Previous makes, or scrolled deep into the method, Start → Schedule bake switches to the recipe view and brings the schedule into view.
+- [ ] **Missing recipe**: `/recipe/<unknown id>` shows the 404 panel with Back to the cookbook.
+- [ ] **Long units**: a unit like "tablespoon heaped" stays inside the quantity column at 375px and does not overlap the name.
+- [ ] **Make sheet**: titled "Make N" like its tile; the bake date shows day, month, year and time without seconds.
+- [ ] **Scheduler title**: reads "Reverse bake schedule" and fits on one line at 375px.
 
 ## 6a. Recipe Editor and Notes (Phase 6)
 - [ ] **Shared `Sheet` primitive**: Tab stays inside an open sheet, Escape closes it, focus returns to the control that opened it, and the page behind does not scroll.

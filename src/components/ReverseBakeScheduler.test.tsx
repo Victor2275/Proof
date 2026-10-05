@@ -23,7 +23,7 @@ const mockRecipe = {
 describe('ReverseBakeScheduler Component', () => {
   it('renders target completion time input and title', () => {
     render(<ReverseBakeScheduler recipe={mockRecipe} />);
-    expect(screen.getByText(/Reverse Bake Timeline Scheduler/i)).toBeDefined();
+    expect(screen.getByText(/Reverse bake schedule/i)).toBeDefined();
     expect(screen.getByText(/Target Completion Time/i)).toBeDefined();
   });
 

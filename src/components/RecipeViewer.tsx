@@ -1,9 +1,10 @@
-import { useState, useEffect, lazy, Suspense, useMemo } from 'react';
+import { useState, useEffect, useRef, lazy, Suspense, useMemo } from 'react';
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { api, type BakeLog } from '../lib/api';
 import { useRecipe, useRecipeBakeLogs, usePantry, useUpdateRecipe } from '../lib/queries';
 import { updateLocalBakeLog, deleteLocalBakeLog } from '../lib/localDB';
 import ReverseBakeScheduler from './ReverseBakeScheduler';
+import NotFound from './NotFound';
 import AISubstitutionsModal from './AISubstitutionsModal';
 import BakeLogsGrid from './BakeLogsGrid';
 import RecipeHeader from './RecipeHeader';
@@ -67,6 +68,7 @@ export default function RecipeViewer() {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showQrModal, setShowQrModal] = useState(false);
   const [showReverseScheduler, setShowReverseScheduler] = useState(false);
+  const schedulerRef = useRef<HTMLDivElement>(null);
   const [showMobileStartModal, setShowMobileStartModal] = useState(false);
   const [heroImage, setHeroImage] = useState<string>('');
   const [showInstagramExporter, setShowInstagramExporter] = useState(false);
@@ -135,6 +137,23 @@ export default function RecipeViewer() {
     const timer = setTimeout(() => setCopyNotice(''), 2500);
     return () => clearTimeout(timer);
   }, [copyNotice]);
+
+  /*
+   * The schedule belongs to the recipe view, and Start can be pressed from
+   * either view and from anywhere down a long method. Opening it switches to
+   * the recipe view and brings the schedule into sight; otherwise the press
+   * did nothing the baker could see.
+   */
+  const openScheduler = () => {
+    setActiveTab('recipe');
+    setShowReverseScheduler(true);
+  };
+
+  useEffect(() => {
+    if (!showReverseScheduler) return;
+    const still = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    schedulerRef.current?.scrollIntoView?.({ behavior: still ? 'auto' : 'smooth', block: 'start' });
+  }, [showReverseScheduler]);
 
   const handleCloseMakeDetails = () => {
     setSelectedMake(null);
@@ -240,35 +259,56 @@ export default function RecipeViewer() {
     setShowMobileMenu(false);
   };
 
+  /*
+   * The skeleton draws the page it is standing in for: the top bar, the title,
+   * the plate beside its readouts, the transport strip, and the two columns.
+   */
   if (loading) return (
-    <div className="@container max-w-4xl mx-auto space-y-10 pb-20 pt-6">
-      <div className="flex justify-between items-center mb-6">
-        <Skeleton className="h-8 w-48" />
-        <div className="hidden md:flex gap-3">
-          <Skeleton className="h-8 w-24" />
-          <Skeleton className="h-8 w-24" />
+    <div className="@container mx-auto flex max-w-4xl flex-col pb-20 md:pt-4">
+      <div className="flex h-11 items-center justify-between">
+        <Skeleton className="h-4 w-24" />
+        <div className="hidden gap-3 md:flex">
+          <Skeleton className="h-9 w-24" />
+          <Skeleton className="h-9 w-24" />
         </div>
       </div>
-      <Skeleton className="h-[40vh] w-full rounded-2xl" />
-      <div className="grid grid-cols-1 @3xl:grid-cols-2 gap-12 pt-8">
-        <div className="space-y-4">
-          <Skeleton className="h-6 w-32 mb-6" />
+      <Skeleton className="mt-8 h-10 w-3/4 sm:h-12" />
+      <div className="mt-6 grid grid-cols-[8rem_minmax(0,1fr)] gap-x-4 sm:grid-cols-[14rem_minmax(0,1fr)] sm:gap-x-8">
+        <Skeleton className="aspect-square w-full" />
+        <div className="flex flex-col gap-4">
+          <Skeleton className="h-10 w-40 max-w-full" />
+          <Skeleton className="h-6 w-32 max-w-full" />
+        </div>
+      </div>
+      <Skeleton className="mt-8 h-16 w-full" />
+      <div className="mt-8 grid grid-cols-1 gap-12 @3xl:grid-cols-2">
+        <div className="flex flex-col gap-4">
+          <Skeleton className="h-9 w-full" />
           {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
         </div>
-        <div className="space-y-4">
-          <Skeleton className="h-6 w-32 mb-6" />
+        <div className="flex flex-col gap-4">
+          <Skeleton className="h-9 w-full" />
           {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-20 w-full" />)}
         </div>
       </div>
     </div>
   );
-  if (!recipe) return <div className="text-center py-20 text-ink-muted">Recipe not found.</div>;
+  // The same unlit panel as any address that is not wired to anything: it
+  // names the problem and the way back, which a bare sentence did not.
+  if (!recipe) return <NotFound />;
 
+  /*
+   * The page reads top to bottom in the order a baker uses it: which recipe
+   * this is, then the transport strip that switches the view and starts the
+   * bake, then the view itself. The masthead stays when the view changes. The
+   * previous makes are this recipe's history, and the history used to open
+   * with no title above it at all.
+   */
   return (
-    <div className="@container max-w-4xl mx-auto space-y-10 pb-20">
-      
-      {/* Top Bar */}
-      <div className="flex justify-between items-start md:items-center gap-4 pb-6">
+    <div className="@container mx-auto flex max-w-4xl flex-col pb-20 md:pt-4">
+
+      {/* Top bar. On a wide screen its centre line is the sidebar wordmark's. */}
+      <div className="flex h-11 items-center justify-between gap-4">
         {/* The recipe's own title is the heading of this page; a second
           * "VIEW RECIPE" above it named the route rather than the thing. */}
         <Link to="/" className="label-silkscreen text-ink-muted hover:text-ink">
@@ -276,7 +316,7 @@ export default function RecipeViewer() {
         </Link>
         
         {/* Desktop Actions */}
-        <div className="hidden md:flex flex-wrap items-center gap-3">
+        <div className="hidden md:flex items-center gap-3">
           <Menu
             label="Share"
             align="right"
@@ -320,37 +360,23 @@ export default function RecipeViewer() {
       {/* The export node needs an opaque background for html2canvas, but it is
         * the page itself, not a panel — painting it panel-coloured laid a
         * lighter slab behind the whole recipe that lined up with nothing. */}
-      <div id="recipe-export-node" className="bg-ground text-ink">
-        {/* Top Controls */}
-        {/* `overflow-x-auto` is what lets the control bank scroll on a phone,
-          * but it also makes this element a clipping context — which cut the
-          * Start Recipe menu off at the row's own bottom edge. The menu only
-          * exists from `md` up, which is exactly where the row no longer needs
-          * to scroll, so the overflow is released at that breakpoint. */}
-        <div className="no-scrollbar flex flex-nowrap items-center gap-4 overflow-x-auto pb-6 md:flex-wrap md:overflow-x-visible" data-html2canvas-ignore="true">
-          {/* The scale bank. A multiplier switch: one engaged at a time, and
-            * the recipe as written is 1x. */}
-          <div className="flex shrink-0 items-center gap-2" role="group" aria-label="Scale recipe">
-            <span className="label-silkscreen text-silkscreen">Scale</span>
-            <div className="flex gap-px">
-              {[0.5, 1, 2, 3].map(m => (
-                <Button
-                  key={m}
-                  variant="secondary"
-                  size="sm"
-                  engaged={scaleMultiplier === m}
-                  onClick={() => setScaleMultiplier(m)}
-                >
-                  {m}x
-                </Button>
-              ))}
-            </div>
-          </div>
+      <div id="recipe-export-node" className="mt-8 bg-ground text-ink">
+        <RecipeHeader recipe={recipe} heroImage={heroImage} scaleMultiplier={scaleMultiplier} />
 
-          <div className="flex shrink-0 gap-px">
+        {/*
+          * The transport strip: which view, and play. It sits between the
+          * masthead and the view it switches, so the switch is next to what it
+          * changes, and Start follows the step row whose pattern it runs. Both
+          * views fit at 375px without scrolling sideways. The old bank
+          * scrolled, and on a phone the Previous makes key started off-screen.
+          */}
+        <div
+          className="mt-8 flex items-center justify-between gap-4 border-y border-rule py-3"
+          data-html2canvas-ignore="true"
+        >
+          <div className="flex gap-px" role="group" aria-label="View">
             <Button
               variant="secondary"
-              size="sm"
               engaged={activeTab === 'recipe'}
               onClick={() => setActiveTab('recipe')}
             >
@@ -358,7 +384,6 @@ export default function RecipeViewer() {
             </Button>
             <Button
               variant="secondary"
-              size="sm"
               engaged={activeTab === 'history'}
               onClick={() => setActiveTab('history')}
             >
@@ -367,77 +392,81 @@ export default function RecipeViewer() {
           </div>
 
           {/* The only solid signal-red control on the page: the one that
-            * starts something happening. */}
+            * starts something happening. On a phone the same key is the fixed
+            * square in the corner. */}
           <Menu
             label="Start recipe"
             align="right"
             className="hidden shrink-0 md:block"
             trigger={(props) => (
-              <Button variant="primary" size="sm" {...props}>
+              <Button variant="primary" {...props}>
                 <Play className="w-4 h-4" fill="currentColor" aria-hidden="true" /> Start recipe
               </Button>
             )}
           >
             <MenuItem to={`/recipe/${recipe._id}/bake`}>Start now</MenuItem>
-            <MenuItem onSelect={() => setShowReverseScheduler(true)}>Schedule bake</MenuItem>
+            <MenuItem onSelect={openScheduler}>Schedule bake</MenuItem>
           </Menu>
         </div>
 
-
-
       {activeTab === 'recipe' ? (
         <>
-          <RecipeHeader recipe={recipe} heroImage={heroImage} scaleMultiplier={scaleMultiplier} />
-
+          {/* Opened from the transport strip, so it unfolds right under it. */}
           {showReverseScheduler && (
-            <div className="mt-6 mb-2">
+            <div ref={schedulerRef} className="mt-8 scroll-mt-4">
               <ReverseBakeScheduler recipe={recipe} onClose={() => setShowReverseScheduler(false)} />
             </div>
           )}
 
-          {/* Ingredients and Steps */}
-          <div className="grid grid-cols-1 @3xl:grid-cols-2 gap-12 pt-8">
-            <IngredientList 
-              recipe={recipe}
-              scaleMultiplier={scaleMultiplier}
-              showBakersMath={showBakersMath}
-              setShowBakersMath={setShowBakersMath}
-              inPantryMap={inPantryMap}
-              checkedIngredients={checkedIngredients}
-              toggleCheck={toggleCheck}
-              setAiSubstituteIngredient={setAiSubstituteIngredient}
-              handleExportGroceryList={handleExportGroceryList}
-            />
+          {/*
+            * Ingredients and method. The lab notes travel with the ingredients:
+            * they say what the baker would change ("half the salt next time"),
+            * so they are read before the method, not after it. Side by side,
+            * they also fill the ingredient column, which a short list left
+            * empty beside a long method.
+            */}
+          <div className="mt-8 grid grid-cols-1 gap-12 @3xl:grid-cols-2">
+            <div className="flex min-w-0 flex-col gap-8">
+              <IngredientList
+                recipe={recipe}
+                scaleMultiplier={scaleMultiplier}
+                setScaleMultiplier={setScaleMultiplier}
+                showBakersMath={showBakersMath}
+                setShowBakersMath={setShowBakersMath}
+                inPantryMap={inPantryMap}
+                checkedIngredients={checkedIngredients}
+                toggleCheck={toggleCheck}
+                setAiSubstituteIngredient={setAiSubstituteIngredient}
+                handleExportGroceryList={handleExportGroceryList}
+              />
+
+              {recipe.labNotes && (
+                <Panel title="Lab notes & iterations">
+                  <pre className="whitespace-pre-wrap font-mono text-sm leading-relaxed text-ink-muted">
+                    {recipe.labNotes}
+                  </pre>
+                </Panel>
+              )}
+            </div>
             <InstructionList recipe={recipe} />
           </div>
-
-          {/* Lab Notes */}
-          {recipe.labNotes && (
-            <div className="pt-10">
-              <Panel title="Lab notes & iterations">
-                <pre className="whitespace-pre-wrap font-mono text-sm leading-relaxed text-ink-muted">
-                  {recipe.labNotes}
-                </pre>
-              </Panel>
-            </div>
-          )}
         </>
       ) : (
-        <div className="space-y-6">
+        <section className="mt-8 flex flex-col gap-6" aria-labelledby="previous-makes-heading">
           <div className="flex items-center justify-between border-b border-rule pb-2">
-            <h2 className="label-silkscreen">Previous makes</h2>
+            <h2 id="previous-makes-heading" className="label-silkscreen">Previous makes</h2>
             <span className="label-silkscreen text-ink-muted">{bakeLogs.length} logged</span>
           </div>
-          
-          <BakeLogsGrid 
-            logs={bakeLogs} 
+
+          <BakeLogsGrid
+            logs={bakeLogs}
             onSelect={(log) => { setSelectedMake(log); setIsEditingDate(false); }}
             onExportInstagram={(log) => {
               setInstagramExportBakeLog(log);
               setShowInstagramExporter(true);
             }}
           />
-        </div>
+        </section>
       )}
       {/* The phone's Start key: the page's one red control, drawn as the same
         * square key as New Recipe, which it sits over in this corner. */}
@@ -464,7 +493,7 @@ export default function RecipeViewer() {
         onClose={handleCloseMakeDetails}
         title={
           selectedMake && bakeLogs.findIndex((l) => l._id === selectedMake._id) !== -1
-            ? `Make #${bakeLogs.length - bakeLogs.findIndex((l) => l._id === selectedMake._id)}`
+            ? `Make ${bakeLogs.length - bakeLogs.findIndex((l) => l._id === selectedMake._id)}`
             : 'Make'
         }
         size="xl"
@@ -553,7 +582,13 @@ export default function RecipeViewer() {
                   <>
                     <PanelRow
                       label="Baked"
-                      value={new Date(selectedMake.date || Date.now()).toLocaleString()}
+                      value={new Date(selectedMake.date || Date.now()).toLocaleString(undefined, {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
                     />
                     <div className="flex flex-wrap items-center gap-2">
                       <Button
@@ -789,7 +824,7 @@ export default function RecipeViewer() {
             size="lg"
             className="w-full"
             onClick={() => {
-              setShowReverseScheduler(true);
+              openScheduler();
               setShowMobileStartModal(false);
             }}
           >

@@ -84,7 +84,7 @@ describe('RecipeViewer — the selected make', () => {
     // The first render in this file pays for importing the whole viewer. Under
     // a full parallel run that alone can pass the default one-second wait, and
     // the assertion then fails on load rather than on behaviour.
-    const dialog = await screen.findByRole('dialog', { name: /Make #1/i }, { timeout: 5000 });
+    const dialog = await screen.findByRole('dialog', { name: /^Make 1$/i }, { timeout: 5000 });
     expect(dialog).toBeInTheDocument();
     expect(screen.getByText('Bananas should be less ripe.')).toBeInTheDocument();
   });
@@ -92,7 +92,7 @@ describe('RecipeViewer — the selected make', () => {
   it('asks before deleting a bake, instead of a browser confirm', async () => {
     const user = userEvent.setup();
     renderViewer();
-    await screen.findByRole('dialog', { name: /Make #1/i });
+    await screen.findByRole('dialog', { name: /^Make 1$/i });
 
     await user.click(screen.getByRole('button', { name: /Delete entry/i }));
     expect(await screen.findByRole('dialog', { name: /Delete this bake/i })).toBeInTheDocument();
@@ -104,7 +104,7 @@ describe('RecipeViewer — the selected make', () => {
   it('deletes the bake once that is confirmed', async () => {
     const user = userEvent.setup();
     renderViewer();
-    await screen.findByRole('dialog', { name: /Make #1/i });
+    await screen.findByRole('dialog', { name: /^Make 1$/i });
 
     await user.click(screen.getByRole('button', { name: /Delete entry/i }));
     await screen.findByRole('dialog', { name: /Delete this bake/i });
@@ -116,7 +116,7 @@ describe('RecipeViewer — the selected make', () => {
   it('latches the personal-best key rather than colouring a pill', async () => {
     const user = userEvent.setup();
     renderViewer();
-    await screen.findByRole('dialog', { name: /Make #1/i });
+    await screen.findByRole('dialog', { name: /^Make 1$/i });
 
     const mark = screen.getByRole('button', { name: /Mark as personal best/i });
     expect(mark).toHaveAttribute('aria-pressed', 'false');
@@ -138,7 +138,7 @@ describe('RecipeViewer — the selected make', () => {
     });
 
     renderViewer();
-    await screen.findByRole('dialog', { name: /Make #1/i });
+    await screen.findByRole('dialog', { name: /^Make 1$/i });
     await user.keyboard('{Escape}');
 
     const share = await screen.findByRole('button', { name: /^Share$/i });
@@ -156,7 +156,7 @@ describe('RecipeViewer — the selected make', () => {
     const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
     vi.mocked(api.deleteBakeLog).mockRejectedValueOnce(new Error('offline'));
     renderViewer();
-    await screen.findByRole('dialog', { name: /Make #1/i });
+    await screen.findByRole('dialog', { name: /^Make 1$/i });
 
     await user.click(screen.getByRole('button', { name: /Delete entry/i }));
     await screen.findByRole('dialog', { name: /Delete this bake/i });

@@ -114,7 +114,7 @@ export default function ReverseBakeScheduler({ recipe, onClose }: ReverseBakeSch
 
   return (
     <Panel
-      title="Reverse bake timeline scheduler"
+      title="Reverse bake schedule"
       actions={
         onClose ? (
           <button
