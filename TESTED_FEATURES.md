@@ -277,6 +277,20 @@ This is a 1-to-1 mirror of CURRENT_FEATURES.md. Use checkboxes to track manual t
 - [ ] **Profiles**: `/api/profiles/<handle>` lists live recipes and bake counts, with no email.
 - [ ] **Link previews**: pasting `/r/<slug>` into a chat shows the recipe's title, description and photo; Google's Rich Results Test reads the Recipe data.
 
+## 14. Public launch — Phase 3: the global cookbook (app)
+- [ ] **Publish state**: a new recipe reads "Only on this device"; after publishing, "Live in the shared cookbook"; after an edit, "Live, with edits not yet pushed" and the key says Push update; a held one reads "Waiting for review".
+- [ ] **Publish sheet**: says what goes public and what stays private; counts device photos and the ones that stay behind; asks an imported recipe for its credit; shows the public page link afterwards.
+- [ ] **Unpublish**: needs a second press; the page then 404s.
+- [ ] **Rejected**: an operator rejection shows "Held back: <reason>" under the recipe's header.
+- [ ] **LIVE tag**: published recipes, and only those, carry LIVE on the cookbook's tiles.
+- [ ] **Discover**: searches by title and baker, filters by tag, sorts four ways; offline it says it needs a connection.
+- [ ] **Navigation**: phone dock is Cookbook · Discover · Gallery · More; Pantry and Account are in More; the operator sees Moderation in the sidebar.
+- [ ] **Profile**: `/@proof` shows the seeded library; `/@nobody` is the 404.
+- [ ] **Ratings**: signed in, rating and "I baked this" update the counts; the author can't rate their own.
+- [ ] **Comments**: a held comment shows "only you can see it"; a new account is told to wait a day; Delete and Report work.
+- [ ] **Report**: reporting a recipe or comment says the operator will look at it, and it appears in the queue.
+- [ ] **Moderation page**: hidden from everyone but the operator; approve, hold back with a reason, take down and leave up all work.
+
 ## 7. UI/UX Foundation
 - [ ] **"Step Row" Visual World (Phase 0 foundation)**: Rhythm-machine design language — matte panels, silkscreen labels, lit step keys, segment readouts; colour is temporal, not decorative.
 - [ ] **One enforced ban, two defined materials**: no glow except a lit key or segment; `--faceplate` and `.scrim` are the only gradient and blur, enforced by `src/designSystem.test.ts`.

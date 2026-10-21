@@ -177,6 +177,17 @@ export async function pinEnvironment(page: Page, { emptyCookbook = false } = {})
     if (path === '/published') {
       return route.fulfill(json({ items: PUBLISHED, total: PUBLISHED.length, offset: 0, limit: 8 }));
     }
+    if (path === '/published/index') return route.fulfill(json({ items: PUBLISHED }));
+    if (/^\/published\/[^/]+\/comments$/.test(path)) return route.fulfill(json({ items: [] }));
+    if (path === '/profiles/proof') {
+      return route.fulfill(
+        json({
+          profile: { handle: 'proof', displayName: 'Proof', bio: 'The library this cookbook started from.', pro: false, joinedAt: null },
+          recipes: PUBLISHED,
+          stats: { published: PUBLISHED.length, baked: 0 },
+        }),
+      );
+    }
     if (path.startsWith('/published/')) {
       const key = path.split('/')[2];
       const recipe = PUBLISHED.find((p) => p.slug === key || p._id === key);

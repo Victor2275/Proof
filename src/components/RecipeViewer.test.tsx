@@ -14,7 +14,7 @@ import { makeBakeLog, makeRecipe, renderScreen, seed } from '../test/utils';
 
 vi.mock('../lib/api', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../lib/api')>();
-  return { ...actual, api: { getPublishedRecipe: vi.fn() } };
+  return { ...actual, api: { getPublishedRecipe: vi.fn(), countSave: vi.fn().mockResolvedValue({ ok: true }) } };
 });
 
 const RECIPE = makeRecipe({
@@ -141,7 +141,8 @@ describe('RecipeViewer — a recipe from the shared cookbook', () => {
     renderShared();
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Focaccia' })).toBeInTheDocument();
-    expect(screen.getByText(/Shared by @proof/)).toHaveTextContent('from TheMealDB');
+    expect(screen.getByText(/Shared by/).closest('p')).toHaveTextContent('Shared by @proof · from TheMealDB');
+    expect(screen.getByRole('link', { name: '@proof' })).toHaveAttribute('href', '/@proof');
     expect(screen.queryByRole('link', { name: /Edit/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Favorite/ })).not.toBeInTheDocument();
   });
@@ -157,6 +158,8 @@ describe('RecipeViewer — a recipe from the shared cookbook', () => {
     const copy = (await repo.getRecipes()).find((r) => r.title === 'Focaccia');
     expect(copy?.forkedFrom).toEqual({ publishedId: 'p1', slug: 'focaccia', authorHandle: 'proof', title: 'Focaccia' });
     expect(copy?.instructions).toEqual(['Mix.', 'Bake.']);
+    // The author's save count goes up, best-effort.
+    expect(api.countSave).toHaveBeenCalledWith('p1');
   });
 
   it('offers the copy already saved rather than a second one', async () => {

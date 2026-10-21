@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, lazy, Suspense, useMemo } from 'react';
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
-import type { BakeLog, PantryItem, Recipe } from '../lib/types';
+import type { BakeLog, PantryItem, PublishedRecipe, Recipe } from '../lib/types';
 import { ApiError } from '../lib/api';
 import {
   useRecipe,
@@ -14,6 +14,8 @@ import {
   useForkPublished,
 } from '../lib/queries';
 import { useOwnership } from '../lib/session';
+import PublicationStrip from './PublicationStrip';
+import SharedRecipeCommunity from './SharedRecipeCommunity';
 import { formatIngredient } from '../lib/ingredients';
 import ReverseBakeScheduler from './ReverseBakeScheduler';
 import NotFound from './NotFound';
@@ -383,8 +385,9 @@ export default function RecipeViewer() {
       <div className="flex h-11 items-center justify-between gap-4">
         {/* The recipe's own title is the heading of this page; a second
           * "VIEW RECIPE" above it named the route rather than the thing. */}
-        <Link to="/" className="label-silkscreen text-ink-muted hover:text-ink">
-          ← Cookbook
+        {/* A shared recipe came from the shared cookbook, and goes back to it. */}
+        <Link to={slug ? '/discover' : '/'} className="label-silkscreen text-ink-muted hover:text-ink">
+          {slug ? '← Discover' : '← Cookbook'}
         </Link>
         
         {/* Desktop Actions */}
@@ -440,6 +443,7 @@ export default function RecipeViewer() {
         * lighter slab behind the whole recipe that lined up with nothing. */}
       <div id="recipe-export-node" className="mt-8 bg-ground text-ink">
         <RecipeHeader recipe={recipe} heroImage={heroImage} scaleMultiplier={scaleMultiplier} />
+        {localRecipe ? <PublicationStrip recipe={localRecipe} /> : null}
 
         {/*
           * The transport strip: which view, and play. It sits between the
@@ -569,6 +573,9 @@ export default function RecipeViewer() {
           />
         </section>
       )}
+      {/* A shared recipe's ratings, bakes and conversation follow the recipe itself. */}
+      {slug && recipe && !localRecipe ? <SharedRecipeCommunity recipe={recipe as PublishedRecipe} /> : null}
+
       {/* The phone's Start key: the page's one red control, drawn as the same
         * square key as New Recipe, which it sits over in this corner. */}
       {localRecipe ? (

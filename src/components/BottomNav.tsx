@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Image as ImageIcon, Box, MoreHorizontal, Plus, BarChart3, ShoppingBag, Lightbulb, Settings as SettingsIcon, UserRound } from 'lucide-react';
+import { LayoutDashboard, Image as ImageIcon, Box, MoreHorizontal, Plus, BarChart3, ShoppingBag, Lightbulb, Settings as SettingsIcon, UserRound, Compass } from 'lucide-react';
 import { cn } from '../lib/cn';
 import { useActiveBake } from '../lib/useActiveBake';
 import { Sheet } from './ui';
@@ -16,13 +16,20 @@ import { Sheet } from './ui';
  * for a dock slot: starting a recipe is a distinct action, not a destination.
  */
 
+/*
+ * Decision B21: Cookbook · Discover · Gallery · More. Your book and the shared
+ * book are two destinations, so "is this mine?" always has an answer; Pantry
+ * moved into More to make the room, because adding without removing is how
+ * navigation rots.
+ */
 const DOCK_ITEMS = [
   { to: '/', icon: LayoutDashboard, label: 'Cookbook' },
+  { to: '/discover', icon: Compass, label: 'Discover' },
   { to: '/gallery', icon: ImageIcon, label: 'Gallery' },
-  { to: '/pantry', icon: Box, label: 'Pantry' },
 ] as const;
 
 const MORE_ITEMS = [
+  { to: '/pantry', icon: Box, label: 'Pantry' },
   { to: '/analytics', icon: BarChart3, label: 'Analytics' },
   { to: '/grocery', icon: ShoppingBag, label: 'Grocery List' },
   { to: '/notes', icon: Lightbulb, label: 'General Notes' },

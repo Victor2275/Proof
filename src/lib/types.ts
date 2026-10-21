@@ -89,6 +89,13 @@ export interface Folder extends RecordFields {
   name: string;
 }
 
+export interface PublishedStats {
+  saves: number;
+  bakedCount: number;
+  ratingSum: number;
+  ratingCount: number;
+}
+
 /** A recipe in the shared cookbook, as the server publishes it. */
 export interface PublishedRecipe {
   _id: string;
@@ -105,7 +112,36 @@ export interface PublishedRecipe {
   ingredients?: Component[];
   instructions?: string[];
   authorHandle: string;
+  sourceUrl?: string;
   sourceAttribution: string;
+  forkedFrom?: { publishedId: string; authorHandle: string; title: string } | null;
   featured?: boolean;
+  stats?: PublishedStats;
   publishedAt: string;
+  updatedAt?: string;
+}
+
+export type ModerationState = 'approved' | 'pending' | 'rejected';
+
+/** One of the signed-in author's own published copies, in any state (B6, B7). */
+export interface Publication extends PublishedRecipe {
+  sourceLocalId: string;
+  sourceUpdatedAt: string | null;
+  moderation: { state: ModerationState; reason: string };
+  unpublishedAt: string | null;
+}
+
+export interface PublishedComment {
+  _id: string;
+  authorHandle: string;
+  body: string;
+  createdAt: string;
+  pending: boolean;
+  mine: boolean;
+}
+
+export interface Profile {
+  profile: { handle: string; displayName: string; bio: string; pro: boolean; joinedAt: string | null };
+  recipes: PublishedRecipe[];
+  stats: { published: number; baked: number };
 }

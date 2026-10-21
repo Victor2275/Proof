@@ -7,7 +7,7 @@
  * operator's tools — and every caller of it has to be ready for the network
  * not to be there, because now that is the normal case rather than an outage.
  */
-import type { PublishedRecipe, Recipe } from './types';
+import type { Profile, Publication, PublishedComment, PublishedRecipe, PublishedStats, Recipe } from './types';
 import { operatorToken, setAccount, userToken, type Account } from './session';
 
 export const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:3001/api');
@@ -111,6 +111,40 @@ export interface ServerLibrary {
   pantry: unknown[];
 }
 
+/** What publishing sends: the recipe as it stands on the device, photographs as data or URLs. */
+export interface PublishBody {
+  sourceLocalId: string;
+  sourceUpdatedAt: string;
+  title: string;
+  description: string;
+  servings: number;
+  difficulty?: string;
+  prepTime: string;
+  cookTime: string;
+  tags: string[];
+  folder?: string;
+  ingredients: Recipe['ingredients'];
+  instructions: string[];
+  photos: string[];
+  sourceUrl?: string;
+  sourceAttribution?: string;
+  ownWords?: boolean;
+  forkedFrom?: { publishedId: string; authorHandle: string; title: string } | null;
+}
+
+export interface ModerationQueue {
+  recipes: (Publication & { ownWords?: boolean })[];
+  comments: { _id: string; publishedId: string; authorHandle: string; body: string; moderation: { reason: string }; createdAt: string }[];
+  reports: {
+    _id: string;
+    targetType: 'recipe' | 'comment';
+    targetId: string;
+    reason: string;
+    createdAt: string;
+    target: { title?: string; slug?: string; body?: string; authorHandle?: string; publishedId?: string } | null;
+  }[];
+}
+
 export interface SignedIn {
   token: string;
   user: Account;
@@ -133,6 +167,47 @@ export const api = {
 
   getPublishedRecipe: (idOrSlug: string) =>
     request<PublishedRecipe>(`/published/${encodeURIComponent(idOrSlug)}`),
+
+  /** Every live recipe in brief: Discover searches it on the device. */
+  getPublishedIndex: () => request<{ items: PublishedRecipe[] }>('/published/index'),
+
+  getMyPublications: () => request<{ items: Publication[] }>('/published/mine', { auth: 'user' }),
+
+  publishRecipe: (body: PublishBody) =>
+    request<{ recipe: Publication; droppedPhotos: number }>('/published', { method: 'POST', body, auth: 'user' }),
+
+  unpublishRecipe: (id: string) =>
+    request<{ recipe: Publication }>(`/published/${encodeURIComponent(id)}`, { method: 'DELETE', auth: 'user' }),
+
+  /** Counts a save into someone's cookbook. Best-effort: a save works offline without it. */
+  countSave: (id: string) => request<{ ok: true }>(`/published/${encodeURIComponent(id)}/save`, { method: 'POST' }),
+
+  getMyRating: (id: string) =>
+    request<{ stars: number | null; baked: boolean }>(`/published/${encodeURIComponent(id)}/rating`, { auth: 'user' }),
+
+  rateRecipe: (id: string, body: { stars?: number | null; baked?: boolean }) =>
+    request<{ rating: { stars: number | null; baked: boolean }; stats: PublishedStats }>(
+      `/published/${encodeURIComponent(id)}/rating`,
+      { method: 'PUT', body, auth: 'user' },
+    ),
+
+  getComments: (id: string) =>
+    request<{ items: PublishedComment[] }>(`/published/${encodeURIComponent(id)}/comments`, { auth: 'user' }),
+
+  postComment: (id: string, body: string) =>
+    request<{ comment: PublishedComment }>(`/published/${encodeURIComponent(id)}/comments`, {
+      method: 'POST',
+      body: { body },
+      auth: 'user',
+    }),
+
+  deleteComment: (id: string) =>
+    request<{ ok: true }>(`/published/comments/${encodeURIComponent(id)}`, { method: 'DELETE', auth: 'user' }),
+
+  report: (body: { targetType: 'recipe' | 'comment'; targetId: string; reason: string }) =>
+    request<{ ok: true }>('/reports', { method: 'POST', body, auth: 'user' }),
+
+  getProfile: (handle: string) => request<Profile>(`/profiles/${encodeURIComponent(handle)}`),
 
   /* ── Accounts ────────────────────────────────────────────────────────── */
 
@@ -185,4 +260,15 @@ export const api = {
 
   /** The operator's pre-Phase-1 library, to bring onto this device. */
   getServerLibrary: () => request<ServerLibrary>('/library', { auth: 'operator' }),
+
+  getModerationQueue: () => request<ModerationQueue>('/moderation/queue', { auth: 'operator' }),
+
+  moderateRecipe: (id: string, action: 'approve' | 'reject' | 'takedown', reason = '') =>
+    request<{ ok: true }>(`/moderation/recipes/${encodeURIComponent(id)}`, { method: 'POST', body: { action, reason }, auth: 'operator' }),
+
+  moderateComment: (id: string, action: 'approve' | 'remove', reason = '') =>
+    request<{ ok: true }>(`/moderation/comments/${encodeURIComponent(id)}`, { method: 'POST', body: { action, reason }, auth: 'operator' }),
+
+  resolveReport: (id: string, resolution: string) =>
+    request<{ ok: true }>(`/moderation/reports/${encodeURIComponent(id)}`, { method: 'POST', body: { resolution }, auth: 'operator' }),
 };

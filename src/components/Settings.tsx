@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, type ReactNode } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Download, ImageDown, Upload } from 'lucide-react';
 import { api } from '../lib/api';
 import { exportCookbook, importCookbook, backupFileName, type ImportResult } from '../lib/repo/backup';
@@ -9,7 +9,7 @@ import { STORED_ON_DEVICE, formatBytes, requestPersistentStorage, storageReport 
 import { useSession } from '../lib/session';
 import AccountPanel from './AccountPanel';
 import { hapticsEnabled, ttsEnabled as readTtsEnabled } from '../lib/settings';
-import { Panel, PanelRow, Button, Meter, cn } from './ui';
+import { Panel, PanelRow, Button, Meter, buttonClassName, cn } from './ui';
 
 /*
  * Settings.
@@ -439,6 +439,15 @@ export default function Settings() {
       <Panel title="Operator">
         {session.isOperator ? (
           <div className="flex flex-col gap-5">
+            <ActionRow
+              title="Moderation"
+              description="Recipes and comments the screen held back, and what people reported."
+            >
+              <Link to="/moderation" className={buttonClassName({})}>
+                Open the queue
+              </Link>
+            </ActionRow>
+
             <ActionRow
               title="Copy the server library here"
               description="Brings the recipes, bakes, notes and pantry stored on the server onto this device. Run it once per device; running it again changes nothing."

@@ -1,7 +1,8 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Book, PlusCircle, Lightbulb, Image, Settings as SettingsIcon, BarChart3, Box, ShoppingBag } from 'lucide-react';
+import { Book, PlusCircle, Lightbulb, Image, Settings as SettingsIcon, BarChart3, Box, ShoppingBag, Compass, ShieldCheck } from 'lucide-react';
 import { cn } from '../lib/cn';
 import { useActiveBake } from '../lib/useActiveBake';
+import { useSession } from '../lib/session';
 
 /*
  * The global nav rail. Same sections as before — this is a redesign, not a
@@ -24,15 +25,19 @@ import { useActiveBake } from '../lib/useActiveBake';
 export default function Sidebar({ className = '' }: { className?: string }) {
   const location = useLocation();
   const activeBake = useActiveBake();
+  const { session } = useSession();
 
   const navItems = [
     { name: 'My Cookbook', path: '/', icon: Book },
+    { name: 'Discover', path: '/discover', icon: Compass },
     { name: 'Gallery', path: '/gallery', icon: Image },
     { name: 'Analytics', path: '/analytics', icon: BarChart3 },
     { name: 'Pantry', path: '/pantry', icon: Box },
     { name: 'Grocery List', path: '/grocery', icon: ShoppingBag },
     { name: 'General Notes', path: '/notes', icon: Lightbulb },
     { name: 'Settings', path: '/settings', icon: SettingsIcon },
+    // The operator's queue appears only to the operator.
+    ...(session.isOperator ? [{ name: 'Moderation', path: '/moderation', icon: ShieldCheck }] : []),
   ];
 
   return (

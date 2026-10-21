@@ -11,16 +11,17 @@ const renderNav = (initialEntry = '/') =>
   );
 
 describe('BottomNav', () => {
-  it('renders exactly the four dock slots, not the previous five', () => {
+  it('renders exactly the four dock slots: Cookbook, Discover, Gallery, More (B21)', () => {
     renderNav();
-    ['Cookbook', 'Gallery', 'Pantry'].forEach((label) => expect(screen.getByText(label)).toBeInTheDocument());
+    ['Cookbook', 'Discover', 'Gallery'].forEach((label) => expect(screen.getByText(label)).toBeInTheDocument());
+    expect(screen.queryByText('Pantry')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /more/i })).toBeInTheDocument();
     // The old dock's fifth slot was a "New Recipe" link in the bar itself —
     // it is now the floating action button instead, reachable by name.
     expect(screen.queryByText('New Recipe')).not.toBeInTheDocument();
   });
 
-  it('offers Analytics, Grocery List, Notes and Settings only behind More', async () => {
+  it('offers Pantry, Analytics, Grocery List, Notes, Settings and Account only behind More', async () => {
     renderNav();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(screen.queryByText('Analytics')).not.toBeInTheDocument();
@@ -28,9 +29,10 @@ describe('BottomNav', () => {
     fireEvent.click(screen.getByRole('button', { name: /more/i }));
 
     expect(await screen.findByRole('dialog', { name: 'More' })).toBeInTheDocument();
-    ['Analytics', 'Grocery List', 'General Notes', 'Settings'].forEach((label) =>
+    ['Pantry', 'Analytics', 'Grocery List', 'General Notes', 'Settings', 'Account'].forEach((label) =>
       expect(screen.getByText(label)).toBeInTheDocument(),
     );
+    expect(screen.getByRole('link', { name: /Account/ })).toHaveAttribute('href', '/settings#account');
   });
 
   it('closes the More sheet from its own close button, and on Escape', async () => {

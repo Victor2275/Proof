@@ -91,7 +91,8 @@ temperatures, timers, totals. Counts, servings and dates use tabular mono.
 
 `src/components/ui` is the whole vocabulary: `Panel`/`PanelRow`, `Button`,
 `Field`/`TextArea`/`Select`, `Sheet`, `Menu`, `SegmentReadout`, `StepRow`,
-`RecipePlate`, `RecipeTile`, `InstrumentRow`, `Meter`, `Skeleton`.
+`RecipePlate`, `Photo`, `RecipeTile`, `InstrumentRow`, `Meter`, `Skeleton`,
+`PublishState`, `Tag`, `Prose`.
 
 - **Compose these rather than hand-rolling inline Tailwind** for a panel, a
   control, a readout or an overlay. Hand-rolling is how the previous system
@@ -132,9 +133,15 @@ temperatures, timers, totals. Counts, servings and dates use tabular mono.
   anything is called done. Vitest for both `src/` and `server/`.
 - `npm test` (frontend) · `npm run test:server` · `npm run test:all`
 - Typecheck with `npx tsc -b` and lint with `npm run lint` before committing.
-- **E2E**: Playwright is installed and is the intended tool, but **no E2E specs
-  exist yet** — this is an open gap from ImprovementPlan.md Phase 4, along with
-  CI and a LICENSE. Do not describe E2E coverage as present.
+- **E2E**: Playwright runs the visual-regression baselines (`npm run test:visual`,
+  `e2e/visual.spec.ts`) and the Phase 0 audit matrix (`npm run audit:ui`). Both
+  seed the cookbook into IndexedDB (`e2e/seed.ts`). There are **no functional
+  end-to-end specs** (flows asserted step by step) yet, and no CI or LICENSE —
+  open gaps from ImprovementPlan.md Phase 4. Do not describe functional E2E
+  coverage as present.
+- Frontend tests run against a real in-memory IndexedDB (`fake-indexeddb`);
+  `src/test/utils.tsx` seeds records and renders screens. Mock the server
+  (`src/lib/api`), never the repository.
 
 ---
 
@@ -174,7 +181,7 @@ Whenever any changes are made to the codebase, you MUST:
 # Known data reality
 
 The live library holds **203 recipes**, each with exactly one final-product
-photograph, all served from one external CDN. **199 of them carry the seed
+photograph, served from four hosts (Cloudinary, TheMealDB and two food blogs). **199 of them carry the seed
 script's `prepTime: "20 mins"` / `cookTime: "30 mins"` verbatim**, so most
 recipes share an identical 50-minute total. The duration parser is correct; the
 data is a placeholder. Surfaces must not present those timings as if they were

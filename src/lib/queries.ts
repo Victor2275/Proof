@@ -13,9 +13,10 @@
  *   message that says the cookbook itself is unaffected.
  */
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
-import { api, ApiError } from './api';
+import { api, ApiError, type PublishBody } from './api';
 import { repo, type NewBakePhoto } from './repo';
-import type { BakeLog, Draft, PublishedRecipe, Recipe } from './types';
+import type { BakeLog, Draft, Publication, PublishedRecipe, Recipe } from './types';
+import { useSession } from './session';
 
 export const queryKeys = {
   recipes: () => ['recipes'] as const,
@@ -27,6 +28,12 @@ export const queryKeys = {
   folders: () => ['folders'] as const,
   published: (featured: boolean) => ['published', featured ? 'featured' : 'all'] as const,
   publishedRecipe: (key: string) => ['published', 'recipe', key] as const,
+  publishedIndex: () => ['published', 'index'] as const,
+  publications: (accountId: string) => ['published', 'mine', accountId] as const,
+  rating: (id: string, accountId: string) => ['published', 'rating', id, accountId] as const,
+  comments: (id: string) => ['published', 'comments', id] as const,
+  profile: (handle: string) => ['profile', handle] as const,
+  moderation: () => ['moderation'] as const,
 };
 
 const LOCAL = { staleTime: Infinity, networkMode: 'always' as const, retry: false };
@@ -92,7 +99,11 @@ export const useForkPublished = () => {
     mutationFn: async (published: PublishedRecipe) =>
       repo.forkPublished(published.instructions ? published : await api.getPublishedRecipe(published.slug)),
     networkMode: 'always',
-    onSuccess: () => refreshCookbook(client),
+    onSuccess: (_saved, published) => {
+      refreshCookbook(client);
+      // The fork count is a courtesy to the author; the copy is saved either way.
+      void api.countSave(published._id).catch(() => undefined);
+    },
   });
 };
 
@@ -183,3 +194,114 @@ export const usePublishedRecipe = (key: string | undefined) =>
     enabled: !!key,
     ...REMOTE,
   });
+
+export const usePublishedIndex = () =>
+  useQuery({
+    queryKey: queryKeys.publishedIndex(),
+    queryFn: async () => (await api.getPublishedIndex()).items,
+    ...REMOTE,
+  });
+
+/* ── Publishing ─────────────────────────────────────────────────────────── */
+
+/**
+ * The signed-in author's published copies, keyed by the id of the recipe on
+ * this device — which is how a recipe knows it is LOCAL, LIVE or LIVE + EDITS.
+ */
+export function usePublications() {
+  const { session } = useSession();
+  const accountId = session.user?.id ?? '';
+  const query = useQuery({
+    queryKey: queryKeys.publications(accountId),
+    queryFn: async () => (await api.getMyPublications()).items,
+    enabled: !!accountId,
+    ...REMOTE,
+  });
+  const byLocalId = new Map<string, Publication>();
+  for (const p of query.data ?? []) if (!p.unpublishedAt) byLocalId.set(p.sourceLocalId, p);
+  return { ...query, byLocalId };
+}
+
+export const usePublishRecipe = () => {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (body: PublishBody) => api.publishRecipe(body),
+    networkMode: 'always',
+    onSuccess: () => client.invalidateQueries({ queryKey: ['published'] }),
+  });
+};
+
+export const useUnpublishRecipe = () => {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.unpublishRecipe(id),
+    networkMode: 'always',
+    onSuccess: () => client.invalidateQueries({ queryKey: ['published'] }),
+  });
+};
+
+/* ── Ratings and comments ───────────────────────────────────────────────── */
+
+export function useMyRating(publishedId: string | undefined) {
+  const { session } = useSession();
+  const accountId = session.user?.id ?? '';
+  return useQuery({
+    queryKey: queryKeys.rating(publishedId ?? '', accountId),
+    queryFn: () => api.getMyRating(publishedId!),
+    enabled: !!publishedId && !!accountId,
+    ...REMOTE,
+  });
+}
+
+export const useRateRecipe = (publishedId: string, slug: string) => {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { stars?: number | null; baked?: boolean }) => api.rateRecipe(publishedId, body),
+    networkMode: 'always',
+    onSuccess: (result) => {
+      client.setQueryData(queryKeys.publishedRecipe(slug), (prev: PublishedRecipe | undefined) =>
+        prev ? { ...prev, stats: result.stats } : prev,
+      );
+      void client.invalidateQueries({ queryKey: ['published', 'rating', publishedId] });
+    },
+  });
+};
+
+export const useComments = (publishedId: string | undefined) =>
+  useQuery({
+    queryKey: queryKeys.comments(publishedId ?? ''),
+    queryFn: async () => (await api.getComments(publishedId!)).items,
+    enabled: !!publishedId,
+    ...REMOTE,
+  });
+
+export const usePostComment = (publishedId: string) => {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (body: string) => api.postComment(publishedId, body),
+    networkMode: 'always',
+    onSuccess: () => client.invalidateQueries({ queryKey: queryKeys.comments(publishedId) }),
+  });
+};
+
+export const useDeleteComment = (publishedId: string) => {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.deleteComment(id),
+    networkMode: 'always',
+    onSuccess: () => client.invalidateQueries({ queryKey: queryKeys.comments(publishedId) }),
+  });
+};
+
+/* ── Profiles and moderation ────────────────────────────────────────────── */
+
+export const useProfile = (handle: string | undefined) =>
+  useQuery({
+    queryKey: queryKeys.profile(handle ?? ''),
+    queryFn: () => api.getProfile(handle!),
+    enabled: !!handle,
+    ...REMOTE,
+  });
+
+export const useModerationQueue = (enabled: boolean) =>
+  useQuery({ queryKey: queryKeys.moderation(), queryFn: api.getModerationQueue, enabled, ...REMOTE, staleTime: 0 });

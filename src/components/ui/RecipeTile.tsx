@@ -11,6 +11,7 @@ import {
 import { RecipePlate } from './RecipePlate';
 import { SegmentReadout } from './SegmentReadout';
 import { StepRow } from './StepRow';
+import { Tag } from './Tag';
 
 /*
  * A tile in the cookbook: the photograph, and its name underneath.
@@ -45,10 +46,12 @@ export interface RecipeTileProps {
   to?: string;
   /** Lights the tile: this is the bake running right now. */
   active?: boolean;
+  /** A silkscreened fact beside the title: LIVE for a recipe in the shared cookbook (B6). */
+  tag?: string;
   className?: string;
 }
 
-export function RecipeTile({ recipe, to, active = false, className }: RecipeTileProps) {
+export function RecipeTile({ recipe, to, active = false, tag, className }: RecipeTileProps) {
   const { phases, reading } = useMemo(
     () => derivePhasesWithReading(recipe.instructions ?? []),
     [recipe.instructions],
@@ -125,6 +128,7 @@ export function RecipeTile({ recipe, to, active = false, className }: RecipeTile
       >
         {recipe.title}
       </h3>
+      {tag ? <Tag className="self-start">{tag}</Tag> : null}
     </Link>
   );
 }

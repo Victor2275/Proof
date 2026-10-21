@@ -13,6 +13,9 @@ import {
   Sheet,
   Menu,
   MenuItem,
+  PublishState,
+  Tag,
+  Prose,
 } from './ui';
 import { derivePhases } from '../lib/phases';
 import AIReviewSheet from './AIReviewSheet';
@@ -226,6 +229,28 @@ export default function Lab() {
           <Meter label="Hydration" value={78} max={100} readout="78%" />
           <Meter label="Oven, with a hot end" value={250} max={280} hotAt={0.85} readout="250°C" />
           <Meter label="Bakes this month" value={4} max={12} readout="4" />
+        </div>
+      </Section>
+
+      <Section name="Publish state — every position">
+        <div className="flex flex-col gap-4">
+          <PublishState state="local" />
+          <PublishState state="pending" />
+          <PublishState state="live" />
+          <PublishState state="edits" />
+        </div>
+      </Section>
+
+      <Section name="Tags and printed matter">
+        <div className="flex flex-col gap-4">
+          <div className="flex gap-2">
+            <Tag>Live</Tag>
+            <Tag>Pro</Tag>
+          </div>
+          <Panel title="@ada">
+            <Prose>{`Third bake of this and the crumb finally opened up.
+Longer bulk, colder fridge.`}</Prose>
+          </Panel>
         </div>
       </Section>
     </div>

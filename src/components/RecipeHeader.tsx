@@ -69,17 +69,28 @@ export default function RecipeHeader({ recipe, heroImage, scaleMultiplier }: Rec
 
         {/* Attribution is a first-class line, not a footnote (B5/B8): who a
           * saved copy came from, or who shared the recipe being read. */}
-        {forkedFrom ? (
+        {sharedBy || forkedFrom ? (
           <p className="label-silkscreen text-ink-muted">
-            Adapted from{' '}
-            <Link to={`/r/${forkedFrom.slug}`} className="text-ink underline decoration-1 underline-offset-4">
-              @{forkedFrom.authorHandle}
-            </Link>
-          </p>
-        ) : sharedBy ? (
-          <p className="label-silkscreen text-ink-muted">
-            Shared by @{sharedBy.authorHandle}
-            {sharedBy.sourceAttribution ? ` · from ${sharedBy.sourceAttribution}` : ''}
+            {sharedBy ? (
+              <>
+                Shared by{' '}
+                <Link to={`/@${sharedBy.authorHandle}`} className="text-ink underline decoration-1 underline-offset-4">
+                  @{sharedBy.authorHandle}
+                </Link>
+              </>
+            ) : null}
+            {sharedBy && forkedFrom ? ' · adapted from ' : forkedFrom ? 'Adapted from ' : null}
+            {forkedFrom ? (
+              // A copy on this device knows the original's address; a published
+              // copy knows its id, which the shared cookbook answers to as well.
+              <Link
+                to={`/r/${'slug' in forkedFrom ? forkedFrom.slug : forkedFrom.publishedId}`}
+                className="text-ink underline decoration-1 underline-offset-4"
+              >
+                @{forkedFrom.authorHandle}
+              </Link>
+            ) : null}
+            {sharedBy?.sourceAttribution ? ` · from ${sharedBy.sourceAttribution}` : ''}
           </p>
         ) : null}
 

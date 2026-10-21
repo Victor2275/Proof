@@ -90,11 +90,12 @@ const upsertTimer = (ownerId: string, timer: LiveTimer) => {
   void persistTimers(() => Timer.updateOne({ ownerId, id: timer.id }, { $set: { ...timer, ownerId } }, { upsert: true }));
 };
 
-const removeTimer = (ownerId: string, id: string) => {
+/** Removes a timer; resolves once the database has it too, or false when there was none. */
+const removeTimer = async (ownerId: string, id: string) => {
   const current = timersFor(ownerId);
   if (!current.some((t) => t.id === id)) return false;
   setTimers(ownerId, current.filter((t) => t.id !== id));
-  void persistTimers(() => Timer.deleteOne({ ownerId, id }));
+  await persistTimers(() => Timer.deleteOne({ ownerId, id }));
   return true;
 };
 
@@ -104,8 +105,8 @@ router.get('/', requireUser, (req: Request, res: Response) => {
 });
 
 // DELETE /api/timers/:id
-router.delete('/:id', requireUser, (req: Request, res: Response) => {
-  if (!removeTimer(req.user._id, String(req.params.id))) return res.status(404).json({ error: 'Timer not found' });
+router.delete('/:id', requireUser, async (req: Request, res: Response) => {
+  if (!(await removeTimer(req.user._id, String(req.params.id)))) return res.status(404).json({ error: 'Timer not found' });
   res.json({ success: true, timers: timersFor(req.user._id) });
 });
 
@@ -147,7 +148,7 @@ export const registerTimerSockets = (server: Server) => {
     });
 
     socket.on('timer:remove', (id: unknown) => {
-      if (typeof id === 'string') removeTimer(ownerId, id);
+      if (typeof id === 'string') void removeTimer(ownerId, id);
     });
   });
 };

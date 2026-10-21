@@ -26,6 +26,8 @@ const SURFACES = [
   { name: 'gallery', path: '/gallery', settle: 'body' },
   { name: 'not-found', path: '/no-such-page', settle: 'text=Nothing at this address' },
   { name: 'shared-recipe', path: '/r/prawn-stir-fry', settle: 'text=Save to my cookbook' },
+  { name: 'discover', path: '/discover', settle: 'text=2 recipes' },
+  { name: 'profile', path: '/@proof', settle: 'text=The library this cookbook started from.' },
 ] as const;
 
 /**

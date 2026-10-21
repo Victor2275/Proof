@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import Fuse from 'fuse.js';
 import { Search, Shuffle } from 'lucide-react';
 import type { Recipe, BakeLog } from '../lib/types';
-import { useRecipes, useBakeLogs } from '../lib/queries';
+import { useRecipes, useBakeLogs, usePublications } from '../lib/queries';
 import { useActiveBake } from '../lib/useActiveBake';
 import { derivePhases } from '../lib/phases';
 import { totalRecipeMinutes, formatMinutesForSegments, isPlaceholderTiming } from '../lib/duration';
@@ -160,6 +160,9 @@ export default function Dashboard() {
   // dashboard's primary function, so a failed read here quietly hides the
   // shelves rather than breaking the recipe list.
   const { data: bakeLogs = EMPTY_LOGS } = useBakeLogs();
+  // Which recipes are in the shared cookbook: a LIVE tag, and nothing for the
+  // private default, so publishing adds chrome only where it is true (B6).
+  const { byLocalId: published } = usePublications();
   const activeBake = useActiveBake();
   const navigate = useNavigate();
 
@@ -435,7 +438,11 @@ export default function Dashboard() {
               <>
                 <div className="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 2xl:grid-cols-4">
                   {listed.slice(0, visibleCount).map((recipe: Recipe) => (
-                    <RecipeTile key={recipe._id} recipe={recipe} />
+                    <RecipeTile
+                      key={recipe._id}
+                      recipe={recipe}
+                      tag={published.get(recipe._id)?.moderation.state === 'approved' ? 'Live' : undefined}
+                    />
                   ))}
                 </div>
 

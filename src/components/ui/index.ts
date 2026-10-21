@@ -26,4 +26,7 @@ export { Meter, type MeterProps } from './Meter';
 export { Sheet, type SheetProps, type SheetPlacement, type SheetSize } from './Sheet';
 export { Menu, MenuItem, type MenuProps, type MenuItemProps } from './Menu';
 export { Skeleton } from './Skeleton';
+export { PublishState, type PublishStateProps, type PublishStateValue } from './PublishState';
+export { Tag } from './Tag';
+export { Prose } from './Prose';
 export { cn } from '../../lib/cn';
