@@ -1,0 +1,2671 @@
+{
+  "6aa77cd4b13a3d3c6ab2e148": {
+    "basis": "2026-09-16T18:00:36.727Z",
+    "prep": 135,
+    "cook": 15,
+    "serves": 4,
+    "difficulty": "Medium",
+    "description": "Turkish minced-lamb kebabs seasoned with red pepper paste and pul biber, chilled, shaped onto skewers and grilled."
+  },
+  "6aa77cd4b13a3d3c6ab2e0c8": {
+    "basis": "2026-09-16T18:00:25.752Z",
+    "prep": 45,
+    "cook": 25,
+    "serves": 6,
+    "difficulty": "Medium",
+    "description": "Light Scandinavian pancake puffs flavoured with cardamom, turned in a special pan and served with powdered sugar and jam.",
+    "instructions": [
+      "Whisk the flour, salt, sugar, baking powder and cardamom together in a large bowl.",
+      "Separate the eggs and add the yolks to the flour mixture. Pour in the buttermilk and whisk until smooth. Cover and refrigerate for about 30 minutes.",
+      "Beat the egg whites until stiff, then carefully fold them into the batter.",
+      "Heat the æbleskiver pan over a medium heat. Once hot, brush each hole with butter and fill almost to the top with batter.",
+      "Once the edges are firm, use a knitting needle or wooden skewer to turn each æbleskive a quarter turn. Keep turning until they form golden-brown spheres.",
+      "Remove from the pan and serve with powdered sugar and jam."
+    ]
+  },
+  "6aa77cd4b13a3d3c6ab2e141": {
+    "basis": "2026-09-16T18:00:36.238Z",
+    "prep": 40,
+    "cook": 30,
+    "serves": 4,
+    "difficulty": "Easy",
+    "description": "Potatoes crisped in the air fryer and served under a smoky paprika and tomato sauce."
+  },
+  "6aa77cd4b13a3d3c6ab2e0de": {
+    "basis": "2026-09-16T18:00:27.569Z",
+    "prep": 80,
+    "cook": 15,
+    "serves": 12,
+    "difficulty": "Medium",
+    "description": "Argentine shortbread sandwich cookies filled with dulce de leche and rolled in coconut.",
+    "instructions": [
+      "Make the dough: cream the butter and sugar. Add the egg yolks and lemon zest, then gradually mix in the flour and cornstarch to form a dough. Chill for 1 hour; chilled dough rolls more easily and spreads less in the oven.",
+      "Bake the cookies: roll out the dough, cut into circles and bake at 180°C (350°F) for 12–15 minutes. Let cool.",
+      "Assemble: spread dulce de leche on one cookie and sandwich it with another. Roll the edges in coconut.",
+      "If you like, dip the alfajores in melted chocolate and let them set on a wire rack."
+    ]
+  },
+  "6aa77cd4b13a3d3c6ab2e103": {
+    "basis": "2026-09-16T18:00:30.767Z",
+    "prep": 10,
+    "cook": 35,
+    "serves": 4,
+    "difficulty": "Easy",
+    "description": "Steamed carrots finished in garlic, olive oil, cumin and cinnamon, with a squeeze of lemon."
+  },
+  "6aa77cd4b13a3d3c6ab2e0bd": {
+    "basis": "2026-09-16T18:00:24.806Z",
+    "prep": 15,
+    "cook": 30,
+    "serves": 8,
+    "difficulty": "Easy",
+    "description": "A simple one-pan apple cake made with a sour-milk batter and a sugar and cinnamon top.",
+    "instructions": [
+      "Heat the oven to 180°C and butter a baking pan.",
+      "Peel and core the apples and cut them into slices.",
+      "Beat the eggs and sugar together until light and foamy.",
+      "Mix together the flour, salt and bicarbonate of soda.",
+      "Add the dry ingredients to the egg mixture, then stir in the sour milk a little at a time.",
+      "Pour the batter into the pan and press the apple slices into the top. Sprinkle over a little sugar and cinnamon and bake for 30 minutes."
+    ]
+  },
+  "6aa77cd4b13a3d3c6ab2e0af": {
+    "basis": "2026-09-14T04:49:24.571Z",
+    "prep": 10,
+    "cook": 30,
+    "serves": 4,
+    "difficulty": "Easy",
+    "description": "Plain corn-flour arepas, browned in a skillet and finished in the oven until they sound hollow.",
+    "instructions": [
+      "Put the corn flour in a bowl and add the salted water little by little, mixing until all the water is used and the flour has become a dough. For more flavour, use chicken or beef broth in place of the water. Let it rest for 5 minutes.",
+      "Shape the dough into rounds about 3 inches across and ½ inch thick. Cook them slowly in a lightly greased skillet until a crust forms on each side.",
+      "Transfer to a baking dish and bake at 350°F for about 20 minutes, until the arepas sound hollow when tapped."
+    ]
+  },
+  "6aa77cd4b13a3d3c6ab2e16c": {
+    "basis": "2026-09-16T18:00:39.700Z",
+    "prep": 15,
+    "cook": 135,
+    "serves": 6,
+    "difficulty": "Medium",
+    "description": "Venezuelan corn arepas split and stuffed with slow-cooked shredded beef and grated cheese."
+  },
+  "6aa77cd4b13a3d3c6ab2e10b": {
+    "basis": "2026-09-16T18:00:31.512Z",
+    "prep": 50,
+    "cook": 25,
+    "serves": 10,
+    "difficulty": "Easy",
+    "description": "Dutch puff-pastry biscuits rolled in cinnamon, cardamom and lime sugar and baked until caramelised.",
+    "ingredients": [
+      {
+        "name": "Puff Pastry",
+        "quantity": 5,
+        "unit": "slice"
+      },
+      {
+        "name": "vanilla sugar",
+        "quantity": 100,
+        "unit": "g"
+      },
+      {
+        "name": "Cinnamon",
+        "quantity": 0.5,
+        "unit": "tsp"
+      },
+      {
+        "name": "Cardamom",
+        "quantity": 0.5,
+        "unit": "tsp"
+      },
+      {
+        "name": "Lime (zest)",
+        "quantity": 1,
+        "unit": ""
+      },
+      {
+        "name": "Egg, beaten, to glaze",
+        "quantity": 1,
+        "unit": ""
+      }
+    ],
+    "instructions": [
+      "Defrost the puff pastry.",
+      "Flour the work surface. Stack the pastry sheets on top of each other and roll them out until the stack is as thin as a single sheet.",
+      "Cut out rounds or ovals with a cutter, as close together as you can to get as many biscuits as possible.",
+      "Mix the vanilla sugar with the cinnamon, cardamom and lime zest in a small bowl.",
+      "Clear the flour from the counter and sprinkle it with a little of the sugar mix.",
+      "Brush the pastry shapes with egg, dip them in the sugar mix and roll them gently to press the sugar in.",
+      "Lay them on a lined baking sheet and leave to rest for 20–25 minutes; this makes them crisper. Heat the oven to 180°C meanwhile.",
+      "Bake for about 25 minutes, until golden brown and the sugar has caramelised."
+    ]
+  },
+  "6aa77cd4b13a3d3c6ab2e15c": {
+    "basis": "2026-09-16T18:00:38.446Z",
+    "prep": 45,
+    "cook": 130,
+    "serves": 8,
+    "difficulty": "Medium",
+    "description": "Argentine mixed grill: salted beef cuts, chorizo and morcilla cooked slowly over wood coals.",
+    "instructions": [
+      "Prepare the fire: start a fire of wood and charcoal in your grill and let it burn down to coals. Wood adds flavour; charcoal holds the temperature.",
+      "Season the meat: generously salt the beef cuts just before they go on the grill.",
+      "Grill the meat: place the beef on the grill with the thickest cuts farthest from the coals. Add the chorizo and morcilla once the beef has been cooking for a while.",
+      "Cook the meat, turning occasionally, until it reaches the doneness you like. Ribs can take up to 2 hours; thinner cuts cook faster.",
+      "Rest the meat for about 10 minutes before slicing. Serve with chimichurri, a fresh tomato salad and crusty bread."
+    ]
+  },
+  "6aa77cd4b13a3d3c6ab2e167": {
+    "basis": "2026-09-16T18:00:39.280Z",
+    "prep": 10,
+    "cook": 20,
+    "serves": 4,
+    "difficulty": "Easy",
+    "description": "Grilled aubergine slices spread with hummus, crumbed and grilled again, with a walnut, parsley and tomato salad."
+  },
+  "6aa77cd4b13a3d3c6ab2e101": {
+    "basis": "2026-09-16T18:00:30.584Z",
+    "prep": 30,
+    "cook": 65,
+    "serves": 8,
+    "difficulty": "Medium",
+    "description": "A wheel of brie spread with spiced sorrel jam, wrapped in puff pastry and baked.",
+    "instructions": [
+      "Make the jam: combine the dried sorrel, brown sugar, ginger, cinnamon, vanilla pod and orange zest with the boiled water in a medium pot.",
+      "Bring to the boil and cook until the sorrel petals soften, then reduce the heat and simmer until thickened, adding a splash of water if it catches. Let it cool before using. The jam can be made a day ahead.",
+      "Slice the brie in half horizontally, or leave the wheel whole and trim off the top rind.",
+      "Spread a generous layer of jam on the top of the wheel, or on one cut half and sandwich the halves back together.",
+      "Roll the pastry out on a floured surface. Wrap it up around the sides and over the top of the cheese, pressing the edges together to seal it completely. Trim the excess and keep it for decoration.",
+      "Turn the parcel over so the gathered pastry is underneath and set it on a greased baking sheet. It can be refrigerated at this point for up to 2 days; bring it back to room temperature before baking.",
+      "Heat the oven to 400°F (200°C). Beat the egg with the water and brush it over the top and sides of the pastry. Add any decorations from the leftover pastry and brush those too.",
+      "Bake for 20–25 minutes, until the pastry is deep golden. Rest for 10 minutes and serve with more jam."
+    ]
+  },
+  "6aa77cd4b13a3d3c6ab2e0cc": {
+    "basis": "2026-09-16T18:00:26.135Z",
+    "prep": 5,
+    "cook": 8,
+    "serves": 1,
+    "difficulty": "Easy",
+    "description": "Flourless banana and egg pancakes topped with pecans and raspberries."
+  },
+  "6aa77cd4b13a3d3c6ab2e0f5": {
+    "basis": "2026-09-16T18:00:29.418Z",
+    "prep": 115,
+    "cook": 20,
+    "serves": 6,
+    "difficulty": "Medium",
+    "description": "Soft buns made from bread mix, filled with sticky soy, honey and ginger bacon and baked until golden.",
+    "instructions": [
+      "Mix the sugar into the bread mix in a large bowl, then add water as instructed on the pack. Bring the dough together with a wooden spoon, then knead on a lightly floured surface for 5 minutes until smooth. Put it in a large bowl, cover with oiled cling film and leave in a warm place until doubled in size.",
+      "Meanwhile, heat the oil in a pan and fry the bacon until crisp, about 5 minutes. Add the ginger and garlic and fry for 1 minute until soft, then add the soy, honey and tomato purée and stir well. The filling can be made up to 3 days ahead.",
+      "Turn out the dough, knead briefly and divide into 12 even balls. Flatten each with your hands and put a teaspoon of filling in the middle.",
+      "Draw the dough up and pinch it closed like a purse, then turn the bun over and sit it on a large baking sheet. Cover with oiled cling film and leave to rise for about 30 minutes until pillowy.",
+      "Heat the oven to 200°C/fan 180°C/gas 6. Brush the buns with egg and bake for 20 minutes until golden.",
+      "Serve warm with a dipping sauce. The buns can be frozen after the second rise for up to a month, or baked a day ahead and rewarmed."
+    ]
+  },
+  "6aa77cd4b13a3d3c6ab2e0c6": {
+    "basis": "2026-09-16T18:00:25.565Z",
+    "prep": 20,
+    "cook": 10,
+    "serves": 4,
+    "difficulty": "Easy",
+    "description": "A quick Chinese stir-fry of marinated sirloin and broccoli in an oyster-sauce glaze."
+  },
+  "6aa77cd4b13a3d3c6ab2e131": {
+    "basis": "2026-09-16T18:00:34.687Z",
+    "prep": 15,
+    "cook": 25,
+    "serves": 4,
+    "difficulty": "Easy",
+    "description": "Rice bowls topped with sweet soy beef, grated carrot, quick-pickled cucumber and sriracha mayo.",
+    "ingredients": [
+      {
+        "name": "White rice",
+        "quantity": 1,
+        "unit": "cup"
+      },
+      {
+        "name": "Onion",
+        "quantity": 1,
+        "unit": ""
+      },
+      {
+        "name": "Lime",
+        "quantity": 1,
+        "unit": ""
+      },
+      {
+        "name": "Garlic Clove",
+        "quantity": 3,
+        "unit": ""
+      },
+      {
+        "name": "Cucumber",
+        "quantity": 1,
+        "unit": ""
+      },
+      {
+        "name": "Carrots",
+        "quantity": 3,
+        "unit": "oz"
+      },
+      {
+        "name": "Ground Beef",
+        "quantity": 1,
+        "unit": "lb"
+      },
+      {
+        "name": "Soy Sauce",
+        "quantity": 2,
+        "unit": "oz"
+      },
+      {
+        "name": "Mayonnaise",
+        "quantity": null,
+        "unit": ""
+      },
+      {
+        "name": "Sriracha, to taste",
+        "quantity": null,
+        "unit": ""
+      },
+      {
+        "name": "Butter",
+        "quantity": 1,
+        "unit": "tbsp"
+      }
+    ],
+    "dropSteps": [
+      0
+    ]
+  },
+  "6aa77cd4b13a3d3c6ab2e163": {
+    "basis": "2026-09-16T18:00:38.946Z",
+    "prep": 30,
+    "cook": 200,
+    "serves": 4,
+    "difficulty": "Medium",
+    "description": "Beef shin braised for three hours in red wine with bacon, shallots and mushrooms, served with a spiced celeriac mash."
+  },
+  "6aa77cd4b13a3d3c6ab2e140": {
+    "basis": "2026-09-16T18:00:36.152Z",
+    "prep": 15,
+    "cook": 50,
+    "serves": 8,
+    "difficulty": "Medium",
+    "description": "Filipino beef stew in a tomato and peanut sauce with peppers, potato and carrot."
+  },
+  "6aa77cd4b13a3d3c6ab2e0e3": {
+    "basis": "2026-09-16T18:00:28.026Z",
+    "prep": 60,
+    "cook": 45,
+    "serves": 6,
+    "difficulty": "Medium",
+    "description": "Uruguayan baked empanadas: a lard pastry around a filling of seared steak, tomato, onion and boiled egg.",
+    "instructions": [
+      "Make the dough: put the lard, warm water and salt in a large bowl and stir. Add the flour and oregano and knead for 5 minutes by hand or in a machine. Cover and rest for at least 30 minutes, or overnight in the fridge.",
+      "Make the filling: put the tomatoes in boiling water for about 30 seconds, cool them in cold water, then peel and dice. Crush the garlic and dice the onions. Simmer the garlic and onions in a little olive oil until translucent.",
+      "Take out the onions and garlic and brown the meat on all sides over a high heat. Season with the herbs and spices, return the onions and garlic, add the tomatoes and simmer for a few minutes. Season with salt and pepper.",
+      "Boil the eggs, dice them and mix them into the meat. The filling can be made the night before and chilled.",
+      "Cut the dough in half and roll one half out thinly on a floured surface. Cut out 12–15cm circles. Put 2–4 teaspoons of filling on each, wet the edges, fold into half-moons and seal with a fork. Repeat until the dough and filling are used up.",
+      "Heat the oven to 200°C. Brush the empanadas with egg wash and bake about 8 at a time on a lined baking sheet for about 25 minutes, until golden. Serve warm with chimichurri."
+    ]
+  },
+  "6aa77cd4b13a3d3c6ab2e153": {
+    "basis": "2026-09-16T18:00:37.711Z",
+    "prep": 20,
+    "cook": 45,
+    "serves": 2,
+    "difficulty": "Medium",
+    "description": "Vietnamese beef noodle soup: a charred onion, ginger and star-anise broth poured over rice noodles and thinly sliced raw sirloin."
+  },
+  "6aa77cd4b13a3d3c6ab2e0cd": {
+    "basis": "2026-09-16T18:00:26.225Z",
+    "prep": 20,
+    "cook": 70,
+    "serves": 4,
+    "difficulty": "Medium",
+    "description": "Roast beef and potatoes with boiled vegetables and Yorkshire puddings.",
+    "publish": false,
+    "reason": "The method gives no oven temperature or weight for the roast, and lists the potatoes and carrots as 'packets'. It can't be completed without inventing the main part of the recipe."
+  },
+  "6aa77cd4b13a3d3c6ab2e133": {
+    "basis": "2026-09-16T18:00:34.906Z",
+    "prep": 10,
+    "cook": 25,
+    "serves": 4,
+    "difficulty": "Easy",
+    "description": "Purple pancakes blended with cooked beetroot, served with a quick berry compote and yogurt."
+  },
+  "6aa77cd4b13a3d3c6ab2e0c3": {
+    "basis": "2026-09-16T18:00:25.313Z",
+    "prep": 10,
+    "cook": 40,
+    "serves": 4,
+    "difficulty": "Easy",
+    "description": "A simple beetroot, potato and cannellini bean soup finished with dill.",
+    "instructions": [
+      "Peel and chop the beetroot and potatoes.",
+      "Put the beetroot in a pot with the water and stock cube and cook for 15 minutes.",
+      "Add the potatoes and olive oil and boil until everything is soft.",
+      "Add the drained beans and cook for 5 minutes more. Season and serve garnished with dill."
+    ]
+  },
+  "6aa77cd4b13a3d3c6ab2e105": {
+    "basis": "2026-09-16T18:00:30.971Z",
+    "prep": 70,
+    "cook": 40,
+    "serves": 4,
+    "difficulty": "Easy",
+    "description": "Filipino beef steak marinated in soy and lemon, braised until tender and topped with fried onions."
+  },
+  "6aa77cd4b13a3d3c6ab2e12c": {
+    "basis": "2026-09-14T04:49:24.585Z",
+    "prep": 15,
+    "cook": 25,
+    "serves": 6,
+    "difficulty": "Easy",
+    "description": "Light almond and egg-white cakes with lemon zest and berries, baked in friand tins."
+  },
+  "6aa77cd4b13a3d3c6ab2e0eb": {
+    "basis": "2026-09-16T18:00:28.685Z",
+    "prep": 20,
+    "cook": 195,
+    "serves": 8,
+    "difficulty": "Medium",
+    "description": "Beef and chorizo chilli with ancho chillies and borlotti beans, braised low and slow for three hours."
+  },
+  "6aa77cd4b13a3d3c6ab2e173": {
+    "basis": "2026-09-16T18:00:40.187Z",
+    "prep": 25,
+    "cook": 90,
+    "serves": 3,
+    "difficulty": "Medium",
+    "description": "Cabbage leaves rolled around rice, chestnuts and cranberries and baked in a sweet-sharp stock."
+  },
+  "6aa77cd4b13a3d3c6ab2e146": {
+    "basis": "2026-09-14T04:49:24.587Z",
+    "prep": 5,
+    "cook": 5,
+    "serves": 1,
+    "difficulty": "Easy",
+    "description": "An Indian street-food breakfast: bread pressed into a thin omelette, toasted and folded into a sandwich.",
+    "ingredients": [
+      {
+        "name": "Bread",
+        "quantity": 2,
+        "unit": "slice"
+      },
+      {
+        "name": "Egg",
+        "quantity": 2,
+        "unit": ""
+      },
+      {
+        "name": "Salt",
+        "quantity": 0.5,
+        "unit": "tsp"
+      },
+      {
+        "name": "Butter or oil, for frying",
+        "quantity": null,
+        "unit": ""
+      }
+    ],
+    "instructions": [
+      "Beat the eggs with the salt in a shallow bowl.",
+      "Heat a little butter or oil in a frying pan over a medium heat and pour in the eggs, tilting the pan to spread them thinly.",
+      "Before the top sets, lay the two slices of bread side by side on the egg and press lightly so they stick.",
+      "When the underside is golden, flip the whole thing so the bread toasts, about a minute.",
+      "Fold the egg edges over the bread, fold in half into a sandwich and serve hot."
+    ]
+  },
+  "6aa77cd4b13a3d3c6ab2e115": {
+    "basis": "2026-09-16T18:00:32.436Z",
+    "prep": 200,
+    "cook": 15,
+    "serves": 6,
+    "difficulty": "Medium",
+    "description": "Colombian breaded steak: thin pounded beef marinated in aliños sauce, crumbed and pan-fried."
+  },
+  "6aa77cd4b13a3d3c6ab2e10d": {
+    "basis": "2026-09-16T18:00:31.702Z",
+    "prep": 15,
+    "cook": 40,
+    "serves": 4,
+    "difficulty": "Easy",
+    "folder": "Side",
+    "tags": [
+      "Side",
+      "Jamaican"
+    ],
+    "title": "Breadfruit in Butter Sauce",
+    "description": "Jamaican boiled breadfruit served under a buttery tomato, onion and garlic sauce.",
+    "instructions": [
+      "Cut the breadfruit, remove the seeds from the core and peel. Boil in salted water with the half onion and the olive oil over a high heat until tender, then drain and leave to cool.",
+      "Meanwhile, melt the butter in a frying pan and lightly brown the onions, cut into rings. Add the garlic, tomatoes, parsley, lime juice, salt and pepper and sauté for a couple of minutes.",
+      "Add the water, bring to the boil and simmer for 5–10 minutes. Season with red pepper sauce.",
+      "Slice the breadfruit into a serving dish, pour the butter sauce over and garnish with chopped parsley."
+    ]
+  },
+  "6aa77cd4b13a3d3c6ab2e100": {
+    "basis": "2026-09-16T18:00:30.476Z",
+    "prep": 30,
+    "cook": 30,
+    "serves": 12,
+    "difficulty": "Easy",
+    "description": "Honey and cinnamon cookies half-dipped in white and dark chocolate.",
+    "publish": false,
+    "reason": "The ingredient list calls for 3 cups of oil to 4 cups of flour, which can't be right, and the source quantity can't be recovered. Fix the oil and it can be published."
+  },
+  "6aa77cd4b13a3d3c6ab2e13e": {
+    "basis": "2026-09-16T18:00:35.981Z",
+    "prep": 15,
+    "cook": 40,
+    "serves": 6,
+    "difficulty": "Easy",
+    "description": "Russian shchi: a light cabbage, potato and tomato soup served with sour cream and dill.",
+    "replaceSteps": {
+      "5": "Remove and discard the bay leaf."
+    }
+  },
+  "6aa77cd4b13a3d3c6ab2e15f": {
+    "basis": "2026-09-16T18:00:38.700Z",
+    "prep": 495,
+    "cook": 20,
+    "serves": 4,
+    "difficulty": "Easy",
+    "description": "Jamaican salt cod sautéed with callaloo, bacon, scotch bonnet and tomato. The fish soaks overnight."
+  },
+  "6aa77cd4b13a3d3c6ab2e10a": {
+    "basis": "2026-09-16T18:00:31.414Z",
+    "prep": 10,
+    "cook": 8,
+    "serves": 2,
+    "difficulty": "Easy",
+    "description": "Water spinach stir-fried with minced pork, fermented soybeans and garlic."
+  },
+  "6aa77cd4b13a3d3c6ab2e0df": {
+    "basis": "2026-09-16T18:00:27.662Z",
+    "prep": 130,
+    "cook": 30,
+    "serves": 8,
+    "difficulty": "Medium",
+    "description": "A plaited enriched loaf made with egg and oil, glazed and topped with poppy seeds.",
+    "featured": true
+  },
+  "6aa77cd4b13a3d3c6ab2e13b": {
+    "basis": "2026-09-16T18:00:35.702Z",
+    "prep": 40,
+    "cook": 30,
+    "serves": 8,
+    "difficulty": "Medium",
+    "description": "Crisp phyllo triangles filled with Gouda, Emmental, egg and parsley."
+  },
+  "6aa77cd4b13a3d3c6ab2e125": {
+    "basis": "2026-09-16T18:00:33.772Z",
+    "prep": 120,
+    "cook": 25,
+    "serves": 10,
+    "difficulty": "Medium",
+    "description": "Rolled yeast buns filled with butter, brown sugar, cinnamon and dried fruit, finished with a sticky milk glaze.",
+    "featured": true
+  },
+  "6aa77cd4b13a3d3c6ab2e0d7": {
+    "basis": "2026-09-16T18:00:27.013Z",
+    "prep": 50,
+    "cook": 10,
+    "serves": 2,
+    "difficulty": "Easy",
+    "publishTitle": "Pickle-brined Chicken Sandwich",
+    "description": "A pickle-brined chicken breast dredged in seasoned flour, shallow-fried and served on a toasted bun with pickles.",
+    "ingredients": [
+      {
+        "name": "Chicken Breast",
+        "quantity": 1,
+        "unit": ""
+      },
+      {
+        "name": "Pickle Juice",
+        "quantity": 0.25,
+        "unit": "cup"
+      },
+      {
+        "name": "Egg",
+        "quantity": 1,
+        "unit": ""
+      },
+      {
+        "name": "Milk",
+        "quantity": 0.25,
+        "unit": "cup"
+      },
+      {
+        "name": "Flour",
+        "quantity": 0.5,
+        "unit": "cup"
+      },
+      {
+        "name": "Icing Sugar",
+        "quantity": 1,
+        "unit": "tbsp"
+      },
+      {
+        "name": "Paprika",
+        "quantity": 0.5,
+        "unit": "tsp"
+      },
+      {
+        "name": "Salt",
+        "quantity": 0.5,
+        "unit": "tsp"
+      },
+      {
+        "name": "Black Pepper",
+        "quantity": 0.25,
+        "unit": "tsp"
+      },
+      {
+        "name": "Garlic Powder",
+        "quantity": 0.25,
+        "unit": "tsp"
+      },
+      {
+        "name": "Celery Salt",
+        "quantity": 0.25,
+        "unit": "tsp"
+      },
+      {
+        "name": "Cayenne Pepper",
+        "quantity": 0.5,
+        "unit": "tsp"
+      },
+      {
+        "name": "Olive Oil",
+        "quantity": 1,
+        "unit": "cup"
+      },
+      {
+        "name": "Sesame Seed Burger Buns",
+        "quantity": 2,
+        "unit": ""
+      },
+      {
+        "name": "Pickle slices, to serve",
+        "quantity": null,
+        "unit": ""
+      }
+    ]
+  },
+  "6aa77cd4b13a3d3c6ab2e12f": {
+    "basis": "2026-09-16T18:00:34.605Z",
+    "prep": 10,
+    "cook": 45,
+    "serves": 4,
+    "difficulty": "Easy",
+    "description": "Chinese rice porridge simmered until silky, with ginger-marinated chicken and spring onions."
+  },
+  "6aa77cd4b13a3d3c6ab2e111": {
+    "basis": "2026-09-16T18:00:32.079Z",
+    "prep": 5,
+    "cook": 20,
+    "serves": 2,
+    "difficulty": "Easy",
+    "description": "One-pan harissa chicken with apricots, chickpeas and couscous."
+  },
+  "6aa77cd4b13a3d3c6ab2e0f6": {
+    "basis": "2026-09-16T18:00:29.501Z",
+    "prep": 15,
+    "cook": 50,
+    "serves": 4,
+    "difficulty": "Easy",
+    "description": "Layers of corn tortillas, enchilada-sauce chicken and Monterey Jack, baked until bubbling.",
+    "replaceSteps": {
+      "3": "Start layering the casserole: spread about ¼ cup of the leftover enchilada sauce over the bottom of a baking dish wide enough to take 2 tortillas side by side."
+    }
+  },
+  "6aa77cd4b13a3d3c6ab2e0b4": {
+    "basis": "2026-09-16T18:00:24.049Z",
+    "prep": 15,
+    "cook": 120,
+    "serves": 8,
+    "difficulty": "Easy",
+    "title": "Chicken Liver Pâté",
+    "description": "A rustic chicken liver and bacon pâté, slow-baked with onion and mustard, blended and sealed with butter.",
+    "addIngredients": [
+      {
+        "name": "Butter, melted, to seal",
+        "quantity": null,
+        "unit": ""
+      }
+    ],
+    "replaceSteps": {
+      "7": "Pack into a dish, cover with a layer of melted butter and chill until set."
+    }
+  },
+  "6aa77cd4b13a3d3c6ab2e0b7": {
+    "basis": "2026-09-16T18:00:24.251Z",
+    "serves": 4,
+    "difficulty": "Medium",
+    "description": "Frenched chicken drumettes, seasoned, fried and finished in the oven with a sauce.",
+    "publish": false,
+    "reason": "The method gives no frying temperature or time, no oven temperature or time, and uses a sauce that isn't in the ingredient list."
+  },
+  "6aa77cd4b13a3d3c6ab2e139": {
+    "basis": "2026-09-16T18:00:35.427Z",
+    "prep": 40,
+    "cook": 75,
+    "serves": 6,
+    "difficulty": "Medium",
+    "description": "Yemeni-style spiced chicken and basmati rice steamed together, with an optional charcoal smoking at the end."
+  },
+  "6aa77cd4b13a3d3c6ab2e16d": {
+    "basis": "2026-09-16T18:00:39.780Z",
+    "prep": 30,
+    "cook": 75,
+    "serves": 6,
+    "difficulty": "Medium",
+    "description": "A French bake of shredded chicken in a tomato and olive sauce under a Gruyère-topped potato crust."
+  },
+  "6aa77cd4b13a3d3c6ab2e16a": {
+    "basis": "2026-09-16T18:00:39.537Z",
+    "prep": 70,
+    "cook": 50,
+    "serves": 4,
+    "difficulty": "Easy",
+    "description": "Chicken wings marinated in garlic, lemon and cumin, baked or barbecued until crisp with a honey glaze.",
+    "replaceSteps": {
+      "1": "Heat the oven to 200°C/180°C fan/gas 6, or heat an outdoor barbecue. Bake the wings on an oven tray for 45–50 minutes until crisp, or barbecue for 20 minutes, drizzling over the honey for the final 10 minutes either way. Serve on a platter with napkins, alongside olives, nuts, dates, pickled chillies and flatbreads."
+    }
+  },
+  "6aa77cd4b13a3d3c6ab2e150": {
+    "basis": "2026-09-16T18:00:37.444Z",
+    "prep": 15,
+    "cook": 25,
+    "serves": 2,
+    "difficulty": "Easy",
+    "description": "Roasted paprika chickpeas in charred tortillas with guacamole, quick-pickled salsa and harissa cream."
+  },
+  "6aa77cd4b13a3d3c6ab2e0e7": {
+    "basis": "2026-09-16T18:00:28.361Z",
+    "prep": 130,
+    "cook": 6,
+    "serves": 4,
+    "difficulty": "Easy",
+    "description": "Lamb loin chops marinated in garlic, ginger, lemon and cumin and barbecued over hot coals."
+  },
+  "6aa77cd4b13a3d3c6ab2e14c": {
+    "basis": "2026-09-16T18:00:37.079Z",
+    "prep": 30,
+    "cook": 20,
+    "serves": 16,
+    "difficulty": "Easy",
+    "description": "Chocolate sponge squares dipped in chocolate icing and rolled in coconut, lamington-style."
+  },
+  "6aa77cd4b13a3d3c6ab2e142": {
+    "basis": "2026-09-16T18:00:36.319Z",
+    "prep": 20,
+    "cook": 55,
+    "serves": 10,
+    "difficulty": "Easy",
+    "description": "A dense, buttery chocolate cake baked in a springform tin."
+  },
+  "6aa77cd4b13a3d3c6ab2e16e": {
+    "basis": "2026-09-14T04:49:24.591Z",
+    "prep": 15,
+    "cook": 30,
+    "serves": 15,
+    "difficulty": "Easy",
+    "description": "Fudgy dark and milk chocolate brownies studded with fresh raspberries."
+  },
+  "6aa77cd4b13a3d3c6ab2e0d9": {
+    "basis": "2026-09-16T18:00:27.112Z",
+    "prep": 25,
+    "cook": 10,
+    "serves": 6,
+    "difficulty": "Hard",
+    "description": "Individual dark chocolate soufflés with hot chocolate sauce poured into their centres."
+  },
+  "6aa77cd4b13a3d3c6ab2e0d8": {
+    "basis": "2026-09-14T04:49:24.575Z",
+    "prep": 10,
+    "cook": 15,
+    "serves": 4,
+    "difficulty": "Easy",
+    "description": "A warm salad of new potatoes, green beans and crisp chorizo with soft-boiled eggs and a sherry vinegar dressing."
+  },
+  "6aa77cd4b13a3d3c6ab2e0d5": {
+    "basis": "2026-09-16T18:00:26.828Z",
+    "prep": 5,
+    "cook": 20,
+    "serves": 1,
+    "difficulty": "Easy",
+    "description": "A folded omelette filled with crisp chorizo, potato, parsley and cheddar."
+  },
+  "6aa77cd4b13a3d3c6ab2e172": {
+    "basis": "2026-09-16T18:00:40.104Z",
+    "prep": 10,
+    "cook": 20,
+    "serves": 4,
+    "difficulty": "Easy",
+    "description": "Costa Rican sweetcorn pancakes, traditionally served with a spoonful of sour cream.",
+    "replaceSteps": {
+      "2": "Serve with a spoonful of sour cream on top, as is traditional, or plain."
+    }
+  },
+  "6aa77cd4b13a3d3c6ab2e0f9": {
+    "basis": "2026-09-16T18:00:29.763Z",
+    "prep": 15,
+    "cook": 40,
+    "serves": 12,
+    "difficulty": "Easy",
+    "description": "Golden-syrup oat flapjack with leftover Christmas pudding and orange zest stirred through."
+  },
+  "6aa77cd4b13a3d3c6ab2e0f7": {
+    "basis": "2026-09-16T18:00:29.580Z",
+    "prep": 25,
+    "cook": 0,
+    "serves": 8,
+    "difficulty": "Easy",
+    "description": "A no-bake trifle of crumbled Christmas pudding, Grand Marnier oranges, mascarpone custard and cream."
+  },
+  "6aa77cd4b13a3d3c6ab2e116": {
+    "basis": "2026-09-16T18:00:32.534Z",
+    "prep": 130,
+    "cook": 12,
+    "serves": 12,
+    "difficulty": "Medium",
+    "description": "Cardamom-scented Scandinavian cinnamon buns, rolled, sliced and baked in paper cases.",
+    "featured": true
+  },
+  "6aa77cd4b13a3d3c6ab2e110": {
+    "basis": "2026-09-16T18:00:31.979Z",
+    "prep": 45,
+    "cook": 540,
+    "serves": 16,
+    "difficulty": "Medium",
+    "description": "Two traditional fruit puddings, made weeks ahead, steamed for eight hours, then steamed again and flamed with brandy on the day.",
+    "replaceSteps": {
+      "4": "Stand each bowl on a large sheet of foil and bring the edges up over the top, then put another sheet of foil over the top and bring it down underneath to make a watertight double package. Tie with more string, and make a handle for lifting in and out of the pan."
+    },
+    "dropSteps": [
+      6
+    ]
+  },
+  "6aa77cd4b13a3d3c6ab2e0da": {
+    "basis": "2026-09-16T18:00:27.195Z",
+    "prep": 15,
+    "cook": 12,
+    "serves": 4,
+    "difficulty": "Easy",
+    "description": "New potatoes with crunchy asparagus, radish and red onion in a creamy mustard dressing."
+  },
+  "6aa77cd4b13a3d3c6ab2e10c": {
+    "basis": "2026-09-16T18:00:31.603Z",
+    "prep": 15,
+    "cook": 35,
+    "serves": 2,
+    "difficulty": "Easy",
+    "description": "An Irish one-pot of pork chops, bacon and root vegetables braised in cider.",
+    "patchIngredients": {
+      "9": {
+        "unit": "ml"
+      }
+    }
+  },
+  "6aa77cd4b13a3d3c6ab2e136": {
+    "basis": "2026-09-16T18:00:35.123Z",
+    "prep": 25,
+    "cook": 90,
+    "serves": 6,
+    "difficulty": "Medium",
+    "description": "Chicken braised in red wine with bacon, shallots and herbs, finished with mushrooms and a thickened sauce."
+  },
+  "6aa77cd4b13a3d3c6ab2e0be": {
+    "basis": "2026-09-16T18:00:24.895Z",
+    "prep": 40,
+    "cook": 25,
+    "serves": 8,
+    "difficulty": "Medium",
+    "description": "A savoury cream cheese and parmesan tart topped with tomatoes in a warm honey-vinegar dressing.",
+    "ingredients": [
+      {
+        "name": "Flour",
+        "quantity": 250,
+        "unit": "g"
+      },
+      {
+        "name": "Butter",
+        "quantity": 125,
+        "unit": "g"
+      },
+      {
+        "name": "Egg",
+        "quantity": 1,
+        "unit": ""
+      },
+      {
+        "name": "Salt",
+        "quantity": 1,
+        "unit": "pinch"
+      },
+      {
+        "name": "Cream Cheese",
+        "quantity": 300,
+        "unit": "g"
+      },
+      {
+        "name": "Milk",
+        "quantity": 100,
+        "unit": "ml"
+      },
+      {
+        "name": "Eggs",
+        "quantity": 3,
+        "unit": ""
+      },
+      {
+        "name": "Parmesan Cheese, grated",
+        "quantity": 100,
+        "unit": "g"
+      },
+      {
+        "name": "Nutmeg, to taste",
+        "quantity": null,
+        "unit": ""
+      },
+      {
+        "name": "Cherry tomatoes",
+        "quantity": 350,
+        "unit": "g"
+      },
+      {
+        "name": "Olive Oil",
+        "quantity": 3,
+        "unit": "tbsp"
+      },
+      {
+        "name": "White Vinegar",
+        "quantity": 3,
+        "unit": "tbsp"
+      },
+      {
+        "name": "Honey",
+        "quantity": 1,
+        "unit": "tbsp"
+      },
+      {
+        "name": "Basil, for topping",
+        "quantity": null,
+        "unit": ""
+      }
+    ],
+    "instructions": [
+      "Make the crust: work the flour, butter, egg and a pinch of salt into a dough, press it into a tart tin and chill for 30 minutes.",
+      "Make the filling: stir the cream cheese and milk until smooth, then beat in the eggs and the parmesan. Season with salt, pepper and nutmeg.",
+      "Prick the base of the chilled crust with a fork, pour in the filling and bake at 175°C for about 25 minutes, covering with foil halfway through.",
+      "Meanwhile, slice the tomatoes. Warm the olive oil, vinegar, honey, salt and pepper in a small pan, pour over the tomatoes and mix well.",
+      "Spoon the tomatoes onto the tart, leaving most of the liquid behind, and finish with basil leaves."
+    ]
+  },
+  "6aa77cd4b13a3d3c6ab2e0f2": {
+    "basis": "2026-09-16T18:00:29.260Z",
+    "prep": 120,
+    "cook": 75,
+    "serves": 12,
+    "difficulty": "Medium",
+    "description": "A dense Danish rugbrød of cracked rye, seeds, beer and buttermilk, baked long in a loaf tin.",
+    "featured": true
+  },
+  "6aa77cd4b13a3d3c6ab2e0d0": {
+    "basis": "2026-09-16T18:00:26.489Z",
+    "prep": 60,
+    "cook": 100,
+    "serves": 6,
+    "difficulty": "Medium",
+    "title": "Dolma Japrak (Stuffed Vine Leaves)",
+    "description": "Vine leaves rolled around spiced lamb mince and rice and simmered gently until tender.",
+    "replaceSteps": {
+      "3": "Place a spoonful of the meat and rice mixture in the middle of the leaves. Fold the bottom of the leaf over the filling, fold in both sides, then roll upwards to seal it into a parcel.",
+      "4": "Line the bottom of a deep saucepan with a layer of vine leaves, then add the parcel on top.",
+      "5": "Make as many parcels as the filling allows, packing them side by side until the bottom of the pan is covered, then start another layer on top."
+    }
+  },
+  "6aa77cd4b13a3d3c6ab2e0c0": {
+    "basis": "2026-09-16T18:00:25.064Z",
+    "prep": 100,
+    "cook": 35,
+    "serves": 12,
+    "difficulty": "Medium",
+    "title": "Dominica Mastiff Bread",
+    "description": "A soft white bread from Dominica, enriched with shortening and kneaded twice for a close crumb.",
+    "instructions": [
+      "Mix the flour, sugar, salt and instant yeast in a large bowl with a wooden spoon. (If you have active dry yeast instead, first dissolve it with the sugar in the warm water at 115–120°F, stir in a pinch of salt and ½ lb of the flour, and leave somewhere warm for about an hour until foamy, then add it to the rest of the flour.)",
+      "Add the shortening or lard and mix it in thoroughly with your hands.",
+      "Add the warm water and mix to a stiff dough, adding a little more flour if it sticks.",
+      "Turn the dough onto a floured board and knead for 8–10 minutes.",
+      "Shape into a large round, cover and leave to rest for 45 minutes.",
+      "Knead again on a lightly floured surface; this second kneading matters most. Shape into loaves or rolls and set them on a baking sheet or in tins.",
+      "Leave to rest for 25 minutes. Meanwhile heat the oven to 375°F.",
+      "Bake until golden brown and hollow-sounding when tapped underneath."
+    ]
+  },
+  "6aa77cd4b13a3d3c6ab2e12b": {
+    "basis": "2026-09-16T18:00:34.327Z",
+    "prep": 15,
+    "cook": 30,
+    "serves": 12,
+    "difficulty": "Easy",
+    "description": "Rustic Caribbean coconut rock cakes spiced with cinnamon, nutmeg and lime zest.",
+    "instructions": [
+      "Heat the oven to 350°F and grease a baking sheet or pan with vegetable oil.",
+      "Mix all the dry ingredients together in a bowl, then stir in the coconut milk and vanilla.",
+      "Scoop the mixture onto the baking sheet in mounds with an ice-cream scoop, or press it into a greased cake mould or pan.",
+      "Bake for 25–35 minutes, until brown."
+    ]
+  },
+  "6aa77cd4b13a3d3c6ab2e117": {
+    "basis": "2026-09-16T18:00:32.610Z",
+    "prep": 120,
+    "cook": 20,
+    "serves": 8,
+    "difficulty": "Medium",
+    "description": "Flaky rough-puff pastry rounds filled with spiced currants and peel, slashed, sugared and baked until sticky.",
+    "featured": true
+  },
+  "6aa77cd4b13a3d3c6ab2e0ee": {
+    "basis": "2026-09-16T18:00:28.933Z",
+    "prep": 20,
+    "cook": 150,
+    "serves": 6,
+    "difficulty": "Medium",
+    "description": "Layers of crisp garlic pita, vermicelli rice and beef broth, topped with a garlicky tomato-vinegar sauce and fried beef."
+  },
+  "6aa77cd4b13a3d3c6ab2e0ba": {
+    "basis": "2026-09-16T18:00:24.541Z",
+    "prep": 15,
+    "cook": 15,
+    "serves": 3,
+    "difficulty": "Easy",
+    "description": "Pan-fried chickpea patties with cumin, coriander and parsley, bound with egg."
+  },
+  "6aa77cd4b13a3d3c6ab2e143": {
+    "basis": "2026-09-16T18:00:36.405Z",
+    "prep": 10,
+    "cook": 10,
+    "serves": 6,
+    "difficulty": "Easy",
+    "description": "Pitta pockets filled with warm falafel, salad and pickles, drizzled with tahini sauce and harissa."
+  },
+  "6aa77cd4b13a3d3c6ab2e0d6": {
+    "basis": "2026-09-16T18:00:26.930Z",
+    "prep": 40,
+    "cook": 25,
+    "serves": 4,
+    "difficulty": "Medium",
+    "description": "Goan fish croquettes of poached haddock and potato, spiced with chilli, cumin and ginger, crumbed and fried.",
+    "addIngredients": [
+      {
+        "name": "Mango chutney, to serve",
+        "quantity": null,
+        "unit": ""
+      }
+    ],
+    "replaceSteps": {
+      "0": "Boil the potatoes until tender, then drain and mash. Meanwhile, put the fish in a lidded pan and pour over enough water to cover. Bring to a simmer and poach gently for 10 minutes with the lid on. Drain and flake the fish.",
+      "3": "Serve with mango chutney and a simple salad of sliced onion and coriander dressed with lemon juice."
+    }
+  },
+  "6aa77cd4b13a3d3c6ab2e0c7": {
+    "basis": "2026-09-16T18:00:25.664Z",
+    "prep": 25,
+    "cook": 60,
+    "serves": 6,
+    "difficulty": "Medium",
+    "description": "White fish and prawns in a lemony sauce with artichoke and leek, under a crisp-peaked mash and Gruyère."
+  },
+  "6aa77cd4b13a3d3c6ab2e13a": {
+    "basis": "2026-09-16T18:00:35.600Z",
+    "prep": 15,
+    "cook": 40,
+    "serves": 6,
+    "difficulty": "Easy",
+    "description": "Russian fisherman's soup of potato, carrot and onion, with chunks of cod and salmon added at the end.",
+    "patchIngredients": {
+      "7": {
+        "name": "Cod fillet"
+      },
+      "8": {
+        "name": "Salmon fillet"
+      }
+    },
+    "addIngredients": [
+      {
+        "name": "Dill or parsley, to garnish",
+        "quantity": null,
+        "unit": ""
+      }
+    ],
+    "replaceSteps": {
+      "1": "Add the stock, water, potatoes and bay leaves. Season with salt and pepper and bring to the boil. Reduce the heat, cover and cook for about 25 minutes, until the potatoes are cooked.",
+      "2": "Cut the fish into cubes and add it gently. Bring the soup back to a simmer; the fish cooks through very quickly and is done when the flesh is opaque and flakes easily."
+    }
+  },
+  "6aa77cd4b13a3d3c6ab2e0fe": {
+    "basis": "2026-09-16T18:00:30.273Z",
+    "prep": 30,
+    "cook": 50,
+    "serves": 2,
+    "difficulty": "Medium",
+    "description": "A Provençal-style stew of white fish, prawns and mussels in a fennel, orange and star-anise tomato broth, with a quick harissa rouille.",
+    "addIngredients": [
+      {
+        "name": "Mayonnaise, for the rouille",
+        "quantity": null,
+        "unit": ""
+      }
+    ]
+  },
+  "6aa77cd4b13a3d3c6ab2e126": {
+    "basis": "2026-09-16T18:00:33.852Z",
+    "prep": 15,
+    "cook": 25,
+    "serves": 4,
+    "difficulty": "Easy",
+    "description": "Creamy Norwegian fish soup with leek, carrot and potato, finished with crème fraîche, shrimp and chives."
+  },
+  "6aa77cd4b13a3d3c6ab2e0cf": {
+    "basis": "2026-09-16T18:00:26.399Z",
+    "prep": 50,
+    "cook": 70,
+    "serves": 8,
+    "difficulty": "Medium",
+    "description": "A French leek tart: buttery leeks set in a crème fraîche and egg custard in a cheddar pastry case."
+  },
+  "6aa77cd4b13a3d3c6ab2e137": {
+    "basis": "2026-09-16T18:00:35.213Z",
+    "prep": 30,
+    "cook": 20,
+    "serves": 8,
+    "difficulty": "Medium",
+    "description": "A Canadian prairie pie of graham-cracker crust, vanilla custard and toasted meringue."
+  },
+  "6a7f731d2bcdd23768f6a3ff": {
+    "basis": "2026-09-16T18:00:23.439Z",
+    "difficulty": "Easy",
+    "replaceSteps": {
+      "6": "Once the cheese has melted, tilt the pan to one side and, from the higher side, start rolling the omelette onto itself. It should look like a wrap, firm outside and soft inside. If the bottom is not firm yet, leave it on the heat a little longer."
+    }
+  },
+  "6aa77cd4b13a3d3c6ab2e0dc": {
+    "basis": "2026-09-16T18:00:27.394Z",
+    "prep": 5,
+    "cook": 5,
+    "serves": 1,
+    "difficulty": "Medium",
+    "description": "A classic rolled French omelette seasoned with parmesan and filled with soft herbs and Gruyère.",
+    "replaceSteps": {
+      "5": "Scatter the herbs and Gruyère over the omelette. Grip the handle underneath, tilt the pan down away from you and let the omelette fall to the edge. Fold the side nearest you over by a third with your fork and keep rolling, so the omelette tips onto a plate – or fold it in half if that's easier."
+    }
+  },
+  "6aa77cd4b13a3d3c6ab2e0c1": {
+    "basis": "2026-09-16T18:00:25.145Z",
+    "prep": 15,
+    "cook": 60,
+    "serves": 4,
+    "difficulty": "Easy",
+    "description": "Slow-caramelised onions simmered in wine and beef stock, topped with Gruyère toasts and grilled."
+  },
+  "6aa77cd4b13a3d3c6ab2e0b0": {
+    "basis": "2026-09-16T18:00:23.713Z",
+    "prep": 10,
+    "cook": 10,
+    "serves": 4,
+    "difficulty": "Easy",
+    "description": "Whole fresh sardines dusted in flour and deep-fried until crisp, served with lemon.",
+    "ingredients": [
+      {
+        "name": "Sardines",
+        "quantity": 500,
+        "unit": "g"
+      },
+      {
+        "name": "Flour, for dusting",
+        "quantity": null,
+        "unit": ""
+      },
+      {
+        "name": "Salt",
+        "quantity": 1,
+        "unit": "pinch"
+      },
+      {
+        "name": "Vegetable Oil, for deep-frying",
+        "quantity": null,
+        "unit": ""
+      },
+      {
+        "name": "Lemon slices, to serve",
+        "quantity": null,
+        "unit": ""
+      }
+    ],
+    "instructions": [
+      "Wash the sardines under cold running water and pat them dry.",
+      "Season the flour with the salt and roll the fish in it.",
+      "Deep-fry in hot oil until crisp.",
+      "Drain on kitchen paper and serve hot or cold with lemon slices."
+    ]
+  },
+  "6aa77cd4b13a3d3c6ab2e112": {
+    "basis": "2026-09-16T18:00:32.173Z",
+    "prep": 40,
+    "cook": 20,
+    "serves": 4,
+    "difficulty": "Easy",
+    "description": "Danish pork meatballs, shaped with a spoon and pan-fried in butter until browned.",
+    "replaceSteps": {
+      "1": "Stir the salt into the mince. Add the flour, oats and pepper, then the onion and garlic, then the egg and lastly the milk. Stir until the mixture is firm. Refrigerate for at least 30 minutes, or make it up to a day ahead."
+    }
+  },
+  "6aa77cd4b13a3d3c6ab2e0f8": {
+    "basis": "2026-09-16T18:00:29.673Z",
+    "prep": 70,
+    "cook": 12,
+    "serves": 2,
+    "difficulty": "Easy",
+    "title": "Frog Legs in Garlic Butter",
+    "description": "Frog legs pan-fried in garlic butter and finished with parsley.",
+    "replaceSteps": {
+      "0": "Soak the frog legs in the milk in the fridge for an hour (optional). Meanwhile, mash the butter with the garlic to make a garlic butter.",
+      "3": "Add the frog legs to the pan and fry for about 10 minutes, turning them regularly, until golden brown on both sides."
+    }
+  },
+  "6aa77cd4b13a3d3c6ab2e121": {
+    "basis": "2026-09-16T18:00:33.448Z",
+    "prep": 45,
+    "cook": 40,
+    "serves": 12,
+    "difficulty": "Medium",
+    "description": "Dutch spiced shortcrust filled with almond paste and baked as a slab, topped with whole almonds."
+  },
+  "6aa77cd4b13a3d3c6ab2e144": {
+    "basis": "2026-09-16T18:00:36.483Z",
+    "prep": 10,
+    "cook": 15,
+    "serves": 2,
+    "difficulty": "Easy",
+    "description": "Spiced waffles made with dark beer and gingerbread spice.",
+    "instructions": [
+      "Beat the egg and sugar into a light foam.",
+      "Sift together the flour, salt and gingerbread spice.",
+      "Gradually stir the dry ingredients into the egg mixture.",
+      "Stir in the milk and beer, then the melted butter.",
+      "Let the batter rest for a few minutes, then cook in a hot, greased waffle iron until crisp and brown."
+    ]
+  },
+  "6aa77cd4b13a3d3c6ab2e119": {
+    "basis": "2026-09-16T18:00:32.770Z",
+    "prep": 40,
+    "cook": 70,
+    "serves": 6,
+    "difficulty": "Medium",
+    "description": "Polish cabbage rolls stuffed with beef, pork and rice, baked in tomato over a bed of chopped cabbage.",
+    "replaceSteps": {
+      "6": "Pour the tomato purée over the cabbage rolls and cover the dish with aluminium foil."
+    }
+  },
+  "6aa77cd4b13a3d3c6ab2e102": {
+    "basis": "2026-09-16T18:00:30.677Z",
+    "prep": 375,
+    "cook": 0,
+    "serves": 8,
+    "difficulty": "Easy",
+    "description": "No-churn Jamaican ice cream of whipped cream and condensed milk with Grape-Nuts cereal folded through.",
+    "publish": false,
+    "reason": "The condensed milk is listed as 1.25 oz, far too little to sweeten and set 2 cups of cream; it is probably a 14 oz can, but the source amount can't be confirmed."
+  },
+  "6aa77cd4b13a3d3c6ab2e0b1": {
+    "basis": "2026-09-16T18:00:23.793Z",
+    "prep": 10,
+    "cook": 15,
+    "serves": 4,
+    "difficulty": "Easy",
+    "description": "Griddled aubergine slices with a tahini, yogurt and herb dressing.",
+    "replaceSteps": {
+      "0": "Cut the aubergines into 1cm slices. Brush each slice with oil, then season. Heat a griddle pan or barbecue and, when hot, griddle the slices for 2–3 minutes on each side until golden and tender."
+    }
+  },
+  "6aa77cd4b13a3d3c6ab2e11b": {
+    "basis": "2026-09-16T18:00:32.928Z",
+    "prep": 80,
+    "cook": 40,
+    "serves": 8,
+    "difficulty": "Medium",
+    "description": "Chilled slabs of stovetop mac and cheese sandwiched with Cheddar and Colby Jack and grilled in garlic butter.",
+    "dropSteps": [
+      0,
+      8
+    ],
+    "replaceSteps": {
+      "13": "Place a slice of Colby Jack on each, then finish with the remaining bread slices, buttered-side up. (To move the mac and cheese, slide a spatula under each piece and flip it onto the sandwich.)"
+    }
+  },
+  "6aa77cd4b13a3d3c6ab2e0d1": {
+    "basis": "2026-09-14T04:49:24.574Z",
+    "prep": 2,
+    "cook": 18,
+    "serves": 1,
+    "difficulty": "Easy",
+    "description": "Plain stovetop grits, simmered until creamy.",
+    "instructions": [
+      "Bring the water and salt to the boil, then stir in the grits.",
+      "Reduce the heat, cover and cook for about 15 minutes, stirring occasionally, until the grits are as thick as you like.",
+      "Let them cool slightly, then serve."
+    ]
+  },
+  "6aa77cd4b13a3d3c6ab2e134": {
+    "basis": "2026-09-14T04:49:24.586Z",
+    "prep": 15,
+    "cook": 15,
+    "serves": 6,
+    "difficulty": "Easy",
+    "description": "Simple rye-flour honey biscuits made with just three ingredients.",
+    "instructions": [
+      "Dissolve the honey in the water.",
+      "Add the flour and let the mixture stand for a few minutes, then knead it briefly.",
+      "Using a teaspoon, form the dough into small rounds and place them on a greased or lined baking sheet.",
+      "Bake at 200°C for 10–15 minutes."
+    ]
+  },
+  "6aa77cd4b13a3d3c6ab2e156": {
+    "basis": "2026-09-16T18:00:37.949Z",
+    "prep": 120,
+    "cook": 16,
+    "serves": 12,
+    "difficulty": "Medium",
+    "description": "Soft, cardamom-scented Danish wheat buns, baked close together and served warm with butter.",
+    "patchIngredients": {
+      "5": {
+        "name": "Ground Cardamom"
+      }
+    },
+    "featured": true
+  },
+  "6aa77cd4b13a3d3c6ab2e0e5": {
+    "basis": "2026-09-16T18:00:28.199Z",
+    "prep": 25,
+    "cook": 75,
+    "serves": 6,
+    "difficulty": "Medium",
+    "description": "Turkish stuffed aubergines baked with tomato, onion and cinnamon, with barbecued lamb chops and tzatziki."
+  },
+  "6aa77cd4b13a3d3c6ab2e132": {
+    "basis": "2026-09-16T18:00:34.785Z",
+    "prep": 10,
+    "cook": 0,
+    "serves": 4,
+    "difficulty": "Easy",
+    "description": "A chilled yogurt and cucumber soup with garlic and dried mint.",
+    "replaceSteps": {
+      "1": "Serve with a few ice cubes in each bowl."
+    }
+  },
+  "6aa77cd4b13a3d3c6ab2e0bc": {
+    "basis": "2026-09-16T18:00:24.724Z",
+    "prep": 15,
+    "cook": 20,
+    "serves": 6,
+    "difficulty": "Easy",
+    "description": "Sweet Jamaican fried dumplings of flour and cornmeal, flavoured with vanilla."
+  },
+  "6aa77cd4b13a3d3c6ab2e11e": {
+    "basis": "2026-09-16T18:00:33.192Z",
+    "prep": 45,
+    "cook": 60,
+    "serves": 10,
+    "difficulty": "Easy",
+    "title": "Jamaican Spice Bun",
+    "description": "A dark, fruity Jamaican Easter bun sweetened with molasses and honey, traditionally served with cheese.",
+    "replaceSteps": {
+      "5": "Make a well in the middle of the dry ingredients and pour in the wet mixture, stirring until fully combined. Add the floured fruit and stir until incorporated."
+    }
+  },
+  "6aa77cd4b13a3d3c6ab2e147": {
+    "basis": "2026-09-16T18:00:36.648Z",
+    "prep": 10,
+    "cook": 30,
+    "serves": 4,
+    "difficulty": "Easy",
+    "description": "Steamed Japanese short-grain rice, rinsed until the water runs clear and finished with mirin."
+  },
+  "6aa77cd4b13a3d3c6ab2e0ec": {
+    "basis": "2026-09-16T18:00:28.769Z",
+    "prep": 20,
+    "cook": 50,
+    "serves": 4,
+    "difficulty": "Medium",
+    "description": "Afghan sweet-savoury fried squash layered with onion and garlic and served on yogurt.",
+    "replaceSteps": {
+      "4": "Spread 1–2 tablespoons of yogurt on a plate, add the squash on top and finish with another layer of yogurt. Scatter with green chilli and serve."
+    }
+  },
+  "6aa77cd4b13a3d3c6ab2e169": {
+    "basis": "2026-09-16T18:00:39.452Z",
+    "prep": 15,
+    "cook": 40,
+    "serves": 4,
+    "difficulty": "Medium",
+    "description": "Breaded fried chicken breast with a smooth, mild Japanese-style curry sauce.",
+    "dropSteps": [
+      0
+    ]
+  },
+  "6aa77cd4b13a3d3c6ab2e154": {
+    "basis": "2026-09-16T18:00:37.790Z",
+    "prep": 50,
+    "cook": 35,
+    "serves": 4,
+    "difficulty": "Medium",
+    "description": "Azerbaijani cabbage rolls of minced lamb, rice, chickpeas and herbs, steamed under a weight and finished with tomato.",
+    "instructions": [
+      "Boil the rice for 8 minutes and drain. Finely chop the onion and the herbs.",
+      "Roughly chop or lightly mash the chickpeas (soaked overnight and cooked, or tinned).",
+      "Mince the lamb together with the lamb fat.",
+      "Mix the lamb with the onion, turmeric, cinnamon, chickpeas, rice and herbs, and season generously with salt and pepper.",
+      "Bring a large pan of salted water to the boil. Pull off the outer cabbage leaves and keep them, then boil the whole cabbage for 3–4 minutes. Lift it out, keeping the water boiling, and peel off the softened leaves, returning the cabbage to the water for a few minutes whenever the inner leaves are still too crisp.",
+      "Cut the tough stalks out of the leaves, keeping them, and halve the largest leaves.",
+      "Put a heaped tablespoon of filling in the middle of each leaf, fold the ends over the filling and roll it up tightly.",
+      "Line the bottom of a stockpot with the outer leaves and stalks and lay the dolma on top. Add water up to the top of the lining leaves.",
+      "Weigh the dolma down with a heatproof plate so they don't unroll, bring to the boil and simmer for 25 minutes.",
+      "Meanwhile, heat the tomato purée with the water to make a simple sauce. Pour it over the dolma and cook for 5 minutes more."
+    ]
+  },
+  "6aa77cd4b13a3d3c6ab2e127": {
+    "basis": "2026-09-16T18:00:33.962Z",
+    "prep": 20,
+    "cook": 35,
+    "serves": 4,
+    "difficulty": "Medium",
+    "publishTitle": "Kentucky-style Fried Chicken",
+    "description": "Chicken pieces in a flour coating seasoned with paprika, herbs and spices, deep-fried at 350°F."
+  },
+  "6aa77cd4b13a3d3c6ab2e170": {
+    "basis": "2026-09-16T18:00:39.937Z",
+    "prep": 160,
+    "cook": 25,
+    "serves": 8,
+    "difficulty": "Medium",
+    "description": "A soft Algerian semolina loaf enriched with egg, oil and milk and topped with sesame seeds.",
+    "featured": true
+  },
+  "6aa77cd4b13a3d3c6ab2e165": {
+    "basis": "2026-09-16T18:00:39.118Z",
+    "serves": 2,
+    "difficulty": "Easy",
+    "description": "Turkish loaded baked potatoes mashed with butter and cheese and piled with toppings.",
+    "publish": false,
+    "reason": "The method describes the toppings but never says how to bake the potatoes, which is the dish."
+  },
+  "6aa77cd4b13a3d3c6ab2e0c4": {
+    "basis": "2026-09-16T18:00:25.394Z",
+    "prep": 15,
+    "cook": 165,
+    "serves": 4,
+    "difficulty": "Easy",
+    "title": "Lakra me Mish (Cabbage and Meat Stew)",
+    "description": "Albanian beef and cabbage stew with red pepper and paprika, simmered for two and a half hours.",
+    "replaceSteps": {
+      "0": "Heat some olive oil in a sauté pan or saucepan with a lid. Once hot, add the onions, diced beef and red peppers and fry for 5 minutes, stirring occasionally, until the meat is browned."
+    }
+  },
+  "6aa77cd4b13a3d3c6ab2e122": {
+    "basis": "2026-09-16T18:00:33.530Z",
+    "prep": 20,
+    "cook": 25,
+    "serves": 4,
+    "difficulty": "Easy",
+    "description": "Lamb, mint and apricot meatballs cooked in a cumin and coriander tomato sauce."
+  },
+  "6aa77cd4b13a3d3c6ab2e0ad": {
+    "basis": "2026-09-16T18:00:23.530Z",
+    "prep": 140,
+    "cook": 10,
+    "serves": 4,
+    "difficulty": "Easy",
+    "description": "Lamb marinated in lemon, dill and garlic, skewered and grilled, and served in warm pitta.",
+    "replaceSteps": {
+      "2": "Cook the skewers for 2–3 minutes on each side, basting with the remaining marinade. Warm the pitta or flatbreads briefly, then stuff them with the souvlaki. Serve with a Greek salad and tzatziki if you like."
+    }
+  },
+  "6aa77cd4b13a3d3c6ab2e0d2": {
+    "basis": "2026-09-16T18:00:26.567Z",
+    "prep": 20,
+    "cook": 110,
+    "serves": 4,
+    "difficulty": "Easy",
+    "description": "Slow-simmered lamb shoulder with carrot and potato under a shortcrust lid.",
+    "replaceSteps": {
+      "5": "Meanwhile, peel and cube the potatoes and boil them until just tender. Drain and add them to the lamb."
+    },
+    "dropSteps": [
+      8
+    ]
+  },
+  "6aa77cd4b13a3d3c6ab2e107": {
+    "basis": "2026-09-16T18:00:31.159Z",
+    "prep": 40,
+    "cook": 95,
+    "serves": 4,
+    "difficulty": "Hard",
+    "description": "Layered lamb biryani: lamb cooked in a cashew, yogurt and spice masala under parboiled basmati, saffron milk and crisp onions.",
+    "addIngredients": [
+      {
+        "name": "Tomatoes, chopped",
+        "quantity": 2,
+        "unit": ""
+      },
+      {
+        "name": "Green Chillies, slit",
+        "quantity": 2,
+        "unit": ""
+      },
+      {
+        "name": "Lemon, to serve",
+        "quantity": null,
+        "unit": ""
+      }
+    ],
+    "instructions": [
+      "Grind the cashews, poppy seeds (khus khus) and ½ tbsp cumin seeds into a smooth paste with as little water as possible.",
+      "Deep-fry the sliced onions in hot oil a few at a time until light brown, then drain on kitchen paper, where they crisp up. Fry the cashew nuts until golden and set aside.",
+      "Wash the rice and soak it in water for 20 minutes.",
+      "Meanwhile, heat a little oil in a large, wide pan over a medium heat. Add a handful of the fried onions, the cashew paste, green chillies, ginger-garlic paste and garlic and fry for a minute.",
+      "Add the tomatoes and sauté until cooked but not mushy.",
+      "Add the red chilli powder, biryani masala, mint and coriander and sauté well. (Without biryani masala, use 1 tsp garam masala and 3 tsp red chilli powder.)",
+      "Take the pan off the heat and stir in the yogurt, which stops it curdling, then return it to the heat.",
+      "Add the lamb, salt and ½ cup water, cover and cook over a medium-low heat for about 1 hour until tender, or pressure-cook for 6 whistles. If liquid remains, cook uncovered to reduce it.",
+      "Bring a large pan of water, three times the volume of the rice, to the boil. Add the drained rice, salt, the remaining cumin seeds and the whole spices and cook for 7 minutes, until about 80% done. Drain.",
+      "Level the lamb and spread the hot rice over it. Top with the remaining fried onions, the ghee, mint, coriander and the saffron milk.",
+      "Cover tightly and bake at 350°F for 15 minutes, or cook on the hob over a medium heat for 12 minutes and the lowest heat for 5. Mix gently and serve hot, with lemon to squeeze over if it is too spicy."
+    ]
+  },
+  "6aa77cd4b13a3d3c6ab2e15e": {
+    "basis": "2026-09-16T18:00:38.625Z",
+    "prep": 15,
+    "cook": 80,
+    "serves": 6,
+    "difficulty": "Easy",
+    "title": "Lamb Rogan Josh",
+    "description": "Lamb simmered in a rich sauce of onion, ginger, garlic, warm spices and yogurt."
+  },
+  "6aa77cd4b13a3d3c6ab2e0b2": {
+    "basis": "2026-09-16T18:00:23.879Z",
+    "serves": 8,
+    "difficulty": "Easy",
+    "description": "Laotian pickled cabbage with spring onions in salt brine.",
+    "publish": false,
+    "reason": "The method sets the cabbage in brine but never says how long to leave it to sour, or at what temperature, which is the whole pickle."
+  },
+  "6aa77cd4b13a3d3c6ab2e14d": {
+    "basis": "2026-09-16T18:00:37.179Z",
+    "prep": 20,
+    "cook": 60,
+    "serves": 6,
+    "difficulty": "Easy",
+    "description": "A quick bacon and beef ragù lasagne topped with crème fraîche, mozzarella and parmesan."
+  },
+  "6aa77cd4b13a3d3c6ab2e0e1": {
+    "basis": "2026-09-16T18:00:27.860Z",
+    "prep": 490,
+    "cook": 65,
+    "serves": 4,
+    "difficulty": "Easy",
+    "description": "Tunisian chickpea soup with garlic, cumin and harissa, sharpened with lime. The chickpeas soak overnight.",
+    "replaceSteps": {
+      "1": "Drain the chickpeas, soaked overnight, and add them to the pot with the vegetable stock. Bring to the boil, then reduce the heat, cover and simmer for 30 minutes.",
+      "4": "Season to taste with salt, pepper and lime juice and serve hot."
+    }
+  },
+  "6aa77cd4b13a3d3c6ab2e13d": {
+    "basis": "2026-09-16T18:00:35.900Z",
+    "prep": 25,
+    "cook": 30,
+    "serves": 6,
+    "difficulty": "Easy",
+    "description": "Chilean baked milk custard infused with lemon zest and cinnamon and browned on top.",
+    "replaceSteps": {
+      "2": "Gently beat the eggs and sugar together until the sugar has dissolved. Slowly beat in 1 cup of the hot milk, a little at a time, then stir the egg mixture back into the rest of the milk."
+    }
+  },
+  "6aa77cd4b13a3d3c6ab2e120": {
+    "basis": "2026-09-16T18:00:33.359Z",
+    "prep": 100,
+    "cook": 20,
+    "serves": 6,
+    "difficulty": "Medium",
+    "title": "Magwinya (Botswana Doughnut Bites)",
+    "description": "Botswana fried doughnut bites, crisp outside and fluffy within, dusted with powdered sugar.",
+    "patchIngredients": {
+      "6": {
+        "name": "Powdered Sugar"
+      }
+    },
+    "replaceSteps": {
+      "7": "Heat about 5cm (2in) of vegetable oil in a pot to 180°C/350°F, and set a rack over a paper-towel-lined tray to drain the doughnuts on."
+    },
+    "dropSteps": [
+      0,
+      4,
+      6
+    ]
+  },
+  "6aa77cd4b13a3d3c6ab2e14a": {
+    "basis": "2026-09-16T18:00:36.902Z",
+    "prep": 30,
+    "cook": 0,
+    "serves": 6,
+    "difficulty": "Easy",
+    "description": "A fresh salsa of mango, tomato, avocado, red onion and cilantro with lime.",
+    "replaceSteps": {
+      "1": "It is best made 15–20 minutes before serving; made too early it turns watery. Chop everything ahead and mix it just before serving."
+    }
+  },
+  "6aa77cd4b13a3d3c6ab2e160": {
+    "basis": "2026-09-14T04:49:24.590Z",
+    "prep": 5,
+    "cook": 75,
+    "serves": 8,
+    "difficulty": "Easy",
+    "description": "Chilean dulce de leche: milk and sugar simmered slowly until thick and caramel-coloured.",
+    "patchIngredients": {
+      "3": {
+        "name": "Baking Soda"
+      }
+    }
+  },
+  "6aa77cd4b13a3d3c6ab2e0ce": {
+    "basis": "2026-09-16T18:00:26.308Z",
+    "prep": 15,
+    "cook": 60,
+    "serves": 6,
+    "difficulty": "Medium",
+    "description": "Kenyan roast goat served with ugali and a tomato, onion and chilli kachumbari.",
+    "publish": false,
+    "reason": "The ugali uses 1 kg of maize flour, but the water it is cooked in is missing from the ingredients and the method gives no amount."
+  },
+  "6aa77cd4b13a3d3c6ab2e16f": {
+    "basis": "2026-09-16T18:00:39.858Z",
+    "prep": 45,
+    "cook": 105,
+    "serves": 8,
+    "difficulty": "Hard",
+    "title": "McSingh's Scotch Pie",
+    "description": "A hot-water-crust pie of lamb mince spiced with cumin, chilli and coriander: a Scottish-Punjabi Scotch pie."
+  },
+  "6aa77cd4b13a3d3c6ab2e0b3": {
+    "basis": "2026-09-16T18:00:23.969Z",
+    "prep": 20,
+    "cook": 55,
+    "serves": 4,
+    "difficulty": "Easy",
+    "description": "Minced beef and mushrooms in a rich gravy under a fluted shortcrust lid."
+  },
+  "6aa77cd4b13a3d3c6ab2e158": {
+    "basis": "2026-09-16T18:00:38.117Z",
+    "prep": 20,
+    "cook": 18,
+    "serves": 12,
+    "difficulty": "Easy",
+    "description": "Marbled vanilla and chocolate mini bundt cakes dusted with icing sugar.",
+    "replaceSteps": {
+      "5": "Dust with icing sugar and serve."
+    }
+  },
+  "6aa77cd4b13a3d3c6ab2e0e2": {
+    "basis": "2026-09-16T18:00:27.945Z",
+    "prep": 160,
+    "cook": 30,
+    "serves": 24,
+    "difficulty": "Medium",
+    "description": "A large batch of soft, buttery milk-bread buns baked close together in pans.",
+    "patchIngredients": {
+      "6": {
+        "name": "Egg whites, to glaze"
+      }
+    },
+    "instructions": [
+      "Combine the flour, sugar, yeast and salt in a large bowl.",
+      "Add the warm milk and knead until the dough is smooth and elastic.",
+      "Add the butter and keep kneading until it is fully worked in.",
+      "Cover and leave to rise until doubled, about 90 minutes.",
+      "Turn the dough out onto a lightly floured surface, divide it and shape the pieces into smooth balls.",
+      "Set them in lightly greased pans, cover and leave to rise until puffy and soft. Towards the end of the rise, heat the oven to 375°F.",
+      "Brush the buns with egg white and bake for 28–32 minutes, until golden brown."
+    ]
+  },
+  "6aa77cd4b13a3d3c6ab2e151": {
+    "basis": "2026-09-16T18:00:37.535Z",
+    "prep": 30,
+    "cook": 60,
+    "serves": 8,
+    "difficulty": "Medium",
+    "description": "Bite-sized shortcrust cases filled with beef and bean chilli and topped with soured-cream mash."
+  },
+  "6aa77cd4b13a3d3c6ab2e0fc": {
+    "basis": "2026-09-16T18:00:30.055Z",
+    "prep": 10,
+    "cook": 30,
+    "serves": 2,
+    "difficulty": "Easy",
+    "description": "A light Croatian mushroom and buckwheat soup finished with sour cream and a splash of vinegar.",
+    "addIngredients": [
+      {
+        "name": "Flour, to thicken",
+        "quantity": 1,
+        "unit": "tsp"
+      }
+    ],
+    "instructions": [
+      "Chop the onion and garlic, slice the mushrooms and rinse the buckwheat.",
+      "Heat the oil and lightly sauté the onion. Add the mushrooms and garlic and keep sautéing.",
+      "Add salt, the stock cube, the buckwheat and the bay leaf and cover with water. Simmer gently until the buckwheat is nearly cooked.",
+      "Season with pepper, stir in the sour cream mixed with the flour, and add the parsley and vinegar to taste."
+    ]
+  },
+  "6aa77cd4b13a3d3c6ab2e11c": {
+    "basis": "2026-09-16T18:00:33.022Z",
+    "prep": 170,
+    "cook": 5,
+    "serves": 16,
+    "difficulty": "Medium",
+    "description": "Canadian no-bake bars: a chocolate, coconut and almond biscuit base, custard buttercream and a chocolate top.",
+    "patchIngredients": {
+      "0": {
+        "name": "Butter"
+      },
+      "4": {
+        "name": "Digestive Biscuits, crushed"
+      }
+    }
+  },
+  "6aa77cd4b13a3d3c6ab2e12a": {
+    "basis": "2026-09-16T18:00:34.233Z",
+    "prep": 40,
+    "cook": 30,
+    "serves": 10,
+    "difficulty": "Medium",
+    "description": "Thin Norwegian cardamom wafer cookies, baked on a patterned iron and rolled into cones while hot."
+  },
+  "6aa77cd4b13a3d3c6ab2e0d3": {
+    "basis": "2026-09-16T18:00:26.650Z",
+    "prep": 120,
+    "cook": 40,
+    "serves": 10,
+    "difficulty": "Hard",
+    "description": "Thin Norwegian potato flatbreads rolled out and cooked on a griddle, served with a sweet butter spread.",
+    "addSteps": [
+      "For the spread, beat the butter with the sugar and cream until fluffy. Spread it over the lefse, roll them up and serve."
+    ]
+  },
+  "6aa77cd4b13a3d3c6ab2e14b": {
+    "basis": "2026-09-16T18:00:36.994Z",
+    "prep": 30,
+    "cook": 15,
+    "serves": 4,
+    "difficulty": "Easy",
+    "title": "Num Pang (Cambodian Baguette Sandwich)",
+    "description": "Cambodian baguettes filled with soy-honey chicken, pickled carrot and daikon, sriracha mayo and cilantro."
+  },
+  "6aa77cd4b13a3d3c6ab2e0b9": {
+    "basis": "2026-09-16T18:00:24.435Z",
+    "prep": 5,
+    "cook": 45,
+    "serves": 10,
+    "difficulty": "Easy",
+    "title": "Paracuca (Candied Roasted Peanuts)",
+    "description": "Peanuts boiled in sugar syrup until coated, then roasted until dry and crunchy.",
+    "replaceSteps": {
+      "2": "Bake at 300°F for 30–35 minutes, until dry and lightly browned. Cool completely and store in an airtight container."
+    }
+  },
+  "6aa77cd4b13a3d3c6ab2e10f": {
+    "basis": "2026-09-16T18:00:31.864Z",
+    "prep": 50,
+    "cook": 50,
+    "serves": 6,
+    "difficulty": "Medium",
+    "description": "A Polish pastry roll filled with minced brisket, onion and swede, sliced to serve with soup."
+  },
+  "6aa77cd4b13a3d3c6ab2e0fd": {
+    "basis": "2026-09-16T18:00:30.164Z",
+    "prep": 15,
+    "cook": 30,
+    "serves": 4,
+    "difficulty": "Easy",
+    "description": "Costa Rican green beans cooked down with shredded beef, onion, pepper and thyme.",
+    "patchIngredients": {
+      "1": {
+        "name": "Flank Steak, cooked and shredded"
+      }
+    },
+    "replaceSteps": {
+      "1": "Meanwhile, finely chop the green beans."
+    }
+  },
+  "6aa77cd4b13a3d3c6ab2e0b8": {
+    "basis": "2026-09-16T18:00:24.350Z",
+    "prep": 60,
+    "cook": 25,
+    "serves": 6,
+    "difficulty": "Medium",
+    "description": "Polish dumplings of sour-cream dough filled with sauerkraut or onion mashed potato, boiled until they float.",
+    "patchIngredients": {
+      "5": {
+        "name": "Potatoes, mashed"
+      }
+    },
+    "replaceSteps": {
+      "4": "Bring a large pot of lightly salted water to the boil. Add the pierogi and cook for 3–5 minutes, until they float to the top. Lift out with a slotted spoon."
+    }
+  },
+  "6aa77cd4b13a3d3c6ab2e155": {
+    "basis": "2026-09-16T18:00:37.871Z",
+    "prep": 15,
+    "cook": 60,
+    "serves": 4,
+    "difficulty": "Easy",
+    "description": "Spanish slow-cooked pepper, courgette, aubergine and tomato stew with eggs cooked in it."
+  },
+  "6aa77cd4b13a3d3c6ab2e0b6": {
+    "basis": "2026-09-14T04:49:24.572Z",
+    "prep": 15,
+    "cook": 15,
+    "serves": 4,
+    "difficulty": "Easy",
+    "title": "Plantain Rolls",
+    "description": "Fried ripe plantain slices rolled around codfish bulljaw, a Caribbean saltfish salad.",
+    "instructions": [
+      "Peel the plantains and cut them lengthways into ¼-inch slices.",
+      "Heat the oil in a frying pan and fry the plantain slices until golden brown underneath, then turn and brown the other side.",
+      "Drain on a plate lined with paper towel.",
+      "Put a spoonful of codfish bulljaw at one end of each slice, roll it up and secure with a toothpick or skewer.",
+      "Garnish with parsley and serve."
+    ]
+  },
+  "6aa77cd4b13a3d3c6ab2e16b": {
+    "basis": "2026-09-16T18:00:39.619Z",
+    "prep": 15,
+    "cook": 140,
+    "serves": 4,
+    "difficulty": "Easy",
+    "description": "A quick pork and haricot bean cassoulet, slow-cooked in the oven with garlic and rosemary under a crumb crust."
+  },
+  "6aa77cd4b13a3d3c6ab2e0e6": {
+    "basis": "2026-09-16T18:00:28.283Z",
+    "prep": 40,
+    "cook": 15,
+    "serves": 12,
+    "difficulty": "Medium",
+    "description": "Pastéis de nata: crisp rolled puff-pastry cases filled with a lemon and cinnamon custard, baked until scorched.",
+    "dropSteps": [
+      0,
+      2,
+      4,
+      6,
+      8,
+      10,
+      12,
+      14,
+      16
+    ],
+    "featured": true
+  },
+  "6aa77cd4b13a3d3c6ab2e11a": {
+    "basis": "2026-09-16T18:00:32.848Z",
+    "prep": 10,
+    "cook": 30,
+    "serves": 4,
+    "difficulty": "Easy",
+    "description": "A quick potato and onion gratin under crème fraîche and parmesan.",
+    "publish": false,
+    "reason": "Chicken and bacon are in the title and the ingredients, but the method never cooks them; it only says to serve the gratin with them."
+  },
+  "6aa77cd4b13a3d3c6ab2e13f": {
+    "basis": "2026-09-16T18:00:36.060Z",
+    "prep": 10,
+    "cook": 90,
+    "serves": 4,
+    "difficulty": "Easy",
+    "description": "Whole chicken roasted in a tangy marinade of onion, mustard, balsamic, garlic and cayenne."
+  },
+  "6aa77cd4b13a3d3c6ab2e174": {
+    "basis": "2026-09-16T18:00:40.276Z",
+    "prep": 15,
+    "cook": 8,
+    "serves": 2,
+    "difficulty": "Easy",
+    "description": "Tiger prawns in a chilli, garlic and coriander marinade, tossed with crisp vegetables and served over noodles.",
+    "replaceSteps": {
+      "2": "Heat the remaining oil in the wok and add the prawns, lifting them out of their juices. Toss for 1–2 minutes until pink, add the marinade and swirl the wok quickly, then tip everything onto the vegetables. Snip over the coriander leaves and squeeze over the remaining lime. Serve over noodles with extra lime."
+    }
+  },
+  "6aa77cd4b13a3d3c6ab2e15a": {
+    "basis": "2026-09-16T18:00:38.280Z",
+    "prep": 10,
+    "cook": 80,
+    "serves": 4,
+    "difficulty": "Easy",
+    "title": "Presh me Oriz (Leek and Rice Bake)",
+    "description": "Albanian leek, lamb mince and rice, baked in stock until the rice is soft.",
+    "replaceSteps": {
+      "4": "Pour the mixture into a large baking tray and bake on the bottom shelf of an oven preheated to 180°C for up to 1 hour, until all the liquid has been absorbed and the rice is soft."
+    }
+  },
+  "6aa77cd4b13a3d3c6ab2e0ea": {
+    "basis": "2026-09-16T18:00:28.605Z",
+    "prep": 60,
+    "cook": 40,
+    "serves": 6,
+    "difficulty": "Medium",
+    "description": "A make-ahead stack of courgette and red-pepper omelettes layered with herbed cream cheese and cut into wedges.",
+    "patchIngredients": {
+      "4": {
+        "name": "Roasted Red Peppers"
+      }
+    },
+    "replaceSteps": {
+      "1": "Heat a little oil in a 20–23cm frying pan, preferably non-stick. Pour the courgette eggs into a measuring jug, then pour about a third of the mixture into the pan, swirling it to cover the base."
+    }
+  },
+  "6aa77cd4b13a3d3c6ab2e138": {
+    "basis": "2026-09-16T18:00:35.312Z",
+    "prep": 10,
+    "cook": 15,
+    "serves": 2,
+    "difficulty": "Easy",
+    "description": "Purple sprouting broccoli in a light sesame tempura batter, with a Vietnamese nuoc cham dip."
+  },
+  "6aa77cd4b13a3d3c6ab2e11d": {
+    "basis": "2026-09-16T18:00:33.105Z",
+    "prep": 15,
+    "cook": 5,
+    "serves": 4,
+    "difficulty": "Easy",
+    "description": "Scored squid seasoned with salt, pepper and five-spice and seared on a hot griddle.",
+    "addIngredients": [
+      {
+        "name": "Sea Salt",
+        "quantity": 2,
+        "unit": "tsp"
+      },
+      {
+        "name": "Black Pepper, freshly ground",
+        "quantity": 1,
+        "unit": "tsp"
+      }
+    ]
+  },
+  "6aa77cd4b13a3d3c6ab2e0fa": {
+    "basis": "2026-09-16T18:00:29.851Z",
+    "prep": 490,
+    "cook": 110,
+    "serves": 6,
+    "difficulty": "Medium",
+    "description": "Jamaican red peas soup: kidney beans, beef and vegetables simmered with allspice and coconut milk, with spinner dumplings. The beans soak overnight.",
+    "instructions": [
+      "Rinse the dried kidney beans, cover generously with water and soak overnight, or for at least 2 hours. Drain.",
+      "Cut the beef into pieces and put it in a large pot with the beans, carrot, spring onions, thyme, onion, black pepper, peppers, garlic and allspice. Add the water, bring to the boil and skim off any froth, then reduce to a gentle boil and cook for about 1¼ hours, until the beans are tender and starting to fall apart.",
+      "Add the peeled, chopped potatoes and the coconut milk and cook for 15 minutes.",
+      "Meanwhile, mix the flour with the ¼ cup water and a pinch of salt into a soft, smooth dough. Rest it for 5 minutes, then pinch off tablespoon pieces and roll them between your hands into thin spinner dumplings.",
+      "Add the dumplings, stir well and cook at a rolling boil for 15 minutes more. Taste and season with salt. The soup thickens as it cools, and freezes well."
+    ]
+  },
+  "6aa77cd4b13a3d3c6ab2e11f": {
+    "basis": "2026-09-16T18:00:33.279Z",
+    "prep": 10,
+    "cook": 25,
+    "serves": 2,
+    "difficulty": "Easy",
+    "title": "Roast Aubergine with Goat's Cheese & Toasted Flatbread",
+    "description": "Roasted aubergine and cherry tomatoes with crisp flatbread, a mint and chilli dressing, and goat's cheese."
+  },
+  "6aa77cd4b13a3d3c6ab2e13c": {
+    "basis": "2026-09-16T18:00:35.794Z",
+    "prep": 15,
+    "cook": 45,
+    "serves": 4,
+    "difficulty": "Easy",
+    "description": "A vegan paella of saffron rice with roasted fennel, baby aubergine, pepper and courgette.",
+    "patchIngredients": {
+      "13": {
+        "name": "Lemon, cut into wedges"
+      }
+    },
+    "addIngredients": [
+      {
+        "name": "Olive oil",
+        "quantity": null,
+        "unit": ""
+      }
+    ],
+    "replaceSteps": {
+      "0": "Heat the oven to 200°C. Put the fennel, aubergine, pepper and courgette in a roasting tray, add a glug of olive oil, season and toss to coat. Roast for 20 minutes, turning a couple of times, until cooked through and turning golden.",
+      "1": "Meanwhile, heat a paella pan or large frying pan over a low-medium heat with a glug of olive oil. Sauté the onion for 8–10 minutes until soft. Turn the heat up to medium and stir in the rice, paprika and saffron.",
+      "3": "Stir in the peas, season, then gently mix in the roasted vegetables. Pour over the remaining stock, arrange the lemon wedges on top and cover with a lid or foil. Cook for a further 10 minutes.",
+      "4": "For the classic toasted layer at the bottom, turn the heat to high until you hear a slight crackle. Take off the heat and rest for 5 minutes, then scatter with parsley and serve."
+    }
+  },
+  "6aa77cd4b13a3d3c6ab2e0e4": {
+    "basis": "2026-09-16T18:00:28.118Z",
+    "prep": 15,
+    "cook": 50,
+    "serves": 4,
+    "difficulty": "Medium",
+    "description": "Charred roast eggplant halves over herby braised lentils, with tahini sauce and toasted pine nuts.",
+    "addIngredients": [
+      {
+        "name": "Tahini sauce, to serve",
+        "quantity": null,
+        "unit": ""
+      }
+    ]
+  },
+  "6aa77cd4b13a3d3c6ab2e15b": {
+    "basis": "2026-09-16T18:00:38.361Z",
+    "prep": 15,
+    "cook": 20,
+    "serves": 10,
+    "difficulty": "Easy",
+    "description": "Rough, crumbly British fruit buns, quick to mix and bake."
+  },
+  "6aa77cd4b13a3d3c6ab2e168": {
+    "basis": "2026-09-16T18:00:39.359Z",
+    "prep": 15,
+    "cook": 120,
+    "serves": 4,
+    "difficulty": "Easy",
+    "description": "Red cabbage braised for an hour and a half with apple, vinegar, brown sugar and rosemary, finished with kabanos sausages."
+  },
+  "6aa77cd4b13a3d3c6ab2e0db": {
+    "basis": "2026-09-16T18:00:27.296Z",
+    "prep": 15,
+    "cook": 30,
+    "serves": 4,
+    "difficulty": "Easy",
+    "description": "Dutch stamppot: mashed potato with runner beans, onion, cheese and mustard, served with crisp bacon.",
+    "replaceSteps": {
+      "2": "Meanwhile, peel the potatoes, cut them into chunks and boil in salted water until tender, then drain."
+    }
+  },
+  "6aa77cd4b13a3d3c6ab2e114": {
+    "basis": "2026-09-16T18:00:32.355Z",
+    "prep": 15,
+    "cook": 8,
+    "serves": 4,
+    "difficulty": "Easy",
+    "description": "Pan-fried salmon fillets on avocado, cucumber and spinach with a mint, lime and honey dressing.",
+    "patchIngredients": {
+      "0": {
+        "name": "Salmon fillets (4)"
+      }
+    }
+  },
+  "6aa77cd4b13a3d3c6ab2e113": {
+    "basis": "2026-09-16T18:00:32.259Z",
+    "prep": 5,
+    "cook": 15,
+    "serves": 4,
+    "difficulty": "Easy",
+    "description": "A quick red-curry broth with rice noodles, shiitake, sweetcorn and salmon, finished with lime and coriander.",
+    "patchIngredients": {
+      "5": {
+        "name": "Salmon fillets, cut into chunks"
+      }
+    }
+  },
+  "6aa77cd4b13a3d3c6ab2e106": {
+    "basis": "2026-09-16T18:00:31.059Z",
+    "prep": 15,
+    "cook": 35,
+    "serves": 4,
+    "difficulty": "Easy",
+    "title": "Samlar Kari (Khmer Red Curry)",
+    "description": "Cambodian chicken curry in coconut milk with red curry paste, bamboo shoots, red pepper and Thai basil.",
+    "patchIngredients": {
+      "13": {
+        "name": "Thai Basil leaves",
+        "quantity": 1,
+        "unit": "cup"
+      }
+    }
+  },
+  "6aa77cd4b13a3d3c6ab2e124": {
+    "basis": "2026-09-16T18:00:33.690Z",
+    "prep": 5,
+    "cook": 20,
+    "serves": 2,
+    "difficulty": "Easy",
+    "description": "A pared-back shakshouka of garlic-infused olive oil and crushed tomatoes, with eggs steamed on top.",
+    "replaceSteps": {
+      "7": "Serve with flatbread."
+    }
+  },
+  "6aa77cd4b13a3d3c6ab2e0c9": {
+    "basis": "2026-09-16T18:00:25.842Z",
+    "prep": 15,
+    "cook": 600,
+    "serves": 8,
+    "difficulty": "Easy",
+    "description": "Chuck roast slow-cooked for hours in shawarma spices and lemon, shredded, and grilled in pitta wraps with garlic sauce.",
+    "addIngredients": [
+      {
+        "name": "Pitta breads",
+        "quantity": null,
+        "unit": ""
+      },
+      {
+        "name": "Garlic sauce, to serve",
+        "quantity": null,
+        "unit": ""
+      },
+      {
+        "name": "Pickles, tomato and onion, to garnish",
+        "quantity": null,
+        "unit": ""
+      }
+    ]
+  },
+  "6aa77cd4b13a3d3c6ab2e149": {
+    "basis": "2026-09-16T18:00:36.814Z",
+    "prep": 15,
+    "cook": 0,
+    "serves": 4,
+    "difficulty": "Easy",
+    "description": "Bulgarian chopped salad of tomato, cucumber, pepper and onion under crumbled feta.",
+    "instructions": [
+      "Combine the cucumber, tomatoes, red onion and green pepper in a bowl and sprinkle with the salt.",
+      "Let it stand for 5 minutes, then add the oil.",
+      "Top with the crumbled feta and parsley, and serve."
+    ]
+  },
+  "6aa77cd4b13a3d3c6ab2e118": {
+    "basis": "2026-09-16T18:00:32.694Z",
+    "prep": 25,
+    "cook": 5,
+    "serves": 4,
+    "difficulty": "Easy",
+    "description": "Shrimp marinated in sherry and cornstarch, stir-fried with snow peas, ginger and garlic and finished with sesame oil.",
+    "replaceSteps": {
+      "1": "Mix the cornstarch, sherry and salt in a large bowl, then add the shrimp and toss to coat. Leave for 15–20 minutes while you prepare the peas (sugar snap peas work too), ginger and garlic."
+    },
+    "dropSteps": [
+      0,
+      3,
+      5
+    ]
+  },
+  "6aa77cd4b13a3d3c6ab2e0e8": {
+    "basis": "2026-09-16T18:00:28.443Z",
+    "prep": 20,
+    "cook": 10,
+    "serves": 4,
+    "difficulty": "Medium",
+    "description": "Blistered eggplant in a numbing, savoury sauce of chilli bean paste, Sichuan pepper, garlic and ginger.",
+    "instructions": [
+      "Quarter the eggplant lengthways and cut into large batons. Long, thin Asian eggplants are best; globe eggplant works too.",
+      "In a small bowl, mix the chicken stock, sugar and soy sauce.",
+      "In a second bowl, mix the chilli bean paste, garlic, ginger and Sichuan pepper.",
+      "In a third bowl, mix the cornstarch with 1 tablespoon of water.",
+      "In a fourth bowl, mix the scallions and vinegar.",
+      "Heat the oil in a wok over a medium-high heat until almost smoking. Add the eggplant and sauté, letting it sit for a few seconds between stirs so it browns and blisters. Add a little more oil if some pieces get none.",
+      "Add the chilli bean paste mixture and sauté until fragrant, about 30 seconds.",
+      "Add the stock mixture, turn the heat to medium-low and simmer for 90 seconds.",
+      "Add the cornstarch mixture and stir until the sauce thickens a little.",
+      "Add the scallions and vinegar and cook for 15 seconds to soften their sharpness.",
+      "Garnish with cilantro and serve."
+    ]
+  },
+  "6aa77cd4b13a3d3c6ab2e0dd": {
+    "basis": "2026-09-16T18:00:27.477Z",
+    "prep": 5,
+    "cook": 0,
+    "serves": 2,
+    "difficulty": "Easy",
+    "description": "Chilled silken tofu fanned on a plate and dressed with soy, sesame sauce, scallions and sesame seeds."
+  },
+  "6aa77cd4b13a3d3c6ab2e0e0": {
+    "basis": "2026-09-16T18:00:27.747Z",
+    "prep": 20,
+    "cook": 15,
+    "serves": 4,
+    "difficulty": "Medium",
+    "description": "Curry-spiced rice vermicelli stir-fried with shrimp, ham, egg and crisp vegetables.",
+    "patchIngredients": {
+      "9": {
+        "name": "Sweet Onion"
+      }
+    },
+    "addIngredients": [
+      {
+        "name": "Peanut or canola oil",
+        "quantity": 3,
+        "unit": "tbsp"
+      }
+    ],
+    "dropSteps": [
+      0
+    ]
+  },
+  "6aa77cd4b13a3d3c6ab2e0fb": {
+    "basis": "2026-09-16T18:00:29.957Z",
+    "prep": 780,
+    "cook": 290,
+    "serves": 6,
+    "difficulty": "Medium",
+    "description": "A leg of lamb marinated overnight in citrus, then slow-roasted for four hours in foil with cinnamon, fennel, cumin and honey."
+  },
+  "6aa77cd4b13a3d3c6ab2e152": {
+    "basis": "2026-09-16T18:00:37.627Z",
+    "prep": 10,
+    "cook": 0,
+    "serves": 4,
+    "difficulty": "Easy",
+    "description": "A quick blitzed salsa of cherry tomato, red pepper, onion and coriander with smoked paprika.",
+    "instructions": [
+      "Put all the ingredients except the sugar in a food processor and pulse until chopped, but not too fine.",
+      "Pour into a serving bowl and season with salt, pepper and a pinch of sugar."
+    ]
+  },
+  "6a7813582bd17abbb4bfb0a3": {
+    "basis": "2026-09-16T18:00:23.355Z",
+    "publish": false,
+    "reason": "Imported from addapinch.com. The headnote and photograph belong to that blog; under Phase 3's attribution rule it needs a visible credit or a rewritten body before it can be published."
+  },
+  "6aa77cd4b13a3d3c6ab2e130": {
+    "basis": "2026-09-14T04:49:24.585Z",
+    "prep": 5,
+    "cook": 15,
+    "serves": 3,
+    "difficulty": "Easy",
+    "description": "Spaghetti tossed with chorizo, red pepper, parsley and parmesan.",
+    "replaceSteps": {
+      "1": "When the water is boiling briskly, add the spaghetti with a good measure of salt, stir and return to the boil. Cook until al dente, following the packet timing."
+    }
+  },
+  "6aa77cd4b13a3d3c6ab2e14f": {
+    "basis": "2026-09-16T18:00:37.359Z",
+    "prep": 250,
+    "cook": 85,
+    "serves": 4,
+    "difficulty": "Easy",
+    "description": "Pinto beans simmered with chicken thighs, chorizo, new potatoes and spinach. The beans soak for at least 4 hours."
+  },
+  "6aa77cd4b13a3d3c6ab2e135": {
+    "basis": "2026-09-16T18:00:35.004Z",
+    "prep": 10,
+    "cook": 45,
+    "serves": 4,
+    "difficulty": "Easy",
+    "description": "Chicken thighs baked on a bed of paprika and lemon onions."
+  },
+  "6aa77cd4b13a3d3c6ab2e0ff": {
+    "basis": "2026-09-16T18:00:30.368Z",
+    "prep": 30,
+    "cook": 0,
+    "serves": 12,
+    "difficulty": "Easy",
+    "description": "Rich Spanish-style balls of figs, almonds and dried fruit with brandy and honey, rolled in sesame seeds."
+  },
+  "6aa77cd4b13a3d3c6ab2e171": {
+    "basis": "2026-09-16T18:00:40.019Z",
+    "prep": 10,
+    "cook": 25,
+    "serves": 4,
+    "difficulty": "Easy",
+    "description": "Warm new potatoes in a harissa and lemon dressing on rocket, with feta, mint and pine nuts.",
+    "patchIngredients": {
+      "7": {
+        "unit": "leaves"
+      }
+    },
+    "replaceSteps": {
+      "6": "Add the feta and mint and sprinkle over the pine nuts."
+    }
+  },
+  "6aa77cd4b13a3d3c6ab2e0ef": {
+    "basis": "2026-09-16T18:00:29.014Z",
+    "prep": 40,
+    "cook": 55,
+    "serves": 8,
+    "difficulty": "Medium",
+    "description": "Cannelloni filled with spinach, ricotta and parmesan, baked on a sweet garlic tomato sauce under mascarpone and mozzarella.",
+    "patchIngredients": {
+      "14": {
+        "name": "Cannelloni tubes",
+        "quantity": 400,
+        "unit": "g"
+      }
+    },
+    "replaceSteps": {
+      "0": "First make the tomato sauce. Heat the oil in a large pan and fry the garlic for 1 minute. Add the sugar, vinegar, tomatoes and some seasoning and simmer for 20 minutes, stirring occasionally, until thick. Add the basil and divide the sauce between 2 or more shallow ovenproof dishes. For the mascarpone sauce, beat the mascarpone with the milk until smooth, season and set aside."
+    }
+  },
+  "6aa77cd4b13a3d3c6ab2e0f4": {
+    "basis": "2026-09-14T04:49:24.578Z",
+    "prep": 490,
+    "cook": 150,
+    "serves": 6,
+    "difficulty": "Easy",
+    "description": "A thick split pea and ham soup, simmered with a gammon joint that is shredded back into the bowl. The peas soak overnight.",
+    "patchIngredients": {
+      "0": {
+        "name": "Gammon joint"
+      },
+      "1": {
+        "name": "Dried split peas, soaked overnight"
+      }
+    }
+  },
+  "6aa77cd4b13a3d3c6ab2e104": {
+    "basis": "2026-09-16T18:00:30.860Z",
+    "prep": 15,
+    "cook": 90,
+    "serves": 6,
+    "difficulty": "Easy",
+    "description": "A steamed suet pudding studded with currants and citrus zest, served with custard."
+  },
+  "6aa77cd4b13a3d3c6ab2e0c2": {
+    "basis": "2026-09-16T18:00:25.228Z",
+    "prep": 10,
+    "cook": 40,
+    "serves": 4,
+    "difficulty": "Easy",
+    "description": "Linguine in a silky roast butternut squash and garlic sauce, topped with crisp fried sage."
+  },
+  "6aa77cd4b13a3d3c6ab2e0ae": {
+    "basis": "2026-09-16T18:00:23.620Z",
+    "prep": 20,
+    "cook": 35,
+    "serves": 6,
+    "difficulty": "Easy",
+    "description": "Dutch kale stamppot: buttery mashed potato with curly kale and shallots, topped with smoked sausage.",
+    "patchIngredients": {
+      "5": {
+        "name": "Smoked Sausages"
+      }
+    },
+    "dropSteps": [
+      9
+    ]
+  },
+  "6aa77cd4b13a3d3c6ab2e0b5": {
+    "basis": "2026-09-16T18:00:24.146Z",
+    "prep": 40,
+    "cook": 35,
+    "serves": 4,
+    "difficulty": "Easy",
+    "description": "Slashed drumsticks marinated in soy, honey and mustard and roasted until glossy."
+  },
+  "6aa77cd4b13a3d3c6ab2e0d4": {
+    "basis": "2026-09-16T18:00:26.751Z",
+    "prep": 15,
+    "cook": 45,
+    "serves": 8,
+    "difficulty": "Easy",
+    "description": "A treacle-dark sponge baked in one dish and drenched in toffee sauce."
+  },
+  "6aa77cd4b13a3d3c6ab2e0ed": {
+    "basis": "2026-09-16T18:00:28.848Z",
+    "prep": 10,
+    "cook": 30,
+    "serves": 4,
+    "difficulty": "Easy",
+    "description": "Small eggplants browned whole in a skillet, then simmered with harissa, chickpeas and tomatoes, with cumin yogurt."
+  },
+  "6aa77cd4b13a3d3c6ab2e0bf": {
+    "basis": "2026-09-16T18:00:24.975Z",
+    "prep": 10,
+    "cook": 35,
+    "serves": 6,
+    "difficulty": "Easy",
+    "publishTitle": "Spiced Rice for Stuffed Grape Leaves",
+    "description": "Rice simmered in stock and tomato with allspice, cinnamon, raisins, dill and pine nuts, served as a side or used to fill vine leaves."
+  },
+  "6aa77cd4b13a3d3c6ab2e161": {
+    "basis": "2026-09-16T18:00:38.782Z",
+    "prep": 30,
+    "cook": 15,
+    "serves": 2,
+    "difficulty": "Medium",
+    "description": "Crisp marinated pork strips tossed in a tangy tomato sweet-and-sour sauce.",
+    "addIngredients": [
+      {
+        "name": "Oil, for frying",
+        "quantity": null,
+        "unit": ""
+      }
+    ]
+  },
+  "6aa77cd4b13a3d3c6ab2e128": {
+    "basis": "2026-09-16T18:00:34.050Z",
+    "prep": 15,
+    "cook": 35,
+    "serves": 6,
+    "difficulty": "Easy",
+    "description": "Roasted sweet potato tossed in a sherry vinegar, honey and shallot dressing with spring onions and chives."
+  },
+  "6aa77cd4b13a3d3c6ab2e0f3": {
+    "basis": "2026-09-16T18:00:29.341Z",
+    "prep": 80,
+    "cook": 16,
+    "serves": 8,
+    "difficulty": "Easy",
+    "description": "Chicken thighs marinated in lemon and paprika, then in a spiced yogurt, and grilled until charred."
+  },
+  "6aa77cd4b13a3d3c6ab2e0c5": {
+    "basis": "2026-09-16T18:00:25.473Z",
+    "prep": 120,
+    "cook": 25,
+    "serves": 8,
+    "difficulty": "Easy",
+    "description": "Azerbaijani tandir bread: a plain yeasted oblong, crosshatched, glazed with egg and topped with poppy seeds, baked in a home oven.",
+    "instructions": [
+      "Mix the yeast with the warm water and leave for a few minutes. Sift the flour with the salt into a large bowl, then gradually add the yeast water and mix with your hand until the dough forms a ball. (A bread machine's dough cycle also works.)",
+      "Turn out onto a lightly floured surface and knead for 8–10 minutes, until smooth. Put it in a large bowl, cover and leave somewhere warm until doubled, usually 1–1½ hours.",
+      "Punch the dough down and turn it out onto a lightly floured surface. Stretch it into an oblong, then roll it about ½ inch thick. Transfer to a greased baking sheet and leave for 15 minutes.",
+      "Heat the oven to 400°F. Cut crosshatches into the top of the dough, about four in each direction. Brush with the egg yolk beaten with a little water and sprinkle with poppy seeds.",
+      "Bake for 20–25 minutes, until golden on top."
+    ]
+  },
+  "6aa77cd4b13a3d3c6ab2e0cb": {
+    "basis": "2026-09-16T18:00:26.030Z",
+    "prep": 15,
+    "cook": 60,
+    "serves": 6,
+    "difficulty": "Easy",
+    "description": "Chicken baked in a homemade teriyaki sauce, shredded and tossed with brown rice and vegetables.",
+    "patchIngredients": {
+      "8": {
+        "name": "brown rice, cooked"
+      }
+    },
+    "replaceSteps": {
+      "4": "Meanwhile, steam or cook the vegetables according to the package directions."
+    }
+  },
+  "6aa77cd4b13a3d3c6ab2e0f1": {
+    "basis": "2026-09-16T18:00:29.179Z",
+    "prep": 5,
+    "cook": 15,
+    "serves": 2,
+    "difficulty": "Easy",
+    "description": "Prawns, crunchy vegetables and udon noodles in a quick green-curry coconut broth."
+  },
+  "6aa77cd4b13a3d3c6ab2e109": {
+    "basis": "2026-09-16T18:00:31.330Z",
+    "prep": 10,
+    "cook": 40,
+    "serves": 4,
+    "difficulty": "Easy",
+    "description": "Drumsticks roasted in a sticky sweet chilli, orange and red curry glaze.",
+    "patchIngredients": {
+      "2": {
+        "name": "Orange juice"
+      }
+    }
+  },
+  "6aa77cd4b13a3d3c6ab2e0bb": {
+    "basis": "2026-09-16T18:00:24.636Z",
+    "prep": 15,
+    "cook": 15,
+    "serves": 4,
+    "difficulty": "Easy",
+    "folder": "Pork",
+    "tags": [
+      "Pork",
+      "Thai"
+    ],
+    "description": "Cool rice noodles and bean sprouts in a lime and fish-sauce dressing, topped with either gingery pork mince or sesame-crusted steak.",
+    "addIngredients": [
+      {
+        "name": "Mint leaves, for the steak version",
+        "quantity": 1,
+        "unit": "handful"
+      }
+    ],
+    "replaceSteps": {
+      "1": "Stir together the lime zest and juice, fish sauce and sugar. Stir into the noodles with the red onion and lettuce.",
+      "2": "With pork: heat a little oil in a non-stick frying pan and stir-fry the minced pork, grated ginger and cayenne for 10 minutes, until browned and cooked through. Mix into the noodles, divide between four bowls and serve warm.",
+      "3": "Or with steak: heat the sunflower oil in a frying pan. Tip the sesame seeds onto a plate. Rub the oil into the steaks and press them into the seeds. Fry for 5 minutes for medium-rare, turning halfway, then rest for 5 minutes and slice thinly. Toss the chilli and mint into the noodles and top with the steak."
+    }
+  },
+  "6aa77cd4b13a3d3c6ab2e0ca": {
+    "basis": "2026-09-16T18:00:25.941Z",
+    "prep": 10,
+    "cook": 15,
+    "serves": 2,
+    "difficulty": "Easy",
+    "description": "A light red-curry and lime-leaf broth with white fish, prawns, pak choi and brown rice noodles."
+  },
+  "6a76c3e9977cedde950a165f": {
+    "basis": "2026-09-16T18:01:07.537Z",
+    "publish": false,
+    "reason": "Imported from sugarspunrun.com. The headnote, method voice and photograph belong to that blog; under Phase 3's attribution rule it needs a visible credit or a rewritten body before it can be published."
+  },
+  "6aa77cd4b13a3d3c6ab2e164": {
+    "basis": "2026-09-16T18:00:39.035Z",
+    "prep": 60,
+    "cook": 40,
+    "serves": 6,
+    "difficulty": "Medium",
+    "description": "Salmon, haddock and smoked haddock in a leek and white wine sauce with boiled eggs, under cheesy mash.",
+    "patchIngredients": {
+      "13": {
+        "name": "Eggs, hard-boiled and quartered"
+      }
+    }
+  },
+  "6aa77cd4b13a3d3c6ab2e145": {
+    "basis": "2026-09-16T18:00:36.560Z",
+    "prep": 10,
+    "cook": 20,
+    "serves": 6,
+    "difficulty": "Easy",
+    "publishTitle": "Doughnut Holes",
+    "description": "Little fried doughnut holes, dropped by the teaspoon into hot oil and rolled in sugar.",
+    "replaceSteps": {
+      "2": "Drop teaspoonfuls, no bigger, into oil heated to 365°F (no hotter), turning after a few moments until golden brown all over.",
+      "4": "Roll in icing sugar, or cinnamon sugar, while still warm and serve."
+    }
+  },
+  "6aa77cd4b13a3d3c6ab2e108": {
+    "basis": "2026-09-16T18:00:31.251Z",
+    "prep": 15,
+    "cook": 15,
+    "serves": 4,
+    "difficulty": "Easy",
+    "title": "Tonkatsu Pork",
+    "description": "Pounded pork loin in a crisp panko crust, sliced and served with a sweet-savoury tonkatsu sauce.",
+    "patchIngredients": {
+      "3": {
+        "name": "Panko Breadcrumbs"
+      }
+    }
+  },
+  "6aa77cd4b13a3d3c6ab2e166": {
+    "basis": "2026-09-16T18:00:39.200Z",
+    "prep": 15,
+    "cook": 15,
+    "serves": 4,
+    "difficulty": "Easy",
+    "description": "Spanish French toast soaked in a sherry-scented custard and fried until crisp at the edges."
+  },
+  "6aa77cd4b13a3d3c6ab2e12e": {
+    "basis": "2026-09-16T18:00:34.518Z",
+    "prep": 40,
+    "cook": 40,
+    "serves": 8,
+    "difficulty": "Medium",
+    "description": "A latticed shortcrust tart filled with golden syrup, breadcrumbs and lemon.",
+    "patchIngredients": {
+      "4": {
+        "name": "Lemons (zest and juice)"
+      }
+    }
+  },
+  "6aa77cd4b13a3d3c6ab2e12d": {
+    "basis": "2026-09-16T18:00:34.416Z",
+    "prep": 15,
+    "cook": 55,
+    "serves": 4,
+    "difficulty": "Easy",
+    "description": "A turkey meatloaf glazed with barbecue sauce and baked with smoky cannellini beans."
+  },
+  "6aa77cd4b13a3d3c6ab2e129": {
+    "basis": "2026-09-16T18:00:34.141Z",
+    "prep": 15,
+    "cook": 5,
+    "serves": 4,
+    "difficulty": "Easy",
+    "title": "Vegan Banh Mi",
+    "description": "Toasted baguette with hummus, tempeh, quick-pickled vegetables, herbs and hot sauce.",
+    "patchIngredients": {
+      "0": {
+        "name": "Raw Vegetables, shredded"
+      }
+    }
+  },
+  "6aa77cd4b13a3d3c6ab2e159": {
+    "basis": "2026-09-16T18:00:38.198Z",
+    "prep": 5,
+    "cook": 30,
+    "serves": 2,
+    "difficulty": "Easy",
+    "description": "A shortcut oven chilli of ready-roasted vegetables, kidney beans and tomatoes, served with mixed grains.",
+    "instructions": [
+      "Heat the oven to 200°C/180°C fan/gas 6. Cook the roasted vegetables in a casserole dish for 15 minutes.",
+      "Tip in the drained beans and the tomatoes, season, and cook for another 10–15 minutes until piping hot.",
+      "Heat the mixed-grain pouch in the microwave on high for 1 minute and serve with the chilli."
+    ]
+  },
+  "6aa77cd4b13a3d3c6ab2e0f0": {
+    "basis": "2026-09-16T18:00:29.103Z",
+    "prep": 5,
+    "cook": 35,
+    "serves": 1,
+    "difficulty": "Easy",
+    "description": "Eggs poached in a smoky, cumin-spiced tomato and pepper sauce, served with toast.",
+    "addIngredients": [
+      {
+        "name": "Olive oil, for frying",
+        "quantity": null,
+        "unit": ""
+      }
+    ],
+    "replaceSteps": {
+      "4": "Make two hollows in the sauce and crack an egg into each."
+    }
+  },
+  "6aa77cd4b13a3d3c6ab2e162": {
+    "basis": "2026-09-16T18:00:38.872Z",
+    "prep": 20,
+    "cook": 25,
+    "serves": 4,
+    "difficulty": "Easy",
+    "description": "Venezuelan corn cakes shaped by hand, browned on a griddle and finished in the oven until they sound hollow.",
+    "patchIngredients": {
+      "0": {
+        "name": "Pre-cooked white corn flour (masarepa)"
+      }
+    },
+    "replaceSteps": {
+      "13": "Serve hot, stuffed with your choice of fillings or alongside a Venezuelan stew."
+    }
+  },
+  "6aa77cd4b13a3d3c6ab2e0e9": {
+    "basis": "2026-09-16T18:00:28.523Z",
+    "prep": 30,
+    "cook": 40,
+    "serves": 6,
+    "difficulty": "Medium",
+    "description": "Fried Venezuelan corn turnovers filled with beef, peppers, capers and tomato.",
+    "publish": false,
+    "reason": "The method starts from 'prepared dough' but never makes it: the masarepa has no water quantity and no mixing step."
+  },
+  "6aa77cd4b13a3d3c6ab2e123": {
+    "basis": "2026-09-16T18:00:33.611Z",
+    "prep": 10,
+    "cook": 15,
+    "serves": 2,
+    "difficulty": "Easy",
+    "description": "Trout fillets and bok choi simmered in a dark caramel and fish-sauce glaze with ginger and chilli.",
+    "patchIngredients": {
+      "4": {
+        "name": "Rainbow Trout fillets"
+      },
+      "8": {
+        "name": "Steamed rice, to serve",
+        "quantity": null
+      }
+    }
+  },
+  "6aa77cd4b13a3d3c6ab2e14e": {
+    "basis": "2026-09-16T18:00:37.270Z",
+    "prep": 20,
+    "cook": 10,
+    "serves": 4,
+    "difficulty": "Easy",
+    "description": "Rice noodles, ribboned carrot and cucumber, shredded chicken and mint in a lime, fish sauce and sesame dressing.",
+    "patchIngredients": {
+      "3": {
+        "name": "Chicken Breasts, cooked and shredded"
+      }
+    }
+  },
+  "6aa77cd4b13a3d3c6ab2e157": {
+    "basis": "2026-09-16T18:00:38.040Z",
+    "prep": 30,
+    "cook": 20,
+    "serves": 4,
+    "difficulty": "Medium",
+    "description": "Seared and roasted pork tenderloin, sliced over a crunchy cabbage, cucumber and herb salad with a lime-chilli dressing.",
+    "addIngredients": [
+      {
+        "name": "Sesame seeds, for the dressing",
+        "quantity": null,
+        "unit": ""
+      }
+    ]
+  },
+  "6aa77cd4b13a3d3c6ab2e10e": {
+    "basis": "2026-09-16T18:00:31.786Z",
+    "prep": 180,
+    "cook": 35,
+    "serves": 10,
+    "difficulty": "Medium",
+    "title": "Walnut Roll (Gužvara)",
+    "description": "A Croatian sweet yeasted loaf of two rolls filled with walnuts, brown sugar and cinnamon.",
+    "publish": false,
+    "reason": "The yeast quantity was lost when the recipe was imported (it reads '2' with no unit), and it can't be recovered from the source."
+  },
+  "6aa77cd4b13a3d3c6ab2e15d": {
+    "basis": "2026-09-16T18:00:38.541Z",
+    "prep": 105,
+    "cook": 8,
+    "serves": 10,
+    "difficulty": "Medium",
+    "title": "Zeeuwse Bolussen",
+    "description": "Zeeland's sticky cinnamon-sugar spiral buns, baked hot and fast so the sugar caramelises.",
+    "replaceSteps": {
+      "3": "Mix the 250 g brown sugar with 1 tablespoon of cinnamon, scatter it over the dough and knead it in roughly.",
+      "5": "Roll each ball into a strand 35–40cm long, rolling it through the remaining sugar mixture.",
+      "6": "Coil the strand around one end and tuck the other end underneath.",
+      "7": "Place on a baking sheet lined with baking paper, cover with plastic wrap and let them rise for ½–1 hour.",
+      "9": "Bake for about 8 minutes, until done. Don't overbake, or they turn dry instead of sticky.",
+      "10": "Let them cool for 1 minute, then turn them over and leave to cool on a wire rack."
+    }
+  }
+}

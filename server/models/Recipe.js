@@ -1,9 +1,14 @@
 import mongoose from 'mongoose';
 
+/*
+ * An ingredient. `quantity` is null when there is no amount ("to serve", "to
+ * taste") rather than an invented 1, and `unit` is empty for a plain count
+ * ("2 eggs") rather than the word "unit".
+ */
 const componentSchema = new mongoose.Schema({
   name: { type: String, required: true },
-  quantity: { type: Number, required: true },
-  unit: { type: String, required: true }
+  quantity: { type: Number, default: null },
+  unit: { type: String, default: '' }
 }, { _id: false });
 
 const recipeSchema = new mongoose.Schema({

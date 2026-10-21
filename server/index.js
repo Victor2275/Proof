@@ -26,6 +26,7 @@ import bakeLogsRouter from './routes/bakeLogs.js';
 import pantryRouter from './routes/pantry.js';
 import timersRouter, { registerTimerSockets, loadTimersFromDb, globalTimers } from './routes/timers.js';
 import maintenanceRouter, { startMaintenanceCron } from './routes/maintenance.js';
+import publishedRouter from './routes/published.js';
 
 // ── Bootstrap ──────────────────────────────────────────────────────────────
 const __filename = fileURLToPath(import.meta.url);
@@ -83,6 +84,7 @@ app.use('/api/notes', notesRouter);
 app.use('/api/bakelogs', bakeLogsRouter);
 app.use('/api/pantry', pantryRouter);
 app.use('/api/timers', timersRouter);
+app.use('/api/published', publishedRouter);
 app.use('/api', aiLimiter, aiRouter);       // rate-limit all AI endpoints
 app.use('/api', maintenanceRouter);         // /api/backup + /api/maintenance/*
 

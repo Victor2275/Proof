@@ -35,6 +35,10 @@ adb_logcat.txt
 
 # Legacy local image uploads, superseded by Cloudinary.
 server/uploads/
+
+# Collection snapshots taken by maintenance scripts before they write. They hold
+# the live library, so they stay on the machine that ran the script.
+server/backups/
 test.txt
 
 # Playwright MCP session artifacts (snapshots, console logs, screenshots).
