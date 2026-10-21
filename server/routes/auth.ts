@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import rateLimit from 'express-rate-limit';
 import { User } from '../models/User.js';
+import { emailConfigured, issueToken, redeemToken, resetEmail, sendEmail, verificationEmail } from '../services/email.js';
 import {
   bearerToken,
   createSession,
@@ -33,6 +34,10 @@ import {
  *   POST   /api/auth/password    change the password (ends other sessions)
  *   GET    /api/auth/export      everything the server holds, as JSON
  *   DELETE /api/auth/me          delete the account (password required)
+ *   POST   /api/auth/verify          confirm the email from the emailed link
+ *   POST   /api/auth/verify/resend   send the confirmation again
+ *   POST   /api/auth/password/forgot email a reset link (same answer whether or not the account exists)
+ *   POST   /api/auth/password/reset  set a new password from the emailed link
  */
 const router = Router();
 
@@ -45,6 +50,22 @@ const credentialLimiter = rateLimit({
   // The suite signs up dozens of accounts from one address in a few seconds.
   skip: () => process.env.NODE_ENV === 'test',
 });
+
+// Asking for email is cheap for a caller and costs the sender's reputation.
+const emailLimiter = rateLimit({
+  windowMs: 60 * 60_000,
+  limit: 5,
+  message: { error: 'Too many emails asked for. Try again in an hour.' },
+  skip: () => process.env.NODE_ENV === 'test',
+});
+
+/** Where links in emails point: the configured site, or the address this request came to. */
+const origin = (req: Request) => process.env.PUBLIC_ORIGIN || `${req.protocol}://${req.get('host')}`;
+
+async function sendVerification(req: Request, user: { _id: string; email: string }) {
+  const token = await issueToken(user._id, 'verify');
+  return sendEmail(verificationEmail(user.email, `${origin(req)}/verify?token=${token}`));
+}
 
 const fail = (res: Response, err: unknown) => {
   if (err instanceof AccountError) return res.status(err.status).json({ error: err.message, field: err.field });
@@ -81,7 +102,9 @@ router.post('/signup', credentialLimiter, guard(async (req, res) => {
   const displayName = typeof req.body?.displayName === 'string' ? req.body.displayName.trim().slice(0, 60) : '';
   const user = await User.create({ email, handle, displayName, passwordHash: await hashPassword(password) });
   const token = await createSession({ kind: 'user', userId: user._id });
-  res.status(201).json({ token, user: privateUser(user) });
+  // Best-effort: the account exists whether or not the email goes out.
+  const verificationSent = await sendVerification(req, user).catch(() => false);
+  res.status(201).json({ token, user: privateUser(user), verificationSent });
 }));
 
 // POST /api/auth/login
@@ -152,6 +175,62 @@ router.delete('/me', requireUser, credentialLimiter, guard(async (req, res) => {
     throw new AccountError("That isn't the account's password. Nothing was deleted.", 401, 'password');
   }
   await deleteAccount(user);
+  res.json({ ok: true });
+}));
+
+// POST /api/auth/verify/resend
+router.post('/verify/resend', requireUser, emailLimiter, guard(async (req, res) => {
+  if (req.user.emailVerifiedAt) return res.json({ sent: false, alreadyConfirmed: true });
+  const sent = await sendVerification(req, req.user);
+  if (!sent) {
+    return res.status(503).json({
+      error: emailConfigured()
+        ? "The email couldn't be sent just now. Try again in a few minutes."
+        : "This Proof site can't send email yet. Ask its operator to confirm your account.",
+    });
+  }
+  res.json({ sent: true });
+}));
+
+// POST /api/auth/verify
+router.post('/verify', guard(async (req, res) => {
+  const userId = await redeemToken(req.body?.token, 'verify');
+  const user = userId ? await User.findById(userId) : null;
+  if (!user) {
+    return res.status(400).json({ error: 'That link has expired or was already used. Send a new one from Settings → Account.' });
+  }
+  if (!user.emailVerifiedAt) {
+    user.emailVerifiedAt = new Date();
+    await user.save();
+  }
+  res.json({ user: privateUser(user) });
+}));
+
+// POST /api/auth/password/forgot
+router.post('/password/forgot', emailLimiter, guard(async (req, res) => {
+  const email = normaliseEmail(req.body?.email);
+  const user = email ? await User.findOne({ email }) : null;
+  if (user) {
+    const token = await issueToken(user._id, 'reset');
+    await sendEmail(resetEmail(user.email, `${origin(req)}/reset?token=${token}`));
+  }
+  // The same answer either way, so this can't be used to find out who has an account.
+  res.json({ ok: true });
+}));
+
+// POST /api/auth/password/reset
+router.post('/password/reset', credentialLimiter, guard(async (req, res) => {
+  const password = checkPassword(req.body?.password);
+  const userId = await redeemToken(req.body?.token, 'reset');
+  const user = userId ? await User.findById(userId) : null;
+  if (!user) {
+    return res.status(400).json({ error: 'That link has expired or was already used. Ask for a new one from the sign-in sheet.' });
+  }
+  user.passwordHash = await hashPassword(password);
+  // Following the emailed link proves the address as well.
+  if (!user.emailVerifiedAt) user.emailVerifiedAt = new Date();
+  await user.save();
+  await endUserSessions(user._id);
   res.json({ ok: true });
 }));
 

@@ -148,6 +148,8 @@ export interface ModerationQueue {
 export interface SignedIn {
   token: string;
   user: Account;
+  /** On sign-up: whether the confirmation email went out. */
+  verificationSent?: boolean;
 }
 
 export const api = {
@@ -227,6 +229,15 @@ export const api = {
     request<{ token: string }>('/auth/password', { method: 'POST', body, auth: 'user' }),
 
   exportAccount: () => download('/auth/export', 'user'),
+
+  verifyEmail: (token: string) => request<{ user: Account }>('/auth/verify', { method: 'POST', body: { token } }),
+
+  resendVerification: () => request<{ sent: boolean }>('/auth/verify/resend', { method: 'POST', auth: 'user' }),
+
+  forgotPassword: (email: string) => request<{ ok: true }>('/auth/password/forgot', { method: 'POST', body: { email } }),
+
+  resetPassword: (token: string, password: string) =>
+    request<{ ok: true }>('/auth/password/reset', { method: 'POST', body: { token, password } }),
 
   deleteAccount: (password: string) =>
     request<{ ok: true }>('/auth/me', { method: 'DELETE', body: { password }, auth: 'user' }),

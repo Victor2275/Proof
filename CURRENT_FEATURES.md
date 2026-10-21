@@ -237,6 +237,13 @@ This document exhaustively tracks every capability, component, and technical int
 - **The moderation page** (`/moderation`, operator only; linked from Settings → Operator): held recipes with the screen's reason, the source and credit, and the method to read; held comments; open reports with what they are about. Approve, hold back with a reason the author will see, remove, take down, or leave up — one press each.
 - **New primitives**, in `/lab`: `PublishState`, `Tag` and `Prose` (people's own words, B1).
 
+## 15. Public launch — Phase 2: account email
+- **Confirming an address**: signing up emails a link (`/verify?token=…`) that confirms the account once; it works for a day, and asking again replaces it. Settings → Account offers "Send the link again" until it is confirmed. A confirmed email is what opens publishing, comments and the AI.
+- **Resetting a password**: "Forgot password?" in the sign-in sheet emails a link (`/reset?token=…`) that works for an hour, with the same answer whether or not an account uses the address. Setting the new password signs every device out, and following the link confirms the address too.
+- **Links are stored as hashes**: like sessions, a link's token is kept only as its SHA-256 in an `EmailToken` collection with a TTL index, and is deleted when used. Account deletion removes them.
+- **Sent through Resend** (`RESEND_API_KEY`, `EMAIL_FROM`, `PUBLIC_ORIGIN` for the links). Until Proof has its own domain (LAUNCH_PLAN §3, deferred), Resend's test sender delivers only to the Resend account's own inbox. An email that can't be sent is reported, not hidden: a new account is told its confirmation couldn't be sent, and a resend says the site can't send email yet and to ask the operator.
+- **Confirming by hand** (`server/scripts/verify-account.js --email=…`): the operator confirms an account while the site can't send email.
+
 ## 7. UI/UX Foundation
 - **Stack**: React, Vite, Tailwind CSS (`@tailwindcss/postcss`), shadcn/ui, TanStack Query for server state management.
 - **"Step Row" Visual World (Phase 0 foundation)**: The Black & Gold glassmorphic world has been replaced by an early-80s rhythm-machine design language: matte panels, silkscreened labels, lit step keys, and seven-segment readouts. Colour is temporal, never decorative — red marks *now*, orange *due*, yellow *queued*, white *complete*, and an unlit key is drawn as deliberately as a lit one.

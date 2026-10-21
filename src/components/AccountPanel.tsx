@@ -38,6 +38,7 @@ export default function AccountPanel() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [exporting, setExporting] = useState(false);
+  const [resending, setResending] = useState(false);
 
   if (!user) {
     return (
@@ -76,6 +77,20 @@ export default function AccountPanel() {
     }
   };
 
+  const resend = async () => {
+    setResending(true);
+    setError('');
+    setMessage('');
+    try {
+      await api.resendVerification();
+      setMessage(`A confirmation link is on its way to ${user.email}. It works for a day.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "The email couldn't be sent. Try again.");
+    } finally {
+      setResending(false);
+    }
+  };
+
   const allowance = aiAllowanceLine(user);
 
   return (
@@ -87,6 +102,16 @@ export default function AccountPanel() {
           <PanelRow label="Plan" value={user.plan === 'pro' ? 'Pro' : 'Free'} />
           {allowance ? <PanelRow label="AI" value={allowance} /> : null}
         </div>
+        {!user.emailVerified ? (
+          <div className="flex flex-wrap items-center justify-between gap-3 border-y border-rule py-3">
+            <p className="min-w-0 flex-1 text-sm text-ink">
+              Confirm your email to publish recipes, comment and use the AI.
+            </p>
+            <Button onClick={resend} busy={resending}>
+              Send the link again
+            </Button>
+          </div>
+        ) : null}
         <p className="text-sm text-ink">
           Your {plural(recipes.length, 'recipe', 'recipes')} and {plural(bakes.length, 'bake', 'bakes')} stay on this
           device. An account doesn't move them.

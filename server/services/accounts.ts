@@ -5,6 +5,7 @@
 import { hash, verify } from '@node-rs/argon2';
 import { User } from '../models/User.js';
 import { Session } from '../models/Session.js';
+import { EmailToken } from '../models/EmailToken.js';
 import { PublishedRecipe } from '../models/PublishedRecipe.js';
 import { Recipe } from '../models/Recipe.js';
 import { BakeLog } from '../models/BakeLog.js';
@@ -144,6 +145,7 @@ export async function deleteAccount(user: UserDoc) {
     Note.deleteMany({ ownerId: user._id }),
     Pantry.deleteMany({ ownerId: user._id }),
     Session.deleteMany({ userId: user._id }),
+    EmailToken.deleteMany({ userId: user._id }),
   ]);
   await User.deleteOne({ _id: user._id });
   await Promise.all(rated.map((id) => recountRatings(String(id))));

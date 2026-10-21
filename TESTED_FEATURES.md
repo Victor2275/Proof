@@ -291,6 +291,12 @@ This is a 1-to-1 mirror of CURRENT_FEATURES.md. Use checkboxes to track manual t
 - [ ] **Report**: reporting a recipe or comment says the operator will look at it, and it appears in the queue.
 - [ ] **Moderation page**: hidden from everyone but the operator; approve, hold back with a reason, take down and leave up all work.
 
+## 15. Public launch — Phase 2: account email
+- [ ] **Confirm**: with Resend configured, signing up sends a link; opening it says the email is confirmed and Publish opens; opening it again says it expired or was used.
+- [ ] **Resend**: Settings → Account → Send the link again sends a fresh one, and the old link stops working.
+- [ ] **No email yet**: without `RESEND_API_KEY`, sign-up says the confirmation couldn't be sent; `verify-account.js` confirms the account.
+- [ ] **Forgot password**: the sheet gives the same message for a real and an unknown address; the reset link sets a new password, signs every device out, and works once.
+
 ## 7. UI/UX Foundation
 - [ ] **"Step Row" Visual World (Phase 0 foundation)**: Rhythm-machine design language — matte panels, silkscreen labels, lit step keys, segment readouts; colour is temporal, not decorative.
 - [ ] **One enforced ban, two defined materials**: no glow except a lit key or segment; `--faceplate` and `.scrim` are the only gradient and blur, enforced by `src/designSystem.test.ts`.

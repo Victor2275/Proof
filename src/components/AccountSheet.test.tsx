@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import AccountSheet, { type AccountMode } from './AccountSheet';
 import AccountPanel from './AccountPanel';
+import { ResetPassword, VerifyEmail } from './EmailLink';
 import { api, ApiError } from '../lib/api';
 import { setAccount, userToken, type Account } from '../lib/session';
 import { ACCOUNT_PROMPT_EVENT } from '../lib/accountPrompt';
@@ -19,6 +20,10 @@ vi.mock('../lib/api', async (importOriginal) => ({
     updateMe: vi.fn(),
     changePassword: vi.fn(),
     exportAccount: vi.fn(),
+    forgotPassword: vi.fn(),
+    verifyEmail: vi.fn(),
+    resetPassword: vi.fn(),
+    resendVerification: vi.fn(),
   },
 }));
 
@@ -147,5 +152,68 @@ describe('Settings → Account', () => {
     vi.mocked(api.deleteAccount).mockResolvedValueOnce({ ok: true });
     await user.click(screen.getAllByRole('button', { name: 'Delete account' }).at(-1)!);
     await waitFor(() => expect(userToken()).toBeNull());
+  });
+});
+
+describe('email links', () => {
+  it('offers a reset link from the sign-in sheet, with the same answer for any address', async () => {
+    const user = userEvent.setup();
+    vi.mocked(api.forgotPassword).mockResolvedValue({ ok: true });
+    renderScreen(<Harness />);
+    await user.click(screen.getByRole('button', { name: 'Forgot password?' }));
+    expect(await screen.findByRole('dialog', { name: 'Reset password' })).toBeInTheDocument();
+    expect(screen.queryByLabelText('Password')).not.toBeInTheDocument();
+
+    await user.type(screen.getByLabelText('Email'), 'ada@example.com');
+    await user.click(screen.getByRole('button', { name: 'Send the link' }));
+    expect(await screen.findByText(/If an account uses ada@example.com/)).toBeInTheDocument();
+  });
+
+  it('tells a new account when its confirmation could not be sent', async () => {
+    const user = userEvent.setup();
+    vi.mocked(api.signUp).mockResolvedValue({ token: 'tok', user: ADA, verificationSent: false });
+    renderScreen(<Harness initial="signup" />);
+    await user.type(screen.getByLabelText('Email'), 'ada@example.com');
+    await user.type(screen.getByLabelText('Handle'), 'ada');
+    await user.type(screen.getByLabelText('Password'), 'correct horse battery');
+    await user.click(screen.getByRole('button', { name: 'Create account' }));
+    expect(await screen.findByText(/couldn't send the confirmation email/)).toBeInTheDocument();
+    expect(userToken()).toBe('tok');
+  });
+
+  it('confirms an email from its link, and says so', async () => {
+    vi.mocked(api.verifyEmail).mockResolvedValue({ user: { ...ADA, emailVerified: true } });
+    renderScreen(<VerifyEmail />, { route: '/verify?token=abc', path: '/verify' });
+    expect(await screen.findByText(/Your email is confirmed/)).toBeInTheDocument();
+    expect(api.verifyEmail).toHaveBeenCalledTimes(1);
+    expect(api.verifyEmail).toHaveBeenCalledWith('abc');
+  });
+
+  it('names a spent link and where to get another', async () => {
+    vi.mocked(api.verifyEmail).mockImplementation(() =>
+      Promise.reject(new ApiError('That link has expired or was already used.', 400)),
+    );
+    renderScreen(<VerifyEmail />, { route: '/verify?token=old', path: '/verify' });
+    expect(await screen.findByText(/expired or was already used/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Settings → Account/ })).toHaveAttribute('href', '/settings#account');
+  });
+
+  it('sets a new password from a reset link', async () => {
+    const user = userEvent.setup();
+    vi.mocked(api.resetPassword).mockResolvedValue({ ok: true });
+    renderScreen(<ResetPassword />, { route: '/reset?token=xyz', path: '/reset' });
+    await user.type(screen.getByLabelText('New password'), 'a brand new password');
+    await user.click(screen.getByRole('button', { name: 'Set password' }));
+    expect(await screen.findByText(/Password changed/)).toBeInTheDocument();
+    expect(api.resetPassword).toHaveBeenCalledWith('xyz', 'a brand new password');
+  });
+
+  it('lets an unconfirmed account ask for the link again', async () => {
+    const user = userEvent.setup();
+    setAccount('tok', ADA);
+    vi.mocked(api.resendVerification).mockResolvedValue({ sent: true });
+    renderScreen(<AccountPanel />);
+    await user.click(screen.getByRole('button', { name: 'Send the link again' }));
+    expect(await screen.findByText(/A confirmation link is on its way to ada@example.com/)).toBeInTheDocument();
   });
 });

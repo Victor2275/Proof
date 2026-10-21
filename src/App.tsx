@@ -31,6 +31,8 @@ const Pantry = lazy(() => import('./components/Pantry'));
 const Discover = lazy(() => import('./components/Discover'));
 const Profile = lazy(() => import('./components/Profile'));
 const Moderation = lazy(() => import('./components/Moderation'));
+const VerifyEmail = lazy(() => import('./components/EmailLink').then((m) => ({ default: m.VerifyEmail })));
+const ResetPassword = lazy(() => import('./components/EmailLink').then((m) => ({ default: m.ResetPassword })));
 // Primitives gallery. Guarded so the chunk is never referenced in a production
 // build; see components/Lab.tsx.
 const Lab = import.meta.env.DEV ? lazy(() => import('./components/Lab')) : null;
@@ -172,6 +174,8 @@ function AnimatedRoutes() {
         <Route path="/notes" element={<GeneralNotes />} />
         <Route path="/discover" element={<Discover />} />
         <Route path="/moderation" element={<Moderation />} />
+        <Route path="/verify" element={<VerifyEmail />} />
+        <Route path="/reset" element={<ResetPassword />} />
         {Lab ? <Route path="/lab" element={<Lab />} /> : null}
         {/* /@handle: a baker's page. Any other unknown single segment is a 404. */}
         <Route path="/:at" element={<Profile />} />
@@ -182,7 +186,8 @@ function AnimatedRoutes() {
 }
 
 /** Addresses a stranger may be sent straight to, without the landing page first. */
-const SHARED_PATH = /^\/(r\/|@)/;
+/** Addresses a stranger may be sent straight to: shared pages, and links from an email. */
+const SHARED_PATH = /^\/(r\/|@|verify|reset)/;
 
 function App() {
   const [showAuthModal, setShowAuthModal] = useState(false);

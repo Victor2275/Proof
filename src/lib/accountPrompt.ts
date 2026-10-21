@@ -2,7 +2,7 @@
  * Asking for the account sheet from anywhere: a Publish key, the account row
  * in More, a Settings button. The app shell owns the one sheet and opens it.
  */
-export type AccountPromptMode = 'signin' | 'signup';
+export type AccountPromptMode = 'signin' | 'signup' | 'forgot';
 
 export interface AccountPrompt {
   mode: AccountPromptMode;

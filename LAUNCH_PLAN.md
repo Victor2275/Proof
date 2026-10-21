@@ -651,4 +651,30 @@ E2E specs (Playwright is installed but unused; the Stage A matrix is the natural
 
 ---
 
+## 8. Progress — 2026-10-20
+
+Phases 1–3 are built on `feat/public-launch`, each committed with its tests
+(458 frontend, 150 server, 89 visual baselines). Not done here, by decision or
+because it is the operator's to run:
+
+- **The domain** (§3) — deferred by decision. Until it exists, account email can
+  reach only the Resend account's own inbox; `server/scripts/verify-account.js`
+  confirms accounts by hand.
+- **The production cutover** — nothing has touched the live database. In order:
+  back up Atlas; run `server/scripts/migrate-string-ids.js` (dry run, then
+  `--apply`) against a copy, then production; sign up in the app as the operator;
+  run `server/scripts/claim-library.js --email=…`; confirm the account with
+  `verify-account.js`; then copy the library onto your device from Settings →
+  Operator.
+- **Merging to `main`** — the plan says to merge at the end of Phase 1; it has
+  not been merged, because `main` is what deploys.
+- **Configuration to add on Render**: `RESEND_API_KEY`, `EMAIL_FROM`,
+  `PUBLIC_ORIGIN`; `GEMINI_API_KEY` is now also the moderation pre-screen
+  (without it, everything published waits for the operator).
+- **Deferred within Phases 1–3**: publishing bake logs, folders and pantry
+  templates (§2 lists them as publishable; recipes are done), and posting bake
+  results, which is Pro and waits for Phase 4.
+
+---
+
 *Written 2026-09-18.*
