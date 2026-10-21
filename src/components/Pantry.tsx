@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { api, type PantryItem } from '../lib/api';
 import { Plus, X, ScanBarcode } from 'lucide-react';
 import { Html5QrcodeScanner } from 'html5-qrcode';
-import { Button, Field, Panel, Sheet, Skeleton } from './ui';
+import { useAddPantryItem, useDeletePantryItem, usePantry } from '../lib/queries';
+import { Button, Field, Panel, Sheet } from './ui';
 
 /*
  * The pantry — the machine's own inventory panel.
@@ -18,15 +18,13 @@ import { Button, Field, Panel, Sheet, Skeleton } from './ui';
  */
 
 export default function Pantry() {
-  const [items, setItems] = useState<PantryItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const pantry = usePantry();
+  const addItem = useAddPantryItem();
+  const deleteItem = useDeletePantryItem();
+  const items = pantry.data ?? [];
   const [newItemName, setNewItemName] = useState('');
   const [error, setError] = useState('');
   const [scanning, setScanning] = useState(false);
-
-  useEffect(() => {
-    fetchPantry();
-  }, []);
 
   useEffect(() => {
     if (scanning) {
@@ -44,10 +42,10 @@ export default function Pantry() {
           if (data.status === 1 && data.product?.product_name) {
             setNewItemName(data.product.product_name);
           } else {
-            setError('Product not found in barcode database.');
+            setError("That barcode isn't in the Open Food Facts database. Type the name instead.");
           }
-        } catch (err) {
-          setError('Failed to fetch product data.');
+        } catch {
+          setError("Couldn't look up that barcode: the product database needs a connection. Type the name instead.");
         }
       }, () => {
         // Ignored
@@ -58,37 +56,24 @@ export default function Pantry() {
     }
   }, [scanning]);
 
-  const fetchPantry = async () => {
-    try {
-      setLoading(true);
-      const data = await api.getPantry();
-      setItems(data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleAddItem = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newItemName.trim()) return;
     try {
       setError('');
-      const newItem = await api.addPantryItem({ name: newItemName.trim() });
-      setItems([newItem, ...items]);
+      await addItem.mutateAsync(newItemName.trim());
       setNewItemName('');
-    } catch (err: any) {
-      setError(err.message || 'Failed to add item. Admin required.');
+    } catch {
+      setError("Couldn't add that to the pantry on this device. Try again.");
     }
   };
 
   const handleDeleteItem = async (id: string) => {
     try {
-      await api.deletePantryItem(id);
-      setItems(items.filter(item => item._id !== id));
-    } catch (err: any) {
-      setError(err.message || 'Failed to delete item. Admin required.');
+      setError('');
+      await deleteItem.mutateAsync(id);
+    } catch {
+      setError("Couldn't remove that from the pantry on this device. Try again.");
     }
   };
 
@@ -102,7 +87,7 @@ export default function Pantry() {
             beside every ingredient you already own.
           </p>
         </div>
-        {!loading && (
+        {pantry.isSuccess && (
           <span className="label-silkscreen shrink-0 text-silkscreen">
             {items.length} {items.length === 1 ? 'item' : 'items'} in stock
           </span>
@@ -144,11 +129,12 @@ export default function Pantry() {
       )}
 
       <Panel title="In stock" flush>
-        {loading ? (
-          <div className="flex flex-col gap-3 p-4" aria-label="Loading pantry">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className="h-5 w-48" />
-            ))}
+        {/* Read from the device: nothing is drawn while it arrives (B30), and a
+          * failure says so instead of reading as an empty cupboard (audit #3). */}
+        {pantry.isPending ? null : pantry.isError ? (
+          <div className="flex flex-col items-start gap-3 p-4" role="alert">
+            <p className="text-ink">Couldn't read the pantry on this device.</p>
+            <Button onClick={() => pantry.refetch()}>Try again</Button>
           </div>
         ) : items.length === 0 ? (
           <div className="flex flex-col items-start gap-3 p-4">
@@ -176,7 +162,7 @@ export default function Pantry() {
                 <span className="sr-only">in stock</span>
                 <button
                   type="button"
-                  onClick={() => handleDeleteItem(item._id!)}
+                  onClick={() => handleDeleteItem(item._id)}
                   aria-label={`Remove ${item.name} from the pantry`}
                   className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control text-ink-muted transition-colors hover:text-ink"
                 >

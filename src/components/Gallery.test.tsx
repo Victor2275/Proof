@@ -1,75 +1,59 @@
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { MemoryRouter } from 'react-router-dom';
+import { screen, fireEvent, waitFor } from '@testing-library/react';
+import { describe, it, expect, beforeEach } from 'vitest';
 import Gallery from './Gallery';
-import { api } from '../lib/api';
+import { makeBakeLog, makeRecipe, renderScreen, seed } from '../test/utils';
 
-vi.mock('../lib/api', () => ({
-  api: {
-    getBakeLogs: vi.fn(),
-    getRecipes: vi.fn()
-  }
-}));
-
-const mockBakeLogs = [
-  { _id: '1', recipeId: { _id: 'r1', title: 'Sourdough' }, date: '2023-01-01', notes: 'Dense', imageUrls: ['img1.jpg'] },
-  { _id: '2', recipeId: { _id: 'r2', title: 'Cookies' }, date: '2023-02-02', notes: 'Great', imageUrls: ['img2.jpg', 'img3.jpg'] },
-  { _id: '3', recipeId: { _id: 'r1', title: 'Sourdough' }, date: '2023-01-03', notes: 'Better crumb', imageUrls: ['img4.jpg'] },
-  { _id: '4', recipeId: { _id: 'r1', title: 'Sourdough' }, date: '2023-01-05', notes: 'No photo', imageUrls: [] },
+const LOGS = [
+  makeBakeLog({ _id: '1', recipeId: 'r1', date: '2023-01-01T10:00:00.000Z', notes: 'Dense', imageUrls: ['img1.jpg'] }),
+  makeBakeLog({ _id: '2', recipeId: 'r2', date: '2023-02-02T10:00:00.000Z', notes: 'Great', imageUrls: ['img2.jpg', 'img3.jpg'] }),
+  makeBakeLog({ _id: '3', recipeId: 'r1', date: '2023-01-03T10:00:00.000Z', notes: 'Better crumb', imageUrls: ['img4.jpg'] }),
+  makeBakeLog({ _id: '4', recipeId: 'r1', date: '2023-01-05T10:00:00.000Z', notes: 'No photo', imageUrls: [] }),
 ];
 
 describe('Gallery Component', () => {
-  beforeEach(() => {
-    vi.mocked(api.getBakeLogs).mockResolvedValue(mockBakeLogs as any);
+  beforeEach(async () => {
+    await seed('recipes', [makeRecipe({ _id: 'r1', title: 'Sourdough' }), makeRecipe({ _id: 'r2', title: 'Cookies' })]);
   });
 
-  it('renders without crashing while the logs are loading', async () => {
-    await act(async () => {
-      render(<MemoryRouter><Gallery /></MemoryRouter>);
-    });
-    expect(document.body).toBeDefined();
-  });
+  it("groups a recipe's bakes into one row and counts every attempt", async () => {
+    await seed('bakeLogs', LOGS);
+    renderScreen(<Gallery />);
 
-  it('groups a recipe\'s bakes into one row and counts the attempts', async () => {
-    render(<MemoryRouter><Gallery /></MemoryRouter>);
-
-    // The first test to wait on the fetch pays for the cold start; under the full
-    // suite's parallel load that overran waitFor's one-second default.
-    await waitFor(() => {
-      expect(screen.getByRole('heading', { name: 'Sourdough' })).toBeInTheDocument();
-    }, { timeout: 5000 });
-
-    // Three Sourdough logs exist but one has no photograph, so the row is two
-    // attempts — the count has to match what is actually drawn.
-    expect(screen.getByText('2 bakes')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Sourdough' })).toBeInTheDocument();
+    // A bake with no photograph is still a bake: Analytics counts it, so the
+    // history does too, drawn as an unlit plate.
+    expect(screen.getByText('3 bakes')).toBeInTheDocument();
     expect(screen.getByText('1 bake')).toBeInTheDocument();
   });
 
   it('counts one tile per bake, not one per photograph', async () => {
-    render(<MemoryRouter><Gallery /></MemoryRouter>);
+    await seed('bakeLogs', LOGS);
+    renderScreen(<Gallery />);
 
-    await waitFor(() => {
-      // Three logs carry photos (one of them carries two), so three tiles.
-      expect(screen.getAllByRole('img')).toHaveLength(3);
-    });
+    // Three logs carry photos (one of them carries two), so three photographs.
+    await waitFor(() => expect(screen.getAllByRole('img')).toHaveLength(3));
   });
 
   it('runs each row oldest first, so the row reads as progress', async () => {
-    render(<MemoryRouter><Gallery /></MemoryRouter>);
-
-    await waitFor(() => expect(screen.getByRole('heading', { name: 'Sourdough' })).toBeInTheDocument());
+    await seed('bakeLogs', LOGS);
+    renderScreen(<Gallery />);
+    await screen.findByRole('heading', { name: 'Sourdough' });
 
     const sourdoughTiles = screen
       .getAllByRole('link')
       .filter((link) => link.getAttribute('href')?.includes('/recipe/r1?makeId='));
 
-    expect(sourdoughTiles[0]).toHaveAttribute('href', '/recipe/r1?makeId=1');
-    expect(sourdoughTiles[1]).toHaveAttribute('href', '/recipe/r1?makeId=3');
+    expect(sourdoughTiles.map((t) => t.getAttribute('href'))).toEqual([
+      '/recipe/r1?makeId=1',
+      '/recipe/r1?makeId=3',
+      '/recipe/r1?makeId=4',
+    ]);
   });
 
   it('switches to a date reading, cut into months', async () => {
-    render(<MemoryRouter><Gallery /></MemoryRouter>);
-    await waitFor(() => expect(screen.getByText('2 bakes')).toBeInTheDocument());
+    await seed('bakeLogs', LOGS);
+    renderScreen(<Gallery />);
+    await screen.findByText('3 bakes');
 
     fireEvent.click(screen.getByText('By Date'));
 
@@ -77,15 +61,17 @@ describe('Gallery Component', () => {
       expect(screen.getByText(/February 2023/i)).toBeInTheDocument();
       expect(screen.getByText(/January 2023/i)).toBeInTheDocument();
     });
-    expect(screen.queryByText('2 bakes')).not.toBeInTheDocument();
+    expect(screen.queryByText('3 bakes')).not.toBeInTheDocument();
+  });
+
+  it("keeps the bakes of a deleted recipe, and says whose they were", async () => {
+    await seed('bakeLogs', [makeBakeLog({ _id: '9', recipeId: 'gone', imageUrls: ['x.jpg'] })]);
+    renderScreen(<Gallery />);
+    expect(await screen.findByRole('heading', { name: 'A deleted recipe' })).toBeInTheDocument();
   });
 
   it('draws an unlit invitation when nothing has been logged', async () => {
-    vi.mocked(api.getBakeLogs).mockResolvedValue([mockBakeLogs[3]] as any);
-    render(<MemoryRouter><Gallery /></MemoryRouter>);
-
-    await waitFor(() => {
-      expect(screen.getByText(/No bakes logged yet/i)).toBeInTheDocument();
-    });
+    renderScreen(<Gallery />);
+    expect(await screen.findByText(/No bakes logged yet/i)).toBeInTheDocument();
   });
 });

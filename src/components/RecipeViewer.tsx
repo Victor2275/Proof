@@ -1,8 +1,20 @@
 import { useState, useEffect, useRef, lazy, Suspense, useMemo } from 'react';
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
-import { api, type BakeLog } from '../lib/api';
-import { useRecipe, useRecipeBakeLogs, usePantry, useUpdateRecipe } from '../lib/queries';
-import { updateLocalBakeLog, deleteLocalBakeLog } from '../lib/localDB';
+import type { BakeLog, PantryItem, Recipe } from '../lib/types';
+import { ApiError } from '../lib/api';
+import {
+  useRecipe,
+  useRecipes,
+  useRecipeBakeLogs,
+  usePantry,
+  useUpdateRecipe,
+  useUpdateBakeLog,
+  useDeleteBakeLog,
+  usePublishedRecipe,
+  useForkPublished,
+} from '../lib/queries';
+import { useOwnership } from '../lib/session';
+import { formatIngredient } from '../lib/ingredients';
 import ReverseBakeScheduler from './ReverseBakeScheduler';
 import NotFound from './NotFound';
 import AISubstitutionsModal from './AISubstitutionsModal';
@@ -13,8 +25,7 @@ import InstructionList from './InstructionList';
 import SideBySideCompare from './SideBySideCompare';
 import { Edit, MoreVertical, Play, Star, Award, Share2 } from 'lucide-react';
 import { Skeleton } from './ui/Skeleton';
-import { Button, Menu, MenuItem, Panel, PanelRow, Field, Sheet, buttonClassName, cn } from './ui';
-import { useQueryClient } from '@tanstack/react-query';
+import { Button, Menu, MenuItem, Panel, PanelRow, Field, Photo, Sheet, buttonClassName, cn } from './ui';
 import { QRCodeSVG } from 'qrcode.react';
 import Fuse from 'fuse.js';
 
@@ -46,18 +57,46 @@ function Instagram({ className = "w-4 h-4" }: { className?: string }) {
 
 
 const EMPTY_LOGS: BakeLog[] = [];
-const EMPTY_PANTRY: any[] = []; // or actual type if imported
+const EMPTY_PANTRY: PantryItem[] = [];
+const EMPTY_RECIPES: Recipe[] = [];
 
+/*
+ * Two routes, one viewer (decision B4).
+ *
+ * /recipe/:id is a recipe in this cookbook: read from the device, with the
+ * owner's controls, its bake history and its lab notes. /r/:slug is a recipe
+ * in the shared cookbook, read from the server: the same page with the owner's
+ * controls off, an attribution line, and one primary control — save it.
+ */
 export default function RecipeViewer() {
-  const { id } = useParams<{ id: string }>();
+  const { id, slug } = useParams<{ id?: string; slug?: string }>();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const location = useLocation();
-  const { data: recipe, isLoading: loadingRecipe } = useRecipe(id);
-  const { data: bakeLogs = EMPTY_LOGS, isLoading: loadingLogs } = useRecipeBakeLogs(id);
+  const localQuery = useRecipe(slug ? undefined : id);
+  const sharedQuery = usePublishedRecipe(slug);
+  const recipe = slug ? sharedQuery.data : localQuery.data;
+  const { isMine, isFork } = useOwnership(recipe);
+  const localRecipe = isMine ? (recipe as Recipe) : null;
+  const { data: bakeLogs = EMPTY_LOGS } = useRecipeBakeLogs(localRecipe ? id : undefined);
   const { data: pantryData = EMPTY_PANTRY } = usePantry();
-  
-  const loading = loadingRecipe || loadingLogs;
+  const { data: myRecipes = EMPTY_RECIPES } = useRecipes();
+  const updateBakeLog = useUpdateBakeLog();
+  const deleteBakeLog = useDeleteBakeLog();
+  const forkPublished = useForkPublished();
+
+  // A shared recipe already saved here: offer the copy rather than a second one.
+  const savedCopy = slug && recipe
+    ? myRecipes.find((r) => r.forkedFrom?.publishedId === recipe._id)
+    : undefined;
+
+  // Who can follow a link to this page: anyone, for a shared recipe or the
+  // original a copy came from. A recipe that exists only on this device has
+  // no address anyone else can open, so it offers none.
+  const shareUrl = slug
+    ? `${window.location.origin}/r/${slug}`
+    : localRecipe?.forkedFrom
+      ? `${window.location.origin}/r/${localRecipe.forkedFrom.slug}`
+      : null;
 
   const [scaleMultiplier, setScaleMultiplier] = useState(1);
   const [activeTab, setActiveTab] = useState<'recipe' | 'history'>('recipe');
@@ -105,9 +144,7 @@ export default function RecipeViewer() {
   }, [recipe, pantryData]);
 
   useEffect(() => {
-    if (recipe?.imageUrls && recipe.imageUrls.length > 0) {
-      setHeroImage(recipe.imageUrls[0]);
-    }
+    setHeroImage(recipe?.imageUrls?.[0] ?? '');
   }, [recipe]);
 
   useEffect(() => {
@@ -173,16 +210,24 @@ export default function RecipeViewer() {
   const { mutateAsync: updateRecipe } = useUpdateRecipe();
 
   const handleToggleFavorite = async () => {
-    if (!recipe || !id) return;
-    const currentTags = recipe.tags || [];
+    if (!localRecipe) return;
+    const currentTags = localRecipe.tags || [];
     const isFav = currentTags.includes('Favorite');
     const newTags = isFav ? currentTags.filter(t => t !== 'Favorite') : [...currentTags, 'Favorite'];
-    
+
     try {
-      await updateRecipe({ id, data: { tags: newTags } as any });
+      await updateRecipe({ id: localRecipe._id, data: { tags: newTags } });
     } catch {
       setCopyNotice("Couldn't save the favorite. Try again.");
     }
+  };
+
+  const handleSaveToCookbook = () => {
+    if (!recipe || isMine) return;
+    forkPublished.mutate(recipe as Parameters<typeof forkPublished.mutate>[0], {
+      onSuccess: (saved) => navigate(`/recipe/${saved._id}`),
+      onError: (err) => setCopyNotice(err instanceof Error ? err.message : 'That recipe could not be saved.'),
+    });
   };
 
 
@@ -192,8 +237,9 @@ export default function RecipeViewer() {
    * that already worked. It is a status strip that takes itself away.
    */
   const handleShareLink = () => {
+    if (!shareUrl) return;
     navigator.clipboard
-      .writeText(window.location.href)
+      .writeText(shareUrl)
       .then(() => setCopyNotice('Link copied.'))
       .catch(() => setCopyNotice('Could not reach the clipboard.'));
     setShowMobileMenu(false);
@@ -203,8 +249,7 @@ export default function RecipeViewer() {
     if (!recipe) return;
     let listText = `Grocery List for ${recipe.title} (x${scaleMultiplier}):\n\n`;
     (recipe.ingredients || []).forEach(ing => {
-      const qty = Number((ing.quantity * scaleMultiplier).toFixed(2));
-      listText += `- [ ] ${ing.name}: ${qty} ${ing.unit}\n`;
+      listText += `- [ ] ${formatIngredient(ing, scaleMultiplier)}\n`;
     });
     
     navigator.clipboard
@@ -260,39 +305,66 @@ export default function RecipeViewer() {
   };
 
   /*
-   * The skeleton draws the page it is standing in for: the top bar, the title,
-   * the plate beside its readouts, the transport strip, and the two columns.
+   * A recipe in this cookbook is read from the device, which takes
+   * milliseconds: nothing is drawn while it arrives, rather than a skeleton
+   * that flashes (B30). A shared recipe comes over the network, so it gets the
+   * skeleton: the shape of the page it is standing in for.
    */
-  if (loading) return (
-    <div className="@container mx-auto flex max-w-4xl flex-col pb-20 md:pt-4">
-      <div className="flex h-11 items-center justify-between">
-        <Skeleton className="h-4 w-24" />
-        <div className="hidden gap-3 md:flex">
-          <Skeleton className="h-9 w-24" />
-          <Skeleton className="h-9 w-24" />
+  if (slug ? sharedQuery.isPending : localQuery.isPending) {
+    if (!slug) return null;
+    return (
+      <div className="@container mx-auto flex max-w-4xl flex-col pb-20 md:pt-4" role="status" aria-label="Opening the recipe">
+        <div className="flex h-11 items-center">
+          <Skeleton className="h-4 w-24" />
+        </div>
+        <Skeleton className="mt-8 h-10 w-3/4 sm:h-12" />
+        <div className="mt-6 grid grid-cols-[8rem_minmax(0,1fr)] gap-x-4 sm:grid-cols-[14rem_minmax(0,1fr)] sm:gap-x-8">
+          <Skeleton className="aspect-square w-full" />
+          <div className="flex flex-col gap-4">
+            <Skeleton className="h-10 w-40 max-w-full" />
+            <Skeleton className="h-6 w-32 max-w-full" />
+          </div>
+        </div>
+        <Skeleton className="mt-8 h-16 w-full" />
+        <div className="mt-8 grid grid-cols-1 gap-12 @3xl:grid-cols-2">
+          <div className="flex flex-col gap-4">
+            <Skeleton className="h-9 w-full" />
+            {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
+          </div>
+          <div className="flex flex-col gap-4">
+            <Skeleton className="h-9 w-full" />
+            {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-20 w-full" />)}
+          </div>
         </div>
       </div>
-      <Skeleton className="mt-8 h-10 w-3/4 sm:h-12" />
-      <div className="mt-6 grid grid-cols-[8rem_minmax(0,1fr)] gap-x-4 sm:grid-cols-[14rem_minmax(0,1fr)] sm:gap-x-8">
-        <Skeleton className="aspect-square w-full" />
-        <div className="flex flex-col gap-4">
-          <Skeleton className="h-10 w-40 max-w-full" />
-          <Skeleton className="h-6 w-32 max-w-full" />
-        </div>
+    );
+  }
+
+  // A shared recipe that has been unpublished is a page that no longer exists.
+  const sharedGone = slug && sharedQuery.error instanceof ApiError && sharedQuery.error.status === 404;
+  const failure = slug ? (sharedGone ? null : sharedQuery.error) : localQuery.error;
+  if (failure) {
+    return (
+      <div className="mx-auto flex max-w-xl flex-col gap-4 py-16">
+        <Panel title={slug ? 'Shared cookbook' : 'This device'}>
+          <div className="flex flex-col gap-4" role="alert">
+            <p className="font-faceplate text-lg text-ink">
+              {slug ? "Couldn't open this shared recipe" : "Couldn't open this recipe on this device"}
+            </p>
+            <p className="text-sm text-ink-muted">
+              {failure instanceof Error ? failure.message : 'Something went wrong reading it.'}
+            </p>
+            <div className="flex gap-2">
+              <Button onClick={() => (slug ? sharedQuery.refetch() : localQuery.refetch())}>Try again</Button>
+              <Link to="/" className={buttonClassName({ variant: 'ghost' })}>
+                Back to the cookbook
+              </Link>
+            </div>
+          </div>
+        </Panel>
       </div>
-      <Skeleton className="mt-8 h-16 w-full" />
-      <div className="mt-8 grid grid-cols-1 gap-12 @3xl:grid-cols-2">
-        <div className="flex flex-col gap-4">
-          <Skeleton className="h-9 w-full" />
-          {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
-        </div>
-        <div className="flex flex-col gap-4">
-          <Skeleton className="h-9 w-full" />
-          {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-20 w-full" />)}
-        </div>
-      </div>
-    </div>
-  );
+    );
+  }
   // The same unlit panel as any address that is not wired to anything: it
   // names the problem and the way back, which a bare sentence did not.
   if (!recipe) return <NotFound />;
@@ -326,23 +398,29 @@ export default function RecipeViewer() {
               </Button>
             )}
           >
-            <MenuItem onSelect={handleShareLink}>Copy link</MenuItem>
-            <MenuItem onSelect={() => setShowQrModal(true)}>QR code</MenuItem>
+            {shareUrl ? (
+              <MenuItem onSelect={handleShareLink}>{isFork ? 'Copy link to the original' : 'Copy link'}</MenuItem>
+            ) : null}
+            {shareUrl ? <MenuItem onSelect={() => setShowQrModal(true)}>QR code</MenuItem> : null}
             <MenuItem onSelect={handleExportPDF}>Export PDF</MenuItem>
           </Menu>
 
-          <Button
-            variant="secondary"
-            size="sm"
-            engaged={recipe.tags?.includes('Favorite')}
-            onClick={handleToggleFavorite}
-          >
-            <Star className={cn('w-4 h-4', recipe.tags?.includes('Favorite') && 'fill-current')} />
-            {recipe.tags?.includes('Favorite') ? 'Favorited' : 'Favorite'}
-          </Button>
-          <Link to={`/edit/${recipe._id}`} className={buttonClassName({ variant: 'ghost', size: 'sm' })}>
-            <Edit className="w-4 h-4" /> Edit
-          </Link>
+          {localRecipe ? (
+            <>
+              <Button
+                variant="secondary"
+                size="sm"
+                engaged={localRecipe.tags?.includes('Favorite')}
+                onClick={handleToggleFavorite}
+              >
+                <Star className={cn('w-4 h-4', localRecipe.tags?.includes('Favorite') && 'fill-current')} />
+                {localRecipe.tags?.includes('Favorite') ? 'Favorited' : 'Favorite'}
+              </Button>
+              <Link to={`/edit/${localRecipe._id}`} className={buttonClassName({ variant: 'ghost', size: 'sm' })}>
+                <Edit className="w-4 h-4" /> Edit
+              </Link>
+            </>
+          ) : null}
         </div>
 
         {/* Mobile Actions — one bottom sheet, where the thumb already is. */}
@@ -370,6 +448,7 @@ export default function RecipeViewer() {
           * views fit at 375px without scrolling sideways. The old bank
           * scrolled, and on a phone the Previous makes key started off-screen.
           */}
+        {localRecipe ? (
         <div
           className="mt-8 flex items-center justify-between gap-4 border-y border-rule py-3"
           data-html2canvas-ignore="true"
@@ -408,13 +487,34 @@ export default function RecipeViewer() {
             <MenuItem onSelect={openScheduler}>Schedule bake</MenuItem>
           </Menu>
         </div>
+        ) : (
+          /* A shared recipe: one primary control, and it is "make it yours".
+           * Baking it starts from the copy, where the bake can be logged. */
+          <div
+            className="mt-8 flex flex-wrap items-center justify-between gap-4 border-y border-rule py-3"
+            data-html2canvas-ignore="true"
+          >
+            <p className="text-sm text-ink-muted">
+              {savedCopy ? 'Already in your cookbook.' : 'Save it to bake it, log it and change it.'}
+            </p>
+            {savedCopy ? (
+              <Link to={`/recipe/${savedCopy._id}`} className={buttonClassName({ variant: 'secondary' })}>
+                Open my copy
+              </Link>
+            ) : (
+              <Button variant="primary" busy={forkPublished.isPending} onClick={handleSaveToCookbook}>
+                Save to my cookbook
+              </Button>
+            )}
+          </div>
+        )}
 
       {activeTab === 'recipe' ? (
         <>
           {/* Opened from the transport strip, so it unfolds right under it. */}
-          {showReverseScheduler && (
+          {showReverseScheduler && localRecipe && (
             <div ref={schedulerRef} className="mt-8 scroll-mt-4">
-              <ReverseBakeScheduler recipe={recipe} onClose={() => setShowReverseScheduler(false)} />
+              <ReverseBakeScheduler recipe={localRecipe} onClose={() => setShowReverseScheduler(false)} />
             </div>
           )}
 
@@ -440,10 +540,11 @@ export default function RecipeViewer() {
                 handleExportGroceryList={handleExportGroceryList}
               />
 
-              {recipe.labNotes && (
+              {/* Lab notes are the owner's notes to themselves (B4). */}
+              {localRecipe?.labNotes && (
                 <Panel title="Lab notes & iterations">
                   <pre className="whitespace-pre-wrap font-mono text-sm leading-relaxed text-ink-muted">
-                    {recipe.labNotes}
+                    {localRecipe.labNotes}
                   </pre>
                 </Panel>
               )}
@@ -470,6 +571,7 @@ export default function RecipeViewer() {
       )}
       {/* The phone's Start key: the page's one red control, drawn as the same
         * square key as New Recipe, which it sits over in this corner. */}
+      {localRecipe ? (
       <button
         type="button"
         onClick={() => setShowMobileStartModal(true)}
@@ -478,6 +580,7 @@ export default function RecipeViewer() {
       >
         <Play className="h-6 w-6" fill="currentColor" aria-hidden="true" />
       </button>
+      ) : null}
 
       {/*
         * The selected make.
@@ -509,15 +612,14 @@ export default function RecipeViewer() {
                 variant="secondary"
                 onClick={async () => {
                   const photoUrl = selectedMake.images?.[0]?.url || selectedMake.imageUrls?.[0];
-                  if (!photoUrl || !recipe) return;
+                  if (!photoUrl || !localRecipe) return;
                   try {
-                    await api.updateRecipe(recipe._id!, {
-                      imageUrls: [
-                        photoUrl,
-                        ...(recipe.imageUrls || []).filter((u) => u !== photoUrl),
-                      ],
+                    await updateRecipe({
+                      id: localRecipe._id,
+                      data: {
+                        imageUrls: [photoUrl, ...(localRecipe.imageUrls || []).filter((u) => u !== photoUrl)],
+                      },
                     });
-                    queryClient.invalidateQueries({ queryKey: ['recipe', id] });
                     setMakeNotice('This bake is now the cover photograph.');
                   } catch {
                     setMakeError('Could not set the cover photograph.');
@@ -560,12 +662,11 @@ export default function RecipeViewer() {
                     <Button
                       onClick={async () => {
                         try {
-                          const patch = { date: new Date(editDateValue).toISOString() };
-                          const updated = selectedMake._id!.startsWith('local-')
-                            ? await updateLocalBakeLog(selectedMake._id!, patch)
-                            : await api.updateBakeLog(selectedMake._id!, patch);
+                          const updated = await updateBakeLog.mutateAsync({
+                            id: selectedMake._id,
+                            patch: { date: new Date(editDateValue).toISOString() },
+                          });
                           setSelectedMake(updated);
-                          queryClient.invalidateQueries({ queryKey: ['bakeLogs', id] });
                           setIsEditingDate(false);
                         } catch {
                           setMakeError('Could not change the date of this bake.');
@@ -597,12 +698,11 @@ export default function RecipeViewer() {
                         icon={<Award className="h-3.5 w-3.5" />}
                         onClick={async () => {
                           try {
-                            const patch = { isPersonalBest: !selectedMake.isPersonalBest };
-                            const updated = selectedMake._id!.startsWith('local-')
-                              ? await updateLocalBakeLog(selectedMake._id!, patch)
-                              : await api.updateBakeLog(selectedMake._id!, patch);
+                            const updated = await updateBakeLog.mutateAsync({
+                              id: selectedMake._id,
+                              patch: { isPersonalBest: !selectedMake.isPersonalBest },
+                            });
                             setSelectedMake(updated);
-                            queryClient.invalidateQueries({ queryKey: ['bakeLogs', id] });
                           } catch {
                             setMakeError('Could not change the personal-best mark.');
                           }
@@ -659,11 +759,11 @@ export default function RecipeViewer() {
                         size="sm"
                         onClick={async () => {
                           try {
-                            const updated = selectedMake._id!.startsWith('local-')
-                              ? await updateLocalBakeLog(selectedMake._id!, { images: tempTags })
-                              : await api.updateBakeLog(selectedMake._id!, { images: tempTags });
+                            const updated = await updateBakeLog.mutateAsync({
+                              id: selectedMake._id,
+                              patch: { images: tempTags },
+                            });
                             setSelectedMake(updated);
-                            queryClient.invalidateQueries({ queryKey: ['bakeLogs', id] });
                             setEditingTagsFor(null);
                           } catch {
                             setMakeError('Could not save those labels.');
@@ -678,7 +778,7 @@ export default function RecipeViewer() {
                       variant="ghost"
                       size="sm"
                       onClick={() => {
-                        setEditingTagsFor(selectedMake._id!);
+                        setEditingTagsFor(selectedMake._id);
                         setTempTags(
                           selectedMake.images
                             ? [...selectedMake.images]
@@ -695,7 +795,7 @@ export default function RecipeViewer() {
                   <div className="flex flex-col gap-4">
                     {tempTags.map((img, i) => (
                       <div key={i} className="flex flex-col gap-2">
-                        <img
+                        <Photo
                           src={img.url}
                           alt={`Photograph ${i + 1}`}
                           className="w-full border border-rule"
@@ -726,7 +826,7 @@ export default function RecipeViewer() {
                     <div className="flex flex-col gap-4">
                       {selectedMake.images.map((img, i) => (
                         <figure key={i} className="relative">
-                          <img
+                          <Photo
                             src={img.url}
                             alt={img.label || `Photograph ${i + 1}`}
                             className="w-full border border-rule"
@@ -748,7 +848,7 @@ export default function RecipeViewer() {
                 ) : (
                   <div className="flex flex-col gap-4">
                     {selectedMake.imageUrls!.map((url, i) => (
-                      <img
+                      <Photo
                         key={i}
                         src={url}
                         alt={`Photograph ${i + 1}`}
@@ -780,12 +880,7 @@ export default function RecipeViewer() {
                 if (!selectedMake) return;
                 setConfirmingMakeDelete(false);
                 try {
-                  if (selectedMake._id!.startsWith('local-')) {
-                    await deleteLocalBakeLog(selectedMake._id!);
-                  } else {
-                    await api.deleteBakeLog(selectedMake._id!);
-                  }
-                  queryClient.invalidateQueries({ queryKey: ['bakeLogs', id] });
+                  await deleteBakeLog.mutateAsync(selectedMake._id);
                   handleCloseMakeDetails();
                 } catch {
                   setMakeError('Could not delete that bake log.');
@@ -842,19 +937,23 @@ export default function RecipeViewer() {
         <div className="flex flex-col gap-5">
           <div className="flex flex-col gap-2" role="group" aria-labelledby="mobile-share-label">
             <span id="mobile-share-label" className="label-silkscreen">Share</span>
-            <Button size="lg" className="w-full" onClick={handleShareLink}>
-              Copy link
-            </Button>
-            <Button
-              size="lg"
-              className="w-full"
-              onClick={() => {
-                setShowMobileMenu(false);
-                setShowQrModal(true);
-              }}
-            >
-              QR code
-            </Button>
+            {shareUrl ? (
+              <>
+                <Button size="lg" className="w-full" onClick={handleShareLink}>
+                  {isFork ? 'Copy link to the original' : 'Copy link'}
+                </Button>
+                <Button
+                  size="lg"
+                  className="w-full"
+                  onClick={() => {
+                    setShowMobileMenu(false);
+                    setShowQrModal(true);
+                  }}
+                >
+                  QR code
+                </Button>
+              </>
+            ) : null}
             <Button
               size="lg"
               className="w-full"
@@ -866,24 +965,26 @@ export default function RecipeViewer() {
               Export PDF
             </Button>
           </div>
+          {localRecipe ? (
           <div className="flex flex-col gap-2 border-t border-rule pt-5" role="group" aria-labelledby="mobile-recipe-label">
             <span id="mobile-recipe-label" className="label-silkscreen">Recipe</span>
             <Button
               size="lg"
               className="w-full"
-              engaged={recipe.tags?.includes('Favorite')}
+              engaged={localRecipe.tags?.includes('Favorite')}
               onClick={handleToggleFavorite}
-              icon={<Star className={cn('h-4 w-4', recipe.tags?.includes('Favorite') && 'fill-current')} aria-hidden="true" />}
+              icon={<Star className={cn('h-4 w-4', localRecipe.tags?.includes('Favorite') && 'fill-current')} aria-hidden="true" />}
             >
-              {recipe.tags?.includes('Favorite') ? 'Favorited' : 'Favorite'}
+              {localRecipe.tags?.includes('Favorite') ? 'Favorited' : 'Favorite'}
             </Button>
             <Link
-              to={`/edit/${recipe._id}`}
+              to={`/edit/${localRecipe._id}`}
               className={buttonClassName({ size: 'lg', className: 'w-full' })}
             >
               <Edit className="h-4 w-4" aria-hidden="true" /> Edit recipe
             </Link>
           </div>
+          ) : null}
         </div>
       </Sheet>
 
@@ -910,7 +1011,7 @@ export default function RecipeViewer() {
             * contrast, not taste, and an inverted code is an unreadable one.
             */}
           <div className="border border-rule bg-white p-4">
-            <QRCodeSVG value={window.location.href} size={200} level="M" />
+            <QRCodeSVG value={shareUrl ?? window.location.href} size={200} level="M" />
           </div>
           <p className="text-sm text-ink-muted">Scan to open this recipe on a phone.</p>
         </div>
@@ -927,7 +1028,7 @@ export default function RecipeViewer() {
       {/* The exporter is full-screen on the ground colour, so its fallback is
         * that same empty ground with a skeleton of its preview, not a black
         * slab with the word "Loading" in it. */}
-      {showInstagramExporter && (
+      {showInstagramExporter && localRecipe && (
         <Suspense
           fallback={
             <div className="fixed inset-0 z-[100] flex items-center justify-center bg-ground p-6" role="status" aria-label="Opening the exporter">
@@ -936,7 +1037,7 @@ export default function RecipeViewer() {
           }
         >
           <InstagramExporter
-            recipe={recipe}
+            recipe={localRecipe}
             bakeLog={instagramExportBakeLog}
             onClose={() => {
               setShowInstagramExporter(false);

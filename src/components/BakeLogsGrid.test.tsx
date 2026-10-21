@@ -1,26 +1,27 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import BakeLogsGrid from './BakeLogsGrid';
-import type { BakeLog } from '../lib/api';
+import type { BakeLog } from '../lib/types';
+import { makeBakeLog } from '../test/utils';
 
 describe('BakeLogsGrid', () => {
   const mockLogs: BakeLog[] = [
-    {
+    makeBakeLog({
       _id: '2',
       recipeId: 'r1',
       notes: 'Second bake was amazing',
       date: new Date('2023-02-01').toISOString(),
       isPersonalBest: true,
       imageUrls: []
-    },
-    {
+    }),
+    makeBakeLog({
       _id: '1',
       recipeId: 'r1',
       notes: 'First bake was okay',
       date: new Date('2023-01-01').toISOString(),
       isPersonalBest: false,
       imageUrls: ['https://example.com/img1.jpg']
-    }
+    })
   ];
 
   it('numbers attempts from the oldest, so a number keeps meaning the same bake', () => {

@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { cn } from '../../lib/cn';
+import { usePhotoSrc } from '../../lib/usePhotoSrc';
 
 /*
  * The plate — a photograph mounted on the faceplate.
@@ -33,6 +34,7 @@ const SIZE: Record<PlateSize, string> = {
 };
 
 export interface RecipePlateProps {
+  /** A web address or a `photo:<id>` reference to a photograph stored on the device. */
   src?: string;
   /** The recipe's title — the plate is named by what it shows. */
   alt: string;
@@ -40,8 +42,12 @@ export interface RecipePlateProps {
   className?: string;
 }
 
-export function RecipePlate({ src, alt, size = 'row', className }: RecipePlateProps) {
+export function RecipePlate({ src: ref, alt, size = 'row', className }: RecipePlateProps) {
+  const src = usePhotoSrc(ref);
   const [failed, setFailed] = useState(false);
+  // A new photograph deserves a fresh attempt, or one dead link would leave
+  // every later plate in this slot unlit.
+  useEffect(() => setFailed(false), [src]);
   const usable = Boolean(src) && !failed;
 
   return (

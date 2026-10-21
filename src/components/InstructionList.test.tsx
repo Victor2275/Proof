@@ -1,9 +1,10 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import InstructionList from './InstructionList';
-import type { Recipe } from '../lib/api';
+import type { Recipe } from '../lib/types';
+import { makeRecipe } from '../test/utils';
 
-const base: Recipe = {
+const base: Recipe = makeRecipe({
   _id: 'r1',
   title: 'Country Sourdough',
   description: '',
@@ -19,7 +20,7 @@ const base: Recipe = {
     'Bulk ferment for 4 hours.',
     'Bake at 250C for 30 minutes.',
   ],
-};
+});
 
 describe('InstructionList', () => {
   it('prints the steps under the phases the step row shows', () => {

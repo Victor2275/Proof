@@ -1,7 +1,7 @@
-import { useState, useEffect, useMemo } from 'react';
-import { api, type Recipe, type BakeLog } from '../lib/api';
-import { getAllLocalBakeLogs } from '../lib/localDB';
-import { Panel, PanelRow, Meter, Skeleton } from './ui';
+import { useMemo } from 'react';
+import type { Recipe, BakeLog } from '../lib/types';
+import { useBakeLogs, useRecipes } from '../lib/queries';
+import { Button, Panel, PanelRow, Meter } from './ui';
 
 /*
  * Analytics, as an instrument rather than as a dashboard.
@@ -13,9 +13,8 @@ import { Panel, PanelRow, Meter, Skeleton } from './ui';
  * enough to read — an instrument with nothing on its input is supposed to show
  * that, not invent a needle.
  *
- * The page used to gather offline logs by asking for each recipe's logs in
- * turn. That helper reads the whole store and filters it, so the page opened
- * 203 transactions and read the entire store 203 times on load.
+ * It reads the cookbook from the device, the same queries the cookbook and the
+ * bake history use, so the three never disagree about how many bakes exist.
  */
 
 const MONTHS = [
@@ -26,47 +25,19 @@ const MONTHS = [
 /** Below this, a run of months is a handful of dots, not a trend. */
 const MONTHS_FOR_A_TREND = 3;
 
-function recipeIdOf(log: BakeLog) {
-  return typeof log.recipeId === 'string' ? log.recipeId : log.recipeId._id;
-}
+const EMPTY_RECIPES: Recipe[] = [];
+const EMPTY_LOGS: BakeLog[] = [];
 
 export default function Analytics() {
-  const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [logs, setLogs] = useState<BakeLog[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    let cancelled = false;
-    const fetchData = async () => {
-      try {
-        const [recipesData, cloudLogs, localLogs] = await Promise.all([
-          api.getRecipes(''),
-          api.getAllBakeLogs().catch(() => []),
-          getAllLocalBakeLogs().catch(() => []),
-        ]);
-        if (cancelled) return;
-        const allLogs = [...cloudLogs, ...localLogs].sort(
-          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
-        );
-        setRecipes(recipesData);
-        setLogs(allLogs);
-      } catch {
-        if (!cancelled) setError('Could not read the bake history.');
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-    fetchData();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const recipesQuery = useRecipes();
+  const logsQuery = useBakeLogs();
+  const recipes = recipesQuery.data ?? EMPTY_RECIPES;
+  const logs = logsQuery.data ?? EMPTY_LOGS;
 
   const reading = useMemo(() => {
     const bakeCounts = new Map<string, number>();
     logs.forEach((log) => {
-      const rid = recipeIdOf(log);
+      const rid = log.recipeId;
       bakeCounts.set(rid, (bakeCounts.get(rid) ?? 0) + 1);
     });
 
@@ -113,15 +84,31 @@ export default function Analytics() {
     };
   }, [logs, recipes]);
 
-  if (loading) {
+  // A read from the device: nothing is drawn while it arrives (B30).
+  if (recipesQuery.isPending || logsQuery.isPending) return null;
+
+  // An error replaces the readings rather than sitting above a panel of zeros
+  // that were never measured (audit #3).
+  const failed = recipesQuery.error ?? logsQuery.error;
+  if (failed) {
     return (
       <div className="mx-auto flex max-w-3xl flex-col gap-8 pb-20">
-        <div className="flex flex-col gap-2 border-b border-rule pb-6">
-          <Skeleton className="h-9 w-48" />
-          <Skeleton className="h-5 w-full max-w-prose" />
-        </div>
-        <Skeleton className="h-44 w-full" />
-        <Skeleton className="h-56 w-full" />
+        <h1 className="font-faceplate border-b border-rule pb-6 text-3xl leading-none text-ink sm:text-4xl">Analytics</h1>
+        <Panel title="Bake history">
+          <div className="flex flex-col gap-3" role="alert">
+            <p className="text-ink">Couldn't read the bake history on this device, so there is nothing to report.</p>
+            <p className="text-sm text-ink-muted">{failed instanceof Error ? failed.message : ''}</p>
+            <Button
+              className="self-start"
+              onClick={() => {
+                void recipesQuery.refetch();
+                void logsQuery.refetch();
+              }}
+            >
+              Try again
+            </Button>
+          </div>
+        </Panel>
       </div>
     );
   }
@@ -142,12 +129,6 @@ export default function Analytics() {
           {reading.totalBakes} {reading.totalBakes === 1 ? 'bake' : 'bakes'} logged
         </span>
       </header>
-
-      {error ? (
-        <p className="border border-fault bg-panel p-3 text-sm text-fault" role="alert">
-          {error}
-        </p>
-      ) : null}
 
       <Panel title="Totals">
         <div className="flex flex-col gap-4">

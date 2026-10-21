@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import { api, type Note } from '../lib/api';
+import type { Note } from '../lib/types';
+import { repo } from '../lib/repo';
 import { Plus, Trash2, List } from 'lucide-react';
-import { Panel, Button, Field, TextArea, Sheet, Skeleton, cn } from './ui';
+import { Panel, Button, Field, TextArea, Sheet, cn } from './ui';
 
 /*
  * General notes.
@@ -36,7 +37,7 @@ export default function GeneralNotes() {
   const dirty = title !== saved.title || content !== saved.content;
 
   const selectNote = useCallback((note: Note) => {
-    setActiveNoteId(note._id!);
+    setActiveNoteId(note._id);
     setTitle(note.title);
     setContent(note.content);
     setSaved({ title: note.title, content: note.content });
@@ -54,14 +55,14 @@ export default function GeneralNotes() {
   const fetchNotes = useCallback(
     async (select?: 'first') => {
       try {
-        const data = await api.getNotes();
+        const data = await repo.getNotes();
         setNotes(data);
         if (select === 'first') {
           if (data.length > 0) selectNote(data[0]);
           else startNewNote();
         }
       } catch {
-        setError('Could not reach the notebook. Your unsaved text is still here.');
+        setError("Couldn't read the notebook on this device. Your unsaved text is still here.");
       } finally {
         setLoading(false);
       }
@@ -80,16 +81,16 @@ export default function GeneralNotes() {
     const next = { title: title.trim() || 'Untitled note', content };
     try {
       if (activeNoteId) {
-        await api.updateNote(activeNoteId, next);
+        await repo.updateNote(activeNoteId, next);
       } else {
-        const created = await api.createNote(next);
-        setActiveNoteId(created._id!);
+        const created = await repo.createNote(next);
+        setActiveNoteId(created._id);
       }
       setTitle(next.title);
       setSaved(next);
       await fetchNotes();
     } catch {
-      setError('Could not save. Check the connection and try again — nothing has been lost.');
+      setError("Couldn't save to this device. Nothing has been lost; try again.");
     } finally {
       setSaving(false);
     }
@@ -100,7 +101,7 @@ export default function GeneralNotes() {
     if (!note?._id) return;
     setPendingDelete(null);
     try {
-      await api.deleteNote(note._id);
+      await repo.deleteNote(note._id);
       if (activeNoteId === note._id) startNewNote();
       await fetchNotes();
     } catch {
@@ -145,17 +146,8 @@ export default function GeneralNotes() {
     </div>
   );
 
-  if (loading) {
-    return (
-      <div className="mx-auto flex max-w-6xl gap-6">
-        <Skeleton className="hidden h-96 w-64 shrink-0 md:block" />
-        <div className="flex-1 space-y-3">
-          <Skeleton className="h-11 w-full" />
-          <Skeleton className="h-96 w-full" />
-        </div>
-      </div>
-    );
-  }
+  // Notes are read from the device: nothing is drawn while they arrive (B30).
+  if (loading) return null;
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-8 pb-20">

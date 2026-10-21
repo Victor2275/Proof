@@ -16,7 +16,7 @@
 
 interface Ingredient {
   name?: string;
-  quantity?: number;
+  quantity?: number | null;
   unit?: string;
 }
 

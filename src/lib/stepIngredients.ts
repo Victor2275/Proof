@@ -19,7 +19,7 @@ import { gramsOf } from './bakersMath';
 
 interface Ingredient {
   name: string;
-  quantity: number;
+  quantity: number | null;
   unit: string;
 }
 
@@ -66,7 +66,7 @@ export function ingredientsForStep<T extends Ingredient>(stepText: string, ingre
  * whatever unit they came in ("assume grams"), so a step needing 280 g of grain
  * and 2.5 cups of flour asked the scale for 282.5 g and auto-advanced on it.
  */
-export function scaleTargetGrams(ingredients: { name?: string; quantity?: number; unit?: string }[]): number | null {
+export function scaleTargetGrams(ingredients: { name?: string; quantity?: number | null; unit?: string }[]): number | null {
   if (ingredients.length === 0) return null;
   let total = 0;
   for (const ing of ingredients) {

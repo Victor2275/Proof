@@ -1,48 +1,33 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import Analytics from './Analytics';
-import { api } from '../lib/api';
+import { repo } from '../lib/repo';
+import { makeBakeLog, makeRecipe, renderScreen, seed } from '../test/utils';
 
-vi.mock('../lib/api', () => ({
-  api: { getRecipes: vi.fn(), getAllBakeLogs: vi.fn() },
-}));
+const RECIPES = Array.from({ length: 10 }, (_, i) => makeRecipe({ _id: `r${i}`, title: `Recipe ${i}` }));
 
-vi.mock('../lib/localDB', () => ({
-  getAllLocalBakeLogs: vi.fn().mockResolvedValue([]),
-}));
+const log = (id: string, recipeId: string, date: string, isPersonalBest = false) =>
+  makeBakeLog({ _id: id, recipeId, date, isPersonalBest });
 
-const RECIPES = Array.from({ length: 10 }, (_, i) => ({
-  _id: `r${i}`,
-  title: `Recipe ${i}`,
-  ingredients: [],
-  instructions: [],
-}));
-
-function log(id: string, recipeId: string, date: string, isPersonalBest = false) {
-  return { _id: id, recipeId, date, isPersonalBest, images: [], imageUrls: [] };
-}
-
-beforeEach(() => {
-  vi.clearAllMocks();
-  vi.mocked(api.getRecipes).mockResolvedValue(RECIPES as any);
+beforeEach(async () => {
+  await seed('recipes', RECIPES);
 });
 
 describe('Analytics', () => {
   it('says plainly when nothing has been logged, instead of drawing an empty chart', async () => {
-    vi.mocked(api.getAllBakeLogs).mockResolvedValue([] as any);
-    render(<Analytics />);
+    renderScreen(<Analytics />);
 
     expect(await screen.findByText(/No bakes logged yet/i)).toBeInTheDocument();
     expect(screen.getByText('0 bakes logged')).toBeInTheDocument();
   });
 
   it('reports the totals it can actually count', async () => {
-    vi.mocked(api.getAllBakeLogs).mockResolvedValue([
+    await seed('bakeLogs', [
       log('b1', 'r0', '2026-08-02T10:00:00.000Z'),
       log('b2', 'r1', '2026-08-20T10:00:00.000Z', true),
       log('b3', 'r2', '2026-09-05T10:00:00.000Z'),
-    ] as any);
-    render(<Analytics />);
+    ]);
+    renderScreen(<Analytics />);
 
     await waitFor(() => expect(screen.getByText('3 bakes logged')).toBeInTheDocument());
     expect(screen.getByText('Recipes baked').nextSibling).toHaveTextContent('3');
@@ -55,12 +40,12 @@ describe('Analytics', () => {
    * enough to read a trend", not eleven empty bars standing beside one.
    */
   it('draws only months that have a bake, and says when that is too few', async () => {
-    vi.mocked(api.getAllBakeLogs).mockResolvedValue([
+    await seed('bakeLogs', [
       log('b1', 'r0', '2026-08-02T10:00:00.000Z'),
       log('b2', 'r1', '2026-08-20T10:00:00.000Z'),
       log('b3', 'r2', '2026-09-05T10:00:00.000Z'),
-    ] as any);
-    render(<Analytics />);
+    ]);
+    renderScreen(<Analytics />);
 
     await waitFor(() => expect(screen.getByRole('meter', { name: 'Aug 2026' })).toBeInTheDocument());
     expect(screen.getByRole('meter', { name: 'Sep 2026' })).toBeInTheDocument();
@@ -70,36 +55,36 @@ describe('Analytics', () => {
   });
 
   it('stops hedging once there are enough months to compare', async () => {
-    vi.mocked(api.getAllBakeLogs).mockResolvedValue([
+    await seed('bakeLogs', [
       log('b1', 'r0', '2026-07-02T10:00:00.000Z'),
       log('b2', 'r1', '2026-08-20T10:00:00.000Z'),
       log('b3', 'r2', '2026-09-05T10:00:00.000Z'),
-    ] as any);
-    render(<Analytics />);
+    ]);
+    renderScreen(<Analytics />);
 
     await waitFor(() => expect(screen.getByRole('meter', { name: 'Jul 2026' })).toBeInTheDocument());
     expect(screen.queryByText(/Not enough to read a trend yet/i)).not.toBeInTheDocument();
   });
 
   it('refuses to rank recipes that have all been baked exactly once', async () => {
-    vi.mocked(api.getAllBakeLogs).mockResolvedValue([
+    await seed('bakeLogs', [
       log('b1', 'r0', '2026-08-02T10:00:00.000Z'),
       log('b2', 'r1', '2026-08-20T10:00:00.000Z'),
       log('b3', 'r2', '2026-09-05T10:00:00.000Z'),
-    ] as any);
-    render(<Analytics />);
+    ]);
+    renderScreen(<Analytics />);
 
     expect(await screen.findByText(/Nothing has been baked twice yet/i)).toBeInTheDocument();
     expect(screen.queryByText('Recipe 0')).not.toBeInTheDocument();
   });
 
   it('ranks a recipe once it has actually been baked twice', async () => {
-    vi.mocked(api.getAllBakeLogs).mockResolvedValue([
+    await seed('bakeLogs', [
       log('b1', 'r4', '2026-08-02T10:00:00.000Z'),
       log('b2', 'r4', '2026-08-20T10:00:00.000Z'),
       log('b3', 'r2', '2026-09-05T10:00:00.000Z'),
-    ] as any);
-    render(<Analytics />);
+    ]);
+    renderScreen(<Analytics />);
 
     await waitFor(() => expect(screen.getByText('Recipe 4')).toBeInTheDocument());
     expect(screen.getByText('2 bakes')).toBeInTheDocument();
@@ -107,23 +92,30 @@ describe('Analytics', () => {
     expect(screen.queryByText('Recipe 2')).not.toBeInTheDocument();
   });
 
-  it('merges offline logs with the ones from the server', async () => {
-    const { getAllLocalBakeLogs } = await import('../lib/localDB');
-    vi.mocked(api.getAllBakeLogs).mockResolvedValue([
+  it('does not count a deleted bake', async () => {
+    await seed('bakeLogs', [
       log('b1', 'r0', '2026-08-02T10:00:00.000Z'),
-    ] as any);
-    vi.mocked(getAllLocalBakeLogs).mockResolvedValue([
-      log('local-1', 'r1', '2026-08-03T10:00:00.000Z'),
-    ] as any);
-    render(<Analytics />);
+      makeBakeLog({ _id: 'b2', recipeId: 'r1', deletedAt: '2026-08-04T10:00:00.000Z' }),
+    ]);
+    renderScreen(<Analytics />);
 
-    await waitFor(() => expect(screen.getByText('2 bakes logged')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('1 bake logged')).toBeInTheDocument());
   });
 
-  it('shows a skeleton while reading, not the word loading', () => {
-    vi.mocked(api.getAllBakeLogs).mockReturnValue(new Promise(() => {}) as any);
-    const { container } = render(<Analytics />);
+  it('replaces the readings with the failure, rather than drawing zeroes', async () => {
+    const spy = vi.spyOn(repo, 'getBakeLogs').mockRejectedValue(new Error('The database is blocked.'));
+    renderScreen(<Analytics />);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/nothing to report/i);
+    expect(screen.queryByText(/bakes logged/)).not.toBeInTheDocument();
+    spy.mockRestore();
+  });
+
+  it('draws nothing while the device is read, not the word loading', () => {
+    const spy = vi.spyOn(repo, 'getBakeLogs').mockReturnValue(new Promise(() => {}));
+    const { container } = renderScreen(<Analytics />);
     expect(screen.queryByText(/loading/i)).not.toBeInTheDocument();
-    expect(container.querySelector('.animate-pulse')).toBeTruthy();
+    expect(container.querySelector('.animate-pulse')).toBeNull();
+    spy.mockRestore();
   });
 });

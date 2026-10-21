@@ -1,12 +1,16 @@
 import { useState, useEffect, useRef } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { api, type Recipe, type Component } from '../lib/api';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { api } from '../lib/api';
+import type { Component, Draft, Recipe } from '../lib/types';
+import { repo } from '../lib/repo';
+import { savePhoto } from '../lib/repo/photos';
+import { useCreateRecipe, useDeleteRecipe, useRecipe, useRecipes, useUpdateRecipe } from '../lib/queries';
+import { usePlan } from '../lib/session';
 import {
   Trash2,
   Plus,
   X,
   GripVertical,
-  Loader2,
   Download,
   Check,
   ArrowUp,
@@ -20,7 +24,8 @@ import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import EditorHeader from './EditorHeader';
 import BasicInfoForm from './BasicInfoForm';
 import AIReviewSheet from './AIReviewSheet';
-import { Panel, Button, Field, TextArea, Sheet, cn } from './ui';
+import AiGateSheet from './AiGateSheet';
+import { Panel, Button, Field, Photo, TextArea, Sheet, buttonClassName, cn } from './ui';
 
 /*
  * The recipe editor.
@@ -34,7 +39,35 @@ import { Panel, Button, Field, TextArea, Sheet, cn } from './ui';
  * Its four overlays (AI review, sub-recipe link, crop, past bakes) were four
  * hand-rolled scrims. They are all `Sheet` now, which is where focus trapping,
  * Escape and the scroll lock come from.
+ *
+ * Editing an existing recipe never shows a form until the recipe is in it. It
+ * used to render an empty "Untitled recipe" form, with live Save and Delete,
+ * over a recipe it had failed to load; saving that wrote the blank over the
+ * real one (audit #1).
  */
+
+const BLANK: Draft<Recipe> = {
+  title: '',
+  description: '',
+  imageUrls: [],
+  servings: 4,
+  difficulty: 'Medium',
+  prepTime: '',
+  cookTime: '',
+  tags: [],
+  ingredients: [],
+  instructions: [],
+  instructionLinks: [],
+  labNotes: '',
+  folder: 'Uncategorized',
+};
+
+/** The editable part of a stored recipe: everything but the record fields. */
+function draftOf(recipe: Recipe): Draft<Recipe> {
+  const { _id, createdAt, updatedAt, deletedAt, ...draft } = recipe;
+  void _id; void createdAt; void updatedAt; void deletedAt;
+  return draft;
+}
 
 export default function RecipeEditor() {
   const { id } = useParams<{ id: string }>();
@@ -52,8 +85,14 @@ export default function RecipeEditor() {
 
   // Past bakes selection
   const [showPastBakesModal, setShowPastBakesModal] = useState(false);
-  const [pastBakesLoading, setPastBakesLoading] = useState(false);
-  const [pastBakePhotos, setPastBakePhotos] = useState<string[]>([]);
+  const [pastBakePhotos, setPastBakePhotos] = useState<string[] | null>(null);
+  const [aiGate, setAiGate] = useState<string | null>(null);
+  const { can } = usePlan();
+  const stored = useRecipe(id);
+  const { data: availableRecipes = [] } = useRecipes();
+  const createRecipe = useCreateRecipe();
+  const updateRecipe = useUpdateRecipe();
+  const deleteRecipe = useDeleteRecipe();
 
   // AI state
   const [isRestructuring, setIsRestructuring] = useState(false);
@@ -63,37 +102,17 @@ export default function RecipeEditor() {
   const [saving, setSaving] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
-  const [recipe, setRecipe] = useState<Omit<Recipe, '_id'>>(() => {
-    if (location.state?.recipe) {
-      return location.state.recipe;
-    }
-    return {
-      title: '',
-      description: '',
-      imageUrls: [],
-      servings: 4,
-      difficulty: 'Medium',
-      prepTime: '',
-      cookTime: '',
-      tags: [],
-      ingredients: [],
-      instructions: [],
-      instructionLinks: [],
-      labNotes: '',
-    };
-  });
+  const [recipe, setRecipe] = useState<Draft<Recipe>>(() => location.state?.recipe ?? BLANK);
+  // The stored recipe is copied into the form once, when it arrives; after
+  // that the form is the author's.
+  const [hydrated, setHydrated] = useState(!id);
 
   const [draggedIngredientIdx, setDraggedIngredientIdx] = useState<number | null>(null);
   const [draggedInstructionIdx, setDraggedInstructionIdx] = useState<number | null>(null);
 
   // Sub-recipe linking state
-  const [availableRecipes, setAvailableRecipes] = useState<Recipe[]>([]);
   const [linkingStepIdx, setLinkingStepIdx] = useState<number | null>(null);
   const [linkSearch, setLinkSearch] = useState('');
-
-  useEffect(() => {
-    api.getRecipes().then(setAvailableRecipes).catch(console.error);
-  }, []);
 
   const handleIngredientDrop = (e: React.DragEvent, dropIdx: number) => {
     e.preventDefault();
@@ -129,14 +148,11 @@ export default function RecipeEditor() {
   };
 
   useEffect(() => {
-    if (id) {
-      api.getRecipe(id).then((data) => {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { _id, ...rest } = data;
-        setRecipe(rest);
-      });
+    if (id && !hydrated && stored.data) {
+      setRecipe(draftOf(stored.data));
+      setHydrated(true);
     }
-  }, [id]);
+  }, [id, hydrated, stored.data]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -145,15 +161,14 @@ export default function RecipeEditor() {
     setSaving(true);
 
     try {
-      if (!id) {
-        const created = await api.createRecipe(recipe);
-        navigate(`/recipe/${created._id}`);
-      } else {
-        const updated = await api.updateRecipe(id, recipe);
-        navigate(`/recipe/${updated._id}`);
-      }
-    } catch (err: any) {
-      setSaveError(err.message || 'Could not save the recipe. Nothing has been lost — try again.');
+      const saved = id
+        ? await updateRecipe.mutateAsync({ id, data: recipe })
+        : await createRecipe.mutateAsync(recipe);
+      navigate(`/recipe/${saved._id}`);
+    } catch (err) {
+      setSaveError(
+        `${err instanceof Error ? err.message : "Couldn't save the recipe to this device."} Nothing has been lost; try again.`,
+      );
     } finally {
       setSaving(false);
     }
@@ -163,16 +178,20 @@ export default function RecipeEditor() {
     if (!id) return;
     setConfirmingDelete(false);
     try {
-      await api.deleteRecipe(id);
+      await deleteRecipe.mutateAsync(id);
       navigate('/');
-    } catch (err: any) {
-      setSaveError(err.message || 'Could not delete the recipe.');
+    } catch {
+      setSaveError("Couldn't delete the recipe on this device. Try again.");
     }
   };
 
   const handleExtract = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!extractUrl) return;
+    if (!can('ai')) {
+      setAiGate('Import from a URL');
+      return;
+    }
     setExtracting(true);
     setExtractError('');
     try {
@@ -187,6 +206,10 @@ export default function RecipeEditor() {
   };
 
   const handleAIRestructure = async () => {
+    if (!can('ai')) {
+      setAiGate('Restructure');
+      return;
+    }
     setIsRestructuring(true);
     setAiError('');
     try {
@@ -195,7 +218,7 @@ export default function RecipeEditor() {
         Description: ${recipe.description}
         Prep: ${recipe.prepTime}, Cook: ${recipe.cookTime}, Servings: ${recipe.servings}
         Tags: ${recipe.tags.join(', ')}
-        Ingredients: ${recipe.ingredients.map((i) => `${i.quantity} ${i.unit} ${i.name}`).join('\n')}
+        Ingredients: ${recipe.ingredients.map((i) => [i.quantity, i.unit, i.name].filter((x) => x !== null && x !== '').join(' ')).join('\n')}
         Instructions: ${recipe.instructions.join('\n')}
         Lab Notes / Raw Text: ${recipe.labNotes}
       `;
@@ -246,18 +269,26 @@ export default function RecipeEditor() {
 
       canvas.toBlob(
         async (blob) => {
-          if (!blob) return;
-          const file = new File([blob], 'cropped.jpg', { type: 'image/jpeg' });
-          const { imageUrl } = await api.uploadImage(file);
-          setRecipe({ ...recipe, imageUrls: [...(recipe.imageUrls || []), imageUrl] });
-          setCropImageSrc('');
-          setUploading(false);
+          if (!blob) {
+            setSaveError("That photograph couldn't be cropped. Try another.");
+            setUploading(false);
+            return;
+          }
+          try {
+            const ref = await savePhoto(blob);
+            setRecipe((prev) => ({ ...prev, imageUrls: [...(prev.imageUrls || []), ref] }));
+            setCropImageSrc('');
+          } catch {
+            setSaveError("That photograph couldn't be saved to this device. The device may be out of space.");
+          } finally {
+            setUploading(false);
+          }
         },
         'image/jpeg',
         0.95,
       );
-    } catch (err: any) {
-      setSaveError(err.message || 'That image could not be cropped and uploaded.');
+    } catch {
+      setSaveError("That photograph couldn't be cropped. Try another.");
       setUploading(false);
     }
   };
@@ -273,13 +304,8 @@ export default function RecipeEditor() {
       if (photo.webPath) {
         setUploading(true);
         const response = await fetch(photo.webPath);
-        const blob = await response.blob();
-        const file = new File([blob], `photo_${Date.now()}.${photo.format || 'jpg'}`, {
-          type: `image/${photo.format || 'jpeg'}`,
-        });
-
-        const { imageUrl } = await api.uploadImage(file);
-        setRecipe({ ...recipe, imageUrls: [...(recipe.imageUrls || []), imageUrl] });
+        const ref = await savePhoto(await response.blob());
+        setRecipe((prev) => ({ ...prev, imageUrls: [...(prev.imageUrls || []), ref] }));
         setUploading(false);
       }
     } catch (e: any) {
@@ -296,9 +322,9 @@ export default function RecipeEditor() {
       return;
     }
     setShowPastBakesModal(true);
-    setPastBakesLoading(true);
+    setPastBakePhotos(null);
     try {
-      const logs = await api.getRecipeBakeLogs(id);
+      const logs = await repo.getRecipeBakeLogs(id);
       const urls: string[] = [];
       logs.forEach((log) => {
         if (log.images) log.images.forEach((i) => urls.push(i.url));
@@ -306,9 +332,8 @@ export default function RecipeEditor() {
       });
       setPastBakePhotos(Array.from(new Set(urls)));
     } catch {
-      setSaveError('Could not load the past bakes for this recipe.');
-    } finally {
-      setPastBakesLoading(false);
+      setShowPastBakesModal(false);
+      setSaveError("Couldn't read this recipe's past bakes on this device.");
     }
   };
 
@@ -383,6 +408,35 @@ export default function RecipeEditor() {
     .filter((r) => r._id !== id)
     .filter((r) => r.title.toLowerCase().includes(linkSearch.trim().toLowerCase()))
     .slice(0, 24);
+
+  // No form until the recipe being edited is in it (audit #1). A read from the
+  // device is near-instant, so the wait draws nothing (B30); a failure, or a
+  // recipe that isn't here, says so and offers no Save and no Delete.
+  if (id && !hydrated) {
+    if (stored.isPending) return null;
+    return (
+      <div className="mx-auto flex max-w-xl flex-col gap-4 py-16">
+        <Panel title="Editor">
+          <div className="flex flex-col gap-4" role="alert">
+            <p className="font-faceplate text-lg text-ink">
+              {stored.isError ? "Couldn't open this recipe on this device" : 'This recipe is not in the cookbook'}
+            </p>
+            <p className="text-sm text-ink-muted">
+              {stored.isError
+                ? 'Nothing has been changed. Try again, or go back to the cookbook.'
+                : 'It may have been deleted. There is nothing here to edit.'}
+            </p>
+            <div className="flex gap-2">
+              {stored.isError ? <Button onClick={() => stored.refetch()}>Try again</Button> : null}
+              <Link to="/" className={buttonClassName({ variant: 'ghost' })}>
+                Back to the cookbook
+              </Link>
+            </div>
+          </div>
+        </Panel>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="relative mx-auto max-w-4xl pb-20">
@@ -474,7 +528,7 @@ export default function RecipeEditor() {
               onClick={() =>
                 setRecipe({
                   ...recipe,
-                  ingredients: [...recipe.ingredients, { name: '', quantity: 0, unit: '' }],
+                  ingredients: [...recipe.ingredients, { name: '', quantity: null, unit: '' }],
                 })
               }
             >
@@ -514,22 +568,24 @@ export default function RecipeEditor() {
                       className="hidden h-4 w-4 shrink-0 cursor-move text-ink-muted md:mb-3.5 md:block"
                       aria-hidden="true"
                     />
+                    {/* Both optional: "Salt, to taste" has no amount, and
+                      * "2 eggs" has no unit. Neither is invented. */}
                     <Field
                       label={`Quantity ${i + 1}`}
                       hideLabel
-                      required
                       type="number"
                       inputMode="decimal"
                       step="any"
                       className="w-20 shrink-0 md:w-24"
-                      value={ing.quantity || ''}
-                      onChange={(e) => updateIngredient(i, 'quantity', parseFloat(e.target.value))}
+                      value={ing.quantity ?? ''}
+                      onChange={(e) =>
+                        updateIngredient(i, 'quantity', e.target.value === '' ? null : parseFloat(e.target.value))
+                      }
                       placeholder="Qty"
                     />
                     <Field
                       label={`Unit ${i + 1}`}
                       hideLabel
-                      required
                       // Real units are words, not symbols: the library has
                       // "juice of", "cm piece" and "to serve" in this column.
                       className="min-w-0 flex-1 md:w-32 md:flex-none"
@@ -708,6 +764,8 @@ export default function RecipeEditor() {
         </Panel>
       </div>
 
+      <AiGateSheet open={aiGate !== null} feature={aiGate ?? ''} onClose={() => setAiGate(null)} />
+
       <AIReviewSheet
         open={proposedRecipe !== null}
         current={recipe}
@@ -775,7 +833,7 @@ export default function RecipeEditor() {
               disabled={!completedCrop}
               busy={uploading}
             >
-              {uploading ? 'Uploading' : 'Crop and upload'}
+              {uploading ? 'Saving' : 'Crop and save'}
             </Button>
           </>
         }
@@ -803,12 +861,7 @@ export default function RecipeEditor() {
         title="Photographs from past bakes"
         size="xl"
       >
-        {pastBakesLoading ? (
-          <div className="flex flex-col items-center gap-3 py-12 text-ink-muted">
-            <Loader2 className="h-6 w-6 animate-spin" aria-hidden="true" />
-            <p className="text-sm">Loading photographs…</p>
-          </div>
-        ) : pastBakePhotos.length === 0 ? (
+        {pastBakePhotos === null ? null : pastBakePhotos.length === 0 ? (
           <p className="py-8 text-center text-sm text-ink-muted">
             This recipe has no logged bakes with photographs yet.
           </p>
@@ -833,7 +886,7 @@ export default function RecipeEditor() {
                       isSelected ? 'border-ink' : 'border-rule hover:border-ink-muted',
                     )}
                   >
-                    <img
+                    <Photo
                       src={url}
                       alt=""
                       loading="lazy"

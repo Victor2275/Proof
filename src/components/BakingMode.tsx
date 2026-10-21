@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef, useMemo, useSyncExternalStore } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { api, API_URL, type Recipe, type Component } from '../lib/api';
-import { saveLocalBakeLog } from '../lib/localDB';
+import type { Recipe, Component } from '../lib/types';
+import { repo } from '../lib/repo';
+import { useCreateBakeLog } from '../lib/queries';
+import { formatAmount, formatIngredient } from '../lib/ingredients';
 import { X, Check, Upload, Loader2, List, Link as LinkIcon, Mic, MicOff, Bluetooth, Video, VideoOff, PictureInPicture } from 'lucide-react';
 import { renderWithTimers } from '../utils/timerParser';
 import { scaleService, type WeightMeasurement } from '../lib/bluetoothScale';
@@ -15,7 +17,7 @@ import { getActiveBake, startActiveBake, clearActiveBake } from '../lib/activeBa
 import { derivePhases, type Phase } from '../lib/phases';
 import { ingredientsForStep, scaleTargetGrams } from '../lib/stepIngredients';
 import { subscribeRunningTimers, getRunningTimers, formatTimerClock } from '../lib/timerBus';
-import { Button, Panel, SegmentReadout, Sheet, Skeleton, StepRow, cn } from './ui';
+import { Button, Panel, SegmentReadout, Sheet, StepRow, cn } from './ui';
 
 /*
  * Baking Mode — the surface the whole product exists for.
@@ -41,6 +43,8 @@ export default function BakingMode() {
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const createBakeLog = useCreateBakeLog();
   const wakeLock = useRef<any>(null);
   // Baking Mode is a fixed overlay, so the window itself never scrolls — the
   // step content is its own scroll container and the voice scroll commands need it.
@@ -130,7 +134,7 @@ export default function BakingMode() {
           if (recipe && recipe.instructions[currentStep]) {
             const ings = getSmartIngredients(recipe.instructions[currentStep]);
             if (ings.length > 0) {
-              const text = "You need: " + ings.map(i => `${i.quantity} ${i.unit} of ${i.name}`).join(", ");
+              const text = "You need: " + ings.map((i) => formatIngredient(i)).join(", ");
               const msg = new SpeechSynthesisUtterance(text);
               window.speechSynthesis.speak(msg);
             } else {
@@ -239,7 +243,7 @@ export default function BakingMode() {
 
   useEffect(() => {
     if (id) {
-      api.getRecipe(id)
+      repo.getRecipe(id)
         .then((r) => {
           setRecipe(r);
           // Resume rather than restart: if this recipe is already the active
@@ -247,9 +251,9 @@ export default function BakingMode() {
           // simply closed mid-bake), pick the step back up instead of
           // silently rewinding to the first instruction.
           const existing = getActiveBake();
-          if (existing?.recipeId === id) setCurrentStep(existing.stepIndex);
+          if (r && existing?.recipeId === id) setCurrentStep(existing.stepIndex);
         })
-        .catch(console.error)
+        .catch(() => setLoadFailed(true))
         .finally(() => setLoading(false));
     }
   }, [id]);
@@ -486,86 +490,41 @@ export default function BakingMode() {
     e.preventDefault();
     setSavingLog(true);
     try {
-      let newLogId: string | null = null;
-      if (!localStorage.getItem('adminToken')) {
-        const savedLog = await saveLocalBakeLog({ recipeId: id!, notes, imageUrls: [], images: [] }, imageFiles);
-        newLogId = savedLog._id || null;
-      } else {
-        const uploadedImages: {url: string, label: string}[] = [];
-        const imageUrls: string[] = [];
-        if (imageFiles.length > 0) {
-          const uploadPromises = imageFiles.map(async (item) => {
-            const formData = new FormData();
-            formData.append('image', item.file);
-            const uploadRes = await fetch(`${API_URL.replace('/api', '/api/upload')}`, {
-              method: 'POST',
-              headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` },
-              body: formData
-            });
-            if (!uploadRes.ok) throw new Error('Image upload failed');
-            const { imageUrl } = await uploadRes.json();
-            return { url: imageUrl, label: item.label };
-          });
-          const results = await Promise.all(uploadPromises);
-          uploadedImages.push(...results);
-          imageUrls.push(...results.map(r => r.url));
-        }
-
-        const res = await fetch(`${API_URL.replace('/api', '')}/api/bakelogs`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-          },
-          body: JSON.stringify({
-            recipeId: id,
-            notes,
-            imageUrls,
-            images: uploadedImages
-          })
-        });
-        if (!res.ok) throw new Error('Failed to log bake');
-        const createdLog = await res.json();
-        newLogId = createdLog._id;
-      }
+      // The bake is saved on this device, photographs and all. It needs no
+      // account and no connection: a bake finished offline is still logged.
+      const saved = await createBakeLog.mutateAsync({
+        draft: { recipeId: id!, notes },
+        photos: imageFiles,
+      });
+      const newLogId: string | null = saved._id;
 
       if (newLogId) {
         navigate(`/recipe/${id}?makeId=${newLogId}&export=instagram`);
       } else {
         navigate(`/recipe/${id}`);
       }
-    } catch (err) {
-      console.error(err);
-      setBakeNotice('The bake log did not save. Your notes and photographs are still here — try again once the connection is back.');
+    } catch {
+      setBakeNotice("The bake log didn't save to this device. Your notes and photographs are still here; try again.");
     } finally {
       setSavingLog(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="fixed inset-0 z-50 flex flex-col bg-ground">
-        <div className="border-b border-rule bg-panel faceplate px-3 py-3">
-          <Skeleton className="h-4 w-40" />
-          <div className="mt-3 flex w-full gap-px" aria-hidden="true">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="h-14 max-w-20 flex-1 rounded-key bg-key-unlit" />
-            ))}
-          </div>
-        </div>
-        <div className="flex flex-1 flex-col justify-center gap-4 px-6">
-          <Skeleton className="h-8 w-3/4" />
-          <Skeleton className="h-8 w-2/3" />
-          <Skeleton className="h-8 w-1/2" />
-        </div>
-      </div>
-    );
-  }
+  // The recipe is read from the device in a few milliseconds: the overlay's
+  // ground is drawn, and nothing on it, rather than a skeleton that flashes (B30).
+  if (loading) return <div className="fixed inset-0 z-50 bg-ground" />;
 
   if (!recipe) {
     return (
       <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-ground px-6 text-center">
-        <span className="label-silkscreen text-ink-muted">No recipe loaded</span>
+        <span className="label-silkscreen text-ink-muted">
+          {loadFailed ? "Couldn't open this recipe on this device" : 'This recipe is not in the cookbook'}
+        </span>
+        <p className="max-w-prose text-sm text-ink-muted">
+          {loadFailed
+            ? 'Go back and open it again. If it keeps happening, reload the app.'
+            : 'It may have been deleted. Your bakes of it are still in the bake history.'}
+        </p>
         <Button onClick={() => navigate('/')}>Back to cookbook</Button>
       </div>
     );
@@ -801,7 +760,7 @@ export default function BakingMode() {
                       <li key={idx} className="flex items-baseline justify-between gap-4 py-2">
                         <span className="min-w-0 truncate text-ink">{ing.name}</span>
                         <span className="shrink-0 font-mono text-sm tabular-nums text-ink">
-                          {ing.quantity} {ing.unit}
+                          {formatAmount(ing)}
                         </span>
                       </li>
                     ))}
@@ -960,7 +919,7 @@ export default function BakingMode() {
                 <span className={cn('flex min-w-0 flex-1 items-baseline justify-between gap-3', checkedIngredients[i] && 'opacity-40 line-through')}>
                   <span className="min-w-0 truncate text-ink">{ing.name}</span>
                   <span className="shrink-0 font-mono text-sm tabular-nums text-ink-muted">
-                    {ing.quantity} {ing.unit}
+                    {formatAmount(ing)}
                   </span>
                 </span>
               </label>

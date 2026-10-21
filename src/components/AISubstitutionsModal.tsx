@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { api } from '../lib/api';
+import { usePlan } from '../lib/session';
 import { Sparkles } from 'lucide-react';
+import { AiGateNotice } from './AiGateSheet';
 import { Button, Sheet, Skeleton } from './ui';
 
 export interface AISubstitutionsModalProps {
@@ -23,21 +25,17 @@ export default function AISubstitutionsModal({
   const [substitutions, setSubstitutions] = useState<{ substitute: string; ratio: string; notes: string }[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const { can } = usePlan();
+  const allowed = can('ai');
 
   const handleFetchSubstitutions = async () => {
-    const token = localStorage.getItem('adminToken');
-    if (!token) {
-      window.dispatchEvent(new Event('auth-required'));
-      return;
-    }
-
     setLoading(true);
     setError('');
     try {
       const data = await api.getAISubstitutions(ingredientName, recipeTitle);
       setSubstitutions(data.substitutions || []);
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch AI substitutions.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "The substitutions couldn't be fetched.");
     } finally {
       setLoading(false);
     }
@@ -58,17 +56,17 @@ export default function AISubstitutionsModal({
           </p>
         ) : null}
 
-        {idle ? (
-          <div className="flex flex-col items-start gap-2">
-            <Button
-              variant="primary"
-              onClick={handleFetchSubstitutions}
-              icon={<Sparkles className="h-4 w-4" aria-hidden="true" />}
-            >
-              {error ? 'Try again' : 'Generate substitutions'}
-            </Button>
-            <p className="text-xs text-ink-muted">Admin PIN required</p>
-          </div>
+        {idle && !allowed ? <AiGateNotice feature="Substitutions" /> : null}
+
+        {idle && allowed ? (
+          <Button
+            variant="primary"
+            className="self-start"
+            onClick={handleFetchSubstitutions}
+            icon={<Sparkles className="h-4 w-4" aria-hidden="true" />}
+          >
+            {error ? 'Try again' : 'Generate substitutions'}
+          </Button>
         ) : null}
 
         {loading ? (

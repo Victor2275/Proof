@@ -1,4 +1,4 @@
-import { type BakeLog } from '../lib/api';
+import { type BakeLog } from '../lib/types';
 import { Award, Share2 } from 'lucide-react';
 import { Button, RecipePlate, cn } from './ui';
 

@@ -2,19 +2,21 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { act } from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
+import { QueryClientProvider } from '@tanstack/react-query';
 import BakingMode from './BakingMode';
-import { api } from '../lib/api';
+import { repo } from '../lib/repo';
 import SpeechRecognition from 'react-speech-recognition';
 import { publishRunningTimers } from '../lib/timerBus';
+import { makeRecipe, seed, testQueryClient } from '../test/utils';
 
-vi.mock('../lib/api', () => ({
-  api: {
-    getRecipe: vi.fn(),
-    uploadImage: vi.fn(),
-    createBakeLog: vi.fn(),
-    getPantry: vi.fn().mockResolvedValue([])
-  }
-}));
+const renderBaking = () =>
+  render(
+    <QueryClientProvider client={testQueryClient()}>
+      <MemoryRouter>
+        <BakingMode />
+      </MemoryRouter>
+    </QueryClientProvider>,
+  );
 
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom');
@@ -74,16 +76,16 @@ vi.mock('../lib/bluetoothScale', () => ({
   },
 }));
 
-const mockRecipe = {
+const mockRecipe = makeRecipe({
   _id: '1',
   title: 'Test Sourdough',
   instructions: ['Step 1: Mix', 'Step 2: Fold', 'Step 3: Bake'],
-  ingredients: [{ name: 'Flour', quantity: 500, unit: 'g' }]
-};
+  ingredients: [{ name: 'Flour', quantity: 500, unit: 'g' }],
+});
 
 describe('BakingMode Component', () => {
-  beforeEach(() => {
-    vi.mocked(api.getRecipe).mockResolvedValue(mockRecipe as any);
+  beforeEach(async () => {
+    await seed('recipes', [mockRecipe]);
     registeredCommands = [];
     window.confirm = vi.fn().mockReturnValue(true);
     // Voice commands and wave-to-advance are opt-in, so a leftover value from an
@@ -92,14 +94,14 @@ describe('BakingMode Component', () => {
   });
 
   it('renders Focus Mode by default and shows first step', async () => {
-    render(<MemoryRouter><BakingMode /></MemoryRouter>);
+    renderBaking();
     await waitFor(() => {
       expect(screen.getByText('Step 1: Mix')).toBeDefined();
     });
   });
 
   it('advances to next step on arrow right key', async () => {
-    render(<MemoryRouter><BakingMode /></MemoryRouter>);
+    renderBaking();
     await waitFor(() => expect(screen.getByText('Step 1: Mix')).toBeDefined());
     
     await new Promise(r => setTimeout(r, 50));
@@ -111,7 +113,7 @@ describe('BakingMode Component', () => {
   });
 
   it('goes back to previous step on arrow left key', async () => {
-    render(<MemoryRouter><BakingMode /></MemoryRouter>);
+    renderBaking();
     await waitFor(() => expect(screen.getByText('Step 1: Mix')).toBeDefined());
     
     await new Promise(r => setTimeout(r, 50));
@@ -126,7 +128,7 @@ describe('BakingMode Component', () => {
   });
 
   it('toggles list view and renders all steps', async () => {
-    render(<MemoryRouter><BakingMode /></MemoryRouter>);
+    renderBaking();
     await waitFor(() => expect(screen.getByText('Step 1: Mix')).toBeDefined());
     
     const toggleBtn = screen.getByText('Show All');
@@ -139,7 +141,7 @@ describe('BakingMode Component', () => {
   });
 
   it('shows Finish Recipe button on last step in Focus Mode', async () => {
-    render(<MemoryRouter><BakingMode /></MemoryRouter>);
+    renderBaking();
     await waitFor(() => expect(screen.getByText('Step 1: Mix')).toBeDefined());
     
     await new Promise(r => setTimeout(r, 50));
@@ -160,7 +162,7 @@ describe('BakingMode Component', () => {
   it('toggles the microphone on click', async () => {
     // The mic only renders when the Voice Commands setting is on.
     localStorage.setItem('voiceCommands', 'true');
-    render(<MemoryRouter><BakingMode /></MemoryRouter>);
+    renderBaking();
     await waitFor(() => expect(screen.getByText('Step 1: Mix')).toBeDefined());
     
     const micBtn = screen.getByTitle(/Toggle Voice Commands/i);
@@ -175,7 +177,7 @@ describe('BakingMode Component', () => {
    */
 
   it('jumps to the first step of a phase when its key is pressed', async () => {
-    render(<MemoryRouter><BakingMode /></MemoryRouter>);
+    renderBaking();
     await waitFor(() => expect(screen.getByText('Step 1: Mix')).toBeDefined());
 
     // "Step 3: Bake" reads as the cook phase; its key is the way a baker who
@@ -188,14 +190,14 @@ describe('BakingMode Component', () => {
   });
 
   it('names the running phase and the step position', async () => {
-    render(<MemoryRouter><BakingMode /></MemoryRouter>);
+    renderBaking();
     await waitFor(() => expect(screen.getByText('Step 1: Mix')).toBeDefined());
 
     expect(screen.getByText('STEP 01 / 03')).toBeInTheDocument();
   });
 
   it('docks a running timer as a readout instead of floating it over the step', async () => {
-    render(<MemoryRouter><BakingMode /></MemoryRouter>);
+    renderBaking();
     await waitFor(() => expect(screen.getByText('Step 1: Mix')).toBeDefined());
 
     act(() => {
@@ -210,14 +212,16 @@ describe('BakingMode Component', () => {
   });
 
   it('shows the scale target only once a scale is connected', async () => {
-    vi.mocked(api.getRecipe).mockResolvedValue({
-      _id: '1',
-      title: 'Weighed Loaf',
-      instructions: ['Add the flour to the bowl'],
-      ingredients: [{ name: 'Flour', quantity: 500, unit: 'g' }],
-    } as any);
+    await seed('recipes', [
+      makeRecipe({
+        _id: '1',
+        title: 'Weighed Loaf',
+        instructions: ['Add the flour to the bowl'],
+        ingredients: [{ name: 'Flour', quantity: 500, unit: 'g' }],
+      }),
+    ]);
 
-    render(<MemoryRouter><BakingMode /></MemoryRouter>);
+    renderBaking();
     await waitFor(() => expect(screen.getByText('Add the flour to the bowl')).toBeDefined());
 
     // Nothing is connected, so there is no weight to report and no empty
@@ -247,7 +251,7 @@ describe('BakingMode Component', () => {
    */
   it('asks about finishing on the panel, not through a browser confirm', async () => {
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
-    render(<MemoryRouter><BakingMode /></MemoryRouter>);
+    renderBaking();
     await waitFor(() => expect(screen.getByText('Step 1: Mix')).toBeDefined());
 
     const finishCmd = registeredCommands.find((c) => c.command.includes('finish'));
@@ -267,12 +271,9 @@ describe('BakingMode Component', () => {
 
   it('reports a failed bake log in the panel, keeping what was typed', async () => {
     const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
-    // The bake log posts through fetch rather than the api client.
-    const fetchSpy = vi
-      .spyOn(globalThis, 'fetch')
-      .mockResolvedValue({ ok: false, status: 503 } as Response);
+    const saveSpy = vi.spyOn(repo, 'createBakeLog').mockRejectedValue(new Error('QuotaExceededError'));
 
-    render(<MemoryRouter><BakingMode /></MemoryRouter>);
+    renderBaking();
     await waitFor(() => expect(screen.getByText('Step 1: Mix')).toBeDefined());
 
     const finishCmd = registeredCommands.find((c) => c.command.includes('finish'));
@@ -291,12 +292,38 @@ describe('BakingMode Component', () => {
     // What was typed survives the failure — there is nothing to retype.
     expect(notes).toHaveValue('Crumb still tight.');
 
-    fetchSpy.mockRestore();
+    saveSpy.mockRestore();
     alertSpy.mockRestore();
   });
 
+  it('logs a finished bake on this device, with no account and no connection', async () => {
+    renderBaking();
+    await waitFor(() => expect(screen.getByText('Step 1: Mix')).toBeDefined());
+
+    const finishCmd = registeredCommands.find((c) => c.command.includes('finish'));
+    act(() => {
+      finishCmd.callback();
+    });
+    fireEvent.click(await screen.findByRole('button', { name: /^Finish$/i }));
+
+    const notes = await screen.findByLabelText(/Bake notes/i);
+    fireEvent.change(notes, { target: { value: 'Open crumb at last.' } });
+    fireEvent.submit(notes.closest('form')!);
+
+    await waitFor(async () => {
+      const logs = await repo.getRecipeBakeLogs('1');
+      expect(logs.map((l) => l.notes)).toEqual(['Open crumb at last.']);
+    });
+  });
+
+  it('says the recipe is gone, rather than drawing an empty machine', async () => {
+    await repo.deleteRecipe('1');
+    renderBaking();
+    expect(await screen.findByText(/This recipe is not in the cookbook/i)).toBeInTheDocument();
+  });
+
   it('registers advanced voice commands including read, timer, and help', async () => {
-    render(<MemoryRouter><BakingMode /></MemoryRouter>);
+    renderBaking();
     await waitFor(() => expect(screen.getByText('Step 1: Mix')).toBeDefined());
 
     expect(registeredCommands.length).toBeGreaterThan(5);

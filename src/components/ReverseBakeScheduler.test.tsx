@@ -1,8 +1,9 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import ReverseBakeScheduler, { toLocalInputValue } from './ReverseBakeScheduler';
+import { makeRecipe } from '../test/utils';
 
-const mockRecipe = {
+const mockRecipe = makeRecipe({
   _id: 'r1',
   title: 'Rustic Sourdough',
   description: 'Classic levain sourdough bread',
@@ -18,7 +19,7 @@ const mockRecipe = {
   servings: 4,
   tags: [],
   ingredients: []
-};
+});
 
 describe('ReverseBakeScheduler Component', () => {
   it('renders target completion time input and title', () => {

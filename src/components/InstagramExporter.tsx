@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo, type CSSProperties, type ReactNode } from 'react';
 import html2canvas from 'html2canvas';
 import { Download, LayoutGrid, Image as ImageIcon, X, Sun, Moon } from 'lucide-react';
-import { type Recipe, type BakeLog } from '../lib/api';
+import { type Recipe, type BakeLog } from '../lib/types';
 import { derivePhasesWithReading } from '../lib/phases';
 import { meaningfulDescription } from '../lib/description';
 import { totalRecipeMinutes, formatMinutesForSegments, isPlaceholderTiming } from '../lib/duration';

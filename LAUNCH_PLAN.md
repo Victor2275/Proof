@@ -88,9 +88,23 @@ a proof is a thing you commit to, and the bake log records what happened after.
 
 ---
 
-## 3. Open decision: the name
+## 3. The name and the domain
 
-Not decided yet, and it blocks the domain purchase and the Play listing. My recommendation:
+> **Decided 2026-10-04: keep the existing domain for now** — `proof-cdvj.onrender.com`.
+> No domain is bought yet. What that defers, so it isn't rediscovered later:
+>
+> - **Account email (Phase 2).** Resend, like every transactional sender, sends only from a
+>   domain whose DNS you control, and `onrender.com` is Render's. Until a domain is bought,
+>   verification and password-reset mail can go only to the operator's own address (Resend's
+>   test sender). Buying the domain is therefore the first task of Phase 2, not of Phase 0.
+> - **Moving later costs links.** Published pages live at `/r/:slug` on whatever host serves
+>   them, so every link shared before a move needs a redirect from the old host. Render keeps
+>   the `onrender.com` address working alongside a custom domain, so the move is a redirect,
+>   not a breakage — but it should happen before the Phase 5 launch posts, not after.
+>
+> The name itself stays **Proof**, per the recommendation below.
+
+The original recommendation, kept for when the domain is bought:
 
 **Keep "Proof" as the product name; qualify it in the domain and store listing.**
 

@@ -2,7 +2,8 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import html2canvas from 'html2canvas';
 import InstagramExporter from './InstagramExporter';
-import type { Recipe } from '../lib/api';
+import type { Recipe } from '../lib/types';
+import { makeBakeLog, makeRecipe } from '../test/utils';
 
 vi.mock('html2canvas', () => ({
   default: vi.fn().mockResolvedValue({
@@ -10,7 +11,7 @@ vi.mock('html2canvas', () => ({
   }),
 }));
 
-const mockRecipe: Recipe = {
+const mockRecipe: Recipe = makeRecipe({
   title: 'Test Bread',
   description: 'A test description',
   prepTime: '20',
@@ -20,7 +21,7 @@ const mockRecipe: Recipe = {
   ingredients: [{ name: 'Flour', quantity: 500, unit: 'g' }],
   instructions: ['Mix', 'Bake'],
   imageUrls: ['https://example.com/img.jpg'],
-};
+});
 
 describe('InstagramExporter', () => {
   it('renders the carousel by default, with the pattern card first', () => {
@@ -118,7 +119,7 @@ describe('InstagramExporter', () => {
     rerender(
       <InstagramExporter
         recipe={{ ...mockRecipe, description: '' }}
-        bakeLog={{ recipeId: 'r1', date: '2026-09-16', notes: 'Longer bulk next time.', imageUrls: [] }}
+        bakeLog={makeBakeLog({ recipeId: 'r1', date: '2026-09-16', notes: 'Longer bulk next time.', imageUrls: [] })}
         onClose={vi.fn()}
       />,
     );

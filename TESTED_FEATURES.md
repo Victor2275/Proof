@@ -3,7 +3,7 @@
 This is a 1-to-1 mirror of CURRENT_FEATURES.md. Use checkboxes to track manual testing status.
 
 ## 1. Core Recipe Management
-- [ ] **Structured Schema (MongoDB)**: Recipes stored with all required fields.
+- [ ] **Structured Schema (on the device)**: Recipes stored in IndexedDB with all required fields; an ingredient with no amount stores none.
 - [ ] **Fuzzy Search & Filtering**: Typo-tolerant search on dashboard.
 - [ ] **Nested Sub-Recipe Drawers**: Linking recipes to instruction steps.
 - [ ] **Compact & Grid Views**: Dashboard view toggle.
@@ -47,12 +47,12 @@ This is a 1-to-1 mirror of CURRENT_FEATURES.md. Use checkboxes to track manual t
 - [ ] **Baking Analytics**: Charts for baking habits and history.
 - [ ] **Nightly DB Backup (cron)**: JSON backup of MongoDB data.
 - [ ] **Orphaned Image Cleanup**: Cloudinary cleanup via Admin API.
-- [ ] **Offline PWA Engine**: Offline recipe reading via Workbox cache.
+- [ ] **Offline PWA Engine**: app shell and fonts cached; with the network off the cookbook still opens, edits and saves.
 
 ## 5. Sub-Resources & Media
 - [ ] **Bake Logs**: Attach logs with photos and notes to recipes.
 - [ ] **Bake logs grid**: notes on hover, one click opens the make, attempts numbered from the oldest, personal best marked in text as well as an icon.
-- [ ] **Cloudinary Image Upload**: Images stored on Cloudinary via multer.
+- [ ] **Photographs on the device**: a photo added in the editor or a bake log is stored on the device and still shows offline.
 - [ ] **PDF / Recipe Card Export**: jspdf + html2canvas print output.
 - [ ] **Shareable bake card**: 1080×1080 pattern card (photo plate, name, real instrument values, complete key row, site address), alone or as a carousel.
 - [ ] **Card provenance**: no fabricated timing; labelled phase keys where proved, one key per step for a short generic recipe, phase keys past sixteen steps.
@@ -61,7 +61,7 @@ This is a 1-to-1 mirror of CURRENT_FEATURES.md. Use checkboxes to track manual t
 - [ ] **QR Code Deep-links**: qrcode.react for recipe sharing.
 
 ## 6. Security & Auth
-- [ ] **PIN-Gated Admin Access**: PIN required for write operations.
+- [ ] **Operator PIN**: only the Operator tools and the AI ask for it; saving a recipe, bake, note or pantry item never does.
 - [ ] **Crypto-Random Session Tokens**: No hardcoded secrets — UUID tokens with 24h TTL.
 - [ ] **Rate Limiting**: AI and auth endpoints rate-limited.
 
@@ -213,6 +213,33 @@ This is a 1-to-1 mirror of CURRENT_FEATURES.md. Use checkboxes to track manual t
 - [ ] **Audit matrix**: `npm run audit:ui` shoots every cell into `audit-shots/`; a stopped run continues with `AUDIT_RESUME=1`.
 - [ ] **Audit report**: `npm run audit:report` writes `audit-shots/report.md` and a contact sheet per surface and theme.
 - [ ] **Separate from the baselines**: `npm run test:visual` does not pick up the audit specs.
+
+## 10. Public launch — Phase 1: the local-first cookbook
+- [ ] **Works offline**: with the network off, create, edit and delete a recipe, log a bake with a photo, add a note and a pantry item; reload; all still there.
+- [ ] **Client-minted ids**: a new recipe's address is a 26-character ULID.
+- [ ] **Tombstones**: a deleted recipe vanishes from the cookbook, search and grocery list, and does not come back on reload.
+- [ ] **Compressed photographs**: a 4 MB phone photo adds roughly 200 KB to Settings' storage reading.
+- [ ] **Upgrade carries old offline bakes**: a bake logged offline on the previous version still appears, photo included, after updating.
+- [ ] **Storage kept**: Settings shows whether the browser will keep the cookbook, the space used as a meter, and whether the server is reachable.
+- [ ] **Export**: Settings → Export downloads `proof-cookbook-YYYY-MM-DD.zip` holding JSON files and the photographs.
+- [ ] **Import**: importing that file on a fresh browser restores everything; importing it again reports nothing new; an older export does not overwrite a recipe edited since.
+- [ ] **Not a backup**: importing an unrelated `.zip` names the problem.
+- [ ] **Copy the server library** (operator): brings the server's recipes, bakes, notes and pantry onto the device; a second run adds nothing.
+- [ ] **No offline bar**: going offline adds no strip across the screen.
+- [ ] **Editor never offers a blank form**: `/edit/<unknown id>` says the recipe is not in the cookbook, with no Save or Delete.
+- [ ] **Failed reads named**: a blocked database shows a named failure and Try again in Gallery, Analytics, Grocery and the cookbook, never an empty or zeroed panel.
+- [ ] **Photo-less bake**: a bake with no photograph shows in the gallery as an unlit plate and is counted.
+- [ ] **AI gate**: as a stranger, Import from a URL, Restructure and Substitutions explain why they are closed instead of asking for a PIN.
+
+## 11. Public launch — the shared cookbook, read side
+- [ ] **Published API**: `/api/published` lists only approved, live recipes; `/api/published/<slug>` returns one; with the database down both answer 503 saying your own recipes are unaffected.
+- [ ] **Seed script dry run**: `npx tsx scripts/curate-library.js` reports the counts and the withheld recipes with reasons, and writes nothing.
+- [ ] **Seed script writes**: `--publish` and `--fix-library` each write a backup to `server/backups/` first, and a second run changes nothing new.
+- [ ] **Starter shelf**: a fresh browser's cookbook shows "Start from one of these" with featured recipes; Save adds one and opens it.
+- [ ] **Starter shelf offline**: with no connection the shelf says so and still offers Write a recipe.
+- [ ] **Shared recipe page**: `/r/<slug>` shows Shared by @handle, no Edit or Favorite, and Save to my cookbook; once saved, Open my copy.
+- [ ] **Fork attribution**: a saved copy reads "Adapted from @handle", linking to the original; its Share copies the original's address.
+- [ ] **Unpublished page**: an unpublished slug reads as "Nothing at this address".
 
 ## 7. UI/UX Foundation
 - [ ] **"Step Row" Visual World (Phase 0 foundation)**: Rhythm-machine design language — matte panels, silkscreen labels, lit step keys, segment readouts; colour is temporal, not decorative.

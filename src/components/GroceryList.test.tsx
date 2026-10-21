@@ -1,47 +1,37 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { screen, fireEvent, waitFor } from '@testing-library/react';
+import { describe, it, expect, beforeEach } from 'vitest';
 import GroceryList from './GroceryList';
-import { api } from '../lib/api';
+import { makePantryItem, makeRecipe, renderScreen, seed } from '../test/utils';
 
-vi.mock('../lib/api', () => ({
-  api: {
-    getRecipes: vi.fn(),
-    getPantry: vi.fn()
-  }
-}));
-
-const mockRecipes = [
-  {
+const RECIPES = [
+  makeRecipe({
     _id: 'r1',
     title: 'Sourdough Bread',
     ingredients: [
       { name: 'Bread Flour', quantity: 500, unit: 'g' },
       { name: 'Water', quantity: 350, unit: 'ml' },
-      { name: 'Salt', quantity: 10, unit: 'g' }
-    ]
-  },
-  {
+      { name: 'Salt', quantity: 10, unit: 'g' },
+    ],
+  }),
+  makeRecipe({
     _id: 'r2',
     title: 'Chocolate Chip Cookies',
     ingredients: [
       { name: 'All Purpose Flour', quantity: 250, unit: 'g' },
-      { name: 'Butter', quantity: 150, unit: 'g' }
-    ]
-  }
-];
-
-const mockPantry = [
-  { _id: 'p1', name: 'Salt' } // Salt is in pantry
+      { name: 'Butter', quantity: 150, unit: 'g' },
+    ],
+  }),
 ];
 
 describe('GroceryList Component', () => {
-  beforeEach(() => {
-    vi.mocked(api.getRecipes).mockResolvedValue(mockRecipes as any);
-    vi.mocked(api.getPantry).mockResolvedValue(mockPantry as any);
+  beforeEach(async () => {
+    await seed('recipes', RECIPES);
+    // Salt is in the pantry, so no list asks for it.
+    await seed('pantry', [makePantryItem({ _id: 'p1', name: 'Salt' })]);
   });
 
   it('renders the bank of recipes and an empty checklist', async () => {
-    render(<GroceryList />);
+    renderScreen(<GroceryList />);
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: /Grocery list/i })).toBeInTheDocument();
       expect(screen.getByText('Sourdough Bread')).toBeDefined();
@@ -50,7 +40,7 @@ describe('GroceryList Component', () => {
   });
 
   it('filters out ingredients present in pantry when recipe selected', async () => {
-    render(<GroceryList />);
+    renderScreen(<GroceryList />);
     await waitFor(() => expect(screen.getByText('Sourdough Bread')).toBeDefined());
 
     fireEvent.click(screen.getByText('Sourdough Bread'));
@@ -64,7 +54,7 @@ describe('GroceryList Component', () => {
   });
 
   it('latches the recipe key while it is feeding the list', async () => {
-    render(<GroceryList />);
+    renderScreen(<GroceryList />);
     await waitFor(() => expect(screen.getByText('Sourdough Bread')).toBeDefined());
 
     const key = screen.getByRole('button', { name: /Sourdough Bread/i });
@@ -75,7 +65,7 @@ describe('GroceryList Component', () => {
   });
 
   it('allows adding a custom manual item', async () => {
-    render(<GroceryList />);
+    renderScreen(<GroceryList />);
     await waitFor(() => expect(screen.getByText('Sourdough Bread')).toBeDefined());
 
     const nameInput = screen.getByPlaceholderText(/Parchment Paper/i);
@@ -93,7 +83,7 @@ describe('GroceryList Component', () => {
   });
 
   it('counts down what is left as items are checked off', async () => {
-    render(<GroceryList />);
+    renderScreen(<GroceryList />);
     await waitFor(() => expect(screen.getByText('Sourdough Bread')).toBeDefined());
 
     fireEvent.click(screen.getByText('Sourdough Bread'));

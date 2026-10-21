@@ -1,5 +1,6 @@
-import type { Recipe } from '../lib/api';
+import type { Component } from '../lib/types';
 import { bakersMath, bakersMathUnavailable } from '../lib/bakersMath';
+import { scaledQuantity } from '../lib/ingredients';
 import { Sparkles } from 'lucide-react';
 import { Button, cn } from './ui';
 
@@ -18,7 +19,7 @@ import { Button, cn } from './ui';
  */
 
 interface IngredientListProps {
-  recipe: Recipe;
+  recipe: { ingredients?: Component[] };
   scaleMultiplier: number;
   /** Drawn as a scale bank under the heading when given. */
   setScaleMultiplier?: (multiplier: number) => void;
@@ -127,9 +128,11 @@ export default function IngredientList({
                   checked ? 'text-ink-muted line-through' : 'text-ink',
                 )}
               >
-                <span>{Number((ing.quantity * scaleMultiplier).toFixed(2))}</span>
+                {/* No amount ("to serve") leaves the column empty rather than
+                  * printing a figure the recipe never gave. */}
+                <span>{scaledQuantity(ing.quantity, scaleMultiplier) ?? ''}</span>
                 <span className="min-w-0 text-xs leading-snug text-ink-muted hyphens-auto [overflow-wrap:anywhere]">
-                  {ing.unit}
+                  {ing.quantity === null ? '' : ing.unit}
                 </span>
               </span>
 

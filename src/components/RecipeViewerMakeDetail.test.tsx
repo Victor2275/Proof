@@ -1,10 +1,9 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { MemoryRouter, Routes, Route } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import RecipeViewer from './RecipeViewer';
-import { api } from '../lib/api';
+import { repo } from '../lib/repo';
+import { makeBakeLog, makeRecipe, renderScreen, seed } from '../test/utils';
 
 /*
  * The selected-make detail. Phase 5 rebuilt the grid of makes and left this
@@ -13,69 +12,25 @@ import { api } from '../lib/api';
  * voice. These cover the behaviours that changed, not the layout.
  */
 
-const RECIPE = {
+// A copy saved from the shared cookbook, so it has an address to share.
+const RECIPE = makeRecipe({
   _id: 'r1',
   title: 'Banana pudding',
-  description: '',
-  imageUrls: [],
   servings: 4,
   difficulty: 'Easy',
   prepTime: '20',
   cookTime: '30',
-  tags: [],
-  ingredients: [],
   instructions: ['Mix.', 'Chill.'],
-};
+  forkedFrom: { publishedId: 'p1', slug: 'banana-pudding', authorHandle: 'proof', title: 'Banana pudding' },
+});
 
-const LOG = {
-  _id: 'b1',
-  recipeId: 'r1',
-  date: '2026-08-09T17:41:22.000Z',
-  notes: 'Bananas should be less ripe.',
-  images: [],
-  imageUrls: [],
-  isPersonalBest: false,
-};
+const LOG = makeBakeLog({ _id: 'b1', recipeId: 'r1', date: '2026-08-09T17:41:22.000Z', notes: 'Bananas should be less ripe.' });
 
-vi.mock('../lib/api', () => ({
-  api: {
-    getRecipe: vi.fn(),
-    getRecipeBakeLogs: vi.fn(),
-    getPantry: vi.fn(),
-    updateRecipe: vi.fn(),
-    updateBakeLog: vi.fn(),
-    deleteBakeLog: vi.fn(),
-  },
-}));
+const renderViewer = () => renderScreen(<RecipeViewer />, { route: '/recipe/r1?makeId=b1', path: '/recipe/:id' });
 
-vi.mock('../lib/localDB', () => ({
-  getLocalBakeLogs: vi.fn().mockResolvedValue([]),
-  updateLocalBakeLog: vi.fn(),
-  deleteLocalBakeLog: vi.fn(),
-}));
-
-function renderViewer() {
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false, gcTime: 0 } },
-  });
-  return render(
-    <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={['/recipe/r1?makeId=b1']}>
-        <Routes>
-          <Route path="/recipe/:id" element={<RecipeViewer />} />
-        </Routes>
-      </MemoryRouter>
-    </QueryClientProvider>,
-  );
-}
-
-beforeEach(() => {
-  vi.clearAllMocks();
-  vi.mocked(api.getRecipe).mockResolvedValue(RECIPE as any);
-  vi.mocked(api.getRecipeBakeLogs).mockResolvedValue([LOG] as any);
-  vi.mocked(api.getPantry).mockResolvedValue([] as any);
-  vi.mocked(api.deleteBakeLog).mockResolvedValue(undefined as never);
-  vi.mocked(api.updateBakeLog).mockResolvedValue({ ...LOG, isPersonalBest: true } as any);
+beforeEach(async () => {
+  await seed('recipes', [RECIPE]);
+  await seed('bakeLogs', [LOG]);
 });
 
 describe('RecipeViewer — the selected make', () => {
@@ -98,7 +53,7 @@ describe('RecipeViewer — the selected make', () => {
     expect(await screen.findByRole('dialog', { name: /Delete this bake/i })).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Keep' }));
-    expect(api.deleteBakeLog).not.toHaveBeenCalled();
+    expect(await repo.getRecipeBakeLogs('r1')).toHaveLength(1);
   });
 
   it('deletes the bake once that is confirmed', async () => {
@@ -110,7 +65,7 @@ describe('RecipeViewer — the selected make', () => {
     await screen.findByRole('dialog', { name: /Delete this bake/i });
     await user.click(screen.getByRole('button', { name: 'Delete' }));
 
-    await waitFor(() => expect(api.deleteBakeLog).toHaveBeenCalledWith('b1'));
+    await waitFor(async () => expect(await repo.getRecipeBakeLogs('r1')).toHaveLength(0));
   });
 
   it('latches the personal-best key rather than colouring a pill', async () => {
@@ -122,9 +77,7 @@ describe('RecipeViewer — the selected make', () => {
     expect(mark).toHaveAttribute('aria-pressed', 'false');
 
     await user.click(mark);
-    await waitFor(() =>
-      expect(api.updateBakeLog).toHaveBeenCalledWith('b1', { isPersonalBest: true }),
-    );
+    await waitFor(async () => expect((await repo.getRecipeBakeLogs('r1'))[0].isPersonalBest).toBe(true));
   });
 
   it('confirms a copied link with a status strip, not a browser alert', async () => {
@@ -144,9 +97,12 @@ describe('RecipeViewer — the selected make', () => {
     const share = await screen.findByRole('button', { name: /^Share$/i });
     await user.click(share);
     // Share is a menu now: Escape and a click elsewhere close it.
-    await user.click(await screen.findByRole('menuitem', { name: /Copy link/i }));
+    // A saved copy shares the original's address; this device's own id is no
+    // use to anyone else.
+    await user.click(await screen.findByRole('menuitem', { name: /Copy link to the original/i }));
 
     expect(await screen.findByRole('status')).toHaveTextContent('Link copied.');
+    expect(writeText).toHaveBeenCalledWith(`${window.location.origin}/r/banana-pudding`);
     expect(alertSpy).not.toHaveBeenCalled();
     alertSpy.mockRestore();
   });
@@ -154,7 +110,7 @@ describe('RecipeViewer — the selected make', () => {
   it('reports a failure in the panel rather than through alert()', async () => {
     const user = userEvent.setup();
     const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
-    vi.mocked(api.deleteBakeLog).mockRejectedValueOnce(new Error('offline'));
+    const spy = vi.spyOn(repo, 'deleteBakeLog').mockRejectedValueOnce(new Error('blocked'));
     renderViewer();
     await screen.findByRole('dialog', { name: /^Make 1$/i });
 
@@ -165,5 +121,17 @@ describe('RecipeViewer — the selected make', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(/Could not delete that bake log/i);
     expect(alertSpy).not.toHaveBeenCalled();
     alertSpy.mockRestore();
+    spy.mockRestore();
+  });
+
+  it('offers no link at all for a recipe that exists only on this device', async () => {
+    const user = userEvent.setup();
+    await seed('recipes', [{ ...RECIPE, forkedFrom: null }]);
+    renderViewer();
+    await screen.findByRole('dialog', { name: /^Make 1$/i });
+    await user.keyboard('{Escape}');
+
+    await user.click(await screen.findByRole('button', { name: /^Share$/i }));
+    expect(screen.queryByRole('menuitem', { name: /Copy link/i })).not.toBeInTheDocument();
   });
 });

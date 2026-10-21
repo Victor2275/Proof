@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
-import type { Recipe } from '../lib/api';
+import { Link } from 'react-router-dom';
+import type { PublishedRecipe, Recipe } from '../lib/types';
 import { derivePhases } from '../lib/phases';
 import { meaningfulDescription } from '../lib/description';
 import {
@@ -25,7 +26,8 @@ import { RecipePlate, SegmentReadout, StepRow } from './ui';
  */
 
 interface RecipeHeaderProps {
-  recipe: Recipe;
+  /** A recipe in this cookbook, or one being read from the shared cookbook. */
+  recipe: Recipe | PublishedRecipe;
   heroImage?: string;
   scaleMultiplier: number;
 }
@@ -37,7 +39,9 @@ function segments(raw: string | undefined) {
 }
 
 export default function RecipeHeader({ recipe, heroImage, scaleMultiplier }: RecipeHeaderProps) {
-  const phases = useMemo(() => derivePhases(recipe.instructions), [recipe.instructions]);
+  const phases = useMemo(() => derivePhases(recipe.instructions ?? []), [recipe.instructions]);
+  const forkedFrom = 'forkedFrom' in recipe ? recipe.forkedFrom : null;
+  const sharedBy = 'authorHandle' in recipe ? recipe : null;
 
   /*
    * The same rule the cookbook uses: an import script's "20 mins" / "30 mins"
@@ -62,6 +66,22 @@ export default function RecipeHeader({ recipe, heroImage, scaleMultiplier }: Rec
         <h1 className="font-faceplate text-3xl leading-[1.05] text-ink sm:text-5xl">
           {recipe.title}
         </h1>
+
+        {/* Attribution is a first-class line, not a footnote (B5/B8): who a
+          * saved copy came from, or who shared the recipe being read. */}
+        {forkedFrom ? (
+          <p className="label-silkscreen text-ink-muted">
+            Adapted from{' '}
+            <Link to={`/r/${forkedFrom.slug}`} className="text-ink underline decoration-1 underline-offset-4">
+              @{forkedFrom.authorHandle}
+            </Link>
+          </p>
+        ) : sharedBy ? (
+          <p className="label-silkscreen text-ink-muted">
+            Shared by @{sharedBy.authorHandle}
+            {sharedBy.sourceAttribution ? ` · from ${sharedBy.sourceAttribution}` : ''}
+          </p>
+        ) : null}
 
         {/* The seed script's "A delicious {area} {category} dish." is not a
           * description, so it is not printed as one. */}

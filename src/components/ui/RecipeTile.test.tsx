@@ -2,9 +2,10 @@ import { render, screen } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import { RecipeTile } from './RecipeTile';
-import type { Recipe } from '../../lib/api';
+import type { Recipe } from '../../lib/types';
+import { makeRecipe } from '../../test/utils';
 
-const base: Recipe = {
+const base: Recipe = makeRecipe({
   _id: 'r1',
   title: 'Pork Cassoulet',
   description: '',
@@ -20,9 +21,9 @@ const base: Recipe = {
     { name: 'Beans', quantity: 300, unit: 'g' },
   ],
   instructions: ['Chop the pork.', 'Simmer for two hours.', 'Serve hot.'],
-};
+});
 
-const sourdough: Recipe = {
+const sourdough: Recipe = makeRecipe({
   ...base,
   _id: 'r2',
   title: 'Country Sourdough',
@@ -37,7 +38,7 @@ const sourdough: Recipe = {
     'Shape and proof overnight.',
     'Bake at 250C.',
   ],
-};
+});
 
 const renderTile = (recipe: Recipe, active = false) =>
   render(

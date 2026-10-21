@@ -17,19 +17,13 @@ import { useActiveBake } from '../lib/useActiveBake';
  * keeps every section one press away, as the "always visible on desktop" rule
  * asks, and gives the page back two hundred pixels until there is room for
  * the labels. Each item keeps its name for a screen reader and as a tooltip.
+ *
+ * New Recipe is a plain link. Writing a recipe used to ask for the admin PIN;
+ * it is a write to this device's own cookbook now, and needs nothing.
  */
-export default function Sidebar({ className = "", onAdminRequired }: { className?: string, onAdminRequired?: () => void }) {
+export default function Sidebar({ className = '' }: { className?: string }) {
   const location = useLocation();
   const activeBake = useActiveBake();
-
-  const handleNewRecipe = (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (localStorage.getItem('adminToken')) {
-      window.location.href = '/new';
-    } else {
-      onAdminRequired?.();
-    }
-  };
 
   const navItems = [
     { name: 'My Cookbook', path: '/', icon: Book },
@@ -88,15 +82,14 @@ export default function Sidebar({ className = "", onAdminRequired }: { className
         })}
 
         <div className="pt-4">
-          <a
-            href="/new"
-            onClick={handleNewRecipe}
+          <Link
+            to="/new"
             title="New Recipe"
             className="flex h-11 items-center justify-center gap-3 rounded-control text-sm text-ink-muted transition-colors hover:bg-panel-sunk hover:text-ink lg:h-auto lg:justify-start lg:px-3 lg:py-2.5"
           >
             <PlusCircle className="h-4 w-4 shrink-0 opacity-70" aria-hidden="true" />
             <span className="sr-only lg:not-sr-only">New Recipe</span>
-          </a>
+          </Link>
         </div>
       </nav>
     </aside>

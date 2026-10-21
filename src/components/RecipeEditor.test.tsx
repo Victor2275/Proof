@@ -1,69 +1,64 @@
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import RecipeEditor from './RecipeEditor';
 import { api } from '../lib/api';
+import { repo } from '../lib/repo';
+import { setOperatorToken } from '../lib/session';
+import { makeRecipe, renderScreen, seed } from '../test/utils';
 
-vi.mock('../lib/api', () => ({
+vi.mock('../lib/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../lib/api')>()),
   api: {
-    getRecipe: vi.fn(),
-    getRecipes: vi.fn().mockResolvedValue([]),
-    createRecipe: vi.fn(),
-    updateRecipe: vi.fn(),
-    deleteRecipe: vi.fn(),
     extractRecipe: vi.fn(),
     restructureRecipe: vi.fn(),
-    getRecipeBakeLogs: vi.fn().mockResolvedValue([]),
   },
 }));
 
 // react-image-crop wants one.
-(globalThis as any).ResizeObserver = class ResizeObserver {
+(globalThis as unknown as { ResizeObserver: unknown }).ResizeObserver = class ResizeObserver {
   observe() {}
   unobserve() {}
   disconnect() {}
 };
 
-function renderNew() {
-  return act(async () => {
-    render(
-      <MemoryRouter>
-        <RecipeEditor />
-      </MemoryRouter>,
-    );
-  });
-}
+const renderNew = async () => {
+  const utils = renderScreen(<RecipeEditor />, { route: '/new', path: '/new' });
+  await screen.findByRole('button', { name: /Create recipe/i });
+  return utils;
+};
 
-function renderExisting(id = 'r1') {
-  return act(async () => {
-    render(
-      <MemoryRouter initialEntries={[`/edit/${id}`]}>
-        <Routes>
-          <Route path="/edit/:id" element={<RecipeEditor />} />
-        </Routes>
-      </MemoryRouter>,
-    );
-  });
-}
+const renderExisting = (id = 'r1') => renderScreen(<RecipeEditor />, { route: `/edit/${id}`, path: '/edit/:id' });
+
+const STIR_FRY = makeRecipe({
+  _id: 'r1',
+  title: 'Prawn stir-fry',
+  prepTime: '20 mins',
+  cookTime: '1 hr 30 mins',
+  servings: 4,
+});
 
 describe('RecipeEditor', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    vi.mocked(api.getRecipes).mockResolvedValue([]);
-    vi.mocked(api.getRecipeBakeLogs).mockResolvedValue([]);
-  });
-
   it('renders correctly for a new recipe', async () => {
     await renderNew();
-    expect(screen.getByRole('button', { name: /Create recipe/i })).toBeInTheDocument();
     expect(screen.getByPlaceholderText(/72-Hour Sourdough/i)).toBeInTheDocument();
   });
 
   it('blocks submission if the title is missing', async () => {
     await renderNew();
     fireEvent.click(screen.getByRole('button', { name: /Create recipe/i }));
-    expect(api.createRecipe).not.toHaveBeenCalled();
+    await new Promise((r) => setTimeout(r, 20));
+    expect(await repo.getRecipes()).toHaveLength(0);
+  });
+
+  it('creates the recipe on this device and opens it', async () => {
+    const user = userEvent.setup();
+    await renderNew();
+    await user.type(screen.getByPlaceholderText(/72-Hour Sourdough/i), 'Rye loaf');
+    await user.click(screen.getByRole('button', { name: /Create recipe/i }));
+
+    await waitFor(async () => expect((await repo.getRecipes()).map((r) => r.title)).toEqual(['Rye loaf']));
+    expect(await screen.findByTestId('elsewhere')).toBeInTheDocument();
   });
 
   it('reports what the recipe amounts to as it is built', async () => {
@@ -100,103 +95,120 @@ describe('RecipeEditor', () => {
     expect(screen.getByPlaceholderText(/allrecipes\.com/i)).toBeInTheDocument();
   });
 
-  it('calls extractRecipe when a URL is pasted and the button clicked', async () => {
-    vi.mocked(api.extractRecipe).mockResolvedValue({ title: 'Extracted Title' } as any);
+  it('explains the AI import instead of calling it, for someone it is not open to', async () => {
     await renderNew();
     fireEvent.click(screen.getByRole('button', { name: /^Open$/i }));
-
     fireEvent.change(screen.getByPlaceholderText(/allrecipes\.com/i), {
       target: { value: 'https://example.com/recipe' },
     });
     fireEvent.click(screen.getByRole('button', { name: /Extract/i }));
 
-    await waitFor(() => {
-      expect(api.extractRecipe).toHaveBeenCalledWith('https://example.com/recipe');
-      expect(screen.getByPlaceholderText(/72-Hour Sourdough/i)).toHaveValue('Extracted Title');
+    expect(await screen.findByRole('dialog', { name: 'Import from a URL' })).toBeInTheDocument();
+    expect(api.extractRecipe).not.toHaveBeenCalled();
+  });
+
+  describe('for the operator', () => {
+    beforeEach(() => setOperatorToken('operator-token'));
+    afterEach(() => setOperatorToken(null));
+
+    it('calls extractRecipe when a URL is pasted and the button clicked', async () => {
+      vi.mocked(api.extractRecipe).mockResolvedValue({ title: 'Extracted Title' });
+      await renderNew();
+      fireEvent.click(screen.getByRole('button', { name: /^Open$/i }));
+
+      fireEvent.change(screen.getByPlaceholderText(/allrecipes\.com/i), {
+        target: { value: 'https://example.com/recipe' },
+      });
+      fireEvent.click(screen.getByRole('button', { name: /Extract/i }));
+
+      await waitFor(() => {
+        expect(api.extractRecipe).toHaveBeenCalledWith('https://example.com/recipe');
+        expect(screen.getByPlaceholderText(/72-Hour Sourdough/i)).toHaveValue('Extracted Title');
+      });
     });
   });
 
   it('links a sub-recipe to a step, searching rather than listing the whole library', async () => {
     const user = userEvent.setup();
-    vi.mocked(api.getRecipes).mockResolvedValue([
-      { _id: 'rec1', title: 'Frosting', ingredients: [], instructions: [] },
-      { _id: 'rec2', title: 'Ganache', ingredients: [], instructions: [] },
-    ] as any);
+    await seed('recipes', [makeRecipe({ _id: 'rec1', title: 'Frosting' }), makeRecipe({ _id: 'rec2', title: 'Ganache' })]);
     await renderNew();
 
     fireEvent.click(screen.getByRole('button', { name: /Add step/i }));
     await user.click(await screen.findByRole('button', { name: /Link recipe/i }));
 
-    const dialog = await screen.findByRole('dialog', { name: /Link a recipe to step 1/i });
-    expect(dialog).toBeInTheDocument();
+    expect(await screen.findByRole('dialog', { name: /Link a recipe to step 1/i })).toBeInTheDocument();
 
     await user.type(screen.getByPlaceholderText(/Search recipes/i), 'gana');
     expect(screen.queryByRole('button', { name: 'Frosting' })).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Ganache' }));
+    await user.click(await screen.findByRole('button', { name: 'Ganache' }));
     expect(await screen.findByText('Ganache')).toBeInTheDocument();
   });
 
   it('asks before deleting a recipe', async () => {
     const user = userEvent.setup();
-    vi.mocked(api.getRecipe).mockResolvedValue({
-      _id: 'r1',
-      title: 'Prawn stir-fry',
-      ingredients: [],
-      instructions: [],
-      tags: [],
-    } as any);
-    await renderExisting();
+    await seed('recipes', [STIR_FRY]);
+    renderExisting();
 
-    await user.click(screen.getByRole('button', { name: /Delete/i }));
+    await user.click(await screen.findByRole('button', { name: /Delete/i }));
     await screen.findByRole('dialog', { name: /Delete recipe/i });
     await user.click(screen.getByRole('button', { name: 'Keep' }));
-    expect(api.deleteRecipe).not.toHaveBeenCalled();
+    expect(await repo.getRecipe('r1')).not.toBeNull();
   });
 
   /*
-   * The regression this phase found. The time fields were `type="number"`
-   * while 199 of the 203 live recipes store "20 mins" / "30 mins", so the
-   * browser rendered them empty and any save wiped both values.
+   * Audit #1: the editor used to render a blank form, with live Save and
+   * Delete, over a recipe it had failed to load. Saving wrote the blank over
+   * the real recipe.
+   */
+  it('offers no form, and no Save or Delete, for a recipe that is not here', async () => {
+    renderExisting('missing');
+    expect(await screen.findByText(/This recipe is not in the cookbook/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Save recipe/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Delete/i })).not.toBeInTheDocument();
+  });
+
+  it('offers no form when the recipe cannot be read, and leaves it untouched', async () => {
+    await seed('recipes', [STIR_FRY]);
+    const spy = vi.spyOn(repo, 'getRecipe').mockRejectedValue(new Error('blocked'));
+    renderExisting();
+    expect(await screen.findByText(/Couldn't open this recipe on this device/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Save recipe/i })).not.toBeInTheDocument();
+    spy.mockRestore();
+  });
+
+  /*
+   * The time fields were `type="number"` while 199 of the 203 live recipes
+   * store "20 mins" / "30 mins", so the browser rendered them empty and any
+   * save wiped both values.
    */
   describe('times that the library actually stores', () => {
-    beforeEach(() => {
-      vi.mocked(api.getRecipe).mockResolvedValue({
-        _id: 'r1',
-        title: 'Prawn stir-fry',
-        prepTime: '20 mins',
-        cookTime: '1 hr 30 mins',
-        servings: 4,
-        tags: [],
-        ingredients: [],
-        instructions: [],
-      } as any);
+    beforeEach(async () => {
+      await seed('recipes', [STIR_FRY]);
     });
 
     it('shows a unit-annotated time rather than an empty field', async () => {
-      await renderExisting();
+      renderExisting();
       await waitFor(() => expect(screen.getByLabelText('Prep time')).toHaveValue('20'));
       expect(screen.getByLabelText('Cook time')).toHaveValue('90');
     });
 
     it('does not wipe the times when the recipe is saved untouched', async () => {
       const user = userEvent.setup();
-      vi.mocked(api.updateRecipe).mockResolvedValue({ _id: 'r1' } as any);
-      await renderExisting();
+      renderExisting();
       await waitFor(() => expect(screen.getByLabelText('Prep time')).toHaveValue('20'));
 
       await user.click(screen.getByRole('button', { name: /Save recipe/i }));
 
-      await waitFor(() => expect(api.updateRecipe).toHaveBeenCalled());
-      const [, saved] = vi.mocked(api.updateRecipe).mock.calls[0];
-      expect(saved.prepTime).toBe('20 mins');
-      expect(saved.cookTime).toBe('1 hr 30 mins');
+      await screen.findByTestId('elsewhere');
+      const saved = await repo.getRecipe('r1');
+      expect(saved?.prepTime).toBe('20 mins');
+      expect(saved?.cookTime).toBe('1 hr 30 mins');
     });
 
     it('writes a retyped time back as bare minutes, the schema convention', async () => {
       const user = userEvent.setup();
-      vi.mocked(api.updateRecipe).mockResolvedValue({ _id: 'r1' } as any);
-      await renderExisting();
+      renderExisting();
       await waitFor(() => expect(screen.getByLabelText('Prep time')).toHaveValue('20'));
 
       const prep = screen.getByLabelText('Prep time');
@@ -204,9 +216,8 @@ describe('RecipeEditor', () => {
       await user.type(prep, '45');
       await user.click(screen.getByRole('button', { name: /Save recipe/i }));
 
-      await waitFor(() => expect(api.updateRecipe).toHaveBeenCalled());
-      const [, saved] = vi.mocked(api.updateRecipe).mock.calls[0];
-      expect(saved.prepTime).toBe('45');
+      await screen.findByTestId('elsewhere');
+      expect((await repo.getRecipe('r1'))?.prepTime).toBe('45');
     });
   });
 });

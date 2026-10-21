@@ -1,5 +1,4 @@
 import { useMemo } from 'react';
-import type { Recipe } from '../lib/api';
 import ExpandableInstruction from './ExpandableInstruction';
 import { derivePhases } from '../lib/phases';
 
@@ -15,7 +14,7 @@ import { derivePhases } from '../lib/phases';
  */
 
 interface InstructionListProps {
-  recipe: Recipe;
+  recipe: { instructions?: string[] };
 }
 
 export default function InstructionList({ recipe }: InstructionListProps) {

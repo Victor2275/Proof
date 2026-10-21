@@ -1,36 +1,20 @@
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { MemoryRouter } from 'react-router-dom';
 import Dashboard from './Dashboard';
 import { api } from '../lib/api';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { repo } from '../lib/repo';
 import { startActiveBake } from '../lib/activeBake';
+import { makeRecipe, renderScreen, seed } from '../test/utils';
 
-const createTestQueryClient = () => new QueryClient({
-  defaultOptions: { queries: { retry: false } }
-});
-
-const renderWithProviders = (ui: React.ReactElement) => {
-  const queryClient = createTestQueryClient();
-  return render(
-    <QueryClientProvider client={queryClient}>
-      <MemoryRouter>
-        {ui}
-      </MemoryRouter>
-    </QueryClientProvider>
-  );
-};
-
-vi.mock('../lib/api', () => ({
-  api: {
-    getRecipes: vi.fn(),
-    getBakeLogs: vi.fn(),
-    updateRecipe: vi.fn()
-  }
+vi.mock('../lib/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../lib/api')>()),
+  api: { getPublished: vi.fn(), getPublishedRecipe: vi.fn() },
 }));
 
+const renderWithProviders = (ui: React.ReactElement) => renderScreen(ui);
+
 const mockRecipes = [
-  {
+  makeRecipe({
     _id: '1',
     title: 'Sourdough Bread',
     description: 'Classic',
@@ -44,19 +28,20 @@ const mockRecipes = [
       'Bulk ferment for 4 hours.',
       'Bake at 250C for 30 minutes.',
     ],
-  },
-  {
+    updatedAt: '2026-08-03T00:00:00.000Z',
+  }),
+  makeRecipe({
     _id: '2',
     title: 'Chocolate Chip Cookies',
     description: 'Sweet',
     tags: ['cookies', 'dessert'],
     folder: 'Desserts',
-    imageUrls: [],
     prepTime: '15',
     cookTime: '12',
     instructions: ['Mix the dough.', 'Bake at 180C for 12 minutes.'],
-  },
-  {
+    updatedAt: '2026-08-02T00:00:00.000Z',
+  }),
+  makeRecipe({
     _id: '3',
     title: 'Pizza Dough',
     description: 'Neapolitan',
@@ -65,23 +50,21 @@ const mockRecipes = [
     prepTime: '20',
     cookTime: '10',
     instructions: ['Mix the dough.', 'Bulk ferment for 2 hours.', 'Bake for 10 minutes.'],
-  },
+    updatedAt: '2026-08-01T00:00:00.000Z',
+  }),
 ];
 
-describe('Dashboard Component', () => {
-  beforeEach(() => {
-    vi.mocked(api.getRecipes).mockResolvedValue(mockRecipes as any);
-    vi.mocked(api.getBakeLogs).mockResolvedValue([]);
-    localStorage.clear();
-  });
+const emptyTheCookbook = async () => {
+  await repo.deleteRecipe('1');
+  await repo.deleteRecipe('2');
+  await repo.deleteRecipe('3');
+};
 
-  it('renders loading state initially', async () => {
-    await act(async () => {
-      renderWithProviders(<Dashboard />);
-    });
-    // After initial render the fetch is in-flight; loading text may already be gone.
-    // Just ensure no crash on mount.
-    expect(document.body).toBeDefined();
+describe('Dashboard Component', () => {
+  beforeEach(async () => {
+    localStorage.clear();
+    await seed('recipes', mockRecipes);
+    vi.mocked(api.getPublished).mockResolvedValue({ items: [], total: 0, offset: 0, limit: 8 });
   });
 
   it('renders the cookbook as a gallery of photographs, each named underneath', async () => {
@@ -115,23 +98,57 @@ describe('Dashboard Component', () => {
     expect(screen.getByRole('img', { name: '1:15 HR' })).toBeInTheDocument();
   });
 
-  it('renders an error state with retry when the fetch fails', async () => {
-    vi.mocked(api.getRecipes).mockRejectedValue(new Error('Network down'));
+  it('names the failure, and offers a retry, when the device database will not open', async () => {
+    const spy = vi.spyOn(repo, 'getRecipes').mockRejectedValue(new Error('Storage is blocked.'));
     renderWithProviders(<Dashboard />);
-    await waitFor(() => {
-      expect(screen.getByText(/Couldn't load your cookbook/i)).toBeInTheDocument();
-    });
-    expect(screen.getByText('Network down')).toBeInTheDocument();
+    expect(await screen.findByText(/Couldn't open the cookbook on this device/i)).toBeInTheDocument();
+    expect(screen.getByText(/Storage is blocked\./)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /try again/i })).toBeInTheDocument();
+    // No count is printed over a cookbook that could not be read.
+    expect(screen.queryByText(/^\d+ recipes?$/)).not.toBeInTheDocument();
+    spy.mockRestore();
   });
 
-  it('renders empty state when no recipes match', async () => {
-    vi.mocked(api.getRecipes).mockResolvedValue([]);
+  it('says what the search missed, and offers to clear it', async () => {
     renderWithProviders(<Dashboard />);
-    await waitFor(() => {
-      expect(screen.getByText(/No recipes found/i)).toBeDefined();
-    });
+    await screen.findByText('Sourdough Bread');
+    fireEvent.change(screen.getByPlaceholderText(/Search recipes or tags/i), { target: { value: 'zzzzqqq' } });
+
+    expect(await screen.findByText(/Nothing in the cookbook matches/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Clear the search/i }));
+    expect(await screen.findByText('Sourdough Bread')).toBeInTheDocument();
   });
+
+  it("offers an empty cookbook the shared cookbook's starter shelf instead of an empty list", async () => {
+    await emptyTheCookbook();
+    vi.mocked(api.getPublished).mockResolvedValue({
+      items: [
+        {
+          _id: 'p1', slug: 'focaccia', title: 'Focaccia', description: '', imageUrls: [], servings: 8,
+          difficulty: 'Easy', prepTime: '', cookTime: '', tags: [], folder: 'Breads',
+          authorHandle: 'proof', sourceAttribution: '', publishedAt: '2026-08-01T00:00:00.000Z',
+        },
+      ],
+      total: 1, offset: 0, limit: 8,
+    });
+    renderWithProviders(<Dashboard />);
+
+    expect(await screen.findByRole('heading', { name: /Start from one of these/i })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Save Focaccia to my cookbook' })).toBeInTheDocument();
+    // No search box and no "0 recipes" over a cookbook that is simply new.
+    expect(screen.queryByPlaceholderText(/Search recipes or tags/i)).not.toBeInTheDocument();
+    expect(screen.queryByText('0 recipes')).not.toBeInTheDocument();
+  });
+
+  it('keeps the way to start from scratch when the shared cookbook is out of reach', async () => {
+    await emptyTheCookbook();
+    vi.mocked(api.getPublished).mockRejectedValue(new Error('offline'));
+    renderWithProviders(<Dashboard />);
+
+    // The shared cookbook retries once before it gives up.
+    expect(await screen.findByText(/needs a connection/i, {}, { timeout: 4000 })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Write a recipe/i })).toHaveAttribute('href', '/new');
+  }, 8000);
 
   it('filters recipes by search query (fuse.js)', async () => {
     renderWithProviders(<Dashboard />);
@@ -185,10 +202,7 @@ describe('Dashboard Component', () => {
   it("does not print the seed's placeholder total on the running bake", async () => {
     // 199 of the live recipes carry "20 mins" / "30 mins" verbatim; the running
     // bake read 50 MIN while the tiles already drew the time as unknown.
-    vi.mocked(api.getRecipes).mockResolvedValue([
-      { ...mockRecipes[0], prepTime: '20 mins', cookTime: '30 mins' },
-      ...mockRecipes.slice(1),
-    ] as any);
+    await seed('recipes', [{ ...mockRecipes[0], prepTime: '20 mins', cookTime: '30 mins' }]);
     startActiveBake('1', 'Sourdough Bread', 1);
     renderWithProviders(<Dashboard />);
 
@@ -228,12 +242,15 @@ describe('Dashboard Component', () => {
   it('draws a page of tiles at a time rather than the whole library at once', async () => {
     // 203 tiles meant 200+ image requests in flight behind a six-connection
     // limit, where they stall and compete with the app's own API calls.
+    // Newest first, so Bulk Recipe 0 leads.
     const many = Array.from({ length: 60 }, (_, i) => ({
       ...mockRecipes[0],
-      _id: `bulk-${i}`,
+      _id: `bulk-${String(i).padStart(2, '0')}`,
       title: `Bulk Recipe ${i}`,
+      updatedAt: new Date(Date.UTC(2026, 8, 1) - i * 60_000).toISOString(),
     }));
-    vi.mocked(api.getRecipes).mockResolvedValue(many);
+    await emptyTheCookbook();
+    await seed('recipes', many);
 
     renderWithProviders(<Dashboard />);
     await waitFor(() => expect(screen.getByText('Bulk Recipe 0')).toBeDefined());

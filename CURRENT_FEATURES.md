@@ -3,7 +3,7 @@
 This document exhaustively tracks every capability, component, and technical integration currently active in the Proof codebase.
 
 ## 1. Core Recipe Management
-- **Structured Schema (MongoDB)**: Recipes are stored with precise, structured fields: `title`, `description`, `imageUrls`, `servings`, `difficulty`, `prepTime`, `cookTime`, `tags`, `ingredients` (Object: Name, Qty, Unit), `instructions`, `folder`, and `labNotes`.
+- **Structured Schema (on the device)**: Recipes live in the device's IndexedDB, not the server (Launch Plan Phase 1), with precise, structured fields: `title`, `description`, `imageUrls`, `servings`, `difficulty`, `prepTime`, `cookTime`, `tags`, `ingredients` (Object: Name, Qty, Unit — the amount is `null` for "to taste" or "to serve" rather than an invented 1, the unit empty for a plain count), `instructions`, `folder`, and `labNotes`.
 - **Fuzzy Search & Filtering**: Uses `fuse.js` to enable rapid, typo-tolerant searching across recipe titles and tags on the dashboard.
 - **Nested Sub-Recipe Drawers**: Allows linking recipes to specific instruction steps. Linked recipes slide up in a native drawer without losing context in the parent recipe.
 - **Compact & Grid Views**: UI toggle on the dashboard to switch between large image cards and dense list views.
@@ -49,11 +49,11 @@ This document exhaustively tracks every capability, component, and technical int
 - **Automated Maintenance**:
   - `node-cron` runs a nightly script to dump the MongoDB database into a JSON backup.
   - Clean-up script queries Cloudinary's Admin API to automatically delete orphaned images that are no longer linked to any recipe or log.
-- **Offline PWA Engine**: `vite-plugin-pwa` configures Workbox to cache the core application and API endpoints, allowing offline reading of recipes.
+- **Offline PWA Engine**: `vite-plugin-pwa` configures Workbox to cache the app shell and fonts. The cookbook itself needs no cache: it is on the device, so it reads and writes the same with no network.
 
 ## 5. Sub-Resources & Media
 - **Bake Logs**: Dedicated logging objects attached to recipes, storing the date, photos, success notes, and a "Personal Best" flag.
-- **Image Architecture**: Images are captured via `@capacitor/camera` (or file upload) and stored on Cloudinary (via `multer-storage-cloudinary`).
+- **Image Architecture**: Photographs are captured via `@capacitor/camera` (or file upload), compressed on the device and kept there as blobs (see §10). Cloudinary holds only the server's own library and, later, published copies.
 - **Export Engine**:
   - `jspdf` and `html2canvas` generate beautiful printable PDFs and square recipe cards.
   - **Shareable bake card** (`InstagramExporter.tsx`, full redesign in Phase 5): a 1080×1080 card, exported alone or as a carousel of up to five. The composition is the bake as the machine finished it — the photograph mounted as a plate, the name at display scale, the instrument values that are real, and the step row across the foot with every key complete, closed on the right by the site address. Further slides carry the ingredients as an instrument panel, the method, the baker's log (only when there is one), and the link.
@@ -63,7 +63,7 @@ This document exhaustively tracks every capability, component, and technical int
   - `qrcode.react` creates scannable deep-links.
 
 ## 6. Security & Auth
-- **PIN-Gated Admin Access**: A PIN is required for all write/delete operations. Read operations are fully public.
+- **Operator PIN**: The PIN now means the site operator only: server backup, photo re-hosting, copying the server library, and (for now) the AI. Writing to your own cookbook needs nothing — it never reaches the server. A stranger is never shown a PIN prompt for saving a recipe.
 - **Crypto-Random Session Tokens**: Login generates a `crypto.randomUUID()` session token stored server-side with a 24-hour TTL — no hardcoded secrets.
 - **Rate Limiting**: AI endpoints and the auth endpoint are rate-limited to prevent abuse.
 
@@ -169,6 +169,29 @@ This document exhaustively tracks every capability, component, and technical int
 - **The fault lamp**: a new `--fault` token (`#8f4c00` light, `#ff9a00` dark) for every error, refused save and outage — the same caution amber as the offline bar, deepened in light so it reads as text (5.7:1 on a panel). Fixed on the way: the offline and stale bars used the due amber, which reads at 2.6:1 on the light faceplate. Destructive controls carry the `--spoiled` rule with an ink legend instead of red text. The AI substitutions sheet loses its purple, and the crash screen and sub-recipe error lose stock Tailwind reds.
 - **Guarded**: `designSystem.test.ts` fails the build if red appears outside the files that report something happening now, if an error is drawn in red, if the destructive variant goes back to red text, if a stock Tailwind palette colour or the legacy `accent` alias is used, or if `--fault` drops below 4.5:1 on a panel in either theme.
 - **The Phase 0 audit matrix** (`e2e/audit/`, `npm run audit:snapshot` → `audit:ui` → `audit:report`): 14 routes × 375/768/1280 × light/dark × empty/typical/overflowing, plus loading, error and offline states at the phone and desktop widths — 264 cells — and a stranger's first session walked end to end. The *typical* column is a snapshot of the live library read from the public API, not a fixture, because the point is what the real data does to the surfaces. It records rather than asserts: each cell writes a full-page shot and measured facts (sideways overflow, loading text, placeholder timings, red regions, sub-44px targets, unlabelled icon buttons, console errors, time to settle), and the report script turns them into tables and contact sheets. Resumable with `AUDIT_RESUME=1`. Findings and the Stage B decisions are in `.agents/UI_AUDIT.md`.
+
+## 10. Public launch — Phase 1: the local-first cookbook
+- **The cookbook lives on the device**: IndexedDB is the source of truth for recipes, bake logs, notes, pantry and folders (`src/lib/repo`). Every screen reads and writes through the repository, never the server, so the whole app works with no network and no account. Reads are TanStack queries with `networkMode: 'always'`, so a query never waits on a network it does not use.
+- **Client-minted identities**: every record gets a ULID when it is created, before any server sees it — time-ordered, so "newest first" stays a string sort.
+- **Sync-ready records**: every record carries `createdAt`, `updatedAt` and a `deletedAt` tombstone. Deletes are soft: the record leaves every read but stays in the store, so a later sync can tell "deleted here" from "never existed here". A patch can never move a record's id or timestamps.
+- **Photographs as compressed blobs**: a photograph is shrunk to 1600px on its long edge and stored as WebP (JPEG where the browser cannot encode WebP), typically ~200 KB from a 4 MB phone photo. Records refer to it as `photo:<id>`; `Photo` and `usePhotoSrc` draw it through shared, counted object URLs. Photographs no live record uses are collected an hour after they were orphaned.
+- **The old offline store is carried across**: version 1 of the device database held only offline bake logs with photos as data URLs. The upgrade to version 2 moves them, converting each data URL into one stored blob, inside the upgrade transaction.
+- **Storage that is kept**: the first write asks the browser for persistent storage. Settings → Data on this device reports whether it was granted, how much space the cookbook uses (as a meter), and whether the server is reachable — one line, not a bar across every screen (decision B29).
+- **Export and import**: the whole cookbook as one `.zip` — a JSON file per record type and the photographs as image files, readable without Proof. Import merges by `updatedAt`: importing twice changes nothing, an old backup never overwrites a recipe edited since, and deletions survive the round trip. A file that is not a backup is named as such.
+- **Copying the server library here** (operator): the recipes, bakes, notes and pantry stored on the server before Phase 1 come onto the device with their ids kept, so links and bake references still resolve. Running it twice adds nothing.
+- **No offline bar**: being offline is the normal case now, so it is not announced on every screen. Each network feature says so itself when it cannot be reached.
+- **Honest failure states** (audit #1–#3): the editor shows no form — and no Save or Delete — until the recipe being edited is in it, so a failed read can never be saved over a real recipe. A recipe that is not on the device says so, in the viewer, the editor and Baking Mode. Gallery, Analytics, Grocery and Pantry name a failed read and offer a retry instead of drawing an empty or zeroed panel. Local reads draw nothing for their few milliseconds rather than flashing a skeleton (B30).
+- **A bake with no photograph is still a bake**: the gallery draws it as an unlit plate, so the history and Analytics agree on the count. A deleted recipe's bakes stay, under "A deleted recipe".
+- **Ownership, not admin** (C2): `useSession()` (who is here — anonymous or the operator), `useOwnership(record)` (is this mine: a record on this device is, a shared one is not) and `usePlan()` (what may I do) replace every `adminToken` check.
+- **The AI explains itself instead of asking for a PIN** (B10): import, restructure and substitutions stay visible; reaching for one opens a sheet saying what it does, that it opens to everyone with accounts as a monthly allowance, and that everything on the device is unaffected.
+
+## 11. Public launch — the shared cookbook, read side
+- **`PublishedRecipe`**: a separate collection of snapshots — publishing copies, it does not flag — with its own ULID, slug, author handle, attribution, moderation state and stats. Only approved, unpublished-null recipes are ever served.
+- **`GET /api/published`** (paged, `featured`, `tag`) and **`GET /api/published/:idOrSlug`**: public, read-only. With the database down they answer 503 with a message that says your own recipes are unaffected.
+- **The seeded library** (`server/scripts/curate-library.js`): an editorial review of all 203 server recipes (`server/data/library-edits.json`) — real timings, servings and difficulty, real descriptions, methods rewritten where they could not be cooked from, and a publish/withhold verdict with a reason. Dry run by default; `--publish` seeds the shared cookbook, `--fix-library` repairs the operator's own records. Both back up the collections they touch to `server/backups/` first, and both are idempotent.
+- **The starter shelf** (B15/B16): an empty cookbook is a shelf of featured shared recipes, each one tap to save. Offline, it says the shared cookbook needs a connection and keeps "Write a recipe" right there.
+- **`/r/:slug`**: a shared recipe in the same viewer (B4) — no edit, favorite or lab notes; "Shared by @handle · from Source"; one primary control, Save to my cookbook. A recipe already saved offers Open my copy instead of a second one. An unpublished recipe reads as a page that no longer exists; an unreachable server says so with a retry.
+- **Fork to local**: saving makes an editable copy on the device that remembers where it came from (`forkedFrom`), and brings the photograph onto the device where the host allows it. The copy's header reads "Adapted from @handle", linked to the original, and its Share menu copies the original's address — a recipe that exists only on this device offers no link at all.
 
 ## 7. UI/UX Foundation
 - **Stack**: React, Vite, Tailwind CSS (`@tailwindcss/postcss`), shadcn/ui, TanStack Query for server state management.

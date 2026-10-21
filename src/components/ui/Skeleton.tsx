@@ -1,33 +1,20 @@
 import { cn } from '../../lib/cn';
 
-export function Skeleton({
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLDivElement>) {
+/*
+ * The shape of content that is on its way — never the word "Loading".
+ *
+ * Drawn as an unlit key: the same surface an unreached phase uses, so a
+ * skeleton reads as slots waiting to be filled rather than as a grey fog. It
+ * is for the network only (decision B30). A read from the device is fast
+ * enough that flashing a skeleton for it would make the local cookbook feel
+ * slower than the server-backed one it replaced.
+ */
+export function Skeleton({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn("animate-pulse rounded-md bg-black/10 dark:bg-white/10", className)}
+      aria-hidden="true"
+      className={cn('animate-pulse rounded-key bg-key-unlit', className)}
       {...props}
     />
-  );
-}
-
-// Pre-configured skeleton blocks
-export function SkeletonCard() {
-  return (
-    <div className="flex flex-col h-full bg-sidebar/50 border border-border-subtle rounded-2xl overflow-hidden">
-      <Skeleton className="aspect-[4/3] w-full rounded-none" />
-      <div className="p-5 flex flex-col flex-1 gap-4">
-        <Skeleton className="h-6 w-3/4" />
-        <Skeleton className="h-4 w-1/2" />
-        <div className="flex gap-2 mt-2">
-          <Skeleton className="h-5 w-16" />
-          <Skeleton className="h-5 w-16" />
-        </div>
-        <div className="mt-auto pt-4 border-t border-border-subtle">
-          <Skeleton className="h-4 w-20" />
-        </div>
-      </div>
-    </div>
   );
 }

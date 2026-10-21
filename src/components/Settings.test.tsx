@@ -1,11 +1,19 @@
-import { render, screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import Settings from './Settings';
+import { setOperatorToken } from '../lib/session';
+import { exportCookbook } from '../lib/repo/backup';
+import { makeRecipe, renderScreen, seed } from '../test/utils';
 
-vi.mock('../lib/api', () => ({
-  API_URL: 'http://localhost:3001/api',
-  api: { rehostImages: vi.fn() },
+vi.mock('../lib/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../lib/api')>()),
+  api: {
+    health: vi.fn().mockRejectedValue(new Error('offline')),
+    rehostImages: vi.fn(),
+    downloadServerBackup: vi.fn(),
+    getServerLibrary: vi.fn(),
+  },
 }));
 
 vi.mock('../lib/settings', () => ({
@@ -20,7 +28,7 @@ beforeEach(() => {
 
 describe('Settings', () => {
   it('draws every preference as a latching key that reports its state in words', () => {
-    render(<Settings />);
+    renderScreen(<Settings />);
     // Haptics is on by default in this build, so the key is down and says so.
     const haptics = screen.getByRole('button', { name: 'Haptics' });
     expect(haptics).toHaveTextContent('On');
@@ -33,7 +41,7 @@ describe('Settings', () => {
 
   it('latches a key and writes the preference through', async () => {
     const user = userEvent.setup();
-    render(<Settings />);
+    renderScreen(<Settings />);
 
     const wave = screen.getByRole('button', { name: 'Wave to advance' });
     await user.click(wave);
@@ -45,7 +53,7 @@ describe('Settings', () => {
 
   it('carries its state by more than colour', async () => {
     const user = userEvent.setup();
-    render(<Settings />);
+    renderScreen(<Settings />);
     const voice = screen.getByRole('button', { name: 'Voice commands' });
 
     // The word changes as well as the fill, so the control survives a colour
@@ -57,7 +65,7 @@ describe('Settings', () => {
 
   it('runs the theme as a bank where exactly one key is down', async () => {
     const user = userEvent.setup();
-    render(<Settings />);
+    renderScreen(<Settings />);
 
     const light = screen.getByRole('button', { name: 'Light' });
     const dark = screen.getByRole('button', { name: 'Dark' });
@@ -76,7 +84,7 @@ describe('Settings', () => {
 
   it('forgets the stored theme when it is handed back to the system', async () => {
     const user = userEvent.setup();
-    render(<Settings />);
+    renderScreen(<Settings />);
     await user.click(screen.getByRole('button', { name: 'Dark' }));
     expect(localStorage.getItem('theme')).toBe('dark');
 
@@ -84,11 +92,54 @@ describe('Settings', () => {
     expect(localStorage.getItem('theme')).toBeNull();
   });
 
-  it('names the admin PIN as the recovery when a backup is refused', async () => {
+  it('keeps the operator tools behind the operator PIN', async () => {
     const user = userEvent.setup();
-    render(<Settings />);
+    const asked = vi.fn();
+    window.addEventListener('auth-required', asked);
+    renderScreen(<Settings />);
 
-    await user.click(screen.getByRole('button', { name: /Download/i }));
-    expect(await screen.findByRole('alert')).toHaveTextContent(/admin PIN/i);
+    // A stranger sees what the tools are for, not the tools.
+    expect(screen.queryByRole('button', { name: /Re-host/i })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Sign in' }));
+    expect(asked).toHaveBeenCalled();
+    window.removeEventListener('auth-required', asked);
+  });
+
+  it('shows the operator tools once the PIN has been given', async () => {
+    setOperatorToken('token');
+    renderScreen(<Settings />);
+    expect(screen.getByRole('button', { name: /Re-host/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Copy/i })).toBeInTheDocument();
+    setOperatorToken(null);
+  });
+
+  it('says where the cookbook lives, and that the server is not needed for it', async () => {
+    renderScreen(<Settings />);
+    expect(screen.getByText(/Stored on this device/)).toBeInTheDocument();
+    expect(await screen.findByText(/your own cookbook does not/i)).toBeInTheDocument();
+  });
+
+  it('imports an export, and reports what it brought in', async () => {
+    const user = userEvent.setup();
+    await seed('recipes', [makeRecipe({ _id: 'r1', title: 'Rye' })]);
+    const archive = await exportCookbook();
+    // A fresh device: the same archive brings one recipe in.
+    globalThis.indexedDB = new (await import('fake-indexeddb')).IDBFactory();
+    await (await import('../lib/repo/db')).closeDB();
+
+    renderScreen(<Settings />);
+    const file = new File([archive], 'proof-cookbook.zip', { type: 'application/zip' });
+    await user.upload(screen.getByLabelText('Choose an export to import'), file);
+
+    expect(await screen.findByText(/1 added/)).toBeInTheDocument();
+  });
+
+  it('names the problem when the file is not a backup', async () => {
+    const user = userEvent.setup();
+    renderScreen(<Settings />);
+    const file = new File(['not a zip'], 'notes.zip', { type: 'application/zip' });
+    await user.upload(screen.getByLabelText('Choose an export to import'), file);
+
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent(/not a Proof backup/i));
   });
 });

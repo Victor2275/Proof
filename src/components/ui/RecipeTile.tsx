@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { cn } from '../../lib/cn';
-import type { Recipe } from '../../lib/api';
+import type { Component, Recipe } from '../../lib/types';
 import { derivePhasesWithReading } from '../../lib/phases';
 import {
   totalRecipeMinutes,
@@ -33,16 +33,24 @@ import { StepRow } from './StepRow';
  * look informative and say nothing.
  */
 
+/** Enough of a recipe to draw a tile: a local recipe, or a shared one's summary. */
+export type TileRecipe = Pick<Recipe, '_id' | 'title' | 'imageUrls' | 'prepTime' | 'cookTime' | 'folder'> & {
+  instructions?: string[];
+  ingredients?: Component[];
+};
+
 export interface RecipeTileProps {
-  recipe: Recipe;
+  recipe: TileRecipe;
+  /** Where the tile goes. A recipe in the cookbook by default. */
+  to?: string;
   /** Lights the tile: this is the bake running right now. */
   active?: boolean;
   className?: string;
 }
 
-export function RecipeTile({ recipe, active = false, className }: RecipeTileProps) {
+export function RecipeTile({ recipe, to, active = false, className }: RecipeTileProps) {
   const { phases, reading } = useMemo(
-    () => derivePhasesWithReading(recipe.instructions),
+    () => derivePhasesWithReading(recipe.instructions ?? []),
     [recipe.instructions],
   );
 
@@ -63,7 +71,7 @@ export function RecipeTile({ recipe, active = false, className }: RecipeTileProp
 
   return (
     <Link
-      to={`/recipe/${recipe._id}`}
+      to={to ?? `/recipe/${recipe._id}`}
       className={cn('group flex flex-col gap-2 focus:outline-none', className)}
     >
       <div

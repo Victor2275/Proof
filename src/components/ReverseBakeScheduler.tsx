@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { type Recipe } from '../lib/api';
+import { type Recipe } from '../lib/types';
 import { Bell, Check, X } from 'lucide-react';
 import { Button, Field, Panel } from './ui';
 import { stepDurations, scheduleCaveat, type DurationSource } from '../lib/schedule';

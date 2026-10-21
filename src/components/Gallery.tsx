@@ -1,7 +1,8 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { api, type BakeLog } from '../lib/api';
-import { Button, Panel, RecipePlate, cn } from './ui';
+import type { BakeLog, Recipe } from '../lib/types';
+import { useBakeLogs, useRecipes } from '../lib/queries';
+import { Button, Panel, RecipePlate, buttonClassName, cn } from './ui';
 
 /*
  * The bake history, read as iterations.
@@ -18,6 +19,10 @@ import { Button, Panel, RecipePlate, cn } from './ui';
  * one attempt, and counting photos would inflate every row into a progression
  * that never happened; the extra shots are marked on the tile and live on the
  * bake's own page.
+ *
+ * A bake with no photograph is still a bake. It used to be dropped, so the
+ * history showed two attempts where Analytics counted three; it is drawn as an
+ * unlit plate now, the same as an unreached step, and its notes carry it.
  */
 
 type View = 'recipe' | 'date';
@@ -28,21 +33,20 @@ interface Entry {
   recipeTitle: string;
   date: string;
   notes: string;
-  image: string;
+  image: string | undefined;
   extraPhotos: number;
 }
 
-function toEntry(log: BakeLog): Entry | null {
-  const image = log.imageUrls?.[0];
-  if (!image || !log._id) return null;
+function toEntry(log: BakeLog, titles: Map<string, string>): Entry {
   return {
     logId: log._id,
-    recipeId: typeof log.recipeId === 'object' ? log.recipeId._id : log.recipeId,
-    recipeTitle: typeof log.recipeId === 'object' ? log.recipeId.title : 'Unknown recipe',
+    recipeId: log.recipeId,
+    // The recipe may since have been deleted; its bakes stay, and say so.
+    recipeTitle: titles.get(log.recipeId) ?? 'A deleted recipe',
     date: log.date,
     notes: log.notes || '',
-    image,
-    extraPhotos: Math.max(0, (log.imageUrls?.length ?? 1) - 1),
+    image: log.imageUrls?.[0],
+    extraPhotos: Math.max(0, (log.imageUrls?.length ?? 0) - 1),
   };
 }
 
@@ -123,24 +127,22 @@ function BakeTile({
   );
 }
 
+const EMPTY_LOGS: BakeLog[] = [];
+const EMPTY_RECIPES: Recipe[] = [];
+
 export default function Gallery() {
-  const [logs, setLogs] = useState<BakeLog[]>([]);
-  const [loading, setLoading] = useState(true);
+  const logsQuery = useBakeLogs();
+  const recipesQuery = useRecipes();
+  const logs = logsQuery.data ?? EMPTY_LOGS;
+  const recipes = recipesQuery.data ?? EMPTY_RECIPES;
   const [view, setView] = useState<View>('recipe');
+  const pending = logsQuery.isPending || recipesQuery.isPending;
+  const failed = logsQuery.error ?? recipesQuery.error;
 
-  useEffect(() => {
-    api.getBakeLogs()
-      .then((data) => setLogs(data))
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, []);
-
-  // A bake with no photograph has nothing to show in a gallery; it still lives
-  // on the recipe's own page, where its notes are the point.
-  const entries = useMemo(
-    () => logs.map(toEntry).filter((e): e is Entry => e !== null),
-    [logs],
-  );
+  const entries = useMemo(() => {
+    const titles = new Map(recipes.map((r) => [r._id, r.title]));
+    return logs.map((log) => toEntry(log, titles));
+  }, [logs, recipes]);
 
   /** One row per recipe, its bakes oldest → newest; rows ordered by most recent. */
   const byRecipe = useMemo(() => {
@@ -203,12 +205,26 @@ export default function Gallery() {
         </div>
       </header>
 
-      {loading ? (
-        <div className="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 2xl:grid-cols-4">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="aspect-square animate-pulse rounded-key bg-key-unlit" />
-          ))}
-        </div>
+      {/* Read from the device: nothing is drawn for the few milliseconds it
+        * takes (B30). A failure says so, rather than reading as "no bakes". */}
+      {pending ? null : failed ? (
+        <Panel title="Bake history">
+          <div className="flex flex-col gap-3" role="alert">
+            <p className="text-ink">Couldn't read the bake history on this device.</p>
+            <p className="text-sm text-ink-muted">
+              {failed instanceof Error ? failed.message : ''} Try again; your bakes have not been touched.
+            </p>
+            <Button
+              className="self-start"
+              onClick={() => {
+                void logsQuery.refetch();
+                void recipesQuery.refetch();
+              }}
+            >
+              Try again
+            </Button>
+          </div>
+        </Panel>
       ) : entries.length === 0 ? (
         /* An empty pattern is still a pattern: unlit plates, drawn as
          * deliberately as full ones, rather than an illustration of absence. */
@@ -223,8 +239,10 @@ export default function Gallery() {
               Finish a recipe in Baking Mode and log it with a photograph. Bake the same thing again
               and this fills with the comparison — the only way to see a loaf getting better.
             </p>
-            <Link to="/" className="self-start">
-              <Button variant="primary">Open the cookbook</Button>
+            {/* Secondary, not signal: the one red control on every screen is
+              * already the + key (B3). */}
+            <Link to="/" className={buttonClassName({ variant: 'secondary', className: 'self-start' })}>
+              Open the cookbook
             </Link>
           </div>
         </Panel>

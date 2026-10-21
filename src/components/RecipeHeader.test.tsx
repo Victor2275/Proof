@@ -1,9 +1,10 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import RecipeHeader from './RecipeHeader';
-import type { Recipe } from '../lib/api';
+import type { Recipe } from '../lib/types';
+import { makeRecipe } from '../test/utils';
 
-const recipe: Recipe = {
+const recipe: Recipe = makeRecipe({
   _id: 'r1',
   title: 'Country Sourdough',
   description: 'A long-fermented loaf.',
@@ -23,7 +24,7 @@ const recipe: Recipe = {
     'Proof overnight in the fridge.',
     'Bake at 250C for 30 minutes.',
   ],
-};
+});
 
 describe('RecipeHeader', () => {
   it('prints a description someone wrote', () => {

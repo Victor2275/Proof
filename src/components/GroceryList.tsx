@@ -1,8 +1,10 @@
-import { useState, useEffect, useMemo } from 'react';
-import { api, type Recipe, type PantryItem } from '../lib/api';
+import { useState, useMemo } from 'react';
+import type { Recipe, PantryItem } from '../lib/types';
+import { usePantry, useRecipes } from '../lib/queries';
+import { formatAmount } from '../lib/ingredients';
 import { Copy, Download, Share2, Plus, Trash2, Check } from 'lucide-react';
 import Fuse from 'fuse.js';
-import { Button, Field, Panel, Skeleton, cn } from './ui';
+import { Button, Field, Panel, cn } from './ui';
 
 /*
  * The grocery list — the difference between a bake and the pantry.
@@ -26,35 +28,29 @@ const BANK_LIMIT = 12;
 export interface GroceryItem {
   id: string;
   name: string;
-  quantity: number;
+  /** null for "to taste", "to serve": there is nothing to buy a measure of. */
+  quantity: number | null;
   unit: string;
   checked: boolean;
   sourceRecipe?: string;
 }
 
+const EMPTY_RECIPES: Recipe[] = [];
+const EMPTY_PANTRY: PantryItem[] = [];
+
 export default function GroceryList() {
-  const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [pantry, setPantry] = useState<PantryItem[]>([]);
+  const recipesQuery = useRecipes();
+  const pantryQuery = usePantry();
+  const recipes = recipesQuery.data ?? EMPTY_RECIPES;
+  const pantry = pantryQuery.data ?? EMPTY_PANTRY;
   const [selectedRecipeIds, setSelectedRecipeIds] = useState<string[]>([]);
   const [manualItems, setManualItems] = useState<GroceryItem[]>([]);
   const [checkedItemIds, setCheckedItemIds] = useState<Record<string, boolean>>({});
-  const [loading, setLoading] = useState(true);
   const [newCustomName, setNewCustomName] = useState('');
   const [newCustomQty, setNewCustomQty] = useState('');
   const [newCustomUnit, setNewCustomUnit] = useState('');
   const [copied, setCopied] = useState(false);
   const [recipeQuery, setRecipeQuery] = useState('');
-
-  useEffect(() => {
-    Promise.all([
-      api.getRecipes().catch(() => []),
-      api.getPantry().catch(() => [])
-    ]).then(([recData, pantryData]) => {
-      setRecipes(recData);
-      setPantry(pantryData);
-      setLoading(false);
-    });
-  }, []);
 
   const toggleRecipeSelection = (id: string) => {
     setSelectedRecipeIds(prev =>
@@ -111,7 +107,7 @@ export default function GroceryList() {
     const newItem: GroceryItem = {
       id: `manual-${Date.now()}`,
       name: newCustomName.trim(),
-      quantity: parseFloat(newCustomQty) || 1,
+      quantity: Number.isFinite(parseFloat(newCustomQty)) ? parseFloat(newCustomQty) : null,
       unit: newCustomUnit.trim(),
       checked: false
     };
@@ -132,7 +128,7 @@ export default function GroceryList() {
 
     groceryItems.forEach(item => {
       const mark = item.checked ? '[x]' : '[ ]';
-      const qtyStr = item.quantity ? `${item.quantity} ${item.unit}`.trim() : '';
+      const qtyStr = formatAmount(item);
       const recipeStr = item.sourceRecipe ? ` (${item.sourceRecipe})` : '';
       text += `${mark} ${item.name} ${qtyStr}${recipeStr}\n`;
     });
@@ -199,16 +195,29 @@ export default function GroceryList() {
     return { list, hidden: matches.length - shown.length };
   }, [recipes, recipeQuery, selectedRecipeIds]);
 
-  if (loading) {
+  // Read from the device: nothing is drawn while it arrives (B30).
+  if (recipesQuery.isPending || pantryQuery.isPending) return null;
+
+  // A failed read is said as one, not drawn as an empty cookbook (audit #3).
+  const failed = recipesQuery.error ?? pantryQuery.error;
+  if (failed) {
     return (
-      <div className="mx-auto flex max-w-4xl flex-col gap-6 pb-20" aria-label="Loading the grocery list">
-        <Skeleton className="h-9 w-56" />
-        <Skeleton className="h-4 w-72" />
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="h-11 w-full" />
-          ))}
-        </div>
+      <div className="mx-auto flex max-w-4xl flex-col gap-6 pb-20">
+        <h1 className="font-faceplate border-b border-rule pb-6 text-3xl leading-none text-ink sm:text-4xl">Grocery list</h1>
+        <Panel title="This device">
+          <div className="flex flex-col gap-3" role="alert">
+            <p className="text-ink">Couldn't read the cookbook and pantry on this device, so there is no list to build.</p>
+            <Button
+              className="self-start"
+              onClick={() => {
+                void recipesQuery.refetch();
+                void pantryQuery.refetch();
+              }}
+            >
+              Try again
+            </Button>
+          </div>
+        </Panel>
       </div>
     );
   }
@@ -364,10 +373,8 @@ export default function GroceryList() {
                     )}
                   >
                     <span className="min-w-0 truncate text-ink">{item.name}</span>
-                    {item.quantity ? (
-                      <span className="font-mono text-sm tabular-nums text-ink-muted">
-                        {item.quantity} {item.unit}
-                      </span>
+                    {formatAmount(item) ? (
+                      <span className="font-mono text-sm tabular-nums text-ink-muted">{formatAmount(item)}</span>
                     ) : null}
                     {item.sourceRecipe ? (
                       <span className="label-silkscreen text-silkscreen">{item.sourceRecipe}</span>
@@ -380,7 +387,7 @@ export default function GroceryList() {
                     type="button"
                     onClick={() => removeManualItem(item.id)}
                     aria-label={`Remove ${item.name} from the list`}
-                    className="shrink-0 rounded-control p-2 text-ink-muted transition-colors hover:text-ink"
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control text-ink-muted transition-colors hover:text-ink"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>

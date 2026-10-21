@@ -19,10 +19,11 @@ export {
 export { SegmentReadout, type SegmentReadoutProps, type SegmentSize } from './SegmentReadout';
 export { StepRow, type StepRowProps } from './StepRow';
 export { RecipePlate, type RecipePlateProps, type PlateSize } from './RecipePlate';
-export { RecipeTile, type RecipeTileProps } from './RecipeTile';
+export { Photo, type PhotoProps } from './Photo';
+export { RecipeTile, type RecipeTileProps, type TileRecipe } from './RecipeTile';
 export { InstrumentRow, type InstrumentItem, type InstrumentRowProps } from './InstrumentRow';
 export { Meter, type MeterProps } from './Meter';
 export { Sheet, type SheetProps, type SheetPlacement, type SheetSize } from './Sheet';
 export { Menu, MenuItem, type MenuProps, type MenuItemProps } from './Menu';
-export { Skeleton, SkeletonCard } from './Skeleton';
+export { Skeleton } from './Skeleton';
 export { cn } from '../../lib/cn';

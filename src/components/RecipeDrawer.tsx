@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
-import { api, type Recipe } from '../lib/api';
 import { Check } from 'lucide-react';
-import { Button, Sheet, Skeleton } from './ui';
+import { useRecipe } from '../lib/queries';
+import { formatAmount } from '../lib/ingredients';
+import { Button, Sheet } from './ui';
 
 interface RecipeDrawerProps {
   isOpen: boolean;
@@ -14,38 +14,23 @@ interface RecipeDrawerProps {
  * names. It rises from the bottom edge over the step being worked, and is
  * printed the way the recipe page prints: a ruled ingredient list with the
  * quantities in mono, then the method.
+ *
+ * It is read from the device, so there is nothing to wait for and no skeleton
+ * (B30). A sub-recipe deleted since it was linked says so.
  */
 export default function RecipeDrawer({ isOpen, onClose, recipeId }: RecipeDrawerProps) {
-  const [recipe, setRecipe] = useState<Recipe | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [failed, setFailed] = useState(false);
-
-  const load = useCallback(() => {
-    setLoading(true);
-    setFailed(false);
-    api.getRecipe(recipeId)
-      .then(setRecipe)
-      .catch(() => {
-        setRecipe(null);
-        setFailed(true);
-      })
-      .finally(() => setLoading(false));
-  }, [recipeId]);
-
-  useEffect(() => {
-    if (isOpen && recipeId) load();
-  }, [isOpen, recipeId, load]);
+  const { data: recipe, isPending, isError, refetch } = useRecipe(isOpen ? recipeId : undefined);
 
   return (
     <Sheet
       open={isOpen}
       onClose={onClose}
-      title={recipe && !loading ? recipe.title : 'Sub-recipe'}
+      title={recipe ? recipe.title : 'Sub-recipe'}
       placement="bottom"
       size="xl"
       layer={110}
       footer={
-        !loading && recipe ? (
+        recipe ? (
           <Button
             variant="primary"
             size="lg"
@@ -59,14 +44,16 @@ export default function RecipeDrawer({ isOpen, onClose, recipeId }: RecipeDrawer
       }
     >
       <div data-testid="recipe-drawer-content">
-        {loading ? (
-          <div className="flex flex-col gap-3" role="status" aria-label="Loading sub-recipe">
-            <Skeleton className="h-4 w-24" />
-            {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className="h-5 w-full" />
-            ))}
+        {isPending ? null : isError ? (
+          <div className="flex flex-col items-start gap-3" role="alert">
+            <p className="text-fault">Couldn't read this sub-recipe on this device.</p>
+            <Button onClick={() => refetch()}>Try again</Button>
           </div>
-        ) : recipe ? (
+        ) : !recipe ? (
+          <p className="text-ink-muted">
+            This step links to a recipe that is no longer in the cookbook. Remove the link in the editor.
+          </p>
+        ) : (
           <div className="flex flex-col gap-8">
             <section className="flex flex-col gap-2">
               <h3 className="label-silkscreen">Ingredients</h3>
@@ -74,9 +61,7 @@ export default function RecipeDrawer({ isOpen, onClose, recipeId }: RecipeDrawer
                 {recipe.ingredients.map((ing, idx) => (
                   <li key={idx} className="flex items-baseline justify-between gap-4 border-b border-rule py-2">
                     <span className="text-ink">{ing.name}</span>
-                    <span className="shrink-0 font-mono tabular-nums text-ink">
-                      {ing.quantity} {ing.unit}
-                    </span>
+                    <span className="shrink-0 font-mono tabular-nums text-ink">{formatAmount(ing)}</span>
                   </li>
                 ))}
               </ul>
@@ -96,12 +81,7 @@ export default function RecipeDrawer({ isOpen, onClose, recipeId }: RecipeDrawer
               </ol>
             </section>
           </div>
-        ) : failed ? (
-          <div className="flex flex-col items-start gap-3" role="alert">
-            <p className="text-fault">Couldn't load this sub-recipe. Check the connection and try again.</p>
-            <Button onClick={load}>Try again</Button>
-          </div>
-        ) : null}
+        )}
       </div>
     </Sheet>
   );

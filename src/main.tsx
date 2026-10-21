@@ -4,14 +4,16 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import App from './App.tsx';
 import './index.css';
 
+/*
+ * The cookbook is read from the device, so a query must never wait for a
+ * network it doesn't use: `networkMode: 'always'` stops TanStack pausing every
+ * query while the browser reports itself offline. Each hook in lib/queries.ts
+ * sets its own staleness and retry, local and remote differently.
+ */
 const queryClient = new QueryClient({
   defaultOptions: {
-    queries: {
-      // Show stale data immediately while refetching in the background
-      staleTime: 1000 * 60 * 2, // 2 minutes
-      // Retry once on failure before showing error state
-      retry: 1,
-    },
+    queries: { networkMode: 'always' },
+    mutations: { networkMode: 'always' },
   },
 });
 

@@ -7,6 +7,7 @@ import Sidebar from './components/Sidebar';
 import TimerManager from './components/TimerManager';
 import BottomNav from './components/BottomNav';
 import { api } from './lib/api';
+import { setOperatorToken } from './lib/session';
 import ErrorBoundary from './components/ErrorBoundary';
 import { Delete } from 'lucide-react';
 import { Button, Field, Sheet, Skeleton } from './components/ui';
@@ -29,9 +30,13 @@ const Pantry = lazy(() => import('./components/Pantry'));
 const Lab = import.meta.env.DEV ? lazy(() => import('./components/Lab')) : null;
 
 /*
- * The PIN prompt. A `Sheet`, so it traps focus, closes on Escape and hands focus
- * back to whatever asked for it; it used to be a hand-rolled scrim with none of
- * that, and its error floated in a toast outside the dialog it belonged to.
+ * The operator's PIN. A `Sheet`, so it traps focus, closes on Escape and hands
+ * focus back to whatever asked for it.
+ *
+ * It used to be "Admin access required" and stood in front of every write in
+ * the app, so a stranger met it the first time they tried to save anything.
+ * Writes go to the device now and need nothing. The PIN opens only the site
+ * operator's tools, so this prompt is only ever seen by the operator.
  */
 function AuthModal({ open, onClose, onSuccess }: { open: boolean, onClose: () => void, onSuccess: () => void }) {
   const [pin, setPin] = useState('');
@@ -55,10 +60,10 @@ function AuthModal({ open, onClose, onSuccess }: { open: boolean, onClose: () =>
     setError('');
     try {
       const { token } = await api.submitPin(pin);
-      localStorage.setItem('adminToken', token);
+      setOperatorToken(token);
       onSuccess();
-    } catch (err: any) {
-      setError(err.message || 'Invalid PIN');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'That PIN was not accepted.');
     } finally {
       setLoading(false);
     }
@@ -68,7 +73,7 @@ function AuthModal({ open, onClose, onSuccess }: { open: boolean, onClose: () =>
     <Sheet
       open={open}
       onClose={onClose}
-      title="Admin access required"
+      title="Operator sign-in"
       size="sm"
       initialFocus={fieldRef}
       footer={
@@ -81,7 +86,10 @@ function AuthModal({ open, onClose, onSuccess }: { open: boolean, onClose: () =>
       }
     >
       <form id={formId} onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <p className="text-sm text-ink-muted">Please enter the PIN to perform this action.</p>
+        <p className="text-sm text-ink-muted">
+          The operator PIN opens the site's own tools: server backups, photo re-hosting and the shared
+          cookbook. Your recipes never need it.
+        </p>
         <Field
           ref={fieldRef}
           label="PIN"
@@ -151,6 +159,7 @@ function AnimatedRoutes() {
         <Route path="/grocery" element={<GroceryList />} />
         <Route path="/recipe/:id/bake" element={<BakingMode />} />
         <Route path="/recipe/:id" element={<RecipeViewer />} />
+        <Route path="/r/:slug" element={<RecipeViewer />} />
         <Route path="/new" element={<RecipeEditor />} />
         <Route path="/edit/:id" element={<RecipeEditor />} />
         <Route path="/gallery" element={<Gallery />} />
@@ -162,14 +171,14 @@ function AnimatedRoutes() {
   );
 }
 
+/** Addresses a stranger may be sent straight to, without the landing page first. */
+const SHARED_PATH = /^\/r\//;
+
 function App() {
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [isOffline, setIsOffline] = useState(!navigator.onLine);
-  // Set when a screen falls back to its local cache, so we can say the data is a
-  // saved copy rather than letting stale content pass for live.
-  const [staleReason, setStaleReason] = useState<string | null>(null);
   useEffect(() => {
-    if (!localStorage.getItem('hasVisited') && window.location.pathname !== '/welcome') {
+    const path = window.location.pathname;
+    if (!localStorage.getItem('hasVisited') && path !== '/welcome' && !SHARED_PATH.test(path)) {
       window.location.href = '/welcome';
     }
 
@@ -187,27 +196,15 @@ function App() {
     };
   }, []);
 
+  // An operator endpoint answered 401: the operator's session has lapsed.
   useEffect(() => {
-    const handleAuthReq = () => setShowAuthModal(true);
-    window.addEventListener('auth-required', handleAuthReq);
-    
-    const handleOnline = () => { setIsOffline(false); setStaleReason(null); };
-    const handleOffline = () => setIsOffline(true);
-    const handleStale = (e: Event) => setStaleReason((e as CustomEvent).detail?.reason ?? "Can't reach the server.");
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    window.addEventListener('api-stale', handleStale);
-
-    return () => {
-      window.removeEventListener('auth-required', handleAuthReq);
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-      window.removeEventListener('api-stale', handleStale);
+    const handleAuthReq = () => {
+      setOperatorToken(null);
+      setShowAuthModal(true);
     };
+    window.addEventListener('auth-required', handleAuthReq);
+    return () => window.removeEventListener('auth-required', handleAuthReq);
   }, []);
-
-  // While the browser reports itself offline, the offline bar already explains things.
-  const showStaleBar = !!staleReason && !isOffline;
 
   return (
     /*
@@ -234,15 +231,7 @@ function App() {
         <Route path="/welcome" element={<LandingPage />} />
         <Route
           path="*"
-          element={
-            <AppShell
-              isOffline={isOffline}
-              showStaleBar={showStaleBar}
-              staleReason={staleReason}
-              showAuthModal={showAuthModal}
-              setShowAuthModal={setShowAuthModal}
-            />
-          }
+          element={<AppShell showAuthModal={showAuthModal} setShowAuthModal={setShowAuthModal} />}
         />
       </Routes>
     </Router>
@@ -250,41 +239,24 @@ function App() {
   );
 }
 
+/*
+ * There is no offline bar. The cookbook lives on the device, so being offline
+ * changes nothing about it, and a permanent amber strip for the normal case
+ * would train people to ignore the one that matters (decision B29). Each
+ * network feature says so itself when it can't be reached, and Settings
+ * reports whether the server is reachable.
+ */
 function AppShell({
-  isOffline,
-  showStaleBar,
-  staleReason,
   showAuthModal,
   setShowAuthModal,
 }: {
-  isOffline: boolean;
-  showStaleBar: boolean;
-  staleReason: string | null;
   showAuthModal: boolean;
   setShowAuthModal: (open: boolean) => void;
 }) {
   return (
-    <>
-      {/*
-        The status bars sit in the flow rather than fixed with a guessed pt-6: their
-        text wraps to two or three lines on a phone, which a fixed offset can't
-        account for, and the overflow landed on top of the page heading.
-      */}
-      <div className="flex flex-col h-screen bg-ground text-ink overflow-hidden">
-      {/* The caution lamp bar: connectivity issues are the one non-bake state
-        * that earns the "due" amber, since they genuinely need attention. */}
-      {isOffline && (
-        <div className="label-silkscreen shrink-0 z-[200] border-b border-fault bg-panel text-fault text-center py-2 px-4">
-          Offline — viewing cached recipes. Changes won't save until you reconnect.
-        </div>
-      )}
-      {showStaleBar && (
-        <div className="label-silkscreen shrink-0 z-[200] border-b border-fault bg-panel text-fault text-center py-2 px-4">
-          {staleReason} Showing your last saved copy — changes won't save until it's back.
-        </div>
-      )}
-      <div className="flex flex-1 min-h-0">
-        <Sidebar onAdminRequired={() => setShowAuthModal(true)} className="hidden md:flex" />
+    <div className="flex h-screen flex-col overflow-hidden bg-ground text-ink">
+      <div className="flex min-h-0 flex-1">
+        <Sidebar className="hidden md:flex" />
         <main className="flex-1 overflow-y-auto overscroll-y-auto w-full relative pb-24 md:pb-12 pt-safe md:pt-0 px-4 md:px-8 lg:px-12 transition-all duration-300 md:ml-16 lg:ml-64">
           <ErrorBoundary>
             <Suspense fallback={<RouteSkeleton />}>
@@ -297,14 +269,10 @@ function AppShell({
         <AuthModal
           open={showAuthModal}
           onClose={() => setShowAuthModal(false)}
-          onSuccess={() => {
-            setShowAuthModal(false);
-            window.dispatchEvent(new Event('auth-success'));
-          }}
+          onSuccess={() => setShowAuthModal(false)}
         />
       </div>
-      </div>
-    </>
+    </div>
   );
 }
 

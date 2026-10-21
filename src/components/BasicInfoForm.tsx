@@ -1,9 +1,10 @@
-import React from 'react';
-import type { Recipe } from '../lib/api';
+import React, { useId } from 'react';
+import type { Recipe } from '../lib/types';
 import { X, Image as ImageIcon, Loader2, Plus } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
-import { Panel, Button, Field, TextArea, Select } from './ui';
+import { Panel, Button, Field, Photo, TextArea, Select } from './ui';
 import { parseDurationMinutes } from '../lib/duration';
+import { useFolders } from '../lib/queries';
 
 /*
  * Identity: what the recipe is called, what it looks like, and its four
@@ -35,6 +36,8 @@ export default function BasicInfoForm({
   id,
 }: BasicInfoFormProps) {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const folderListId = useId();
+  const { data: folders = [] } = useFolders();
   const tags = recipe.tags || [];
 
   /*
@@ -113,6 +116,21 @@ export default function BasicInfoForm({
             </Select>
           </div>
 
+          {/* The cookbook's banks are its folders. Free text, with the folders
+            * this cookbook already has offered as you type. */}
+          <Field
+            label="Folder"
+            list={folderListId}
+            value={recipe.folder && recipe.folder !== 'Uncategorized' ? recipe.folder : ''}
+            onChange={(e) => setRecipe({ ...recipe, folder: e.target.value.trim() ? e.target.value : 'Uncategorized' })}
+            placeholder="Breads"
+          />
+          <datalist id={folderListId}>
+            {folders.map((f) => (
+              <option key={f._id} value={f.name} />
+            ))}
+          </datalist>
+
           <div className="flex flex-col gap-2">
             <Field
               label="Tags"
@@ -160,7 +178,7 @@ export default function BasicInfoForm({
                   key={idx}
                   className="group relative h-28 w-28 shrink-0 overflow-hidden border border-rule bg-panel-sunk"
                 >
-                  <img
+                  <Photo
                     src={url}
                     alt={`Photograph ${idx + 1}`}
                     loading="lazy"
@@ -195,7 +213,7 @@ export default function BasicInfoForm({
                 busy={uploading}
                 icon={<ImageIcon className="h-4 w-4" />}
               >
-                {uploading ? 'Uploading' : 'Take a photograph'}
+                {uploading ? 'Saving' : 'Take a photograph'}
               </Button>
             ) : (
               <>
@@ -214,7 +232,7 @@ export default function BasicInfoForm({
                   busy={uploading}
                   icon={<Plus className="h-4 w-4" />}
                 >
-                  {uploading ? 'Uploading' : 'Add photographs'}
+                  {uploading ? 'Saving' : 'Add photographs'}
                 </Button>
               </>
             )}
@@ -230,7 +248,9 @@ export default function BasicInfoForm({
             ) : null}
           </div>
 
-          <p className="text-xs text-ink-muted">JPEG, PNG or WEBP. Up to 20MB each.</p>
+          <p className="text-xs text-ink-muted">
+            Kept on this device, shrunk to 1600px so a phone photograph takes a few hundred KB.
+          </p>
         </div>
       </Panel>
     </div>

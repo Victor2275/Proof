@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from 'react';
-import type { Recipe } from '../lib/api';
+import type { Recipe } from '../lib/types';
 import { Sheet, Button, cn } from './ui';
 
 /*

@@ -2,13 +2,14 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Fuse from 'fuse.js';
 import { Search, Shuffle } from 'lucide-react';
-import { type Recipe, type BakeLog } from '../lib/api';
+import type { Recipe, BakeLog } from '../lib/types';
 import { useRecipes, useBakeLogs } from '../lib/queries';
 import { useActiveBake } from '../lib/useActiveBake';
 import { derivePhases } from '../lib/phases';
 import { totalRecipeMinutes, formatMinutesForSegments, isPlaceholderTiming } from '../lib/duration';
 import { Button, Field, StepRow, SegmentReadout, RecipePlate, RecipeTile, buttonClassName } from './ui';
 import OnboardingModal from './OnboardingModal';
+import StarterShelf from './StarterShelf';
 
 /*
  * The hero surface: a gallery of what you could make.
@@ -41,10 +42,6 @@ const SHELF_LIMIT = 8;
  * keeps the in-flight count near what the connection pool can actually serve.
  */
 const PAGE_SIZE = 48;
-
-function bakeLogRecipeId(log: BakeLog): string {
-  return typeof log.recipeId === 'string' ? log.recipeId : log.recipeId._id;
-}
 
 function bakeLogDate(log: BakeLog): number {
   return log.date ? new Date(log.date).getTime() : 0;
@@ -158,9 +155,9 @@ function PatternRow({
 }
 
 export default function Dashboard() {
-  const { data: allRecipes = EMPTY_RECIPES, isLoading, error, refetch } = useRecipes();
+  const { data: allRecipes = EMPTY_RECIPES, isPending, error, refetch } = useRecipes();
   // Best-effort: the smart shelves are a secondary enhancement, not the
-  // dashboard's primary function, so a failed fetch here quietly hides the
+  // dashboard's primary function, so a failed read here quietly hides the
   // shelves rather than breaking the recipe list.
   const { data: bakeLogs = EMPTY_LOGS } = useBakeLogs();
   const activeBake = useActiveBake();
@@ -172,6 +169,11 @@ export default function Dashboard() {
   const [showOnboarding, setShowOnboarding] = useState(false);
 
   const loadError = error instanceof Error ? error.message : null;
+  // Counts are a reading of the cookbook, so they wait until there is one:
+  // "0 recipes" over a cookbook still being read, or one that failed to open,
+  // is a figure the data cannot support (audit #9).
+  const settled = !isPending && !loadError;
+  const emptyCookbook = settled && allRecipes.length === 0;
 
   useEffect(() => {
     if (localStorage.getItem('hasVisited') === 'true' && !localStorage.getItem('hasSeenOnboarding')) {
@@ -234,7 +236,7 @@ export default function Dashboard() {
       .filter((l) => l.isPersonalBest)
       .sort((a, b) => bakeLogDate(b) - bakeLogDate(a))
       .forEach((log) => {
-        const id = bakeLogRecipeId(log);
+        const id = log.recipeId;
         const recipe = recipesById.get(id);
         if (recipe && !seen.has(id)) {
           seen.add(id);
@@ -251,7 +253,7 @@ export default function Dashboard() {
     [...bakeLogs]
       .sort((a, b) => bakeLogDate(b) - bakeLogDate(a))
       .forEach((log) => {
-        const id = bakeLogRecipeId(log);
+        const id = log.recipeId;
         const recipe = recipesById.get(id);
         if (recipe && !seen.has(id)) {
           seen.add(id);
@@ -282,10 +284,13 @@ export default function Dashboard() {
           <h1 className="font-faceplate text-3xl text-ink md:text-4xl">
             {bank !== ALL_BANK ? bank : 'My Cookbook'}
           </h1>
-          <p className="label-silkscreen text-ink-muted">
-            {recipes.length} {recipes.length === 1 ? 'recipe' : 'recipes'}
-          </p>
+          {settled && !emptyCookbook ? (
+            <p className="label-silkscreen text-ink-muted">
+              {recipes.length} {recipes.length === 1 ? 'recipe' : 'recipes'}
+            </p>
+          ) : null}
         </div>
+        {emptyCookbook ? null : (
         <div className="flex w-full gap-3 xl:w-auto">
           <Field
             label="Search"
@@ -297,12 +302,21 @@ export default function Dashboard() {
             className="flex-1 xl:w-72"
           />
           {allRecipes.length > 0 && (
-            <Button variant="secondary" onClick={handleInspireMe} icon={<Shuffle className="h-4 w-4" />}>
+            <Button
+              variant="secondary"
+              onClick={handleInspireMe}
+              icon={<Shuffle className="h-4 w-4" />}
+              // Below `sm` the key is an icon alone and needs its name spoken.
+              aria-label="Inspire me"
+            >
               <span className="hidden sm:inline">Inspire Me</span>
             </Button>
           )}
         </div>
+        )}
       </div>
+
+      {emptyCookbook ? <StarterShelf /> : null}
 
       {/* Bank rail: vertical on desktop, a horizontal scroller on a phone
         * screen too narrow for a second sidebar. The row never wraps — it
@@ -340,7 +354,9 @@ export default function Dashboard() {
        * overflow spec, so the clipped width just scrolls inside `main`
        * instead of widening the document.
        */}
+      {emptyCookbook ? null : (
       <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
+        {settled ? (
         <nav
           aria-label="Bake types"
           // The real cookbook this ships for already has 18 distinct folders;
@@ -352,7 +368,7 @@ export default function Dashboard() {
           <button
             type="button"
             onClick={() => setBank(ALL_BANK)}
-            className={`label-silkscreen shrink-0 whitespace-nowrap rounded-control px-3 py-2 text-left ${
+            className={`label-silkscreen flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-control px-3 py-2 text-left lg:min-h-0 ${
               bank === ALL_BANK ? 'bg-panel-sunk text-ink' : 'text-ink-muted hover:text-ink'
             }`}
           >
@@ -363,7 +379,7 @@ export default function Dashboard() {
               key={name}
               type="button"
               onClick={() => setBank(name)}
-              className={`label-silkscreen shrink-0 whitespace-nowrap rounded-control px-3 py-2 text-left ${
+              className={`label-silkscreen flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-control px-3 py-2 text-left lg:min-h-0 ${
                 bank === name ? 'bg-panel-sunk text-ink' : 'text-ink-muted hover:text-ink'
               }`}
             >
@@ -371,6 +387,7 @@ export default function Dashboard() {
             </button>
           ))}
         </nav>
+        ) : null}
 
         <div className="min-w-0 flex-1 space-y-8">
           {activeRecipe && (
@@ -394,26 +411,25 @@ export default function Dashboard() {
           )}
 
           <section>
-            {isLoading ? (
-              <div className="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 2xl:grid-cols-4">
-                {Array.from({ length: 8 }).map((_, i) => (
-                  <div key={i} className="animate-pulse space-y-2">
-                    <div className="aspect-square w-full rounded-key bg-panel-sunk" />
-                    <div className="h-4 w-2/3 bg-panel-sunk" />
-                  </div>
-                ))}
-              </div>
-            ) : loadError ? (
+            {/* A read from the device takes a few milliseconds: nothing is
+              * drawn for it, rather than a skeleton that flashes (B30). */}
+            {isPending ? null : loadError ? (
               <div className="border border-fault rounded-panel px-6 py-16 text-center" role="alert">
-                <p className="font-faceplate text-lg text-ink">Couldn't load your cookbook</p>
-                <p className="mt-2 text-sm text-ink-muted">{loadError}</p>
+                <p className="font-faceplate text-lg text-ink">Couldn't open the cookbook on this device</p>
+                <p className="mx-auto mt-2 max-w-prose text-sm text-ink-muted">
+                  {loadError} Try again; if it keeps happening, the browser may be blocking storage for
+                  this site, which private browsing does.
+                </p>
                 <Button variant="secondary" className="mt-6" onClick={() => refetch()}>
                   Try again
                 </Button>
               </div>
             ) : recipes.length === 0 ? (
               <div className="rounded-panel border border-dashed border-rule px-6 py-16 text-center text-ink-muted">
-                <p>No recipes found.</p>
+                <p>Nothing in {bank === ALL_BANK ? 'the cookbook' : bank} matches “{search.trim()}”.</p>
+                <Button variant="ghost" className="mt-4" onClick={() => setSearch('')}>
+                  Clear the search
+                </Button>
               </div>
             ) : (
               <>
@@ -438,6 +454,7 @@ export default function Dashboard() {
           </section>
         </div>
       </div>
+      )}
     </div>
   );
 }

@@ -2,9 +2,10 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi } from 'vitest';
 import IngredientList from './IngredientList';
-import type { Recipe } from '../lib/api';
+import type { Recipe } from '../lib/types';
+import { makeRecipe } from '../test/utils';
 
-const base: Recipe = {
+const base: Recipe = makeRecipe({
   _id: 'r1',
   title: 'Loaf',
   description: '',
@@ -15,7 +16,7 @@ const base: Recipe = {
   tags: [],
   ingredients: [],
   instructions: [],
-};
+});
 
 const renderList = (ingredients: Recipe['ingredients']) =>
   render(
