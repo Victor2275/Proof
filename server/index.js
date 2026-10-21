@@ -19,11 +19,17 @@ import { fileURLToPath } from 'url';
 import { configureCloudinary } from './services/cloudinary.js';
 import authRouter from './routes/auth.js';
 import { indexPage } from './services/indexHtml.js';
+import { recipeHead, profileHead } from './services/shareMeta.js';
+import { PublishedRecipe, LIVE } from './models/PublishedRecipe.js';
+import { loadProfile } from './routes/profiles.js';
 import aiRouter from './routes/ai.js';
 import libraryRouter from './routes/library.js';
 import timersRouter, { registerTimerSockets, loadTimersFromDb } from './routes/timers.js';
 import maintenanceRouter, { startMaintenanceCron } from './routes/maintenance.js';
 import publishedRouter from './routes/published.js';
+import reportsRouter from './routes/reports.js';
+import moderationRouter from './routes/moderation.js';
+import profilesRouter from './routes/profiles.js';
 
 // ── Bootstrap ──────────────────────────────────────────────────────────────
 const __filename = fileURLToPath(import.meta.url);
@@ -42,6 +48,9 @@ const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: '*' } });
 
 app.use(cors());
+// A published recipe carries its photographs as compressed data (up to three,
+// ~200 KB each); everything else is small.
+app.use('/api/published', express.json({ limit: '8mb' }));
 app.use(express.json({ limit: '1mb' }));
 app.use((_req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -68,6 +77,9 @@ app.get(['/api', '/api/health'], (_req, res) => {
 app.use('/api/library', libraryRouter);
 app.use('/api/timers', timersRouter);
 app.use('/api/published', publishedRouter);
+app.use('/api/reports', reportsRouter);
+app.use('/api/moderation', moderationRouter);
+app.use('/api/profiles', profilesRouter);
 app.use('/api', aiRouter);                  // rate-limited per route
 app.use('/api', maintenanceRouter);         // /api/backup + /api/maintenance/*
 
@@ -113,6 +125,20 @@ if (fs.existsSync(path.join(distPath, 'index.html'))) {
       if (filePath.endsWith('sw.js')) res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     },
   }));
+  const origin = (req) => process.env.PUBLIC_ORIGIN || `${req.protocol}://${req.get('host')}`;
+
+  // A shared recipe and a baker's page say what they are to a chat preview or
+  // a search engine before the app has loaded (meta injection, not a render).
+  app.get('/r/:slug', async (req, res) => {
+    const recipe = dbReady()
+      ? await PublishedRecipe.findOne({ ...LIVE, slug: req.params.slug }).lean().catch(() => null)
+      : null;
+    page.send(res, recipe ? recipeHead(recipe, origin(req)) : undefined);
+  });
+  app.get(/^\/@([A-Za-z0-9_]{3,24})$/, async (req, res) => {
+    const found = dbReady() ? await loadProfile(req.params[0]).catch(() => null) : null;
+    page.send(res, found ? profileHead(found.profile, found.stats, origin(req)) : undefined);
+  });
   app.get(/^(?!\/api).*/, (_req, res) => page.send(res));
 }
 

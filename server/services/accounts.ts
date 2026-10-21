@@ -11,6 +11,9 @@ import { BakeLog } from '../models/BakeLog.js';
 import { Note } from '../models/Note.js';
 import { Pantry } from '../models/Pantry.js';
 import { aiAllowance } from './aiQuota.js';
+import { Rating } from '../models/Rating.js';
+import { Comment } from '../models/Comment.js';
+import { recountRatings } from './publishing.js';
 
 export const PASSWORD_MIN = 10;
 const PASSWORD_MAX = 200;
@@ -104,8 +107,10 @@ export const privateUser = (user: UserDoc) => ({
 
 /** Everything the server holds about an account, as one document (GDPR access). */
 export async function exportAccount(user: UserDoc) {
-  const [published, recipes, bakeLogs, notes, pantry] = await Promise.all([
+  const [published, ratings, comments, recipes, bakeLogs, notes, pantry] = await Promise.all([
     PublishedRecipe.find({ authorId: user._id }).lean(),
+    Rating.find({ userId: user._id }).lean(),
+    Comment.find({ userId: user._id }).lean(),
     Recipe.find({ ownerId: user._id }).lean(),
     BakeLog.find({ ownerId: user._id }).lean(),
     Note.find({ ownerId: user._id }).lean(),
@@ -115,6 +120,8 @@ export async function exportAccount(user: UserDoc) {
     exportedAt: new Date().toISOString(),
     account: privateUser(user),
     published,
+    ratings,
+    comments,
     synced: { recipes, bakeLogs, notes, pantry },
   };
 }
@@ -126,8 +133,12 @@ export async function exportAccount(user: UserDoc) {
  * longer exists. Copies other people saved stay on their devices.
  */
 export async function deleteAccount(user: UserDoc) {
+  // Their ratings come off the recipes they rated, and the counts follow.
+  const rated = await Rating.distinct('publishedId', { userId: user._id });
   await Promise.all([
     PublishedRecipe.deleteMany({ authorId: user._id }),
+    Rating.deleteMany({ userId: user._id }),
+    Comment.deleteMany({ userId: user._id }),
     Recipe.deleteMany({ ownerId: user._id }),
     BakeLog.deleteMany({ ownerId: user._id }),
     Note.deleteMany({ ownerId: user._id }),
@@ -135,4 +146,5 @@ export async function deleteAccount(user: UserDoc) {
     Session.deleteMany({ userId: user._id }),
   ]);
   await User.deleteOne({ _id: user._id });
+  await Promise.all(rated.map((id) => recountRatings(String(id))));
 }

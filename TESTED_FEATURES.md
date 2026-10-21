@@ -263,6 +263,20 @@ This is a 1-to-1 mirror of CURRENT_FEATURES.md. Use checkboxes to track manual t
 - [ ] **Content-Security-Policy**: the deployed page sends the header, the console shows no CSP violations, and the theme still applies before first paint.
 - [ ] **Claim script**: `claim-library.js --email=<operator>` dry run reports the counts; `--apply` makes the account @proof and the author of the seeded recipes.
 
+## 13. Public launch — Phase 3: the global cookbook (server)
+- [ ] **Publish**: an unconfirmed account is refused; a confirmed one publishes and the recipe appears at `/r/<slug>` without its Favorite tag.
+- [ ] **Push update**: republishing after an edit keeps the same address, even after renaming.
+- [ ] **Attribution**: an imported recipe is refused without a credit, and accepted with one or with "my own words".
+- [ ] **Photographs**: a device photo is published to Cloudinary; a hot-linked photo is left behind and the count says so.
+- [ ] **Pre-screen**: with Gemini configured a normal recipe goes live; without it, the recipe is held for the operator.
+- [ ] **Unpublish**: the author's unpublish removes the page; another account cannot unpublish it.
+- [ ] **Browse**: sorting by most baked and by recent, and filtering by tag and author, return the right recipes.
+- [ ] **Ratings**: rating twice replaces the first; the author can't rate their own; "I baked this" counts.
+- [ ] **Comments**: a day-old confirmed account can comment; a new one is told to wait; a held comment shows only to its author.
+- [ ] **Reports & queue**: a report reaches the operator's queue with its target; take down, approve and resolve all work.
+- [ ] **Profiles**: `/api/profiles/<handle>` lists live recipes and bake counts, with no email.
+- [ ] **Link previews**: pasting `/r/<slug>` into a chat shows the recipe's title, description and photo; Google's Rich Results Test reads the Recipe data.
+
 ## 7. UI/UX Foundation
 - [ ] **"Step Row" Visual World (Phase 0 foundation)**: Rhythm-machine design language — matte panels, silkscreen labels, lit step keys, segment readouts; colour is temporal, not decorative.
 - [ ] **One enforced ban, two defined materials**: no glow except a lit key or segment; `--faceplate` and `.scrim` are the only gradient and blur, enforced by `src/designSystem.test.ts`.

@@ -45,6 +45,10 @@ const publishedRecipeSchema = new mongoose.Schema({
   },
   sourceUrl: { type: String, default: '' },
   sourceAttribution: { type: String, default: '' },
+  /** The author declared the method and headnote are in their own words (the attribution rule). */
+  ownWords: { type: Boolean, default: false },
+  /** The local record's updatedAt when this snapshot was taken: newer means unpushed edits (B6). */
+  sourceUpdatedAt: { type: Date, default: null },
   /** Offered on a stranger's empty cookbook as a first thing to save (decision B15/B16). */
   featured: { type: Boolean, default: false },
 
@@ -65,6 +69,7 @@ const publishedRecipeSchema = new mongoose.Schema({
 }, { timestamps: { createdAt: false, updatedAt: true } });
 
 publishedRecipeSchema.index({ 'moderation.state': 1, unpublishedAt: 1, publishedAt: -1 });
+publishedRecipeSchema.index({ authorId: 1, sourceLocalId: 1 });
 
 export const PublishedRecipe = mongoose.model('PublishedRecipe', publishedRecipeSchema);
 
