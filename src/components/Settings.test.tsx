@@ -100,7 +100,7 @@ describe('Settings', () => {
 
     // A stranger sees what the tools are for, not the tools.
     expect(screen.queryByRole('button', { name: /Re-host/i })).not.toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Sign in' }));
+    await user.click(screen.getByRole('button', { name: 'Operator sign-in' }));
     expect(asked).toHaveBeenCalled();
     window.removeEventListener('auth-required', asked);
   });

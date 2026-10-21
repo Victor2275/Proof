@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { api } from '../lib/api';
 import { usePlan } from '../lib/session';
+import { refreshAccount } from '../lib/useAccount';
 import { Sparkles } from 'lucide-react';
-import { AiGateNotice } from './AiGateSheet';
+import { AiAllowance, AiGateNotice } from './AiGateSheet';
 import { Button, Sheet, Skeleton } from './ui';
 
 export interface AISubstitutionsModalProps {
@@ -34,6 +35,7 @@ export default function AISubstitutionsModal({
     try {
       const data = await api.getAISubstitutions(ingredientName, recipeTitle);
       setSubstitutions(data.substitutions || []);
+      void refreshAccount();
     } catch (err) {
       setError(err instanceof Error ? err.message : "The substitutions couldn't be fetched.");
     } finally {
@@ -44,7 +46,7 @@ export default function AISubstitutionsModal({
   const idle = !substitutions && !loading;
 
   return (
-    <Sheet open onClose={onClose} title="AI substitutions" size="md">
+    <Sheet open onClose={onClose} title="AI substitutions" size="md" footer={allowed ? <AiAllowance /> : undefined}>
       <div className="flex flex-col gap-4">
         <p className="text-sm text-ink-muted">
           Find smart culinary alternatives for <strong className="font-medium text-ink">{ingredientName}</strong>.

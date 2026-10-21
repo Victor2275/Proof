@@ -6,8 +6,11 @@ import NotFound from './components/NotFound';
 import Sidebar from './components/Sidebar';
 import TimerManager from './components/TimerManager';
 import BottomNav from './components/BottomNav';
+import AccountSheet, { type AccountMode } from './components/AccountSheet';
 import { api } from './lib/api';
 import { setOperatorToken } from './lib/session';
+import { useAccountRefresh } from './lib/useAccount';
+import { ACCOUNT_PROMPT_EVENT, type AccountPrompt } from './lib/accountPrompt';
 import ErrorBoundary from './components/ErrorBoundary';
 import { Delete } from 'lucide-react';
 import { Button, Field, Sheet, Skeleton } from './components/ui';
@@ -253,6 +256,28 @@ function AppShell({
   showAuthModal: boolean;
   setShowAuthModal: (open: boolean) => void;
 }) {
+  const [account, setAccountSheet] = useState<{ open: boolean; mode: AccountMode; reason?: string }>({
+    open: false,
+    mode: 'signin',
+  });
+  useAccountRefresh();
+
+  useEffect(() => {
+    const onPrompt = (e: Event) => {
+      const { mode, reason } = (e as CustomEvent<AccountPrompt>).detail;
+      setAccountSheet({ open: true, mode, reason });
+    };
+    // The server ended this device's session (api.ts has already signed it out).
+    const onEnded = () =>
+      setAccountSheet({ open: true, mode: 'signin', reason: 'You were signed out. Sign in again to carry on.' });
+    window.addEventListener(ACCOUNT_PROMPT_EVENT, onPrompt);
+    window.addEventListener('account-required', onEnded);
+    return () => {
+      window.removeEventListener(ACCOUNT_PROMPT_EVENT, onPrompt);
+      window.removeEventListener('account-required', onEnded);
+    };
+  }, []);
+
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-ground text-ink">
       <div className="flex min-h-0 flex-1">
@@ -270,6 +295,13 @@ function AppShell({
           open={showAuthModal}
           onClose={() => setShowAuthModal(false)}
           onSuccess={() => setShowAuthModal(false)}
+        />
+        <AccountSheet
+          open={account.open}
+          mode={account.mode}
+          reason={account.reason}
+          onModeChange={(mode) => setAccountSheet((a) => ({ ...a, mode }))}
+          onClose={() => setAccountSheet((a) => ({ ...a, open: false, reason: undefined }))}
         />
       </div>
     </div>

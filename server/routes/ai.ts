@@ -1,47 +1,31 @@
 import { Router, Request, Response } from 'express';
-import axios from 'axios';
+import rateLimit from 'express-rate-limit';
 import * as cheerio from 'cheerio';
-import { requireOperator } from '../middleware/auth.js';
-import { rehostImageUrls } from '../services/cloudinary.js';
-import { getFlashJsonModel, getFlashModel, isGeminiConfigured } from '../services/gemini.js';
+import { requireAi } from '../services/aiQuota.js';
+import { getFlashJsonModel, isGeminiConfigured } from '../services/gemini.js';
 import { parseIngredient } from '../services/ingredientParser.js';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { fetchPublicPage, UnsafeUrlError } from '../services/safeFetch.js';
 
+/*
+ * The AI, and the import that sits beside it. Every route here costs money or
+ * fetches on a user's behalf, so each is behind requireAi (the operator, or a
+ * confirmed account's monthly allowance) and each bounds its input.
+ */
 const router = Router();
 
-// POST /api/analyze-image
-router.post('/analyze-image', requireOperator, async (req: Request, res: Response) => {
-  const { imageUrl } = req.body;
-  if (!imageUrl) return res.status(400).json({ error: 'Image URL required' });
-  try {
-    const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
-    const buffer = Buffer.from(response.data, 'binary');
+/** A burst limit per caller, on top of the monthly allowance. On the routes, so nothing else is counted. */
+const aiLimiter = rateLimit({ windowMs: 60_000, limit: 10, message: { error: 'AI rate limit reached. Try again in a minute.' } });
 
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-
-    const prompt = "Analyze this baking photo. Return a JSON array of 4-5 relevant descriptive hashtags (e.g. ['#sourdough', '#crumb', '#overproofed']). Return ONLY the JSON array, nothing else.";
-    const image = { inlineData: { data: buffer.toString('base64'), mimeType: 'image/jpeg' } };
-
-    const result = await model.generateContent([prompt, image]);
-    const tags = JSON.parse(result.response.text().replace(/```json/g, '').replace(/```/g, '').trim());
-    res.json({ tags });
-  } catch (err: any) {
-    console.error('Gemini Error:', err);
-    res.status(500).json({ error: 'Failed to analyze image' });
-  }
-});
+/** The longest raw text the restructure will send to the model. */
+export const MAX_RESTRUCTURE_CHARS = 20_000;
 
 // POST /api/extract
-router.post('/extract', requireOperator, async (req: Request, res: Response) => {
+router.post('/extract', aiLimiter, requireAi, async (req: Request, res: Response) => {
   try {
     const { url } = req.body;
-    if (!url) return res.status(400).json({ error: 'URL is required' });
+    if (!url || typeof url !== 'string') return res.status(400).json({ error: 'URL is required' });
 
-    const targetUrl = url.startsWith('http') ? url : `https://${url}`;
-    const { data: html } = await axios.get(targetUrl, {
-      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
-    });
+    const { url: targetUrl, html } = await fetchPublicPage(url);
 
     const $ = cheerio.load(html);
     let recipeData: any = null;
@@ -113,19 +97,26 @@ router.post('/extract', requireOperator, async (req: Request, res: Response) => 
       ingredients: Array.isArray(recipeData.recipeIngredient) ? recipeData.recipeIngredient.map(parseIngredient) : [],
       instructions,
       labNotes: `Extracted from: ${targetUrl}`,
+      sourceUrl: targetUrl,
     };
 
-    extracted.imageUrls = await rehostImageUrls(extracted.imageUrls);
+    // The photograph stays where it is: the device keeps its own copy, and a
+    // recipe's images go to Cloudinary only if it is published.
     res.json(extracted);
   } catch (err: any) {
+    if (err instanceof UnsafeUrlError) return res.status(400).json({ error: err.message });
     res.status(500).json({ error: err.message });
   }
 });
 
 // POST /api/ai-restructure
-router.post('/ai-restructure', requireOperator, async (req: Request, res: Response) => {
+router.post('/ai-restructure', aiLimiter, requireAi, async (req: Request, res: Response) => {
   try {
     const { rawText } = req.body;
+    if (typeof rawText !== 'string' || !rawText.trim()) return res.status(400).json({ error: 'There is no text to restructure.' });
+    if (rawText.length > MAX_RESTRUCTURE_CHARS) {
+      return res.status(413).json({ error: 'That text is too long to restructure in one go. Trim it to the recipe itself.' });
+    }
     if (!isGeminiConfigured()) return res.status(503).json({ error: 'AI features are currently unavailable (missing GEMINI_API_KEY in .env).' });
 
     const model = getFlashJsonModel()!;
@@ -153,9 +144,10 @@ ${rawText}`;
 });
 
 // POST /api/ai-substitutions
-router.post('/ai-substitutions', requireOperator, async (req: Request, res: Response) => {
+router.post('/ai-substitutions', aiLimiter, requireAi, async (req: Request, res: Response) => {
   try {
-    const { ingredientName, recipeTitle } = req.body;
+    const ingredientName = typeof req.body.ingredientName === 'string' ? req.body.ingredientName.slice(0, 100) : '';
+    const recipeTitle = typeof req.body.recipeTitle === 'string' ? req.body.recipeTitle.slice(0, 120) : '';
     if (!ingredientName) return res.status(400).json({ error: 'Ingredient name required' });
     if (!isGeminiConfigured()) return res.status(503).json({ error: 'AI features unavailable (missing GEMINI_API_KEY).' });
 

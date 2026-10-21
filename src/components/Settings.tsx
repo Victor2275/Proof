@@ -1,11 +1,13 @@
 import { useState, useEffect, useRef, type ReactNode } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useLocation } from 'react-router-dom';
 import { Download, ImageDown, Upload } from 'lucide-react';
 import { api } from '../lib/api';
 import { exportCookbook, importCookbook, backupFileName, type ImportResult } from '../lib/repo/backup';
 import { importServerLibrary } from '../lib/repo/legacy';
 import { STORED_ON_DEVICE, formatBytes, requestPersistentStorage, storageReport } from '../lib/storage';
 import { useSession } from '../lib/session';
+import AccountPanel from './AccountPanel';
 import { hapticsEnabled, ttsEnabled as readTtsEnabled } from '../lib/settings';
 import { Panel, PanelRow, Button, Meter, cn } from './ui';
 
@@ -23,9 +25,9 @@ import { Panel, PanelRow, Button, Meter, cn } from './ui';
  * colour-vision difference, and it carries `aria-pressed` so a screen reader
  * announces a switch rather than a button.
  *
- * The page splits by whose it is (decision B23): how the app behaves, the
- * cookbook's data on this device, and the site operator's tools, which do
- * nothing without the operator PIN. An Account section arrives with accounts.
+ * The page splits by whose it is (decision B23): the account, how the app
+ * behaves, the cookbook's data on this device, and the site operator's tools,
+ * which do nothing without the operator PIN.
  */
 
 /** Saves a Blob as a download. */
@@ -165,6 +167,12 @@ export default function Settings() {
   );
 
   const { session, signOutOperator } = useSession();
+  const { hash } = useLocation();
+
+  // More → Account lands on this page's Account section.
+  useEffect(() => {
+    if (hash === '#account') document.getElementById('account')?.scrollIntoView?.({ block: 'start' });
+  }, [hash]);
   const client = useQueryClient();
   const importInput = useRef<HTMLInputElement>(null);
 
@@ -293,6 +301,8 @@ export default function Settings() {
           </p>
         </div>
       </header>
+
+      <AccountPanel />
 
       <Panel title="Appearance">
         <div className="flex flex-col gap-3">
@@ -489,7 +499,7 @@ export default function Settings() {
               Tools for whoever runs this Proof site: server backups, photo re-hosting, and the server
               library. They need the operator PIN. Your own cookbook never does.
             </p>
-            <Button onClick={() => window.dispatchEvent(new Event('auth-required'))}>Sign in</Button>
+            <Button onClick={() => window.dispatchEvent(new Event('auth-required'))}>Operator sign-in</Button>
           </div>
         )}
       </Panel>

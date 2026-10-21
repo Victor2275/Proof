@@ -422,6 +422,14 @@ your data. Genuinely launchable on its own.
 2. **Sessions must move out of memory.** [auth.js](server/middleware/auth.js) keeps
    sessions in a `Map`, so every Render restart logs everyone out. Move to a `Session`
    collection with a TTL index, opaque token in an httpOnly cookie.
+
+   > **Decided in the build (2026-10-20): a bearer header, not a cookie.** The Android
+   > app is a WebView on another origin, and Android WebView blocks third-party cookies
+   > by default, so an httpOnly cookie would sign nobody in on Play. The token is sent
+   > as `Authorization: Bearer`, kept on the device beside the account, and stored on
+   > the server only as its SHA-256. It carries no CSRF risk; the cost is that script
+   > running in the page could read it, which the app's no-third-party-script rule and
+   > CSP keep the answer to.
 3. **Email sending.** Even with email+password you need verification and password reset.
    Resend free tier = 3,000/mo, 100/day — far beyond a few hundred users. Requires the
    domain from §3.

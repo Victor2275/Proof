@@ -122,7 +122,9 @@ describe('Sheet', () => {
     const close = screen.getByRole('button', { name: 'Close' });
     const outside = screen.getByRole('button', { name: 'Behind the sheet' });
 
-    close.focus();
+    // The sheet puts focus on its first control itself, a frame after opening;
+    // starting before that frame races it.
+    await waitFor(() => expect(close).toHaveFocus());
     await user.tab();
     expect(first).toHaveFocus();
     await user.tab();

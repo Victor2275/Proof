@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Image as ImageIcon, Box, MoreHorizontal, Plus, BarChart3, ShoppingBag, Lightbulb, Settings as SettingsIcon } from 'lucide-react';
+import { LayoutDashboard, Image as ImageIcon, Box, MoreHorizontal, Plus, BarChart3, ShoppingBag, Lightbulb, Settings as SettingsIcon, UserRound } from 'lucide-react';
 import { cn } from '../lib/cn';
 import { useActiveBake } from '../lib/useActiveBake';
 import { Sheet } from './ui';
@@ -27,6 +27,8 @@ const MORE_ITEMS = [
   { to: '/grocery', icon: ShoppingBag, label: 'Grocery List' },
   { to: '/notes', icon: Lightbulb, label: 'General Notes' },
   { to: '/settings', icon: SettingsIcon, label: 'Settings' },
+  // Decision B20: the account is reached from More, never a permanent key.
+  { to: '/settings#account', icon: UserRound, label: 'Account' },
 ] as const;
 
 export default function BottomNav() {

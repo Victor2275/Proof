@@ -4,7 +4,7 @@ import { ulid, isUlid } from './ulid';
 import { fitWithin, compressImage, MAX_EDGE } from './image';
 import { formatAmount, formatIngredient, scaledQuantity } from './ingredients';
 import { ensurePersistentStorage, formatBytes, resetPersistenceRequest, storageReport } from './storage';
-import { setOperatorToken, useOwnership, usePlan, useSession } from './session';
+import { aiAllowanceLine, setAccount, setOperatorToken, useOwnership, usePlan, useSession } from './session';
 import { makeRecipe } from '../test/utils';
 import type { PublishedRecipe } from './types';
 
@@ -92,7 +92,7 @@ describe('session, ownership and plan', () => {
 
   it("calls a record in this device's cookbook mine, and a shared one someone else's", () => {
     const local = renderHook(() => useOwnership(makeRecipe())).result.current;
-    expect(local).toEqual({ isMine: true, isFork: false, canEdit: true });
+    expect(local).toEqual({ isMine: true, isFork: false, canEdit: true, isAuthor: false });
 
     const fork = makeRecipe({ forkedFrom: { publishedId: 'p', slug: 's', authorHandle: 'a', title: 't' } });
     expect(renderHook(() => useOwnership(fork)).result.current.isFork).toBe(true);
@@ -116,5 +116,45 @@ describe('bake photographs', () => {
     expect(bakePhotoUrls({ images: [{ url: 'a', label: 'Crumb' }], imageUrls: [] })).toEqual(['a']);
     expect(bakePhotoUrls({ images: [], imageUrls: ['b', 'c'] })).toEqual(['b', 'c']);
     expect(bakePhotoUrls({ imageUrls: [] })).toEqual([]);
+  });
+});
+
+describe('accounts on the device', () => {
+  afterEach(() => setAccount(null));
+
+  const ADA = {
+    id: 'u1', email: 'ada@example.com', handle: 'ada', displayName: 'Ada', bio: '', emailVerified: true,
+    plan: 'free' as const, pro: false, joinedAt: '2026-10-01', planExpiresAt: null,
+    ai: { used: 2, limit: 5, period: '2026-10' },
+  };
+
+  it('knows who is signed in with no network, and forgets on sign-out', () => {
+    const { result } = renderHook(() => useSession());
+    act(() => setAccount('token', ADA));
+    expect(result.current.session.user?.handle).toBe('ada');
+    act(() => setAccount(null));
+    expect(result.current.session.user).toBeNull();
+  });
+
+  it('opens the AI and publishing to a confirmed account only', () => {
+    const { result } = renderHook(() => usePlan());
+    act(() => setAccount('token', { ...ADA, emailVerified: false }));
+    expect(result.current.can('ai')).toBe(false);
+    expect(result.current.can('publish')).toBe(false);
+    act(() => setAccount('token', ADA));
+    expect(result.current.can('ai')).toBe(true);
+    expect(result.current.can('publish')).toBe(true);
+  });
+
+  it("says what is left of the month's AI", () => {
+    expect(aiAllowanceLine(ADA)).toBe('3 of 5 left this month');
+    expect(aiAllowanceLine({ ...ADA, ai: { used: 9, limit: 5, period: '2026-10' } })).toBe('0 of 5 left this month');
+    expect(aiAllowanceLine({ ...ADA, emailVerified: false })).toBeNull();
+  });
+
+  it("calls a shared recipe the signed-in author's own", () => {
+    act(() => setAccount('token', ADA));
+    const shared = { _id: 'p', slug: 's', authorHandle: 'ada' } as PublishedRecipe;
+    expect(renderHook(() => useOwnership(shared)).result.current.isAuthor).toBe(true);
   });
 });

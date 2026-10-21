@@ -14,14 +14,14 @@ import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
-import rateLimit from 'express-rate-limit';
 
 // Route & middleware modules
-import { createSession } from './middleware/auth.js';
 import { configureCloudinary } from './services/cloudinary.js';
+import authRouter from './routes/auth.js';
+import { indexPage } from './services/indexHtml.js';
 import aiRouter from './routes/ai.js';
 import libraryRouter from './routes/library.js';
-import timersRouter, { registerTimerSockets, loadTimersFromDb, globalTimers } from './routes/timers.js';
+import timersRouter, { registerTimerSockets, loadTimersFromDb } from './routes/timers.js';
 import maintenanceRouter, { startMaintenanceCron } from './routes/maintenance.js';
 import publishedRouter from './routes/published.js';
 
@@ -34,28 +34,23 @@ dotenv.config();
 configureCloudinary();
 
 const app = express();
+// Render puts one proxy in front of the app. Without this every request
+// appears to come from the proxy, and the rate limits would throttle everyone
+// as one caller.
+app.set('trust proxy', 1);
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: '*' } });
 
 app.use(cors());
-app.use(express.json());
-
-// ── Rate Limiting ──────────────────────────────────────────────────────────
-const authLimiter = rateLimit({ windowMs: 60_000, max: 5, message: { error: 'Too many auth attempts. Try again in a minute.' } });
-const aiLimiter = rateLimit({ windowMs: 60_000, max: 10, message: { error: 'AI rate limit reached. Try again in a minute.' } });
-
-// ── Auth ───────────────────────────────────────────────────────────────────
-app.post('/api/auth/pin', authLimiter, (req, res) => {
-  const { pin } = req.body;
-  if (!process.env.ADMIN_PIN) {
-    return res.json({ token: createSession() });
-  }
-  if (pin === process.env.ADMIN_PIN) {
-    res.json({ token: createSession() });
-  } else {
-    res.status(401).json({ error: 'Invalid PIN' });
-  }
+app.use(express.json({ limit: '1mb' }));
+app.use((_req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  next();
 });
+
+// ── Accounts & sessions ────────────────────────────────────────────────────
+app.use('/api/auth', authRouter);
 
 // ── Health ─────────────────────────────────────────────────────────────────
 const dbReady = () => mongoose.connection.readyState === 1;
@@ -73,17 +68,11 @@ app.get(['/api', '/api/health'], (_req, res) => {
 app.use('/api/library', libraryRouter);
 app.use('/api/timers', timersRouter);
 app.use('/api/published', publishedRouter);
-app.use('/api', aiLimiter, aiRouter);       // rate-limit all AI endpoints
+app.use('/api', aiRouter);                  // rate-limited per route
 app.use('/api', maintenanceRouter);         // /api/backup + /api/maintenance/*
 
 // ── Socket.io ──────────────────────────────────────────────────────────────
 registerTimerSockets(io);
-
-// Emit to all clients on REST timer deletion
-app.delete('/api/timers/:id', (req, res, next) => {
-  res.on('finish', () => { if (res.statusCode === 200) io.emit('timers:sync', globalTimers); });
-  next();
-});
 
 // ── Database ───────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 3001;
@@ -115,17 +104,16 @@ if (process.env.NODE_ENV !== 'test') {
 
 // ── Static Assets ──────────────────────────────────────────────────────────
 const distPath = path.join(__dirname, '../dist');
-if (fs.existsSync(distPath)) {
+if (fs.existsSync(path.join(distPath, 'index.html'))) {
+  const page = indexPage(path.join(distPath, 'index.html'));
   app.use(express.static(distPath, {
+    // The page itself always goes through `page.send`, which adds its policy.
+    index: false,
     setHeaders: (res, filePath) => {
-      if (filePath.endsWith('index.html') || filePath.endsWith('sw.js')) {
-        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-      }
+      if (filePath.endsWith('sw.js')) res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     },
   }));
-  app.get(/^(?!\/api).*/, (_req, res) => {
-    res.sendFile(path.join(distPath, 'index.html'));
-  });
+  app.get(/^(?!\/api).*/, (_req, res) => page.send(res));
 }
 
 // ── Listen ─────────────────────────────────────────────────────────────────

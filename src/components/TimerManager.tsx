@@ -3,6 +3,8 @@ import { Play, Pause, X } from 'lucide-react';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { io, type Socket } from 'socket.io-client';
 import { API_URL } from '../lib/api';
+import { userToken, useSession } from '../lib/session';
+import { ulid } from '../lib/ulid';
 import { hapticsEnabled, ttsEnabled } from '../lib/settings';
 import { publishRunningTimers, formatTimerClock } from '../lib/timerBus';
 import { Button, SegmentReadout, Sheet, cn } from './ui';
@@ -17,8 +19,46 @@ export interface Timer {
 
 const socketUrl = API_URL.replace('/api', '');
 
+/*
+ * Timers run on the device. They used to exist only as a round trip through
+ * the server, so with no connection a step's timer simply never started — in
+ * a kitchen, which is where the connection drops. Now each change lands here
+ * first and is kept in localStorage, so a reload mid-bake resumes it.
+ *
+ * Signed in, the same timers sync between the account's devices over a socket
+ * room of their own (server/routes/timers.ts). Signed out, nothing is sent.
+ */
+const TIMERS_KEY = 'proof.timers';
+
+function loadTimers(): Timer[] {
+  try {
+    const stored = JSON.parse(localStorage.getItem(TIMERS_KEY) ?? '[]');
+    return Array.isArray(stored) ? stored : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveTimers(timers: Timer[]) {
+  try {
+    localStorage.setItem(TIMERS_KEY, JSON.stringify(timers));
+  } catch {
+    // Storage blocked: the timers still run for this page.
+  }
+}
+
 export default function TimerManager() {
-  const [timers, setTimers] = useState<Timer[]>([]);
+  const [timers, setTimersState] = useState<Timer[]>(loadTimers);
+  const timersRef = useRef(timers);
+  const setTimers = (next: Timer[] | ((prev: Timer[]) => Timer[])) =>
+    setTimersState((prev) => {
+      const value = typeof next === 'function' ? next(prev) : next;
+      timersRef.current = value;
+      saveTimers(value);
+      return value;
+    });
+  const { session } = useSession();
+  const accountId = session.user?.id ?? null;
   const [now, setNow] = useState(Date.now());
   const [pendingTimer, setPendingTimer] = useState<{ durationSecs: number, name: string } | null>(null);
   const [isFlashing, setIsFlashing] = useState(false);
@@ -27,17 +67,22 @@ export default function TimerManager() {
   const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
-    const socket = io(socketUrl);
+    const token = accountId ? userToken() : null;
+    if (!token) return;
+    const socket = io(socketUrl, { auth: { token } });
     socketRef.current = socket;
-    socket.on('timers:sync', (serverTimers: Timer[]) => {
-      setTimers(serverTimers);
-    });
+    // Timers started on this device before it connected join the account's list.
+    socket.on('connect', () => socket.emit('timers:merge', timersRef.current));
+    socket.on('timers:sync', (serverTimers: Timer[]) => setTimers(serverTimers));
     return () => {
+      socket.off('connect');
       socket.off('timers:sync');
       socket.disconnect();
       socketRef.current = null;
     };
-  }, []);
+    // setTimers is stable in behaviour; the socket follows the account alone.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accountId]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -96,7 +141,11 @@ export default function TimerManager() {
     };
 
     const handleStopAlarms = () => {
-      setTimers(prev => prev.filter(t => t.remainingMs >= 0 && (t.endTime === null || t.endTime >= Date.now())));
+      setTimers((prev) => {
+        const keep = prev.filter((t) => t.remainingMs >= 0 && (t.endTime === null || t.endTime >= Date.now()));
+        prev.filter((t) => !keep.includes(t)).forEach((t) => socketRef.current?.emit('timer:remove', t.id));
+        return keep;
+      });
     };
 
     window.addEventListener('add-timer', handleAddTimer);
@@ -127,12 +176,13 @@ export default function TimerManager() {
 
   const confirmAddTimer = (durationSecs: number, name: string) => {
     const newTimer: Timer = {
-      id: Math.random().toString(36).substr(2, 9),
+      id: ulid(),
       name,
       endTime: Date.now() + durationSecs * 1000,
       remainingMs: durationSecs * 1000,
       hasRung: false
     };
+    setTimers((prev) => [...prev, newTimer]);
     socketRef.current?.emit('timer:add', newTimer);
     setPendingTimer(null);
   };
@@ -148,10 +198,12 @@ export default function TimerManager() {
     } else {
       updatedTimer = { ...t, endTime: Date.now() + t.remainingMs };
     }
+    setTimers((prev) => prev.map((x) => (x.id === id ? updatedTimer : x)));
     socketRef.current?.emit('timer:update', updatedTimer);
   };
 
   const removeTimer = (id: string) => {
+    setTimers((prev) => prev.filter((t) => t.id !== id));
     socketRef.current?.emit('timer:remove', id);
   };
 

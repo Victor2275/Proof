@@ -20,7 +20,7 @@ This is a 1-to-1 mirror of CURRENT_FEATURES.md. Use checkboxes to track manual t
 - [ ] **Voice Commands**: Next, Back, Read, Ingredients, Start timer, Quiet, Show all, Help.
 - [ ] **Wave-to-Advance**: Motion detection via front camera.
 - [ ] **Swipe Gestures**: Touchscreen step navigation.
-- [ ] **Real-Time Timers (Socket.io)**: Timer sync across devices.
+- [ ] **Real-Time Timers**: timers run offline and survive a reload; signed in, they sync between the same account's devices.
 - [ ] **Haptics**: Tactile feedback on timer/step events.
 - [ ] **Wake Lock**: Screen stays on during baking.
 - [ ] **Audio & Notifications**: Speech synthesis for timer announcements.
@@ -32,7 +32,6 @@ This is a 1-to-1 mirror of CURRENT_FEATURES.md. Use checkboxes to track manual t
 - [ ] **Visual-First Bake Logs Grid**: Photography grid with flip animation.
 - [ ] **Custom Image Tags**: Labels on bake log images.
 - [ ] **Before & After Photo Comparison**: Slider component.
-- [ ] **AI Photo Tagging**: Gemini-powered auto hashtag generation.
 - [ ] **Personal Bests**: Gold badge marking on best bakes.
 
 ## 4. Data Insights, AI, and Utilities
@@ -62,8 +61,8 @@ This is a 1-to-1 mirror of CURRENT_FEATURES.md. Use checkboxes to track manual t
 
 ## 6. Security & Auth
 - [ ] **Operator PIN**: only the Operator tools and the AI ask for it; saving a recipe, bake, note or pantry item never does.
-- [ ] **Crypto-Random Session Tokens**: No hardcoded secrets — UUID tokens with 24h TTL.
-- [ ] **Rate Limiting**: AI and auth endpoints rate-limited.
+- [ ] **Crypto-Random Session Tokens**: sessions survive a server restart; the `sessions` collection holds hashes, not tokens.
+- [ ] **Rate Limiting**: PIN, sign-in and AI routes throttle repeated attempts from one caller, not from everyone at once.
 
 ## 2a. Dashboard (Phase 2 — hero surface)
 - [ ] **Pattern-list cookbook**: rows read without a photograph; title, segment-readout time, mini step row.
@@ -244,6 +243,25 @@ This is a 1-to-1 mirror of CURRENT_FEATURES.md. Use checkboxes to track manual t
 - [ ] **Shared recipe page**: `/r/<slug>` shows Shared by @handle, no Edit or Favorite, and Save to my cookbook; once saved, Open my copy.
 - [ ] **Fork attribution**: a saved copy reads "Adapted from @handle", linking to the original; its Share copies the original's address.
 - [ ] **Unpublished page**: an unpublished slug reads as "Nothing at this address".
+
+## 12. Public launch — Phase 2: accounts
+- [ ] **Sign up**: More → Account → Create an account with email, handle and a 10+ character password; the account appears in Settings.
+- [ ] **Handle rules**: `proof`, `admin` and a taken handle are refused with the reason on the handle field.
+- [ ] **Sign in / out**: signing in on a second browser works; Sign out in Settings signs only that device out.
+- [ ] **Wrong password**: says the email and password don't match, the same as for an unknown email.
+- [ ] **Offline account**: with the network off, Settings still shows the signed-in account.
+- [ ] **Session ended elsewhere**: after changing the password on one device, the other is signed out and asked to sign in again.
+- [ ] **Profile**: display name, bio and handle save; a taken handle is refused.
+- [ ] **Export account data**: downloads `proof-account.json` with the account and its published recipes.
+- [ ] **Delete account**: refused with a wrong password; with the right one the account is gone and its recipes unpublished, and the cookbook on the device is untouched.
+- [ ] **Claim line**: Settings → Account reads "Your N recipes and M bakes stay on this device."
+- [ ] **AI for strangers**: Import from a URL offers Sign in instead of running.
+- [ ] **AI allowance**: a confirmed account sees "5 of 5 left this month", which drops after an import and does not drop after a failed one; the sixth in a month is refused with when it resets.
+- [ ] **Import fence**: importing `http://127.0.0.1/` or `http://169.254.169.254/` is refused; a normal recipe page imports and keeps its source URL.
+- [ ] **Timers offline**: signed out and offline, a step's timer starts, rings, and survives a reload.
+- [ ] **Timers per account**: two devices signed into one account share timers; a third signed into another account does not see them.
+- [ ] **Content-Security-Policy**: the deployed page sends the header, the console shows no CSP violations, and the theme still applies before first paint.
+- [ ] **Claim script**: `claim-library.js --email=<operator>` dry run reports the counts; `--apply` makes the account @proof and the author of the seeded recipes.
 
 ## 7. UI/UX Foundation
 - [ ] **"Step Row" Visual World (Phase 0 foundation)**: Rhythm-machine design language — matte panels, silkscreen labels, lit step keys, segment readouts; colour is temporal, not decorative.

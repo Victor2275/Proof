@@ -26,15 +26,21 @@ beforeEach(async () => {
 });
 
 describe('AI endpoints', () => {
-  it('POST /api/extract - error handling on bad URL', async () => {
-    const res = await request(app).post('/api/extract').send({ url: 'not-a-url' });
-    expect(res.statusCode).toBe(500);
+  it('POST /api/extract - refuses to fetch an address only the server can reach', async () => {
+    for (const url of ['http://127.0.0.1/admin', 'http://169.254.169.254/latest/meta-data', 'http://[::1]/', 'ftp://example.com', 'http://example.com:27017']) {
+      const res = await request(app).post('/api/extract').send({ url });
+      expect(res.statusCode, url).toBe(400);
+    }
   });
 
-  it('POST /api/analyze-image - requires image URL', async () => {
-    const res = await request(app).post('/api/analyze-image').send({});
+  it('POST /api/ai-substitutions - requires an ingredient', async () => {
+    const res = await request(app).post('/api/ai-substitutions').send({});
     expect(res.statusCode).toBe(400);
-    expect(res.body.error).toBe('Image URL required');
+  });
+
+  it('POST /api/ai-restructure - refuses text too long to be worth the tokens', async () => {
+    const res = await request(app).post('/api/ai-restructure').send({ rawText: 'x'.repeat(20_001) });
+    expect(res.statusCode).toBe(413);
   });
 
   it('are the operator\'s alone while a PIN is set: each call costs money', async () => {

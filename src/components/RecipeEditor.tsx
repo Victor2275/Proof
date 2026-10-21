@@ -24,7 +24,8 @@ import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import EditorHeader from './EditorHeader';
 import BasicInfoForm from './BasicInfoForm';
 import AIReviewSheet from './AIReviewSheet';
-import AiGateSheet from './AiGateSheet';
+import AiGateSheet, { AiAllowance } from './AiGateSheet';
+import { refreshAccount } from '../lib/useAccount';
 import { Panel, Button, Field, Photo, TextArea, Sheet, buttonClassName, cn } from './ui';
 
 /*
@@ -196,8 +197,10 @@ export default function RecipeEditor() {
     setExtractError('');
     try {
       const data = await api.extractRecipe(extractUrl);
-      setRecipe((prev) => ({ ...prev, ...data }));
+      // The source travels with the recipe: publishing it later asks for credit (Phase 3).
+      setRecipe((prev) => ({ ...prev, ...data, sourceUrl: data.sourceUrl || extractUrl }));
       setExtractUrl('');
+      void refreshAccount();
     } catch (err: any) {
       setExtractError(err.message || 'Could not read a recipe from that page.');
     } finally {
@@ -225,6 +228,7 @@ export default function RecipeEditor() {
 
       const aiData = await api.restructureRecipe(recipeText);
       setProposedRecipe(aiData);
+      void refreshAccount();
     } catch (err: any) {
       setAiError(err.message || 'The model could not be reached.');
     } finally {
@@ -500,6 +504,7 @@ export default function RecipeEditor() {
                     {extracting ? 'Reading' : 'Extract'}
                   </Button>
                 </div>
+                <AiAllowance />
               </div>
             ) : (
               <p className="text-sm text-ink-muted">

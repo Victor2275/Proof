@@ -9,7 +9,6 @@ const getModel = (jsonMode = false) => {
   });
 };
 
-export const getFlashModel = () => getModel(false);
 export const getFlashJsonModel = () => getModel(true);
 
 export const isGeminiConfigured = (): boolean => !!process.env.GEMINI_API_KEY;
