@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import type { BakeLog, Recipe } from '../lib/types';
 import { useBakeLogs, useRecipes } from '../lib/queries';
+import { bakePhotoUrls } from '../lib/bakePhotos';
 import { Button, Panel, RecipePlate, buttonClassName, cn } from './ui';
 
 /*
@@ -38,6 +39,7 @@ interface Entry {
 }
 
 function toEntry(log: BakeLog, titles: Map<string, string>): Entry {
+  const photos = bakePhotoUrls(log);
   return {
     logId: log._id,
     recipeId: log.recipeId,
@@ -45,8 +47,8 @@ function toEntry(log: BakeLog, titles: Map<string, string>): Entry {
     recipeTitle: titles.get(log.recipeId) ?? 'A deleted recipe',
     date: log.date,
     notes: log.notes || '',
-    image: log.imageUrls?.[0],
-    extraPhotos: Math.max(0, (log.imageUrls?.length ?? 0) - 1),
+    image: photos[0],
+    extraPhotos: Math.max(0, photos.length - 1),
   };
 }
 

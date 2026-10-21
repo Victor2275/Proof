@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { Server } from 'socket.io';
 import { Timer } from '../models/Timer.js';
-import { requireAdmin } from '../middleware/auth.js';
+import { requireOperator } from '../middleware/auth.js';
 import mongoose from 'mongoose';
 
 const router = Router();
@@ -38,7 +38,7 @@ router.get('/', (_req: Request, res: Response) => {
 });
 
 // DELETE /api/timers/:id
-router.delete('/:id', requireAdmin, async (req: Request, res: Response) => {
+router.delete('/:id', requireOperator, async (req: Request, res: Response) => {
   const before = globalTimers.length;
   globalTimers = globalTimers.filter(t => t.id !== req.params.id);
   if (globalTimers.length === before) return res.status(404).json({ error: 'Timer not found' });

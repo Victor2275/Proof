@@ -133,15 +133,6 @@ export const api = {
   },
 
   /** The operator's pre-Phase-1 library, to bring onto this device. */
-  getServerLibrary: async (): Promise<ServerLibrary> => {
-    const get = (path: string) => request<unknown[]>(path, { headers: operatorHeaders(false) });
-    const [recipes, bakeLogs, notes, pantry] = await Promise.all([
-      get('/recipes'),
-      get('/bakelogs'),
-      get('/notes'),
-      get('/pantry'),
-    ]);
-    return { recipes, bakeLogs, notes, pantry };
-  },
+  getServerLibrary: () => request<ServerLibrary>('/library', { headers: operatorHeaders(false) }),
 };
 

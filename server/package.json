@@ -22,8 +22,6 @@
     "express": "^5.2.1",
     "express-rate-limit": "^8.7.0",
     "mongoose": "^9.7.4",
-    "multer": "^2.2.0",
-    "multer-storage-cloudinary": "^4.0.0",
     "node-cron": "^4.6.0",
     "socket.io": "^4.8.3",
     "tsx": "^4.23.13"
@@ -31,7 +29,6 @@
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
-    "@types/multer": "^2.2.0",
     "@types/node": "^26.5.1",
     "mongodb-memory-server": "^11.2.0",
     "supertest": "^7.2.2",

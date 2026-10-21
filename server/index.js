@@ -17,13 +17,10 @@ import { fileURLToPath } from 'url';
 import rateLimit from 'express-rate-limit';
 
 // Route & middleware modules
-import { requireAdmin, createSession } from './middleware/auth.js';
-import { configureCloudinary, buildStorage } from './services/cloudinary.js';
-import recipesRouter from './routes/recipes.js';
+import { createSession } from './middleware/auth.js';
+import { configureCloudinary } from './services/cloudinary.js';
 import aiRouter from './routes/ai.js';
-import notesRouter from './routes/notes.js';
-import bakeLogsRouter from './routes/bakeLogs.js';
-import pantryRouter from './routes/pantry.js';
+import libraryRouter from './routes/library.js';
 import timersRouter, { registerTimerSockets, loadTimersFromDb, globalTimers } from './routes/timers.js';
 import maintenanceRouter, { startMaintenanceCron } from './routes/maintenance.js';
 import publishedRouter from './routes/published.js';
@@ -35,7 +32,6 @@ dotenv.config({ path: path.join(__dirname, '.env') });
 dotenv.config();
 
 configureCloudinary();
-const upload = buildStorage();
 
 const app = express();
 const server = http.createServer(app);
@@ -43,7 +39,6 @@ const io = new Server(server, { cors: { origin: '*' } });
 
 app.use(cors());
 app.use(express.json());
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ── Rate Limiting ──────────────────────────────────────────────────────────
 const authLimiter = rateLimit({ windowMs: 60_000, max: 5, message: { error: 'Too many auth attempts. Try again in a minute.' } });
@@ -62,49 +57,24 @@ app.post('/api/auth/pin', authLimiter, (req, res) => {
   }
 });
 
-// ── Upload ─────────────────────────────────────────────────────────────────
-app.post('/api/upload', requireAdmin, upload.single('image'), (req, res) => {
-  if (!req.file) return res.status(400).json({ error: 'No image file uploaded' });
-  res.status(201).json({ imageUrl: req.file.path });
-});
-
 // ── Health ─────────────────────────────────────────────────────────────────
 const dbReady = () => mongoose.connection.readyState === 1;
 app.get(['/api', '/api/health'], (_req, res) => {
   res.json({
     status: dbReady() ? 'ok' : 'degraded',
-    database: dbReady() ? 'connected' : (process.env.DEMO_MODE === 'true' ? 'demo-mode' : 'unavailable'),
+    database: dbReady() ? 'connected' : 'unavailable',
     message: 'Proof API Server is running',
   });
 });
 
 // ── Routes ─────────────────────────────────────────────────────────────────
-app.use('/api/recipes', recipesRouter);
-app.use('/api/notes', notesRouter);
-app.use('/api/bakelogs', bakeLogsRouter);
-app.use('/api/pantry', pantryRouter);
+// The cookbook lives on each device. The server keeps the shared cookbook,
+// the operator's pre-Phase-1 library (read once per device), and the AI.
+app.use('/api/library', libraryRouter);
 app.use('/api/timers', timersRouter);
 app.use('/api/published', publishedRouter);
 app.use('/api', aiLimiter, aiRouter);       // rate-limit all AI endpoints
 app.use('/api', maintenanceRouter);         // /api/backup + /api/maintenance/*
-
-// Recipe-scoped bake logs: /api/recipes/:recipeId/bakelogs
-app.get('/api/recipes/:recipeId/bakelogs', async (req, res) => {
-  const DEMO_MODE = process.env.DEMO_MODE === 'true';
-  if (!dbReady()) {
-    const { sampleBakeLogs } = await import('./fixtures/sampleData.js');
-    return DEMO_MODE
-      ? res.json(sampleBakeLogs.filter(b => b.recipeId._id === req.params.recipeId))
-      : res.status(503).json({ error: 'Database unavailable', degraded: true });
-  }
-  try {
-    const { BakeLog } = await import('./models/BakeLog.js');
-    const logs = await BakeLog.find({ recipeId: req.params.recipeId }).sort({ date: -1 });
-    res.json(logs);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
 
 // ── Socket.io ──────────────────────────────────────────────────────────────
 registerTimerSockets(io);

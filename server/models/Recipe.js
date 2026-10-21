@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { recordFields } from './record.js';
 
 /*
  * An ingredient. `quantity` is null when there is no amount ("to serve", "to
@@ -12,6 +13,7 @@ const componentSchema = new mongoose.Schema({
 }, { _id: false });
 
 const recipeSchema = new mongoose.Schema({
+  ...recordFields,
   title: { type: String, required: true },
   description: { type: String, default: '' },
   imageUrls: { type: [String], default: [] },
@@ -27,7 +29,7 @@ const recipeSchema = new mongoose.Schema({
   },
   instructionLinks: [{
     stepIndex: { type: Number, required: true },
-    recipeId: { type: mongoose.Schema.Types.ObjectId, ref: 'Recipe', required: true },
+    recipeId: { type: String, ref: 'Recipe', required: true },
     recipeTitle: { type: String, required: true }
   }],
   labNotes: {

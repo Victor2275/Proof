@@ -1,6 +1,4 @@
 import { v2 as cloudinary } from 'cloudinary';
-import multer from 'multer';
-import { CloudinaryStorage } from 'multer-storage-cloudinary';
 
 export const cloudinaryConfigured = (): boolean => !!(
   process.env.CLOUDINARY_CLOUD_NAME &&
@@ -35,16 +33,5 @@ export const rehostImageUrl = async (url: string): Promise<string> => {
 
 export const rehostImageUrls = async (urls: string[]): Promise<string[]> =>
   Array.isArray(urls) ? Promise.all(urls.map(rehostImageUrl)) : urls;
-
-export const buildStorage = (): ReturnType<typeof multer> => {
-  const storage = new CloudinaryStorage({
-    cloudinary,
-    params: {
-      folder: 'cookbook',
-      allowed_formats: ['jpg', 'png', 'webp', 'jpeg'],
-    } as any,
-  });
-  return multer({ storage, limits: { fileSize: 20 * 1024 * 1024 } });
-};
 
 export { cloudinary };

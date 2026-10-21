@@ -1,4 +1,5 @@
 import { type BakeLog } from '../lib/types';
+import { bakePhotoUrls } from '../lib/bakePhotos';
 import { Award, Share2 } from 'lucide-react';
 import { Button, RecipePlate, cn } from './ui';
 
@@ -59,7 +60,7 @@ export default function BakeLogsGrid({ logs, onSelect, onExportInstagram }: Bake
               aria-label={`Make ${attempt}, ${formatDate(log.date)}`}
               className="group relative overflow-hidden rounded-key border border-rule text-left transition-colors hover:border-ink focus-visible:border-ink"
             >
-              <RecipePlate src={log.imageUrls?.[0]} alt={`Make ${attempt}, ${formatDate(log.date)}`} size="hero" />
+              <RecipePlate src={bakePhotoUrls(log)[0]} alt={`Make ${attempt}, ${formatDate(log.date)}`} size="hero" />
 
               {/* Not aria-hidden: the notes are the whole point of a bake log,
                 * and hover is not available to everyone. */}

@@ -24,12 +24,17 @@ export const createSession = () => {
   return token;
 };
 
-export const requireAdmin = (req, res, next) => {
+/*
+ * The site operator: moderation, backups, takedowns. Not a user role — the PIN
+ * proves it. With no ADMIN_PIN set (local development) every caller is the
+ * operator.
+ */
+export const requireOperator = (req, res, next) => {
   if (!process.env.ADMIN_PIN) { next(); return; }
   const token = req.headers.authorization?.split(' ')[1];
   if (isValidSession(token)) {
     next();
   } else {
-    res.status(401).json({ error: 'Admin authentication required.' });
+    res.status(401).json({ error: 'That needs the operator PIN.' });
   }
 };

@@ -109,3 +109,12 @@ describe('session, ownership and plan', () => {
     expect(result.current.can('sync')).toBe(false);
   });
 });
+
+describe('bake photographs', () => {
+  it('reads the labelled list first, and the bare list when that is all a bake has', async () => {
+    const { bakePhotoUrls } = await import('./bakePhotos');
+    expect(bakePhotoUrls({ images: [{ url: 'a', label: 'Crumb' }], imageUrls: [] })).toEqual(['a']);
+    expect(bakePhotoUrls({ images: [], imageUrls: ['b', 'c'] })).toEqual(['b', 'c']);
+    expect(bakePhotoUrls({ imageUrls: [] })).toEqual([]);
+  });
+});

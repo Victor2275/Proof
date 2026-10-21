@@ -65,9 +65,10 @@ export default function StarterShelf() {
           {featured.data.map((recipe) => (
             <li key={recipe._id} className="flex flex-col gap-2">
               <RecipeTile recipe={recipe} to={`/r/${recipe.slug}`} />
+              {/* Pinned to the foot, so the keys line up when a title wraps. */}
               <Button
                 size="lg"
-                className="w-full"
+                className="mt-auto w-full"
                 busy={save.isPending && save.variables?._id === recipe._id}
                 disabled={save.isPending}
                 onClick={() => save.mutate(recipe, { onSuccess: (saved) => navigate(`/recipe/${saved._id}`) })}

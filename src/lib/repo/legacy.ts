@@ -41,14 +41,19 @@ export function toLocalRecords(library: ServerLibrary) {
       ? (doc.instructionLinks as Raw[]).map((l) => ({ ...strip(l), recipeId: idOf(l.recipeId) }))
       : [],
   }));
-  const bakeLogs = (library.bakeLogs as Raw[]).map((doc) => ({
-    ...strip(doc),
-    _id: idOf(doc._id),
-    recipeId: idOf(doc.recipeId),
-    images: Array.isArray(doc.images) ? doc.images : [],
-    imageUrls: Array.isArray(doc.imageUrls) ? doc.imageUrls : [],
-    ...timesOf(doc),
-  }));
+  const bakeLogs = (library.bakeLogs as Raw[]).map((doc) => {
+    const images = Array.isArray(doc.images) ? (doc.images as { url: string; label: string }[]) : [];
+    const imageUrls = Array.isArray(doc.imageUrls) ? (doc.imageUrls as string[]) : [];
+    return {
+      ...strip(doc),
+      _id: idOf(doc._id),
+      recipeId: idOf(doc.recipeId),
+      // Older bakes filled only one of the two lists; the device keeps both in step.
+      images: images.length > 0 ? images : imageUrls.map((url) => ({ url, label: '' })),
+      imageUrls: images.length > 0 ? images.map((i) => i.url) : imageUrls,
+      ...timesOf(doc),
+    };
+  });
   const notes = (library.notes as Raw[]).map((doc) => ({ ...strip(doc), _id: idOf(doc._id), ...timesOf(doc) }));
   const pantry = (library.pantry as Raw[]).map((doc) => ({ ...strip(doc), _id: idOf(doc._id), ...timesOf(doc) }));
   return { recipes, bakeLogs, notes, pantry };

@@ -111,6 +111,22 @@ export function dataset(name: DatasetName): Dataset {
 }
 
 /**
+ * The shared cookbook as the API serves it, made from the live library: what a
+ * stranger's empty cookbook offers on its starter shelf, and what /r/:slug opens.
+ */
+export function publishedFrom(recipes: Record<string, unknown>[]) {
+  return recipes.slice(0, 24).map((r, i) => ({
+    ...r,
+    _id: `pub-${String(r._id)}`,
+    slug: String(r.title).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || `recipe-${i}`,
+    authorHandle: 'proof',
+    sourceAttribution: '',
+    featured: i < 8,
+    publishedAt: '2026-08-01T00:00:00.000Z',
+  }));
+}
+
+/**
  * Which recipe a :id route opens, per dataset. For the live library it is the
  * recipe with a bake log against it, so the iteration surfaces have something
  * real to show; for the empty library it is an id that does not exist, which is

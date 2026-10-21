@@ -1,4 +1,5 @@
 import type { Page } from '@playwright/test';
+import { seedDevice } from './seed';
 
 /*
  * The library the baselines are taken against.
@@ -134,15 +135,30 @@ const PIXEL = Buffer.from(
   'base64',
 );
 
+/** Two recipes in the shared cookbook, for the starter shelf and /r/:slug. */
+export const PUBLISHED = [SOURDOUGH, STIR_FRY].map((r, i) => ({
+  ...r,
+  _id: `pub-${r._id}`,
+  slug: i === 0 ? '72-hour-sourdough' : 'prawn-stir-fry',
+  authorHandle: 'proof',
+  sourceAttribution: i === 1 ? 'TheMealDB' : '',
+  featured: true,
+  publishedAt: '2026-08-01T00:00:00.000Z',
+}));
+
 /**
- * Pins the whole environment: the API, every photograph, and the clock.
+ * Pins the whole environment: the cookbook on the device, the API, every
+ * photograph, and the clock.
  *
  * The clock matters because several surfaces print relative dates — "2d ago"
  * on the dashboard's recently-baked shelf — which would make a baseline fail
  * every day at midnight.
  */
-export async function pinEnvironment(page: Page) {
+export async function pinEnvironment(page: Page, { emptyCookbook = false } = {}) {
   await page.clock.setFixedTime(new Date('2026-09-18T12:00:00.000Z'));
+  if (!emptyCookbook) {
+    await seedDevice(page, { recipes: RECIPES, bakeLogs: BAKE_LOGS, notes: NOTES, pantry: PANTRY });
+  }
 
   await page.route('**/fixture.test/**', (route) =>
     route.fulfill({ status: 200, contentType: 'image/png', body: PIXEL }),
@@ -158,20 +174,18 @@ export async function pinEnvironment(page: Page) {
     const url = new URL(route.request().url());
     const path = url.pathname.replace(/^.*\/api/, '');
 
-    if (path === '/recipes') return route.fulfill(json(RECIPES));
-    if (path.startsWith('/recipes/')) {
-      const id = path.split('/')[2];
-      return route.fulfill(json(RECIPES.find((r) => r._id === id) ?? RECIPES[0]));
+    if (path === '/published') {
+      return route.fulfill(json({ items: PUBLISHED, total: PUBLISHED.length, offset: 0, limit: 8 }));
     }
-    if (path === '/bakelogs') return route.fulfill(json(BAKE_LOGS));
-    if (path.startsWith('/bakelogs/')) {
-      const id = path.split('/')[2];
-      return route.fulfill(json(BAKE_LOGS.filter((b) => b.recipeId === id)));
+    if (path.startsWith('/published/')) {
+      const key = path.split('/')[2];
+      const recipe = PUBLISHED.find((p) => p.slug === key || p._id === key);
+      return recipe
+        ? route.fulfill(json(recipe))
+        : route.fulfill({ status: 404, contentType: 'application/json', body: '{"error":"Not in the shared cookbook."}' });
     }
-    if (path === '/notes') return route.fulfill(json(NOTES));
-    if (path === '/pantry') return route.fulfill(json(PANTRY));
-    if (path === '/grocery') return route.fulfill(json([]));
-    return route.fulfill(json([]));
+    if (path === '/health') return route.fulfill(json({ status: 'ok', database: 'connected' }));
+    return route.fulfill({ status: 404, contentType: 'application/json', body: '{"error":"Not found"}' });
   });
 }
 

@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
-import { requireAdmin } from '../middleware/auth.js';
+import { requireOperator } from '../middleware/auth.js';
 import { rehostImageUrls } from '../services/cloudinary.js';
 import { getFlashJsonModel, getFlashModel, isGeminiConfigured } from '../services/gemini.js';
 import { parseIngredient } from '../services/ingredientParser.js';
@@ -10,7 +10,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 const router = Router();
 
 // POST /api/analyze-image
-router.post('/analyze-image', requireAdmin, async (req: Request, res: Response) => {
+router.post('/analyze-image', requireOperator, async (req: Request, res: Response) => {
   const { imageUrl } = req.body;
   if (!imageUrl) return res.status(400).json({ error: 'Image URL required' });
   try {
@@ -33,7 +33,7 @@ router.post('/analyze-image', requireAdmin, async (req: Request, res: Response) 
 });
 
 // POST /api/extract
-router.post('/extract', requireAdmin, async (req: Request, res: Response) => {
+router.post('/extract', requireOperator, async (req: Request, res: Response) => {
   try {
     const { url } = req.body;
     if (!url) return res.status(400).json({ error: 'URL is required' });
@@ -123,7 +123,7 @@ router.post('/extract', requireAdmin, async (req: Request, res: Response) => {
 });
 
 // POST /api/ai-restructure
-router.post('/ai-restructure', requireAdmin, async (req: Request, res: Response) => {
+router.post('/ai-restructure', requireOperator, async (req: Request, res: Response) => {
   try {
     const { rawText } = req.body;
     if (!isGeminiConfigured()) return res.status(503).json({ error: 'AI features are currently unavailable (missing GEMINI_API_KEY in .env).' });
@@ -153,7 +153,7 @@ ${rawText}`;
 });
 
 // POST /api/ai-substitutions
-router.post('/ai-substitutions', requireAdmin, async (req: Request, res: Response) => {
+router.post('/ai-substitutions', requireOperator, async (req: Request, res: Response) => {
   try {
     const { ingredientName, recipeTitle } = req.body;
     if (!ingredientName) return res.status(400).json({ error: 'Ingredient name required' });

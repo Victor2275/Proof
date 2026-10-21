@@ -229,6 +229,10 @@ This is a 1-to-1 mirror of CURRENT_FEATURES.md. Use checkboxes to track manual t
 - [ ] **Editor never offers a blank form**: `/edit/<unknown id>` says the recipe is not in the cookbook, with no Save or Delete.
 - [ ] **Failed reads named**: a blocked database shows a named failure and Try again in Gallery, Analytics, Grocery and the cookbook, never an empty or zeroed panel.
 - [ ] **Photo-less bake**: a bake with no photograph shows in the gallery as an unlit plate and is counted.
+- [ ] **Server library retired**: `POST /api/recipes`, `/api/bakelogs`, `/api/notes`, `/api/pantry` and `/api/upload` answer 404; `GET /api/library` asks for the operator PIN.
+- [ ] **String-id migration**: a dry run against a copy of the database reports the counts and writes nothing; `--apply` backs up first, then every record and reference is a string; a second run reports nothing to do.
+- [ ] **Published photos kept**: after the nightly sweep, a published recipe whose library record was deleted still shows its photograph.
+- [ ] **Photographed legacy bake**: a bake whose photos are only in its labelled list shows them in the gallery and on the recipe's previous makes.
 - [ ] **AI gate**: as a stranger, Import from a URL, Restructure and Substitutions explain why they are closed instead of asking for a PIN.
 
 ## 11. Public launch — the shared cookbook, read side

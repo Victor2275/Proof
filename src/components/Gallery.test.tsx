@@ -64,6 +64,14 @@ describe('Gallery Component', () => {
     expect(screen.queryByText('3 bakes')).not.toBeInTheDocument();
   });
 
+  it('shows a bake whose photographs are only in its labelled list', async () => {
+    await seed('bakeLogs', [
+      makeBakeLog({ _id: '7', recipeId: 'r1', imageUrls: [], images: [{ url: 'labelled.jpg', label: 'Crumb' }] }),
+    ]);
+    renderScreen(<Gallery />);
+    expect(await screen.findByRole('img')).toHaveAttribute('src', 'labelled.jpg');
+  });
+
   it("keeps the bakes of a deleted recipe, and says whose they were", async () => {
     await seed('bakeLogs', [makeBakeLog({ _id: '9', recipeId: 'gone', imageUrls: ['x.jpg'] })]);
     renderScreen(<Gallery />);

@@ -1,7 +1,8 @@
 import { test, type Page, type Route } from '@playwright/test';
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { dataset, recipeIdFor, type DatasetName } from './datasets';
+import { dataset, publishedFrom, recipeIdFor, type DatasetName } from './datasets';
+import { seedDevice } from '../seed';
 
 /*
  * Phase 0, Stage A — the screenshot matrix (LAUNCH_PLAN.md, A1 and A1b).
@@ -59,9 +60,15 @@ const PIXEL = Buffer.from(
 
 type State = 'loaded' | 'loading' | 'error' | 'offline';
 
-/** The API as a stranger without the PIN meets it: reads answer, writes are refused. */
+/**
+ * The dataset is the cookbook on the device, and the state is the network:
+ * the cookbook reads the same whatever the state, and only what genuinely
+ * needs the server — the shared cookbook — loads, fails or is unreachable.
+ */
 async function serve(page: Page, name: DatasetName, state: State) {
   const data = dataset(name);
+  await seedDevice(page, { recipes: data.recipes, bakeLogs: data.bakelogs, notes: data.notes, pantry: data.pantry });
+  const shared = publishedFrom(dataset('typical').recipes);
   const json = (route: Route, body: unknown, status = 200) =>
     route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
 
@@ -76,46 +83,33 @@ async function serve(page: Page, name: DatasetName, state: State) {
     if (state === 'offline') return route.abort('internetdisconnected');
     if (state === 'error') return json(route, { error: 'Internal server error' }, 500);
 
-    const req = route.request();
-    if (req.method() !== 'GET') return json(route, { error: 'Admin authentication required.' }, 401);
+    const url = new URL(route.request().url());
+    const parts = url.pathname.replace(/^.*\/api/, '').split('/').filter(Boolean);
 
-    const path = new URL(req.url()).pathname.replace(/^.*\/api/, '');
-    const parts = path.split('/').filter(Boolean);
-    const idOf = (r: unknown) => (typeof r === 'string' ? r : (r as { _id: string })._id);
-
-    if (parts[0] === 'recipes' && parts.length === 1) return json(route, data.recipes);
-    if (parts[0] === 'recipes' && parts[2] === 'bakelogs') {
-      return json(route, data.bakelogs.filter((b) => idOf(b.recipeId) === parts[1]));
+    if (parts[0] === 'published' && parts.length === 1) {
+      const items = url.searchParams.get('featured') ? shared.filter((p) => p.featured) : shared;
+      return json(route, { items, total: items.length, offset: 0, limit: items.length });
     }
-    if (parts[0] === 'recipes' && parts.length === 2) {
-      const recipe = data.recipes.find((r) => r._id === parts[1]);
-      return recipe ? json(route, recipe) : json(route, { error: 'Recipe not found' }, 404);
+    if (parts[0] === 'published') {
+      const recipe = shared.find((p) => p.slug === parts[1] || p._id === parts[1]);
+      return recipe ? json(route, recipe) : json(route, { error: 'Not in the shared cookbook.' }, 404);
     }
-    if (parts[0] === 'bakelogs') return json(route, data.bakelogs);
-    if (parts[0] === 'notes') return json(route, data.notes);
-    if (parts[0] === 'pantry') return json(route, data.pantry);
-    return json(route, []);
+    if (parts[0] === 'health') return json(route, { status: 'ok', database: 'connected' });
+    return json(route, { error: 'Not found' }, 404);
   });
 }
 
 async function prepare(page: Page, theme: 'dark' | 'light', state: State) {
-  const cache = state === 'offline' ? dataset('typical') : null;
   await page.addInitScript(
-    ({ theme, cache, offline }) => {
+    ({ theme, offline }) => {
       localStorage.setItem('theme', theme);
       localStorage.setItem('hasVisited', 'true');
       localStorage.setItem('hasSeenOnboarding', 'true');
-      // Offline is a returning user: the API's read cache is warm, the network is gone.
-      if (cache) {
-        localStorage.setItem('cached_recipes', JSON.stringify(cache.recipes));
-        localStorage.setItem('cached_bakelogs', JSON.stringify(cache.bakelogs));
-        localStorage.setItem('cached_pantry', JSON.stringify(cache.pantry));
-      }
       // Real offline emulation would also block the dev server's modules, so the
       // browser is told it is offline and the API is made unreachable instead.
       if (offline) Object.defineProperty(navigator, 'onLine', { get: () => false });
     },
-    { theme, cache, offline: state === 'offline' },
+    { theme, offline: state === 'offline' },
   );
 }
 

@@ -1,16 +1,16 @@
 import { test } from '@playwright/test';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { dataset } from './datasets';
+import { dataset, publishedFrom } from './datasets';
 
 /*
  * A stranger's first session, end to end (LAUNCH_PLAN.md, A2 and B15).
  *
  * The matrix pre-dismisses the landing redirect and the onboarding modal so it
- * can shoot each surface on its own. This walks them instead, with nothing in
- * storage and the live library behind the API — which is exactly what a person
- * arriving from a shared link meets today: someone else's 203 recipes, under a
- * heading that calls them theirs.
+ * can shoot each surface on its own. This walks them instead, with nothing on
+ * the device and the live library behind the API as the shared cookbook — which
+ * is what a person arriving from a shared link meets: their own empty cookbook,
+ * offered a shelf of recipes to start from.
  */
 
 const OUT = join(process.cwd(), 'audit-shots', 'first-run');
@@ -18,12 +18,15 @@ const OUT = join(process.cwd(), 'audit-shots', 'first-run');
 test('a stranger arrives', async ({ page }, info) => {
   test.skip(info.project.name === 'w768', 'phone and desktop are enough for a sequence');
   mkdirSync(OUT, { recursive: true });
-  const data = dataset('typical');
+  const shared = publishedFrom(dataset('typical').recipes);
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.route('**/socket.io/**', (r) => r.abort('connectionrefused'));
   await page.route('**/api/**', (route) => {
-    const path = new URL(route.request().url()).pathname.replace(/^.*\/api/, '');
-    const body = path === '/recipes' ? data.recipes : path === '/bakelogs' ? data.bakelogs : [];
+    const url = new URL(route.request().url());
+    const featured = shared.filter((p) => p.featured);
+    const body = url.pathname.endsWith('/published')
+      ? { items: featured, total: featured.length, offset: 0, limit: 8 }
+      : { status: 'ok' };
     return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
   });
 

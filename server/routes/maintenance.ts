@@ -3,12 +3,13 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import cron from 'node-cron';
-import { requireAdmin } from '../middleware/auth.js';
+import { requireOperator } from '../middleware/auth.js';
 import { cloudinary, cloudinaryConfigured, rehostImageUrls } from '../services/cloudinary.js';
 import { Recipe } from '../models/Recipe.js';
 import { Note } from '../models/Note.js';
 import { BakeLog } from '../models/BakeLog.js';
 import { Pantry } from '../models/Pantry.js';
+import { PublishedRecipe } from '../models/PublishedRecipe.js';
 import mongoose from 'mongoose';
 
 const router = Router();
@@ -20,7 +21,7 @@ const sendDegraded = (res: Response) =>
   res.status(503).json({ error: 'The recipe database is unavailable.', degraded: true });
 
 // GET /api/backup
-router.get('/backup', requireAdmin, async (_req: Request, res: Response) => {
+router.get('/backup', requireOperator, async (_req: Request, res: Response) => {
   try {
     const [recipes, notes, bakeLogs, pantry] = await Promise.all([
       Recipe.find({}), Note.find({}), BakeLog.find({}), Pantry.find({}),
@@ -35,7 +36,7 @@ router.get('/backup', requireAdmin, async (_req: Request, res: Response) => {
 });
 
 // POST /api/maintenance/rehost-images
-router.post('/maintenance/rehost-images', requireAdmin, async (_req: Request, res: Response) => {
+router.post('/maintenance/rehost-images', requireOperator, async (_req: Request, res: Response) => {
   if (!dbReady()) return sendDegraded(res);
   if (!cloudinaryConfigured()) return res.status(503).json({ error: 'Cloudinary is not configured on the server.' });
   try {
@@ -63,6 +64,21 @@ router.post('/maintenance/rehost-images', requireAdmin, async (_req: Request, re
   }
 });
 
+/**
+ * Every image URL still in use. A published recipe is a snapshot that outlives
+ * the record it was taken from, so its photographs count even when no library
+ * record points at them any more — and so does an unpublished one, which its
+ * author may publish again.
+ */
+export const referencedImageUrls = (docs: { imageUrls?: string[]; images?: { url?: string }[] }[]) => {
+  const urls = new Set<string>();
+  for (const doc of docs) {
+    doc.imageUrls?.forEach((url) => urls.add(url));
+    doc.images?.forEach((img) => img.url && urls.add(img.url));
+  }
+  return urls;
+};
+
 // Automated daily backup & Cloudinary cleanup cron (2 AM)
 export const startMaintenanceCron = () => {
   cron.schedule('0 2 * * *', async () => {
@@ -80,9 +96,8 @@ export const startMaintenanceCron = () => {
 
       if (process.env.CLOUDINARY_API_KEY) {
         console.log('Starting Cloudinary Orphan Cleanup...');
-        const referencedImages = new Set<string>();
-        recipes.forEach((r: any) => r.imageUrls?.forEach((url: string) => referencedImages.add(url)));
-        bakeLogs.forEach((log: any) => log.imageUrls?.forEach((url: string) => referencedImages.add(url)));
+        const published = await PublishedRecipe.find({}).select('imageUrls').lean();
+        const referencedImages = referencedImageUrls([...recipes, ...bakeLogs, ...published]);
 
         let nextCursor: string | null = null;
         let deletedCount = 0;

@@ -25,6 +25,7 @@ const SURFACES = [
   { name: 'pantry', path: '/pantry', settle: 'text=In stock' },
   { name: 'gallery', path: '/gallery', settle: 'body' },
   { name: 'not-found', path: '/no-such-page', settle: 'text=Nothing at this address' },
+  { name: 'shared-recipe', path: '/r/prawn-stir-fry', settle: 'text=Save to my cookbook' },
 ] as const;
 
 /**
@@ -56,6 +57,21 @@ for (const theme of ['dark', 'light'] as const) {
         });
       });
     }
+  });
+}
+
+/*
+ * A stranger's cookbook: empty, and offered a shelf from the shared cookbook
+ * (decisions B15–B17). It is the first screen most people will ever judge.
+ */
+for (const theme of ['dark', 'light'] as const) {
+  test(`starter shelf (${theme})`, async ({ page }) => {
+    await useTheme(page, theme);
+    await pinEnvironment(page, { emptyCookbook: true });
+    await page.goto('/');
+    await settle(page, 'text=Start from one of these');
+
+    await expect(page).toHaveScreenshot(`starter-shelf-${theme}.png`, { fullPage: true });
   });
 }
 

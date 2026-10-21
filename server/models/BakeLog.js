@@ -1,8 +1,10 @@
 import mongoose from 'mongoose';
+import { recordFields } from './record.js';
 
 const bakeLogSchema = new mongoose.Schema({
+  ...recordFields,
   recipeId: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: String,
     ref: 'Recipe',
     required: true
   },

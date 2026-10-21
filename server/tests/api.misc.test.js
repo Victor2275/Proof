@@ -1,9 +1,11 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
 import request from 'supertest';
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { app } from '../index.js';
+import { Recipe } from '../models/Recipe.js';
 import { BakeLog } from '../models/BakeLog.js';
+import { Note } from '../models/Note.js';
 import { Pantry } from '../models/Pantry.js';
 
 let mongoServer;
@@ -11,8 +13,7 @@ let mongoServer;
 beforeAll(async () => {
   delete process.env.ADMIN_PIN;
   mongoServer = await MongoMemoryServer.create({ binary: { checkMD5: false } });
-  const mongoUri = mongoServer.getUri();
-  await mongoose.connect(mongoUri);
+  await mongoose.connect(mongoServer.getUri());
 });
 
 afterAll(async () => {
@@ -21,45 +22,10 @@ afterAll(async () => {
 });
 
 beforeEach(async () => {
-  await BakeLog.deleteMany({});
-  await Pantry.deleteMany({});
+  await Promise.all([Recipe.deleteMany({}), BakeLog.deleteMany({}), Note.deleteMany({}), Pantry.deleteMany({})]);
 });
 
-describe('Misc API Endpoints', () => {
-  it('POST /api/bake-logs - creates a log', async () => {
-    const newLog = { recipeId: new mongoose.Types.ObjectId(), notes: 'Test log', date: new Date() };
-    const res = await request(app).post('/api/bakelogs').send(newLog);
-    expect(res.statusCode).toBe(201);
-    expect(res.body.notes).toBe('Test log');
-  });
-
-  it('GET /api/bake-logs - returns logs', async () => {
-    await BakeLog.create({ recipeId: new mongoose.Types.ObjectId(), notes: 'Test log', date: new Date() });
-    const res = await request(app).get('/api/bakelogs');
-    expect(res.statusCode).toBe(200);
-    expect(res.body).toHaveLength(1);
-  });
-
-  it('POST /api/pantry - adds an item', async () => {
-    const newItem = { name: 'Salt' };
-    const res = await request(app).post('/api/pantry').send(newItem);
-    expect(res.statusCode).toBe(201);
-    expect(res.body.name).toBe('Salt');
-  });
-
-  it('POST /api/pantry - blocks duplicates (or handles them)', async () => {
-    await Pantry.create({ name: 'Salt' });
-    const res = await request(app).post('/api/pantry').send({ name: 'Salt' });
-    expect(res.statusCode).toBe(201); // Model currently doesn't enforce uniqueness
-  });
-
-  it('GET /api/pantry - returns items', async () => {
-    await Pantry.create({ name: 'Sugar' });
-    const res = await request(app).get('/api/pantry');
-    expect(res.statusCode).toBe(200);
-    expect(res.body.length).toBeGreaterThan(0);
-  });
-
+describe('AI endpoints', () => {
   it('POST /api/extract - error handling on bad URL', async () => {
     const res = await request(app).post('/api/extract').send({ url: 'not-a-url' });
     expect(res.statusCode).toBe(500);
@@ -71,11 +37,62 @@ describe('Misc API Endpoints', () => {
     expect(res.body.error).toBe('Image URL required');
   });
 
+  it('are the operator\'s alone while a PIN is set: each call costs money', async () => {
+    process.env.ADMIN_PIN = '1234';
+    const res = await request(app).post('/api/ai-substitutions').send({ ingredientName: 'Buttermilk' });
+    expect(res.statusCode).toBe(401);
+    delete process.env.ADMIN_PIN;
+  });
+});
+
+describe('operator PIN', () => {
   it('POST /api/auth/pin - invalid PIN', async () => {
     process.env.ADMIN_PIN = '1234';
     const res = await request(app).post('/api/auth/pin').send({ pin: '0000' });
     expect(res.statusCode).toBe(401);
     expect(res.body.error).toBe('Invalid PIN');
-    delete process.env.ADMIN_PIN; // cleanup
+    delete process.env.ADMIN_PIN;
+  });
+});
+
+describe('the pre-Phase-1 library', () => {
+  afterEach(() => {
+    delete process.env.ADMIN_PIN;
+  });
+
+  it('GET /api/library returns the four collections, without tombstones', async () => {
+    const recipe = await Recipe.create({ title: 'Rye', instructions: ['Bake.'] });
+    await Recipe.create({ title: 'Gone', instructions: [], deletedAt: new Date() });
+    await BakeLog.create({ recipeId: recipe._id, notes: 'Dense' });
+    await Note.create({ title: 'Oven', content: 'Runs cold' });
+    await Pantry.create({ name: 'Flour' });
+
+    const res = await request(app).get('/api/library');
+    expect(res.statusCode).toBe(200);
+    expect(res.body.recipes.map((r) => r.title)).toEqual(['Rye']);
+    expect(res.body.bakeLogs[0].recipeId).toBe(recipe._id);
+    expect(res.body.notes).toHaveLength(1);
+    expect(res.body.pantry).toHaveLength(1);
+  });
+
+  it('is private to the operator once a PIN is set', async () => {
+    process.env.ADMIN_PIN = '1234';
+    const res = await request(app).get('/api/library');
+    expect(res.statusCode).toBe(401);
+  });
+
+  it('can no longer be written to, by anyone', async () => {
+    for (const path of ['/api/recipes', '/api/bakelogs', '/api/notes', '/api/pantry']) {
+      const res = await request(app).post(path).send({ title: 'x', name: 'x' });
+      expect(res.statusCode).toBe(404);
+    }
+    expect(await Recipe.countDocuments()).toBe(0);
+  });
+
+  it('mints string ids for new server records, the same shape the device mints', async () => {
+    const recipe = await Recipe.create({ title: 'Rye', instructions: [] });
+    expect(recipe._id).toMatch(/^[0-9A-HJKMNP-TV-Z]{26}$/);
+    expect(recipe.deletedAt).toBeNull();
+    expect(recipe.ownerId).toBeNull();
   });
 });
