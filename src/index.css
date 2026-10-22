@@ -3,26 +3,14 @@
 /*
  * PROOF — foundation layer.
  *
- * The visual world is an early-80s rhythm machine: a matte panel, silkscreened
- * labels, lit step keys, and seven-segment readouts. A recipe is a pattern; a
- * bake is a pattern running; the chase light says where "now" is.
+ * The visual world is a cookbook you write yourself: warm paper, ink, one
+ * paprika accent, a serif for the recipe and a quiet sans for the controls.
+ * Sections are divided by whitespace and a single hairline, not by boxes.
+ * See docs/ui-overhaul/ for how this was decided.
  *
- * One ban holds everywhere in this codebase:
- *   no glow, except a lit key or a lit segment.
- * Light in this world means something is on. A halo around a button that is
- * doing nothing is the previous world's habit, and it is still out.
- *
- * Gradient and backdrop blur were banned here too, and are now permitted as
- * *materials* rather than as decoration:
- *   - `--faceplate` is the sheen of a top-lit moulded panel, a two-stop ramp
- *     of a few percent. A real machine's faceplate is not one flat value, and
- *     a panel drawn with this reads as an object rather than as a rectangle.
- *     It is the only gradient in the chrome.
- *   - backdrop blur belongs to things that genuinely sit *over* the interface
- *     — a modal scrim, a sheet — where the blur says "the layer beneath is
- *     still there, and is not what you are operating." It never appears on a
- *     panel that is part of the page.
- * Both stay off photographs: no scrim over a recipe's own plate.
+ * Paprika means the one primary action on a screen. It is not "clickable" —
+ * links and controls are ink, and announce themselves by shape and by the
+ * press, not by colour.
  *
  * Tailwind v4 defaults the `dark:` variant to `prefers-color-scheme`, which
  * ignores the `.dark` class the in-app theme switcher toggles. Bind the variant
@@ -31,70 +19,113 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  /* --- Legacy aliases -------------------------------------------------
-   * Components still reference bg-paper / bg-sidebar / border-border-subtle
-   * from the previous world. They are mapped onto the new tokens so the app
-   * stays working while surfaces migrate phase by phase. Do not add new uses.
-   */
-  --color-sidebar: var(--ground);
-  --color-paper: var(--panel);
-  --color-border-subtle: var(--rule);
-  --color-accent: var(--signal);
-
-  /* --- The world ----------------------------------------------------- */
-  --color-ground: var(--ground);
-  --color-panel: var(--panel);
-  --color-panel-sunk: var(--panel-sunk);
+  /* --- The page ------------------------------------------------------ */
+  --color-paper: var(--paper);
+  --color-paper-raised: var(--paper-raised);
+  --color-paper-sunk: var(--paper-sunk);
+  --color-paper-tonal: var(--paper-tonal);
   --color-rule: var(--rule);
+  --color-rule-strong: var(--rule-strong);
   --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
   --color-ink-muted: var(--ink-muted);
-  --color-silkscreen: var(--silkscreen);
 
-  /* Step keys. Colour here is temporal, never decorative. */
-  --color-key-now: var(--key-now);
-  --color-key-due: var(--key-due);
-  --color-key-queued: var(--key-queued);
-  --color-key-done: var(--key-done);
-  --color-key-unlit: var(--key-unlit);
-  --color-signal: var(--signal);
-  --color-on-signal: var(--on-signal);
-  --color-spoiled: var(--spoiled);
+  /* --- Meaning -------------------------------------------------------- */
+  --color-accent: var(--accent);
+  --color-on-accent: var(--on-accent);
+  --color-pencil: var(--pencil);
+  --color-butter: var(--butter);
+  --color-on-butter: var(--on-butter);
+  --color-sage: var(--sage);
   --color-fault: var(--fault);
+  --color-spoiled: var(--spoiled);
 
-  --font-display: 'Archivo Variable', ui-sans-serif, system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono Variable', ui-monospace, SFMono-Regular, Menlo, monospace;
+  /* --- Transitional names ------------------------------------------------
+   * The screens still speak the previous world's token names. They are mapped
+   * onto the cookbook so every screen takes the new look at once, and are
+   * retired screen by screen as each is rebuilt. Do not add new uses.
+   */
+  --color-ground: var(--paper);
+  --color-panel: var(--paper-raised);
+  --color-panel-sunk: var(--paper-sunk);
+  --color-silkscreen: var(--ink-2);
+  --color-signal: var(--accent);
+  --color-on-signal: var(--on-accent);
+  --color-key-now: var(--accent);
+  --color-key-due: var(--butter-strong);
+  --color-key-queued: var(--rule-strong);
+  --color-key-done: var(--ink-muted);
+  --color-key-unlit: var(--rule);
 
-  --radius-key: 2px;
-  --radius-panel: 4px;
-  --radius-control: 3px;
+  --font-display: 'Fraunces Variable', Georgia, 'Times New Roman', serif;
+  --font-serif: 'Source Serif 4 Variable', Georgia, 'Times New Roman', serif;
+  --font-sans: 'Inter Tight Variable', ui-sans-serif, system-ui, sans-serif;
+
+  --radius-key: 4px;
+  --radius-control: 6px;
+  --radius-panel: 8px;
+  --radius-sheet: 16px;
 }
 
 /* --- Faces ------------------------------------------------------------
  * Self-hosted, latin subset only, served from /fonts and precached by the
  * service worker (see globPatterns in vite.config.ts) so they survive a
- * kitchen with no signal. Both SIL Open Font License; see /fonts/*-OFL.txt.
+ * kitchen with no signal. All three are SIL Open Font License; see
+ * /fonts/*-OFL.txt.
  *
- * Archivo carries the width axis the faceplate lettering needs: display is set
- * expanded and heavy, instruction prose at normal width and weight.
+ * Fraunces carries the soft optical axis the titles use; Source Serif 4 is the
+ * recipe's reading face; Inter Tight is the controls and the figures.
  */
 @font-face {
-  font-family: 'Archivo Variable';
+  font-family: 'Fraunces Variable';
   font-style: normal;
   font-display: swap;
   font-weight: 100 900;
-  font-stretch: 62% 125%;
-  src: url('/fonts/archivo-latin-variable.woff2') format('woff2-variations');
+  src: url('/fonts/fraunces-latin-variable.woff2') format('woff2-variations');
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
     U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
     U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
 @font-face {
-  font-family: 'JetBrains Mono Variable';
+  font-family: 'Fraunces Variable';
+  font-style: italic;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url('/fonts/fraunces-latin-italic-variable.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Source Serif 4 Variable';
   font-style: normal;
   font-display: swap;
-  font-weight: 100 800;
-  src: url('/fonts/jetbrains-mono-latin-variable.woff2') format('woff2-variations');
+  font-weight: 200 900;
+  src: url('/fonts/source-serif-4-latin-variable.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Source Serif 4 Variable';
+  font-style: italic;
+  font-display: swap;
+  font-weight: 200 900;
+  src: url('/fonts/source-serif-4-latin-italic-variable.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Inter Tight Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url('/fonts/inter-tight-latin-variable.woff2') format('woff2-variations');
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
     U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
     U+2212, U+2215, U+FEFF, U+FFFD;
@@ -102,146 +133,125 @@
 
 @layer base {
   /*
-   * Dark is the default because of the use scene, not the category: a kitchen
-   * before dawn, the only lit object a propped phone. Light is the faceplate
-   * inverted — classic machines wore cream plastic — and is first-class, not a
-   * courtesy.
+   * Paper is the default: a cookbook is read in daylight, and the light theme
+   * is the one the design is drawn in. The dark theme is the same book at
+   * night — warm charcoal and cream, never true black.
    */
   :root {
-    --ground: #e8e4dc;
-    --panel: #f2efe9;
-    --panel-sunk: #dcd7cc;
-    --rule: #c9c4b8;
-    --ink: #171614;
-    --ink-muted: #63605a;
-    --silkscreen: #4a4640;
+    --paper: #fbf7f0;
+    --paper-raised: #fffdf9;
+    --paper-sunk: #f4ecdd;
+    --paper-tonal: #efe7d9;
+    --rule: #e4dccf;
+    --rule-strong: #cdbfa9;
+    --ink: #1f1a17;
+    --ink-2: #4a423c;
+    --ink-muted: #6b6159;
 
-    --key-now: #e02a20;
-    --key-due: #e07d00;
-    --key-queued: #cbbc84;
-    --key-done: #b0aba1;
-    --key-unlit: #d2cdc2;
-    --signal: #c81e14;
-    /* The legend on a lit key. It flips with the theme because the red does
-     * not: the light theme's signal is deep enough that white reads on it at
-     * 5.75:1, while the dark theme's is bright enough that white drops to
-     * 3.53:1 and black rises to 5.94:1. One literal for both would fail one of
-     * them, which is how "Start recipe" shipped under the floor. */
-    --on-signal: #ffffff;
-    --spoiled: #6d2018;
-    /* The caution lamp: something went wrong and needs attention, but it is
-     * not a bake happening now, so it cannot be red. Same lamp as the due key,
-     * deepened for the light faceplate because the due amber itself reads at
-     * 2.6:1 on a panel and this colour carries sentences. 5.7:1 on --panel,
-     * 4.6:1 on --panel-sunk. */
-    --fault: #8f4c00;
+    --accent: #b5391f;
+    --on-accent: #ffffff;
+    /* Margin notes: what you wrote last time, in pencil. */
+    --pencil: #6b5a2e;
+    /* Timers and the current step: a highlighter, not an alarm. */
+    --butter: #f6e9bf;
+    --butter-strong: #d8b45a;
+    --on-butter: #1f1a17;
+    --sage: #4e6a3c;
+    /* The caution lamp: something went wrong and needs attention. Not the
+     * accent — the accent is what you do next, not what went wrong. */
+    --fault: #8a4b0f;
+    /* A destructive control is outlined in this, never filled. */
+    --spoiled: #8c2f39;
 
-    /* The faceplate sheen. Cream plastic under a room light: the ramp is
-     * lighter at the top and settles to the panel's own value, ~3% of tone
-     * across the whole panel — enough to read as moulded, not enough to read
-     * as a gradient someone chose. */
-    --faceplate: linear-gradient(180deg, #f7f5f0 0%, #f2efe9 46%, #ece8e0 100%);
-    --faceplate-sunk: linear-gradient(180deg, #d7d2c6 0%, #dcd7cc 100%);
+    --scrim: rgb(31 26 23 / 0.38);
+    --lift: 0 1px 2px rgb(31 26 23 / 0.14);
+    --lift-sheet: 0 -2px 16px rgb(31 26 23 / 0.14);
 
     color-scheme: light;
   }
 
-  /*
-   * One dark theme, and it is true black. The former three-theme split (dark +
-   * a separate OLED) was drift: the README documented it, CLAUDE.md said two,
-   * and an orphaned `.oled` block sat in this file styling nothing reachable.
-   */
   .dark {
-    --ground: #000000;
-    --panel: #1a1a1a;
-    --panel-sunk: #0d0d0d;
-    --rule: #2e2e2e;
-    --ink: #f2f2f2;
-    --ink-muted: #8a8a8a;
-    --silkscreen: #bdbdbd;
+    --paper: #16120f;
+    --paper-raised: #2a231d;
+    --paper-sunk: #221c17;
+    --paper-tonal: #1d1814;
+    --rule: #2e2620;
+    --rule-strong: #4a3f35;
+    --ink: #f1e9dc;
+    --ink-2: #d8cdbe;
+    --ink-muted: #a99e91;
 
-    --key-now: #ff3b30;
-    --key-due: #ff9a00;
-    --key-queued: #7a6000;
-    --key-done: #57564f;
-    --key-unlit: #2a2a2a;
-    --signal: #ff3b30;
-    --on-signal: #000000;
-    --spoiled: #5a1a12;
-    --fault: #ff9a00;
+    --accent: #e26a4a;
+    /* The legend on a lit control flips with the theme because the paprika
+     * does not: the dark theme's is bright enough that cream on it fails. */
+    --on-accent: #16120f;
+    --pencil: #d9c78e;
+    --butter: #4a3f1e;
+    --butter-strong: #8c7330;
+    --on-butter: #f6e3a6;
+    --sage: #9db887;
+    --fault: #e8a25a;
+    --spoiled: #e07a86;
 
-    /* Matte black moulding lit from above the machine, not from the front. */
-    --faceplate: linear-gradient(180deg, #212121 0%, #1a1a1a 46%, #141414 100%);
-    --faceplate-sunk: linear-gradient(180deg, #101010 0%, #0d0d0d 100%);
+    --scrim: rgb(0 0 0 / 0.55);
+    --lift: 0 1px 2px rgb(0 0 0 / 0.5);
+    --lift-sheet: 0 -2px 16px rgb(0 0 0 / 0.5);
 
     color-scheme: dark;
   }
 
-  /*
-   * 16px everywhere. The previous 18px mobile base was a blunt instrument for
-   * kitchen legibility and cost density on every browsing screen; Baking Mode
-   * owns its own oversized scale instead, where the reading distance is real.
-   */
   html {
     font-size: 16px;
-    font-family: var(--font-mono);
+    font-family: var(--font-sans);
     -webkit-text-size-adjust: 100%;
   }
 
   body {
-    background-color: var(--ground);
+    background-color: var(--paper);
     color: var(--ink);
-    font-family: var(--font-mono);
+    font-family: var(--font-sans);
     font-weight: 400;
-    /* Data and measurement are everywhere in this product; figures must align
-     * in every column they appear in, not only in tables that opt in. */
+    /* Quantities, times and counts must align in every column they appear in. */
     font-variant-numeric: tabular-nums;
-    font-feature-settings: 'tnum' 1;
+    -webkit-tap-highlight-color: transparent;
   }
 
-  /* The display voice: expanded, heavy, uppercase. Faceplate lettering. */
-  .font-faceplate {
+  /* The title voice: Fraunces, soft, sentence case. */
+  .font-title {
     font-family: var(--font-display);
-    font-stretch: 118%;
-    font-weight: 800;
+    font-weight: 560;
+    font-variation-settings: 'SOFT' 60;
+    font-optical-sizing: auto;
     letter-spacing: -0.01em;
-    text-transform: uppercase;
   }
 
-  /* Instruction prose — the one place mono is the wrong tool. Same family as
-   * the display voice at normal width, so it stays one type system. */
+  /* The reading voice: a recipe's method, a headnote, a note someone wrote. */
   .font-prose {
-    font-family: var(--font-display);
-    font-stretch: 100%;
+    font-family: var(--font-serif);
     font-weight: 400;
-    letter-spacing: 0;
-    line-height: 1.6;
+    line-height: 1.55;
+    font-variant-numeric: proportional-nums;
   }
 
-  /* Silkscreened component labels: small, tracked, plain words. Every region
-   * names itself rather than relying on an icon read at arm's length. */
-  .label-silkscreen {
-    font-family: var(--font-mono);
-    font-size: 0.6875rem;
-    font-weight: 600;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--silkscreen);
+  /* A quiet label above a field or beside a value. Words, not a silkscreen. */
+  .ui-label {
+    font-family: var(--font-sans);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--ink-muted);
   }
 
   /* --- Browser surfaces ---------------------------------------------
-   * The parts not drawn by hand still carry the design. Selection, caret,
-   * scrollbars and focus rings ship with defaults belonging to no design
-   * system; they are themed from the palette here.
+   * The parts not drawn by hand still carry the design.
    */
   ::selection {
-    background-color: var(--signal);
-    color: #ffffff;
+    background-color: var(--butter);
+    color: var(--on-butter);
   }
 
   :root {
-    caret-color: var(--signal);
-    scrollbar-color: var(--rule) transparent;
+    caret-color: var(--accent);
+    scrollbar-color: var(--rule-strong) transparent;
     scrollbar-width: thin;
   }
 
@@ -253,25 +263,19 @@
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background-color: var(--rule);
-    border-radius: 0;
+    background-color: var(--rule-strong);
+    border-radius: 5px;
   }
   ::-webkit-scrollbar-thumb:hover {
     background-color: var(--ink-muted);
   }
 
-  /* A square focus ring, matched to the world. Never removed. */
+  /* The focus ring follows the control's own corners. Never removed. */
   *:focus-visible {
-    outline: 2px solid var(--signal);
+    outline: 2px solid var(--accent);
     outline-offset: 2px;
-    border-radius: 0;
   }
 
-  /*
-   * Controls are squared. The previous global `border-radius: 12px !important`
-   * forced iOS-style pills onto every input and button and, being !important,
-   * made the rule unoverridable by any component that needed otherwise.
-   */
   input:not([type='checkbox']):not([type='radio']),
   textarea,
   select,
@@ -281,9 +285,8 @@
   }
 
   /*
-   * All motion in this world derives from one clock: the chase light sweeping
-   * and a key flashing on press. Under reduced-motion the chase light becomes
-   * a static position marker and every sweep stops.
+   * Motion is short and physical: a press, a short slide, a sheet rising.
+   * Under reduced motion every transition collapses.
    */
   @media (prefers-reduced-motion: reduce) {
     *,
@@ -299,26 +302,33 @@
 
 @layer utilities {
   /*
-   * The faceplate. Applied to a panel's own surface, never to a photograph and
-   * never as a page background — a gradient that covers the whole screen is
-   * the thing this world was built to avoid.
+   * The press. One answer to a finger everywhere: the control sinks a little
+   * and tints, on pointer-down, in 80ms, and settles back. Scale is dropped
+   * under reduced motion; the tint stays, because it is feedback, not motion.
    */
-  .faceplate {
-    background-image: var(--faceplate);
+  .pressable {
+    transition:
+      transform 140ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      background-color 140ms ease-out;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
   }
-  .faceplate-sunk {
-    background-image: var(--faceplate-sunk);
+  .pressable:active:not(:disabled):not([aria-disabled='true']) {
+    transform: scale(0.97);
+    transition-duration: 80ms;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .pressable:active:not(:disabled):not([aria-disabled='true']) {
+      transform: none;
+    }
   }
 
   /*
-   * The scrim. Only for a layer that sits over the interface: a modal, a
-   * sheet, a drawer. Blur is what says the panel underneath is still there and
-   * is not the thing you are operating right now.
+   * The scrim. Only for a layer that sits over the interface: a sheet, a
+   * dialog, a menu on a phone. A flat dim — the page underneath is still there.
    */
   .scrim {
-    background-color: color-mix(in srgb, var(--ground) 72%, transparent);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    background-color: var(--scrim);
   }
 
   .no-scrollbar::-webkit-scrollbar {
@@ -330,16 +340,8 @@
   }
 
   /*
-   * Clearance above the mobile bottom nav.
-   *
-   * The nav is 65px of controls plus whatever the device reserves for its
-   * gesture bar or home indicator. Four things float above it — two floating
-   * action buttons, a status strip and the error bar — and each had guessed a
-   * fixed 6rem, which is exactly the nav's height with no inset and therefore
-   * lands *behind* the nav on any phone that has one.
-   *
-   * Written once, with the inset added rather than assumed away, and with the
-   * desktop value built in because there is no bottom nav at that width.
+   * Clearance above the mobile bottom nav: 65px of controls plus whatever the
+   * device reserves for its gesture bar, added rather than assumed away.
    */
   .above-nav {
     bottom: calc(env(safe-area-inset-bottom, 0px) + 6rem);
@@ -361,14 +363,9 @@
 }
 
 /*
- * The notch inset plus breathing room. The old rule was the inset alone with a
- * 20px fallback — but browsers define the inset as 0 rather than leave it
- * undefined, so the fallback never applied and every phone-browser page put its
- * headline flush against the top edge.
- *
- * Declared with @utility, not as a plain class in the utilities layer: a plain
- * class there outranks Tailwind's own utilities, so the shell's `md:` override
- * beside it never applied.
+ * The notch inset plus breathing room. Browsers define the inset as 0 rather
+ * than leave it undefined, so a fallback inside env() never applies; the floor
+ * is added instead. Declared with @utility so a breakpoint beside it wins.
  */
 @utility pt-safe {
   padding-top: calc(env(safe-area-inset-top, 0px) + 1.5rem);
@@ -388,7 +385,7 @@
   }
 
   /* Hide UI components not needed on paper */
-  nav, aside, button, .bg-sidebar, .bg-ground, .bg-panel, a {
+  nav, aside, button, .bg-ground, .bg-panel, a {
     display: none !important;
   }
 

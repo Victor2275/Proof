@@ -59,15 +59,12 @@ describe('RecipeTile', () => {
     expect(screen.getByRole('link')).toHaveAttribute('href', '/recipe/r1');
   });
 
-  it('draws a step row only where the instructions proved a real set of phases', () => {
-    const { unmount } = renderTile(sourdough);
-    expect(screen.getByRole('img', { name: /Country Sourdough phases/i })).toBeInTheDocument();
-    unmount();
-
-    // The cassoulet reads as generic prep/cook/finish — true of almost any
-    // recipe, and not worth drawing keys for.
-    renderTile(base);
+  it('keeps a tile to a photograph, a title and one line', () => {
+    // Phases and timings used to slide up over the photo on hover. A cookbook
+    // tile is browsed by picture and name; the rest belongs on the recipe.
+    renderTile(sourdough);
     expect(screen.queryByRole('img', { name: /phases/i })).not.toBeInTheDocument();
+    expect(screen.getAllByRole('img')).toHaveLength(1);
   });
 
   it('falls back to facts the recipe can actually prove', () => {
@@ -75,20 +72,25 @@ describe('RecipeTile', () => {
     expect(screen.getByText(/Pork · 2 ingredients/)).toBeInTheDocument();
   });
 
-  it('suppresses the seed placeholder time but keeps a real one', () => {
+  it('suppresses the seed placeholder time but prints a real one as a cookbook does', () => {
     const { unmount } = renderTile(base);
     // "20 mins" + "30 mins" verbatim is the import script's default, not a
     // measurement — 199 unrelated recipes share it.
-    expect(screen.queryByRole('img', { name: /50 MIN/ })).not.toBeInTheDocument();
+    expect(screen.queryByText(/50 min/)).not.toBeInTheDocument();
     unmount();
 
     renderTile(sourdough);
-    expect(screen.getByRole('img', { name: '1:15 HR' })).toBeInTheDocument();
+    expect(screen.getByText('Breads · 1 h 15')).toBeInTheDocument();
   });
 
-  it('lights the tile in the signal colour when its bake is running', () => {
+  it('rings the photograph in the accent when its bake is running', () => {
     const { container } = renderTile(base, true);
-    expect(container.querySelector('.border-signal')).not.toBeNull();
+    expect(container.querySelector('.ring-accent')).not.toBeNull();
+  });
+
+  it('answers the press as one control', () => {
+    renderTile(base);
+    expect(screen.getByRole('link')).toHaveClass('pressable');
   });
 
   it('never scales on hover, so the grid cannot shift under the cursor', () => {

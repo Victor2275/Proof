@@ -69,7 +69,7 @@ export default function Discover() {
     <div className="mx-auto flex max-w-6xl flex-col gap-6 pb-20">
       <header className="flex flex-col gap-4 border-b border-rule pb-6">
         <div className="flex flex-col gap-2">
-          <h1 className="font-faceplate text-3xl text-ink md:text-4xl">Discover</h1>
+          <h1 className="font-title text-3xl text-ink md:text-4xl">Discover</h1>
           <p className="max-w-prose text-ink-muted">
             Recipes other bakers have published. Save one and it becomes yours to bake, log and change.
           </p>
@@ -106,7 +106,7 @@ export default function Discover() {
                     setShown(PAGE);
                   }}
                   className={cn(
-                    'label-silkscreen flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-control px-3 lg:min-h-0 lg:py-2',
+                    'ui-label flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-control px-3 lg:min-h-0 lg:py-2',
                     tag === t ? 'bg-panel-sunk text-ink' : 'text-ink-muted hover:text-ink',
                   )}
                 >
@@ -159,14 +159,14 @@ export default function Discover() {
         </div>
       ) : (
         <>
-          <p className="label-silkscreen text-ink-muted">
+          <p className="ui-label text-ink-muted">
             {results.length} {results.length === 1 ? 'recipe' : 'recipes'}
           </p>
           <ul className="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 lg:grid-cols-4">
             {results.slice(0, shown).map((r) => (
               <li key={r._id} className="flex flex-col gap-1">
                 <RecipeTile recipe={r} to={`/r/${r.slug}`} />
-                <span className="label-silkscreen text-ink-muted">
+                <span className="ui-label text-ink-muted">
                   @{r.authorHandle}
                   {r.stats?.bakedCount ? ` · baked ${r.stats.bakedCount}×` : ''}
                 </span>

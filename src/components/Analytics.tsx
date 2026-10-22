@@ -93,7 +93,7 @@ export default function Analytics() {
   if (failed) {
     return (
       <div className="mx-auto flex max-w-3xl flex-col gap-8 pb-20">
-        <h1 className="font-faceplate border-b border-rule pb-6 text-3xl leading-none text-ink sm:text-4xl">Analytics</h1>
+        <h1 className="font-title border-b border-rule pb-6 text-3xl leading-none text-ink sm:text-4xl">Analytics</h1>
         <Panel title="Bake history">
           <div className="flex flex-col gap-3" role="alert">
             <p className="text-ink">Couldn't read the bake history on this device, so there is nothing to report.</p>
@@ -119,13 +119,13 @@ export default function Analytics() {
     <div className="mx-auto flex max-w-3xl flex-col gap-8 pb-20">
       <header className="flex flex-wrap items-end justify-between gap-4 border-b border-rule pb-6">
         <div className="flex flex-col gap-2">
-          <h1 className="font-faceplate text-3xl leading-none text-ink sm:text-4xl">Analytics</h1>
+          <h1 className="font-title text-3xl leading-none text-ink sm:text-4xl">Analytics</h1>
           <p className="max-w-prose text-ink-muted">
             What the bake logs can prove. Panels report only what the data supports, and say so
             when there is not enough of it.
           </p>
         </div>
-        <span className="label-silkscreen shrink-0">
+        <span className="ui-label shrink-0">
           {reading.totalBakes} {reading.totalBakes === 1 ? 'bake' : 'bakes'} logged
         </span>
       </header>
@@ -144,7 +144,7 @@ export default function Analytics() {
               label="Library baked at least once"
               value={reading.recipesBaked}
               max={recipes.length}
-              cells={24}
+
               readout={`${reading.recipesBaked} of ${recipes.length}`}
             />
           ) : null}
@@ -165,7 +165,7 @@ export default function Analytics() {
                   label={month.label}
                   value={month.count}
                   max={reading.peakMonth}
-                  cells={20}
+
                   readout={String(month.count)}
                 />
               ))}

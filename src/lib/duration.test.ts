@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseDurationMinutes, totalRecipeMinutes, formatMinutesForSegments, isPlaceholderTiming } from './duration';
+import { parseDurationMinutes, totalRecipeMinutes, formatMinutes, formatMinutesForSegments, isPlaceholderTiming } from './duration';
 
 describe('parseDurationMinutes', () => {
   it('reads the schema convention: a bare number of minutes', () => {
@@ -38,6 +38,21 @@ describe('totalRecipeMinutes', () => {
   it('returns null only when neither side parses', () => {
     expect(totalRecipeMinutes({ prepTime: 'overnight', cookTime: undefined })).toBeNull();
     expect(totalRecipeMinutes({})).toBeNull();
+  });
+});
+
+describe('formatMinutes', () => {
+  it('prints minutes under an hour as minutes', () => {
+    expect(formatMinutes(45)).toBe('45 min');
+  });
+
+  it('prints hours with the minutes beside them, as a cookbook does', () => {
+    expect(formatMinutes(75)).toBe('1 h 15');
+    expect(formatMinutes(125)).toBe('2 h 05');
+  });
+
+  it('drops the minutes on a whole hour', () => {
+    expect(formatMinutes(120)).toBe('2 h');
   });
 });
 

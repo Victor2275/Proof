@@ -98,15 +98,15 @@ function BakeTile({
         <div
           className={cn(
             'pointer-events-none absolute inset-x-0 bottom-0 translate-y-full',
-            'border-t border-rule bg-panel faceplate px-3 py-2.5',
+            'border-t border-rule bg-panel px-3 py-2.5',
             'transition-transform duration-150 ease-out',
             'group-hover:translate-y-0 group-focus-visible:translate-y-0',
           )}
         >
           <div className="flex items-baseline justify-between gap-2">
-            <span className="label-silkscreen truncate text-silkscreen">{formatDate(entry.date)}</span>
+            <span className="ui-label truncate text-silkscreen">{formatDate(entry.date)}</span>
             {entry.extraPhotos > 0 ? (
-              <span className="font-mono text-xs tabular-nums text-ink-muted">+{entry.extraPhotos}</span>
+              <span className="font-sans text-xs tabular-nums text-ink-muted">+{entry.extraPhotos}</span>
             ) : null}
           </div>
           {entry.notes ? (
@@ -117,13 +117,13 @@ function BakeTile({
 
       <div className="flex items-baseline justify-between gap-2">
         {index !== undefined ? (
-          <span className="font-mono text-xs tabular-nums text-ink-muted">
+          <span className="font-sans text-xs tabular-nums text-ink-muted">
             {String(index + 1).padStart(2, '0')}
           </span>
         ) : showTitle ? (
           <span className="min-w-0 truncate text-sm text-ink">{entry.recipeTitle}</span>
         ) : null}
-        <span className="label-silkscreen shrink-0 text-silkscreen">{formatDate(entry.date)}</span>
+        <span className="ui-label shrink-0 text-silkscreen">{formatDate(entry.date)}</span>
       </div>
     </Link>
   );
@@ -189,7 +189,7 @@ export default function Gallery() {
     <div className="flex flex-col gap-8 pb-20">
       <header className="flex flex-col gap-4 border-b border-rule pb-6 md:flex-row md:items-end md:justify-between">
         <div className="flex flex-col gap-2">
-          <h1 className="font-faceplate text-3xl leading-none text-ink sm:text-4xl">Bake history</h1>
+          <h1 className="font-title text-3xl leading-none text-ink sm:text-4xl">Bake history</h1>
           <p className="text-ink-muted">
             {view === 'recipe'
               ? 'Each row is one recipe, oldest bake on the left.'
@@ -254,11 +254,11 @@ export default function Gallery() {
             <section key={group.recipeId} className="flex flex-col gap-3">
               <div className="flex items-baseline justify-between gap-4 border-b border-rule pb-2">
                 <Link to={`/recipe/${group.recipeId}`} className="min-w-0">
-                  <h2 className="font-faceplate truncate text-lg text-ink decoration-1 underline-offset-4 hover:underline sm:text-xl">
+                  <h2 className="font-title truncate text-lg text-ink decoration-1 underline-offset-4 hover:underline sm:text-xl">
                     {group.title}
                   </h2>
                 </Link>
-                <span className="label-silkscreen shrink-0 text-silkscreen">
+                <span className="ui-label shrink-0 text-silkscreen">
                   {group.entries.length} {group.entries.length === 1 ? 'bake' : 'bakes'}
                 </span>
               </div>
@@ -282,7 +282,7 @@ export default function Gallery() {
         <div className="flex flex-col gap-10">
           {byMonth.map((month) => (
             <section key={month.label} className="flex flex-col gap-4">
-              <h2 className="label-silkscreen border-b border-rule pb-2">{month.label}</h2>
+              <h2 className="ui-label border-b border-rule pb-2">{month.label}</h2>
               <div className="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 2xl:grid-cols-4">
                 {month.entries.map((entry) => (
                   <BakeTile key={entry.logId} entry={entry} showTitle />

@@ -81,14 +81,14 @@ export default function Pantry() {
     <div className="mx-auto flex max-w-3xl flex-col gap-8 pb-20">
       <header className="flex flex-wrap items-end justify-between gap-4 border-b border-rule pb-6">
         <div className="flex flex-col gap-2">
-          <h1 className="font-faceplate text-3xl leading-none text-ink sm:text-4xl">Pantry</h1>
+          <h1 className="font-title text-3xl leading-none text-ink sm:text-4xl">Pantry</h1>
           <p className="max-w-prose text-ink-muted">
             What you have in stock. Recipes cross-reference it by fuzzy match, so a lamp lights
             beside every ingredient you already own.
           </p>
         </div>
         {pantry.isSuccess && (
-          <span className="label-silkscreen shrink-0 text-silkscreen">
+          <span className="ui-label shrink-0 text-silkscreen">
             {items.length} {items.length === 1 ? 'item' : 'items'} in stock
           </span>
         )}
@@ -141,7 +141,7 @@ export default function Pantry() {
             {/* A dark lamp is a designed state, not an error. */}
             <div className="flex items-center gap-2">
               <span className="h-2 w-2 border border-key-unlit" aria-hidden="true" />
-              <span className="label-silkscreen text-silkscreen">Nothing in stock</span>
+              <span className="ui-label text-silkscreen">Nothing in stock</span>
             </div>
             <p className="max-w-prose text-ink-muted">
               Add what you keep on hand and every recipe will tell you what you are missing.

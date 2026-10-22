@@ -2,32 +2,27 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <!-- The step row, drawn by scripts/generate-icons.mjs from the design
-         tokens. The previous icon was a gold chef's hat from the Black & Gold
-         world this design replaced. -->
+    <!-- Drawn by scripts/generate-icons.mjs. -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="mask-icon" href="/masked-icon.svg" color="#ff3b30" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#000000" />
+    <meta name="theme-color" content="#fbf7f0" />
     <link rel="manifest" href="/manifest.json" />
     <!--
-      No web font CDN. Archivo and JetBrains Mono are self-hosted from /fonts
-      and precached by the service worker, because a kitchen with no signal is
-      the scene this was built for. Inter was still being fetched from Google
-      Fonts on every load here, for a face the design system does not use.
+      No web font CDN. Fraunces, Source Serif 4 and Inter Tight are self-hosted
+      from /fonts and precached by the service worker, because a kitchen with
+      no signal is the scene this was built for.
     -->
     <title>Proof</title>
     <script>
       (function() {
         try {
+          // Paper is the default; keep in step with src/lib/theme.ts.
           var theme = localStorage.getItem('theme');
-          if (theme === 'light') {
-            document.documentElement.classList.remove('dark');
-          } else {
-            // Dark is the default
-            document.documentElement.classList.add('dark');
-          }
+          var dark = theme === 'dark' ||
+            (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          document.documentElement.classList.toggle('dark', dark);
         } catch (e) {}
       })();
     </script>

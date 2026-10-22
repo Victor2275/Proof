@@ -94,7 +94,7 @@ export default function AISubstitutionsModal({
               <li key={idx} className="flex flex-col gap-1 border-b border-rule py-3">
                 <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
                   <span className="font-medium text-ink">{sub.substitute}</span>
-                  <span className="label-silkscreen text-ink-muted">Ratio · {sub.ratio}</span>
+                  <span className="ui-label text-ink-muted">Ratio · {sub.ratio}</span>
                 </div>
                 <p className="text-sm leading-relaxed text-ink-muted">{sub.notes}</p>
               </li>

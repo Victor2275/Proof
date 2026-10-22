@@ -350,7 +350,7 @@ export default function RecipeViewer() {
       <div className="mx-auto flex max-w-xl flex-col gap-4 py-16">
         <Panel title={slug ? 'Shared cookbook' : 'This device'}>
           <div className="flex flex-col gap-4" role="alert">
-            <p className="font-faceplate text-lg text-ink">
+            <p className="font-title text-lg text-ink">
               {slug ? "Couldn't open this shared recipe" : "Couldn't open this recipe on this device"}
             </p>
             <p className="text-sm text-ink-muted">
@@ -386,7 +386,7 @@ export default function RecipeViewer() {
         {/* The recipe's own title is the heading of this page; a second
           * "VIEW RECIPE" above it named the route rather than the thing. */}
         {/* A shared recipe came from the shared cookbook, and goes back to it. */}
-        <Link to={slug ? '/discover' : '/'} className="label-silkscreen text-ink-muted hover:text-ink">
+        <Link to={slug ? '/discover' : '/'} className="ui-label text-ink-muted hover:text-ink">
           {slug ? '← Discover' : '← Cookbook'}
         </Link>
         
@@ -547,7 +547,7 @@ export default function RecipeViewer() {
               {/* Lab notes are the owner's notes to themselves (B4). */}
               {localRecipe?.labNotes && (
                 <Panel title="Lab notes & iterations">
-                  <pre className="whitespace-pre-wrap font-mono text-sm leading-relaxed text-ink-muted">
+                  <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-ink-muted">
                     {localRecipe.labNotes}
                   </pre>
                 </Panel>
@@ -559,8 +559,8 @@ export default function RecipeViewer() {
       ) : (
         <section className="mt-8 flex flex-col gap-6" aria-labelledby="previous-makes-heading">
           <div className="flex items-center justify-between border-b border-rule pb-2">
-            <h2 id="previous-makes-heading" className="label-silkscreen">Previous makes</h2>
-            <span className="label-silkscreen text-ink-muted">{bakeLogs.length} logged</span>
+            <h2 id="previous-makes-heading" className="ui-label">Previous makes</h2>
+            <span className="ui-label text-ink-muted">{bakeLogs.length} logged</span>
           </div>
 
           <BakeLogsGrid
@@ -839,7 +839,7 @@ export default function RecipeViewer() {
                             className="w-full border border-rule"
                           />
                           {img.label ? (
-                            <figcaption className="label-silkscreen absolute bottom-2 right-2 border border-rule bg-panel px-2 py-1 text-ink">
+                            <figcaption className="ui-label absolute bottom-2 right-2 border border-rule bg-panel px-2 py-1 text-ink">
                               {img.label}
                             </figcaption>
                           ) : null}
@@ -943,7 +943,7 @@ export default function RecipeViewer() {
       >
         <div className="flex flex-col gap-5">
           <div className="flex flex-col gap-2" role="group" aria-labelledby="mobile-share-label">
-            <span id="mobile-share-label" className="label-silkscreen">Share</span>
+            <span id="mobile-share-label" className="ui-label">Share</span>
             {shareUrl ? (
               <>
                 <Button size="lg" className="w-full" onClick={handleShareLink}>
@@ -974,7 +974,7 @@ export default function RecipeViewer() {
           </div>
           {localRecipe ? (
           <div className="flex flex-col gap-2 border-t border-rule pt-5" role="group" aria-labelledby="mobile-recipe-label">
-            <span id="mobile-recipe-label" className="label-silkscreen">Recipe</span>
+            <span id="mobile-recipe-label" className="ui-label">Recipe</span>
             <Button
               size="lg"
               className="w-full"
@@ -1000,7 +1000,7 @@ export default function RecipeViewer() {
       {copyNotice ? (
         <div
           role="status"
-          className="above-nav label-silkscreen fixed left-1/2 z-[130] -translate-x-1/2 rounded-panel border border-rule bg-panel px-4 py-2 text-ink"
+          className="above-nav ui-label fixed left-1/2 z-[130] -translate-x-1/2 rounded-panel border border-rule bg-panel px-4 py-2 text-ink"
         >
           {copyNotice}
         </div>

@@ -158,7 +158,7 @@ export default function ReverseBakeScheduler({ recipe, onClose }: ReverseBakeSch
 
         {scheduleSteps.length > 0 && (
           <section className="flex flex-col gap-3">
-            <h3 className="label-silkscreen">Recommended start schedule (working backwards)</h3>
+            <h3 className="ui-label">Recommended start schedule (working backwards)</h3>
             {caveat ? (
               <p className="max-w-prose text-sm text-ink-muted" role="note">{caveat}</p>
             ) : null}
@@ -172,12 +172,12 @@ export default function ReverseBakeScheduler({ recipe, onClose }: ReverseBakeSch
 
                 return (
                   <li key={step.stepIndex} className="grid grid-cols-[5.5rem_1fr] gap-4 border-b border-rule py-3">
-                    <div className="flex flex-col font-mono tabular-nums">
+                    <div className="flex flex-col font-sans tabular-nums">
                       <span className="text-ink">{startStr}</span>
                       <span className="text-xs text-ink-muted">{dateStr}</span>
                     </div>
                     <div className="flex min-w-0 flex-col gap-1">
-                      <span className="label-silkscreen">
+                      <span className="ui-label">
                         Step {step.stepIndex + 1} · {step.source === 'shared' ? '≈ ' : ''}{step.durationMinutes} min
                         {step.source === 'assumed' ? ' · assumed' : ''}
                       </span>

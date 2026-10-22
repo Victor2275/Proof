@@ -208,7 +208,7 @@ function ProfileSheet({ open, account, onClose }: { open: boolean; account: Acco
         <Field label="Display name" value={displayName} onChange={(e) => setDisplayName(e.target.value)} maxLength={60} />
         <Field
           label="Handle"
-          leading={<span className="font-mono text-ink-muted">@</span>}
+          leading={<span className="font-sans text-ink-muted">@</span>}
           autoCapitalize="none"
           spellCheck={false}
           value={handle}

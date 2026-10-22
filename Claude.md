@@ -7,15 +7,15 @@ pattern running. The interface is the machine that runs it.
 
 # Which document wins
 
-Five planning documents exist and they do not all agree. In a conflict, the
+Several planning documents exist and they do not all agree. In a conflict, the
 order below decides — later entries are newer decisions.
 
 | Document | Authority over | State |
 |---|---|---|
 | [.agents/VISION.md](.agents/VISION.md) | Original concept | **Stale on two counts.** Its "Black & Gold" design section is dead — see *The visual world* below. Its "private instance / single-user" framing is superseded by LAUNCH_PLAN.md. Read it for the product's intent, not for its design or its scope. |
 | [ROADMAP.md](ROADMAP.md) / [ImprovementPlan.md](ImprovementPlan.md) | The resume-ready sprint | Largely delivered. Its UI sections describe the Black & Gold design that was replaced. Phases 4–5 (CI, E2E, LICENSE) were never finished and are still open. |
-| [REWORK_PLAN.md](REWORK_PLAN.md) | How the visual design was arrived at | Complete. All eight phases shipped. Supersedes the UI sections of the two documents above. Read it for the reasoning; read DESIGN.md for the rules. |
-| [DESIGN.md](DESIGN.md) | **The visual design, entirely** | Live, written from the built artifact. The reference for anything you draw. |
+| [REWORK_PLAN.md](REWORK_PLAN.md) / [DESIGN.md](DESIGN.md) | The Step Row ("drum machine") design | **Superseded 2026-10-21** by the UI overhaul below. They describe the look being replaced; DESIGN.md is rewritten from the built result at the overhaul's end. Do not draw from them. |
+| [docs/ui-overhaul/](docs/ui-overhaul/) | **The visual design and interaction model** | Live, decided 2026-10-21. `AUDIT_REPORT.md` (the printed-cookbook direction, the build plan, decisions) and `APP_FEEL_DEBATE.md` (how links became app controls). The reference for anything you draw until DESIGN.md is rewritten. |
 | [LAUNCH_PLAN.md](LAUNCH_PLAN.md) | **Distribution, the local/global split, accounts, money** | Live, decided 2026-09-18. The authority on the public multi-user direction and its phasing. Where an older document disagrees on multi-user scope, this one wins. |
 
 `CURRENT_FEATURES.md` describes what exists. `TESTED_FEATURES.md` mirrors it as
@@ -41,62 +41,65 @@ a manual-testing checklist.
 
 # The visual world
 
-**The design language is the Step Row system, documented in full in
-[DESIGN.md](DESIGN.md)** — read it before drawing anything. The reference world
-is an early-80s rhythm machine: matte panels, silkscreened labels, lit step
-keys, seven-segment readouts.
+**The design language is a printed cookbook you write yourself** — warm paper,
+ink, one paprika accent, a serif for the recipe and a quiet sans for the
+controls. It is being built screen by screen on `feat/ui-overhaul`; the plan,
+the decisions and the per-screen change list are in
+[docs/ui-overhaul/](docs/ui-overhaul/). The foundation (fonts, tokens, themes,
+the component layer) is done; screens still showing keys, segment readouts or
+silkscreen labels are waiting for their phase.
 
-**The previous "Black & Gold" design — pitch black with gold accents,
-glassmorphism, gradients, glows — was deliberately removed.** VISION.md and
-ImprovementPlan.md still describe it. They are wrong on this point. Do not
-restore any of it.
+**Two previous designs were deliberately removed: "Black & Gold" (pitch black,
+gold, glass, glows) and the "Step Row" drum machine (true black, silkscreened
+caps, lit keys, seven-segment readouts).** VISION.md, ImprovementPlan.md,
+REWORK_PLAN.md and DESIGN.md still describe them. Do not restore either.
 
-### Colour is temporal, never decorative
+### Colour means one thing each
 
-Red means a thing is happening **now** — and, per Launch Plan decision B3, it
-may also mark the **one** solid primary control on a screen. Nothing else is
-red. Orange is due next, yellow is queued, bone is complete, and an unlit key is
-a phase not reached — drawn as deliberately as a lit one. Errors take `--fault`,
-the caution lamp, never red; destructive controls carry the `--spoiled` rule.
-Colour is never spent on decoration, on branding, or on a control that merely
-wants attention. `src/designSystem.test.ts` enforces which files may draw red.
+**Paprika (`--accent`) is the one primary action on a screen** — Start
+cooking, Save — and a mark of rating (stars). It is never how a link announces
+itself: links and controls are ink and say what they are by shape and by the
+press. Sage is "have it / done", butter is a timer or the current step, pencil
+is a margin note from a past bake. Errors take `--fault` (ochre), never the
+accent; destructive controls carry the `--spoiled` rule and are never filled.
+The `key-*` tokens survive only for a bake's phase states in `StepRow`.
 
-### One ban, two materials
+### No glow, no gradient, no blur
 
-**No glow, except a lit key or a lit segment.** Light means a thing is on.
-
-Gradient and backdrop blur are permitted as *materials with one use each*, never
-as decoration:
-
-- `--faceplate` / `.faceplate` — the few-percent sheen of a moulded panel lit
-  from above. The only gradient in the chrome.
-- `.scrim` — the blurred layer behind something that genuinely sits *over* the
-  interface: a modal, a sheet, a drawer. Never on a panel that is part of the
-  page.
-
-Neither goes on a photograph. **`src/designSystem.test.ts` enforces this and
-fails the build on any ad-hoc `bg-gradient-to-*` or `backdrop-blur-*` utility in
-a component.**
+Paper is flat. Depth comes from a hairline, a soft corner and a small lift
+(`--lift`) under a raised sheet. The `.scrim` behind a sheet is a flat dim.
+**`src/designSystem.test.ts` fails the build on any gradient, blur or
+zero-offset glow**, on tracked uppercase labels, and on contrast below 4.5:1 for
+every text pairing it lists.
 
 ### Typography
 
-Self-hosted variable fonts, latin subset, precached for offline: Archivo
-Variable (display and instruction prose) and JetBrains Mono Variable (UI, labels
-and data). Seven-segment readouts are reserved for instrument values — weights,
-temperatures, timers, totals. Counts, servings and dates use tabular mono.
+Self-hosted variable fonts, latin subset, precached for offline: **Fraunces**
+(titles, `.font-title`, sentence case), **Source Serif 4** (the reading face —
+method, headnotes, notes; `.font-prose`) and **Inter Tight** (controls, labels
+and figures; `font-sans`, tabular numerals). Labels are `.ui-label`: small,
+medium weight, sentence case. Times print as a cookbook does: "45 min",
+"1 h 15" (`formatMinutes`).
 
 ---
 
 # The component layer
 
 `src/components/ui` is the whole vocabulary: `Panel`/`PanelRow`, `Button`,
-`Field`/`TextArea`/`Select`, `Sheet`, `Menu`, `SegmentReadout`, `StepRow`,
-`RecipePlate`, `Photo`, `RecipeTile`, `InstrumentRow`, `Meter`, `Skeleton`,
-`PublishState`, `Tag`, `Prose`.
+`IconButton`, `BackButton`, `Segmented`, `Field`/`TextArea`/`Select`, `Sheet`,
+`Menu`, `Readout`, `StepRow`, `RecipePlate`, `Photo`, `RecipeTile`,
+`InstrumentRow`, `Meter`, `Skeleton`, `PublishState`, `Tag`, `Prose`.
 
-- **Compose these rather than hand-rolling inline Tailwind** for a panel, a
-  control, a readout or an overlay. Hand-rolling is how the previous system
-  drifted into forty button styles and eleven copies of the same modal.
+- **Compose these rather than hand-rolling inline Tailwind** for a section, a
+  control, a figure or an overlay. Hand-rolling is how a previous system drifted
+  into forty button styles and eleven copies of the same modal.
+- **It is an app, not a website: no web-style text links.** Navigation is a
+  `BackButton`, a whole-card link, a row, a tab or a segmented control; an
+  action is a `Button` or `IconButton`. Every pressable thing uses `.pressable`
+  (sinks and tints on pointer-down). See `docs/ui-overhaul/APP_FEEL_DEBATE.md`.
+- **Haptics go through `haptic(kind)`** in `src/lib/haptics.ts` — one kind per
+  moment (selection, light, medium, success, warning), off on the web and when
+  switched off in Settings.
 - **Every overlay is a `Sheet`.** It carries the focus trap, Escape, focus
   returned to whatever opened it, and a counted scroll lock. Never hand-roll a
   scrim — a modal you cannot leave by keyboard is a trap.
@@ -107,13 +110,14 @@ temperatures, timers, totals. Counts, servings and dates use tabular mono.
 
 # UI/UX principles
 
-- **Dark is the default**, and it is true `#000000`. Light is the faceplate
-  inverted and is first-class, not a courtesy. Two themes only.
+- **Paper (light) is the default** (`src/lib/theme.ts`, mirrored in the inline
+  script in `index.html`). Dark is the same book at night — warm charcoal
+  `#16120F`, never true black. Two themes only.
 - **Mobile-first**: every layout must work at 375px with no horizontal scroll.
   Anything a thumb reaches repeatedly is a **44px** target. `size="sm"` is for
   dense desktop chrome and for inline affordances inside a chip.
-- **Motion derives from one clock**: the chase light sweeping and a key flashing
-  on press. framer-motion is used for page transitions and a few entrances;
+- **Motion is short and physical**: a press (80 ms), a 24px slide, a sheet
+  rising (280 ms). framer-motion is used for page transitions and a few entrances;
   prefer CSS transitions, which the global `prefers-reduced-motion` rule
   collapses for free. **A JS timer is not covered by that rule — check
   `prefers-reduced-motion` yourself before animating with one.**
@@ -172,8 +176,8 @@ Whenever any changes are made to the codebase, you MUST:
 - **Soft deletes everywhere**: Every record carries `updatedAt` and `deletedAt`. Deletes are tombstones — sync depends on it.
 
 ### Interface
-- **Two themes only**: Light + Dark. OLED Black was consolidated into Dark.
-- **No sidebar auto-hide**: Sidebar is always visible on desktop. Between `md` and `lg` it narrows to a 64px icon rail (names kept as screen-reader text and tooltips); it never disappears.
+- **Two themes only**: Light (paper, the default) + Dark (warm charcoal). OLED Black was consolidated into Dark.
+- **Four destinations, a slim top bar on desktop** (decided 2026-10-21, built in overhaul Phase 2): Cookbook, Bakes, Shop, Discover — a bottom tab bar on the phone and a slim top bar on desktop, replacing the sidebar. Settings and account sit behind an avatar. Until Phase 2 lands, the sidebar is still always visible on desktop and never auto-hides.
 - **No markdown editor**: Notes are a panel and a textarea. The markdown widget brought its own toolbar, split pane and colour system, and was removed along with its dependencies.
 
 ---

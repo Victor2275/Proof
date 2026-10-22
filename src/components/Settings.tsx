@@ -9,7 +9,8 @@ import { STORED_ON_DEVICE, formatBytes, requestPersistentStorage, storageReport 
 import { useSession } from '../lib/session';
 import AccountPanel from './AccountPanel';
 import { hapticsEnabled, ttsEnabled as readTtsEnabled } from '../lib/settings';
-import { Panel, PanelRow, Button, Meter, buttonClassName, cn } from './ui';
+import { Panel, PanelRow, Button, Meter, Segmented, buttonClassName } from './ui';
+import { applyTheme, readTheme, type ThemeChoice } from '../lib/theme';
 
 /*
  * Settings.
@@ -68,7 +69,7 @@ function ActionRow({
   return (
     <div className="flex flex-wrap items-start justify-between gap-3 border-t border-rule pt-5 first:border-t-0 first:pt-0">
       <div className="min-w-0 flex-1">
-        <p className="label-silkscreen text-ink">{title}</p>
+        <p className="ui-label text-ink">{title}</p>
         <p className="mt-0.5 text-sm text-ink-muted">{description}</p>
         {status ? (
           <p className="mt-1 text-sm text-ink" role="status">
@@ -101,7 +102,7 @@ function SettingRow({
   return (
     <div className="flex items-center justify-between gap-4 border-b border-rule py-3 last:border-b-0">
       <div className="min-w-0">
-        <p className="label-silkscreen text-ink">{label}</p>
+        <p className="ui-label text-ink">{label}</p>
         <p className="mt-0.5 text-sm text-ink-muted">{description}</p>
       </div>
       <Button
@@ -116,41 +117,8 @@ function SettingRow({
   );
 }
 
-/** A bank of keys where exactly one is down. */
-function KeyBank<T extends string>({
-  legend,
-  value,
-  options,
-  onChange,
-}: {
-  legend: string;
-  value: T;
-  options: { value: T; label: string; icon?: ReactNode }[];
-  onChange: (next: T) => void;
-}) {
-  return (
-    <div className="flex flex-col gap-2" role="group" aria-label={legend}>
-      <div className="flex flex-wrap gap-2">
-        {options.map((option) => (
-          <Button
-            key={option.value}
-            engaged={value === option.value}
-            icon={option.icon}
-            onClick={() => onChange(option.value)}
-            className={cn('flex-1', 'min-w-24')}
-          >
-            {option.label}
-          </Button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 export default function Settings() {
-  const [theme, setTheme] = useState<'light' | 'dark' | 'system'>(
-    () => (localStorage.getItem('theme') as any) || 'system',
-  );
+  const [theme, setTheme] = useState<ThemeChoice>(readTheme);
   const [haptics, setHaptics] = useState(hapticsEnabled);
   const [defaultBakersMath, setDefaultBakersMath] = useState(
     () => localStorage.getItem('defaultBakersMath') === 'true',
@@ -199,16 +167,7 @@ export default function Settings() {
   };
 
   useEffect(() => {
-    if (theme === 'system') {
-      localStorage.removeItem('theme');
-      document.documentElement.classList.toggle(
-        'dark',
-        window.matchMedia('(prefers-color-scheme: dark)').matches,
-      );
-    } else {
-      localStorage.setItem('theme', theme);
-      document.documentElement.classList.toggle('dark', theme === 'dark');
-    }
+    applyTheme(theme);
   }, [theme]);
 
   useEffect(() => {
@@ -295,7 +254,7 @@ export default function Settings() {
     <div className="mx-auto flex max-w-3xl flex-col gap-8 pb-20">
       <header className="flex flex-wrap items-end justify-between gap-4 border-b border-rule pb-6">
         <div className="flex flex-col gap-2">
-          <h1 className="font-faceplate text-3xl leading-none text-ink sm:text-4xl">Settings</h1>
+          <h1 className="font-title text-3xl leading-none text-ink sm:text-4xl">Settings</h1>
           <p className="max-w-prose text-ink-muted">
             How the machine behaves, and the cookbook it keeps on this device.
           </p>
@@ -306,20 +265,18 @@ export default function Settings() {
 
       <Panel title="Appearance">
         <div className="flex flex-col gap-3">
-          <KeyBank
-            legend="Theme"
+          <Segmented
+            label="Theme"
             value={theme}
             onChange={setTheme}
+            block
             options={[
               { value: 'light', label: 'Light' },
               { value: 'dark', label: 'Dark' },
               { value: 'system', label: 'System' },
             ]}
           />
-          <p className="text-sm text-ink-muted">
-            Dark is the default: the scene this was built for is a kitchen before dawn, where the
-            only lit object is a propped phone. System follows the device.
-          </p>
+          <p className="text-sm text-ink-muted">Dark is the same book at night. System follows the device.</p>
         </div>
       </Panel>
 
@@ -367,7 +324,7 @@ export default function Settings() {
                 label="Storage used"
                 value={usage}
                 max={quota}
-                cells={24}
+
                 readout={`${formatBytes(usage)} of ${formatBytes(quota)}`}
               />
             ) : null}

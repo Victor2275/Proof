@@ -148,7 +148,7 @@ export default function BasicInfoForm({
                 {tags.map((tag) => (
                   <li
                     key={tag}
-                    className="label-silkscreen flex items-center gap-1.5 rounded-control border border-rule px-2 py-1 text-ink"
+                    className="ui-label flex items-center gap-1.5 rounded-control border border-rule px-2 py-1 text-ink"
                   >
                     {tag}
                     <button
@@ -192,7 +192,7 @@ export default function BasicInfoForm({
                       next.splice(idx, 1);
                       setRecipe({ ...recipe, imageUrls: next });
                     }}
-                    className="label-silkscreen absolute inset-0 flex items-center justify-center bg-ground/80 text-ink opacity-0 transition-opacity focus-visible:opacity-100 group-hover:opacity-100"
+                    className="ui-label absolute inset-0 flex items-center justify-center bg-ground/80 text-ink opacity-0 transition-opacity focus-visible:opacity-100 group-hover:opacity-100"
                   >
                     Remove
                   </button>

@@ -32,13 +32,13 @@ export default function SharedRecipeCommunity({ recipe }: { recipe: PublishedRec
             <PanelRow
               label="Rating"
               value={
-                <span className="font-mono tabular-nums">
+                <span className="font-sans tabular-nums">
                   {average ? `${average} of 5 · ${plural(stats.ratingCount, 'rating')}` : 'Not rated yet'}
                 </span>
               }
             />
-            <PanelRow label="Baked" value={<span className="font-mono tabular-nums">{plural(stats.bakedCount, 'time')}</span>} />
-            <PanelRow label="Saved" value={<span className="font-mono tabular-nums">{plural(stats.saves, 'time')}</span>} />
+            <PanelRow label="Baked" value={<span className="font-sans tabular-nums">{plural(stats.bakedCount, 'time')}</span>} />
+            <PanelRow label="Saved" value={<span className="font-sans tabular-nums">{plural(stats.saves, 'time')}</span>} />
           </div>
           {isAuthor ? (
             <p className="text-sm text-ink-muted">Your recipe. Ratings come from other bakers.</p>
@@ -60,7 +60,7 @@ export default function SharedRecipeCommunity({ recipe }: { recipe: PublishedRec
       <button
         type="button"
         onClick={() => setReporting({ type: 'recipe', id: recipe._id })}
-        className="label-silkscreen flex min-h-11 items-center self-start text-ink-muted underline decoration-1 underline-offset-4 hover:text-ink"
+        className="ui-label flex min-h-11 items-center self-start text-ink-muted underline decoration-1 underline-offset-4 hover:text-ink"
       >
         Report this recipe
       </button>
@@ -140,18 +140,18 @@ function Comments({ recipe, isAuthor, onReport }: { recipe: PublishedRecipe; isA
             {items.map((c) => (
               <li key={c._id} className="flex flex-col gap-1.5 border-b border-rule py-3 first:pt-0 last:border-b-0">
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <span className="label-silkscreen text-ink">@{c.authorHandle}</span>
-                  <span className="font-mono text-xs tabular-nums text-ink-muted">
+                  <span className="ui-label text-ink">@{c.authorHandle}</span>
+                  <span className="font-sans text-xs tabular-nums text-ink-muted">
                     {new Date(c.createdAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
                   </span>
                 </div>
                 <Prose className="text-sm">{c.body}</Prose>
                 <div className="flex flex-wrap items-center gap-4">
-                  {c.pending ? <span className="label-silkscreen text-ink-muted">Waiting for a look · only you can see it</span> : null}
+                  {c.pending ? <span className="ui-label text-ink-muted">Waiting for a look · only you can see it</span> : null}
                   {c.mine || isAuthor ? (
                     <button
                       type="button"
-                      className="label-silkscreen flex min-h-11 items-center text-ink-muted hover:text-ink"
+                      className="ui-label flex min-h-11 items-center text-ink-muted hover:text-ink"
                       onClick={() => remove.mutate(c._id)}
                     >
                       Delete
@@ -159,7 +159,7 @@ function Comments({ recipe, isAuthor, onReport }: { recipe: PublishedRecipe; isA
                   ) : (
                     <button
                       type="button"
-                      className="label-silkscreen flex min-h-11 items-center text-ink-muted hover:text-ink"
+                      className="ui-label flex min-h-11 items-center text-ink-muted hover:text-ink"
                       onClick={() => onReport(c._id)}
                     >
                       Report

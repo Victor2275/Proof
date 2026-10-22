@@ -15,10 +15,9 @@ export default defineConfig({
         name: 'Proof',
         short_name: 'Proof',
         description: 'A private digital laboratory for recipe formulation.',
-        theme_color: '#000000',
-        // Dark is the default and the ground is true black; a white splash
-        // was a flash of the wrong world on every cold start.
-        background_color: '#000000',
+        theme_color: '#fbf7f0',
+        // Paper is the default theme; the splash matches it.
+        background_color: '#fbf7f0',
         display: 'standalone',
         icons: [
           {

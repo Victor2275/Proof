@@ -173,7 +173,7 @@ export default function PublishSheet({ open, onClose, recipe, publication }: Pub
         <p className="text-sm text-ink-muted">
           The recipe here stays yours and private. Edits you make later stay private until you push them.
         </p>
-        <p className="label-silkscreen text-ink-muted">
+        <p className="ui-label text-ink-muted">
           {photos === 0
             ? 'No photograph from this device'
             : `${photos} ${photos === 1 ? 'photograph' : 'photographs'} from this device`}

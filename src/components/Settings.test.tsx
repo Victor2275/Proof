@@ -16,7 +16,8 @@ vi.mock('../lib/api', async (importOriginal) => ({
   },
 }));
 
-vi.mock('../lib/settings', () => ({
+vi.mock('../lib/settings', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../lib/settings')>()),
   hapticsEnabled: true,
   ttsEnabled: true,
 }));
@@ -63,33 +64,38 @@ describe('Settings', () => {
     expect(voice).toHaveTextContent('On');
   });
 
-  it('runs the theme as a bank where exactly one key is down', async () => {
+  it('opens on paper when no theme has been chosen', () => {
+    renderScreen(<Settings />);
+    expect(screen.getByRole('radio', { name: 'Light' })).toHaveAttribute('aria-checked', 'true');
+    expect(document.documentElement.classList.contains('dark')).toBe(false);
+  });
+
+  it('runs the theme as a segmented choice where exactly one is checked', async () => {
     const user = userEvent.setup();
     renderScreen(<Settings />);
 
-    const light = screen.getByRole('button', { name: 'Light' });
-    const dark = screen.getByRole('button', { name: 'Dark' });
+    const light = screen.getByRole('radio', { name: 'Light' });
+    const dark = screen.getByRole('radio', { name: 'Dark' });
 
     await user.click(dark);
-    expect(dark).toHaveAttribute('aria-pressed', 'true');
-    expect(light).toHaveAttribute('aria-pressed', 'false');
+    expect(dark).toHaveAttribute('aria-checked', 'true');
+    expect(light).toHaveAttribute('aria-checked', 'false');
     expect(document.documentElement.classList.contains('dark')).toBe(true);
     expect(localStorage.getItem('theme')).toBe('dark');
 
     await user.click(light);
-    expect(light).toHaveAttribute('aria-pressed', 'true');
-    expect(dark).toHaveAttribute('aria-pressed', 'false');
+    expect(light).toHaveAttribute('aria-checked', 'true');
+    expect(dark).toHaveAttribute('aria-checked', 'false');
     expect(document.documentElement.classList.contains('dark')).toBe(false);
   });
 
-  it('forgets the stored theme when it is handed back to the system', async () => {
+  it('remembers a choice to follow the device, rather than forgetting it', async () => {
     const user = userEvent.setup();
     renderScreen(<Settings />);
-    await user.click(screen.getByRole('button', { name: 'Dark' }));
-    expect(localStorage.getItem('theme')).toBe('dark');
-
-    await user.click(screen.getByRole('button', { name: 'System' }));
-    expect(localStorage.getItem('theme')).toBeNull();
+    await user.click(screen.getByRole('radio', { name: 'System' }));
+    // An absent key means "never chosen", which is paper; "system" must be
+    // stored or it would silently turn back into light on the next launch.
+    expect(localStorage.getItem('theme')).toBe('system');
   });
 
   it('keeps the operator tools behind the operator PIN', async () => {

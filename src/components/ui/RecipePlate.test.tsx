@@ -19,7 +19,7 @@ describe('RecipePlate', () => {
     expect(screen.queryByRole('img')).not.toBeInTheDocument();
   });
 
-  it('falls back to the unlit plate when the photograph fails to load', () => {
+  it('falls back to the title card when the photograph fails to load', () => {
     render(<RecipePlate src="https://example.com/dead.jpg" alt="Broken" />);
     const img = screen.getByRole('img', { name: 'Broken' });
     fireEvent.error(img);

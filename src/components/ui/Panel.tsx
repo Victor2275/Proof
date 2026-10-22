@@ -2,25 +2,26 @@ import type { ReactNode } from 'react';
 import { cn } from '../../lib/cn';
 
 /*
- * A matte panel with a silkscreened head.
+ * A section of a page.
  *
- * This replaces the rounded, translucent, glowing "card" of the previous world.
- * It is squared and bordered by a hairline rule; depth comes from the rule, the
- * ground behind it, and the faceplate sheen — the few-percent ramp of a moulded
- * panel lit from above — never from a drop shadow.
+ * Paper on paper: a raised sheet with a hairline and soft corners, its title
+ * set as a heading rather than printed on a header bar. Most of a screen
+ * should not need one — a heading and whitespace divide a page well enough —
+ * so a panel is for a group that genuinely belongs together: an account, a
+ * set of totals, a form.
  *
  * Panels do not nest. If content inside a panel needs separating, it gets a
  * rule, not another panel.
  */
 
 export interface PanelProps {
-  /** Silkscreened caption on the head rule. */
+  /** The section's heading. */
   title?: string;
-  /** Lights the head LED — reserved for a panel whose subject is running now. */
+  /** Marks a panel whose subject is running now with a small accent dot. */
   lit?: boolean;
-  /** Draws the panel in the signal colour: this is the thing happening now. */
+  /** Edges the panel in the accent: this is the thing happening now. */
   active?: boolean;
-  /** Controls ranged at the right of the head. */
+  /** Controls ranged at the right of the heading. */
   actions?: ReactNode;
   /** Removes the body padding, for a panel whose child manages its own edges. */
   flush?: boolean;
@@ -40,39 +41,28 @@ export function Panel({
   return (
     <section
       className={cn(
-        'rounded-panel border bg-panel faceplate',
-        active ? 'border-signal' : 'border-rule',
+        'rounded-panel border bg-paper-raised',
+        active ? 'border-accent' : 'border-rule',
         className,
       )}
     >
       {title || actions ? (
-        <header
-          className={cn(
-            'flex items-center justify-between gap-3 border-b px-4 py-2.5',
-            active ? 'border-signal' : 'border-rule',
-          )}
-        >
+        <header className={cn('flex min-h-12 items-center justify-between gap-3 px-4', flush ? 'pt-3 pb-2' : 'pt-4')}>
           <div className="flex min-w-0 items-center gap-2">
-            {/* The head LED. Dark is a designed state, not an empty one. */}
-            <span
-              className={cn('h-2 w-2 shrink-0', lit ? 'bg-signal' : 'bg-key-unlit')}
-              aria-hidden="true"
-            />
-            {title ? <h2 className="label-silkscreen truncate">{title}</h2> : null}
+            {lit ? <span className="h-2 w-2 shrink-0 rounded-full bg-accent" aria-hidden="true" /> : null}
+            {title ? <h2 className="font-title truncate text-lg text-ink">{title}</h2> : null}
           </div>
           {actions ? <div className="flex shrink-0 items-center gap-1">{actions}</div> : null}
         </header>
       ) : null}
-      <div className={flush ? undefined : 'p-4'}>{children}</div>
+      <div className={flush ? undefined : cn('px-4 pb-4', title || actions ? 'pt-1' : 'pt-4')}>{children}</div>
     </section>
   );
 }
 
 /**
- * A label/value row, as printed down the side of a panel.
- *
- * The label is silkscreened and the value is ranged right, so a stack of these
- * reads as a spec block rather than as sentences.
+ * A label and its value on one line, the value ranged right — a totals block,
+ * an account's details.
  */
 export function PanelRow({
   label,
@@ -84,9 +74,9 @@ export function PanelRow({
   className?: string;
 }) {
   return (
-    <div className={cn('flex items-baseline justify-between gap-4 py-1.5', className)}>
-      <span className="label-silkscreen">{label}</span>
-      <span className="min-w-0 truncate text-right text-sm text-ink">{value}</span>
+    <div className={cn('flex items-baseline justify-between gap-4 border-b border-rule py-2.5 last:border-b-0', className)}>
+      <span className="text-sm text-ink-2">{label}</span>
+      <span className="min-w-0 truncate text-right text-sm font-medium text-ink">{value}</span>
     </div>
   );
 }

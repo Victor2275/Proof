@@ -1,21 +1,18 @@
+import { Check } from 'lucide-react';
 import { cn } from '../../lib/cn';
 
 /*
- * The instrument row.
+ * A row of small chips that say present or absent at a glance: the
+ * ingredients a recipe needs, ticked when the pantry has them.
  *
- * On the panel this is the bank of voices — BD, SD, LT — each a short
- * silkscreened label with a lamp beneath it. In Proof it carries presence and
- * absence: the ingredients a recipe needs, lit when the pantry has them and
- * dark when it does not, readable in one sweep without reading a list.
- *
- * Lit state is never colour alone. The lamp changes shape as well as fill, and
- * every item carries a text alternative, so the row survives both a colour
- * vision difference and a screen reader.
+ * Present is never colour alone. A present chip carries a tick and a sage
+ * edge; an absent one is a plain outline. Every chip also carries its state in
+ * words for a screen reader.
  */
 
 export interface InstrumentItem {
   id: string;
-  /** Short silkscreen label — abbreviated to fit the lamp's column. */
+  /** Short label — abbreviated to fit a chip. */
   label: string;
   lit: boolean;
   /** Full name, for the tooltip and the accessible description. */
@@ -24,7 +21,7 @@ export interface InstrumentItem {
 
 export interface InstrumentRowProps {
   items: InstrumentItem[];
-  /** What the lamps mean, e.g. "In pantry". Used to name the list. */
+  /** What a tick means, e.g. "In pantry". Used to name the list. */
   legend: string;
   onSelect?: (item: InstrumentItem) => void;
   className?: string;
@@ -34,28 +31,17 @@ export function InstrumentRow({ items, legend, onSelect, className }: Instrument
   if (items.length === 0) return null;
 
   return (
-    <ul
-      className={cn('flex flex-wrap items-start gap-x-4 gap-y-3', className)}
-      aria-label={legend}
-    >
+    <ul className={cn('flex flex-wrap items-start gap-2', className)} aria-label={legend}>
       {items.map((item) => {
         const name = item.title ?? item.label;
+        const chip = cn(
+          'inline-flex min-h-8 items-center gap-1 rounded-full border px-3 text-sm',
+          item.lit ? 'border-sage text-ink' : 'border-rule-strong text-ink-muted',
+        );
         const content = (
           <>
-            <span className="label-silkscreen block text-center">{item.label}</span>
-            <span
-              className={cn(
-                'mx-auto mt-1 block h-2 w-2',
-                // Lit lamps are square and filled; dark lamps are a hollow
-                // outline, so state reads without relying on colour.
-                //
-                // Filled is bone, not signal: the signal colour is reserved for
-                // what is happening *now*, and an ingredient sitting in the
-                // pantry is not an event.
-                item.lit ? 'bg-ink' : 'border border-key-unlit bg-transparent',
-              )}
-              aria-hidden="true"
-            />
+            {item.lit ? <Check className="h-3.5 w-3.5 text-sage" strokeWidth={2.5} aria-hidden="true" /> : null}
+            <span aria-hidden="true">{item.label}</span>
             <span className="sr-only">
               {name} — {item.lit ? legend : `not ${legend.toLowerCase()}`}
             </span>
@@ -63,18 +49,18 @@ export function InstrumentRow({ items, legend, onSelect, className }: Instrument
         );
 
         return (
-          <li key={item.id} className="min-w-10">
+          <li key={item.id}>
             {onSelect ? (
               <button
                 type="button"
                 title={name}
                 onClick={() => onSelect(item)}
-                className="block w-full rounded-control px-1 py-1 hover:bg-panel-sunk"
+                className={cn(chip, 'pressable hover:bg-paper-sunk')}
               >
                 {content}
               </button>
             ) : (
-              <span title={name} className="block px-1 py-1">
+              <span title={name} className={chip}>
                 {content}
               </span>
             )}

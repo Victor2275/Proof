@@ -10,21 +10,24 @@ import { ChevronDown } from 'lucide-react';
 import { cn } from '../../lib/cn';
 
 /*
- * A panel text input.
+ * A text input.
  *
- * Outlined at rest; the rule and the unit both turn signal on focus, the way a
- * value being edited lights on a machine. Units are printed inside the field
- * rather than floating beside it, so a weight reads as one object.
+ * A raised paper well with a hairline; the edge turns ink on focus and the
+ * focus ring does the rest. Units are printed inside the field rather than
+ * floating beside it, so a weight reads as one object.
  *
- * Errors name the problem and the recovery, and are wired to the input with
- * aria-describedby rather than left as red text nearby.
+ * Errors name the problem and the recovery, in the caution colour, and are
+ * wired to the input with aria-describedby rather than left as text nearby.
  */
+
+const WELL =
+  'rounded-control border bg-paper-raised text-ink transition-colors placeholder:text-ink-muted';
 
 export interface FieldProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size'> {
   label: string;
   /** Reaches the input itself, for a sheet that must focus it on open. */
   ref?: Ref<HTMLInputElement>;
-  /** Silkscreened unit printed at the right edge of the field, e.g. "G", "°F". */
+  /** Unit printed at the right edge of the field, e.g. "g", "°F". */
   unit?: string;
   /** Names the problem and the recovery. Presence switches the field to error. */
   error?: string;
@@ -54,15 +57,15 @@ export function Field({
 
   return (
     <div className={cn('flex flex-col gap-1.5', className)}>
-      <label htmlFor={fieldId} className={cn('label-silkscreen', hideLabel && 'sr-only')}>
+      <label htmlFor={fieldId} className={cn('ui-label text-ink-2', hideLabel && 'sr-only')}>
         {label}
       </label>
 
       <div
         className={cn(
-          'group flex items-center gap-2 rounded-control border bg-panel-sunk px-3',
-          'focus-within:border-signal',
-          error ? 'border-fault' : 'border-rule',
+          WELL,
+          'group flex items-center gap-2 px-3 focus-within:border-ink',
+          error ? 'border-fault' : 'border-rule-strong',
         )}
       >
         {leading ? <span className="shrink-0 text-ink-muted">{leading}</span> : null}
@@ -70,29 +73,16 @@ export function Field({
           id={fieldId}
           aria-invalid={error ? true : undefined}
           aria-describedby={message ? messageId : undefined}
-          className={cn(
-            'h-11 min-w-0 flex-1 bg-transparent text-ink placeholder:text-ink-muted',
-            'focus:outline-none',
-          )}
+          className="h-11 min-w-0 flex-1 bg-transparent text-ink placeholder:text-ink-muted focus:outline-none"
           {...props}
         />
         {unit ? (
-          <span
-            className={cn(
-              'label-silkscreen shrink-0',
-              error ? 'text-fault' : 'group-focus-within:text-signal',
-            )}
-          >
-            {unit}
-          </span>
+          <span className={cn('shrink-0 text-sm', error ? 'text-fault' : 'text-ink-muted')}>{unit}</span>
         ) : null}
       </div>
 
       {message ? (
-        <p
-          id={messageId}
-          className={cn('text-xs', error ? 'text-fault' : 'text-ink-muted')}
-        >
+        <p id={messageId} className={cn('text-sm', error ? 'text-fault' : 'text-ink-muted')}>
           {message}
         </p>
       ) : null}
@@ -101,12 +91,11 @@ export function Field({
 }
 
 /*
- * A panel textarea.
+ * A textarea.
  *
- * Same outline, same focus behaviour and same error wiring as Field — a
- * multi-line value is still a value, and should not look like a different
- * system because it wraps. Sized by rows rather than a fixed height so a step
- * and a note can ask for the room they need.
+ * Same well, same focus behaviour and same error wiring as Field — a
+ * multi-line value is still a value. Sized by rows so a step and a note can
+ * ask for the room they need; `prose` sets it in the reading serif.
  */
 
 export interface TextAreaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
@@ -114,7 +103,7 @@ export interface TextAreaProps extends TextareaHTMLAttributes<HTMLTextAreaElemen
   error?: string;
   hint?: string;
   hideLabel?: boolean;
-  /** Sets the text in the instruction voice rather than mono, for prose. */
+  /** Sets the text in the reading serif rather than the UI face, for prose. */
   prose?: boolean;
   className?: string;
 }
@@ -137,7 +126,7 @@ export function TextArea({
 
   return (
     <div className={cn('flex flex-col gap-1.5', className)}>
-      <label htmlFor={fieldId} className={cn('label-silkscreen', hideLabel && 'sr-only')}>
+      <label htmlFor={fieldId} className={cn('ui-label text-ink-2', hideLabel && 'sr-only')}>
         {label}
       </label>
       <textarea
@@ -146,15 +135,15 @@ export function TextArea({
         aria-invalid={error ? true : undefined}
         aria-describedby={message ? messageId : undefined}
         className={cn(
-          'w-full resize-y rounded-control border bg-panel-sunk p-3 text-ink placeholder:text-ink-muted',
-          'focus:border-signal focus:outline-none',
-          prose && 'font-prose',
-          error ? 'border-fault' : 'border-rule',
+          WELL,
+          'w-full resize-y p-3 focus:border-ink focus:outline-none',
+          prose && 'font-prose text-[1.0625rem]',
+          error ? 'border-fault' : 'border-rule-strong',
         )}
         {...props}
       />
       {message ? (
-        <p id={messageId} className={cn('text-xs', error ? 'text-fault' : 'text-ink-muted')}>
+        <p id={messageId} className={cn('text-sm', error ? 'text-fault' : 'text-ink-muted')}>
           {message}
         </p>
       ) : null}
@@ -163,12 +152,11 @@ export function TextArea({
 }
 
 /*
- * A panel select.
+ * A select.
  *
  * The native control, because its open list is drawn by the platform and is
  * the one every screen reader and every thumb already knows. Only the closed
- * state is ours: the browser's own arrow is replaced with a silkscreened one
- * so the control reads as part of the faceplate rather than as a visitor.
+ * state is ours.
  */
 
 export interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
@@ -193,16 +181,13 @@ export function Select({
 
   return (
     <div className={cn('flex flex-col gap-1.5', className)}>
-      <label htmlFor={fieldId} className={cn('label-silkscreen', hideLabel && 'sr-only')}>
+      <label htmlFor={fieldId} className={cn('ui-label text-ink-2', hideLabel && 'sr-only')}>
         {label}
       </label>
       <div className="relative">
         <select
           id={fieldId}
-          className={cn(
-            'h-11 w-full appearance-none rounded-control border border-rule bg-panel-sunk pl-3 pr-9',
-            'text-ink focus:border-signal focus:outline-none',
-          )}
+          className={cn(WELL, 'h-11 w-full appearance-none border-rule-strong pl-3 pr-9 focus:border-ink focus:outline-none')}
           {...props}
         >
           {children}
@@ -212,7 +197,7 @@ export function Select({
           aria-hidden="true"
         />
       </div>
-      {hint ? <p className="text-xs text-ink-muted">{hint}</p> : null}
+      {hint ? <p className="text-sm text-ink-muted">{hint}</p> : null}
     </div>
   );
 }

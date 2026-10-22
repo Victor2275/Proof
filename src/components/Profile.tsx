@@ -58,14 +58,14 @@ export default function Profile() {
     <div className="mx-auto flex max-w-6xl flex-col gap-8 pb-20">
       <header className="flex flex-col gap-4 border-b border-rule pb-6">
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="font-faceplate text-3xl text-ink md:text-4xl">{profile.displayName || `@${profile.handle}`}</h1>
+          <h1 className="font-title text-3xl text-ink md:text-4xl">{profile.displayName || `@${profile.handle}`}</h1>
           {profile.pro ? <Tag>Pro</Tag> : null}
         </div>
-        {profile.displayName ? <p className="label-silkscreen text-ink-muted">@{profile.handle}</p> : null}
+        {profile.displayName ? <p className="ui-label text-ink-muted">@{profile.handle}</p> : null}
         {profile.bio ? <Prose className="max-w-prose">{profile.bio}</Prose> : null}
         <div className="max-w-xs">
-          <PanelRow label="Published" value={<span className="font-mono tabular-nums">{stats.published}</span>} />
-          <PanelRow label="Times baked" value={<span className="font-mono tabular-nums">{stats.baked}</span>} />
+          <PanelRow label="Published" value={<span className="font-sans tabular-nums">{stats.published}</span>} />
+          <PanelRow label="Times baked" value={<span className="font-sans tabular-nums">{stats.baked}</span>} />
         </div>
       </header>
 

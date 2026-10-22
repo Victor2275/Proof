@@ -47,7 +47,7 @@ export default function PhotoSlider({
       onMouseLeave={() => setIsDragging(false)}
       onMouseMove={handleMouseMove}
       onTouchMove={handleTouchMove}
-      className={`relative select-none overflow-hidden rounded-xl aspect-square bg-black/5 dark:bg-white/5 border border-border-subtle shadow-sm cursor-ew-resize ${className}`}
+      className={`relative select-none overflow-hidden rounded-xl aspect-square bg-black/5 dark:bg-white/5 border border-rule shadow-sm cursor-ew-resize ${className}`}
     >
       {/* After Image (Background - Baked) */}
       <img
@@ -57,7 +57,7 @@ export default function PhotoSlider({
       />
       
       {/* After Label (Bottom Right) */}
-      <span className="absolute bottom-3 right-3 text-xs font-bold uppercase tracking-wider bg-black/70 text-white px-2.5 py-1 rounded-full pointer-events-none z-10 -xs">
+      <span className="absolute bottom-3 right-3 text-xs font-semibold bg-black/70 text-white px-2.5 py-1 rounded-full pointer-events-none z-10">
         {afterLabel}
       </span>
 
@@ -72,7 +72,7 @@ export default function PhotoSlider({
           className="absolute inset-0 w-full h-full object-cover"
         />
         {/* Before Label (Bottom Left) */}
-        <span className="absolute bottom-3 left-3 text-xs font-bold uppercase tracking-wider bg-black/70 text-white px-2.5 py-1 rounded-full pointer-events-none z-10 -xs">
+        <span className="absolute bottom-3 left-3 text-xs font-semibold bg-black/70 text-white px-2.5 py-1 rounded-full pointer-events-none z-10">
           {beforeLabel}
         </span>
       </div>

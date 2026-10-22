@@ -60,9 +60,9 @@ Recipe apps store recipes. Proof runs the bake and records what happened. The co
 ## Brand Commitments
 
 - **Name:** Proof. Longer form in project docs: Victor's Culinary Lab.
-- **Committed identity:** "Black & Gold" — a pitch-black and paper-white base with gold as the single accent, standing commitment across CLAUDE.md and VISION.md. Generic primaries (plain red, blue, green) are explicitly ruled out.
+- **Committed identity (2026-10-21):** a printed cookbook you write yourself — warm paper (`#FBF7F0`) and ink, one paprika accent (`#B5391F`) for the primary action, Fraunces titles, Source Serif 4 for reading, Inter Tight for controls. Decided in docs/ui-overhaul/. The earlier "Black & Gold" and "Step Row" identities are retired.
 - **Committed reference:** the feel of a high-end physical lab manual crossed with a culinary magazine. Precision and restraint over decoration.
-- **Dark mode is the default** for the demo and production deployment.
+- **Paper (light) is the default theme**; dark is the same book at night (warm charcoal, never true black).
 - **Mobile-first is a commitment, not a breakpoint:** layouts must work at 375px with real touch targets.
 - Token values, type scale, and component conventions are not product truth; the shipped CSS and components are the current visual authority until a DESIGN.md records them.
 
@@ -88,4 +88,4 @@ No formal conformance standard has been established for this project. Product-sp
 - Usable at 375px width with a minimum 44px touch target.
 - Instruction text must be legible at arm's length on a propped device during Baking Mode.
 - Hands-free paths (voice commands, spoken step and timer announcements, haptic feedback) are accessibility-relevant, not novelty.
-- The black-and-gold palette must hold legible contrast for body and muted text; gold-on-black is the highest-risk pairing in the system.
+- Every text pairing in the palette holds at least 4.5:1 in both themes; `src/designSystem.test.ts` computes and enforces it.

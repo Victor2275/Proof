@@ -49,7 +49,7 @@ export function AiAllowance() {
   const { session } = useSession();
   const line = aiAllowanceLine(session.user);
   if (!line || session.isOperator) return null;
-  return <p className="label-silkscreen font-mono tabular-nums text-ink-muted">AI · {line}</p>;
+  return <p className="ui-label font-sans tabular-nums text-ink-muted">AI · {line}</p>;
 }
 
 export interface AiGateSheetProps {

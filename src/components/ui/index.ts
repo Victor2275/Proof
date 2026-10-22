@@ -1,13 +1,15 @@
 /**
  * Proof's component layer.
  *
- * These primitives are the whole vocabulary of the Step Row world. Surfaces
- * compose them; they do not hand-roll inline Tailwind for a panel, a control or
- * a readout, which is how the previous world drifted into forty different
- * button styles.
+ * These primitives are the whole vocabulary of the cookbook. Screens compose
+ * them; they do not hand-roll inline Tailwind for a section, a control or a
+ * figure, which is how a previous design drifted into forty button styles.
  */
 export { Panel, PanelRow, type PanelProps } from './Panel';
 export { Button, buttonClassName, type ButtonProps } from './Button';
+export { IconButton, type IconButtonProps } from './IconButton';
+export { BackButton, type BackButtonProps } from './BackButton';
+export { Segmented, type SegmentedProps, type SegmentedOption } from './Segmented';
 export {
   Field,
   TextArea,
@@ -16,7 +18,7 @@ export {
   type TextAreaProps,
   type SelectProps,
 } from './Field';
-export { SegmentReadout, type SegmentReadoutProps, type SegmentSize } from './SegmentReadout';
+export { Readout, type ReadoutProps, type ReadoutSize } from './Readout';
 export { StepRow, type StepRowProps } from './StepRow';
 export { RecipePlate, type RecipePlateProps, type PlateSize } from './RecipePlate';
 export { Photo, type PhotoProps } from './Photo';

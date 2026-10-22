@@ -54,7 +54,7 @@ export default function IngredientList({
   return (
     <section className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-rule pb-2">
-        <h2 className="label-silkscreen">Ingredients</h2>
+        <h2 className="ui-label">Ingredients</h2>
         <div className="flex gap-1">
           <Button variant="ghost" size="sm" onClick={handleExportGroceryList}>
             Copy list
@@ -77,7 +77,7 @@ export default function IngredientList({
         * not the switch. */}
       {setScaleMultiplier ? (
         <div className="flex items-center gap-3" role="group" aria-label="Scale recipe" data-html2canvas-ignore="true">
-          <span className="label-silkscreen text-silkscreen">Scale</span>
+          <span className="ui-label text-silkscreen">Scale</span>
           <div className="flex gap-px">
             {[0.5, 1, 2, 3].map((m) => (
               <Button
@@ -124,7 +124,7 @@ export default function IngredientList({
                 * figure inside that width instead of running into the name. */}
               <span
                 className={cn(
-                  'flex w-[4.5rem] shrink-0 flex-wrap items-baseline justify-end gap-x-1 text-right font-mono text-sm tabular-nums sm:w-24',
+                  'flex w-[4.5rem] shrink-0 flex-wrap items-baseline justify-end gap-x-1 text-right font-sans text-sm tabular-nums sm:w-24',
                   checked ? 'text-ink-muted line-through' : 'text-ink',
                 )}
               >
@@ -137,7 +137,7 @@ export default function IngredientList({
               </span>
 
               {showBakersMath && math.ok ? (
-                <span className="w-14 shrink-0 text-right font-mono text-xs tabular-nums text-ink-muted">
+                <span className="w-14 shrink-0 text-right font-sans text-xs tabular-nums text-ink-muted">
                   {pct}
                 </span>
               ) : null}
@@ -170,7 +170,7 @@ export default function IngredientList({
                 type="button"
                 onClick={() => setAiSubstituteIngredient(ing.name)}
                 title={`Substitutions for ${ing.name}`}
-                className="label-silkscreen flex shrink-0 items-center gap-1 rounded-control border border-rule px-2 py-1 text-ink-muted opacity-80 hover:text-ink focus-visible:opacity-100 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100"
+                className="ui-label flex shrink-0 items-center gap-1 rounded-control border border-rule px-2 py-1 text-ink-muted opacity-80 hover:text-ink focus-visible:opacity-100 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100"
               >
                 {/* At phone width the word does not fit beside a quantity, a
                   * name and a pantry lamp — the icon carries it, and the

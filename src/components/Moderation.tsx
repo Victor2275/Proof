@@ -52,7 +52,7 @@ export default function Moderation() {
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-8 pb-20">
       <header className="flex flex-col gap-2 border-b border-rule pb-6">
-        <h1 className="font-faceplate text-3xl text-ink sm:text-4xl">Moderation</h1>
+        <h1 className="font-title text-3xl text-ink sm:text-4xl">Moderation</h1>
         <p className="text-ink-muted">What the screen held back, and what people reported, oldest first.</p>
       </header>
 
@@ -86,11 +86,11 @@ export default function Moderation() {
                 {queue.data.recipes.map((r) => (
                   <li key={r._id} className="flex flex-col gap-3 border-b border-rule py-4 first:pt-0 last:border-b-0">
                     <div className="flex flex-wrap items-baseline justify-between gap-2">
-                      <p className="font-faceplate text-lg text-ink">{r.title}</p>
-                      <span className="label-silkscreen text-ink-muted">@{r.authorHandle}</span>
+                      <p className="font-title text-lg text-ink">{r.title}</p>
+                      <span className="ui-label text-ink-muted">@{r.authorHandle}</span>
                     </div>
                     {r.moderation.reason ? <p className="text-sm text-ink">Screen: {r.moderation.reason}</p> : null}
-                    <p className="label-silkscreen text-ink-muted">
+                    <p className="ui-label text-ink-muted">
                       {r.sourceUrl ? `Imported from ${r.sourceUrl}` : 'Written in Proof'}
                       {r.sourceAttribution ? ` · credit: ${r.sourceAttribution}` : ''}
                       {r.ownWords ? ' · says own words' : ''}
@@ -123,7 +123,7 @@ export default function Moderation() {
               <ul className="flex flex-col">
                 {queue.data.comments.map((c) => (
                   <li key={c._id} className="flex flex-col gap-3 border-b border-rule py-4 first:pt-0 last:border-b-0">
-                    <span className="label-silkscreen text-ink-muted">@{c.authorHandle}</span>
+                    <span className="ui-label text-ink-muted">@{c.authorHandle}</span>
                     <Prose className="text-sm">{c.body}</Prose>
                     {c.moderation.reason ? <p className="text-sm text-ink-muted">Screen: {c.moderation.reason}</p> : null}
                     <div className="flex flex-wrap gap-2">
@@ -147,18 +147,18 @@ export default function Moderation() {
               <ul className="flex flex-col">
                 {queue.data.reports.map((report) => (
                   <li key={report._id} className="flex flex-col gap-3 border-b border-rule py-4 first:pt-0 last:border-b-0">
-                    <p className="label-silkscreen text-ink-muted">
+                    <p className="ui-label text-ink-muted">
                       {report.targetType === 'recipe' ? 'Recipe' : 'Comment'}
                       {report.target?.authorHandle ? ` by @${report.target.authorHandle}` : ''}
                       {!report.target ? ' · already gone' : ''}
                     </p>
                     {report.target?.title ? (
                       report.target.slug ? (
-                        <Link to={`/r/${report.target.slug}`} className="font-faceplate text-lg text-ink underline decoration-1 underline-offset-4">
+                        <Link to={`/r/${report.target.slug}`} className="font-title text-lg text-ink underline decoration-1 underline-offset-4">
                           {report.target.title}
                         </Link>
                       ) : (
-                        <p className="font-faceplate text-lg text-ink">{report.target.title}</p>
+                        <p className="font-title text-lg text-ink">{report.target.title}</p>
                       )
                     ) : null}
                     {report.target?.body ? <Prose className="text-sm">{report.target.body}</Prose> : null}

@@ -2,15 +2,14 @@ import type { ReactNode } from 'react';
 import { cn } from '../../lib/cn';
 
 /*
- * A silkscreened tag: LIVE on a published recipe's tile, PRO on a profile
- * (decisions B6, B14). Printed on the panel, not lit — a tag is a fact about
- * the thing, not a thing happening — so it carries no colour at all.
+ * A small fact about a thing: Public on a shared recipe's tile, Pro on a
+ * profile. A tonal pill — it states something, it does not ask to be pressed.
  */
 export function Tag({ children, className }: { children: ReactNode; className?: string }) {
   return (
     <span
       className={cn(
-        'label-silkscreen inline-flex items-center rounded-key border border-rule px-1.5 py-0.5 text-[0.65rem] leading-none text-ink-muted',
+        'inline-flex items-center rounded-full bg-paper-tonal px-2 py-0.5 text-xs font-medium leading-tight text-ink-2',
         className,
       )}
     >

@@ -212,6 +212,9 @@ This is a 1-to-1 mirror of CURRENT_FEATURES.md. Use checkboxes to track manual t
 - [ ] **Audit matrix**: `npm run audit:ui` shoots every cell into `audit-shots/`; a stopped run continues with `AUDIT_RESUME=1`.
 - [ ] **Audit report**: `npm run audit:report` writes `audit-shots/report.md` and a contact sheet per surface and theme.
 - [ ] **Separate from the baselines**: `npm run test:visual` does not pick up the audit specs.
+- [ ] **Overhaul review set**: `npm run audit:overhaul` writes a fold shot, a full-page shot and a text file per screen into `audit-shots/overhaul/before/`; the desktop page shots run past 800px where the page does.
+- [ ] **Overhaul label**: `OVERHAUL_LABEL=after npm run audit:overhaul` writes into `audit-shots/overhaul/after/` and leaves `before/` untouched.
+- [ ] **Overhaul set separate from the baselines**: `npm run test:visual` does not pick up `e2e/overhaul/`.
 
 ## 10. Public launch — Phase 1: the local-first cookbook
 - [ ] **Works offline**: with the network off, create, edit and delete a recipe, log a bake with a photo, add a note and a pantry item; reload; all still there.
@@ -296,6 +299,25 @@ This is a 1-to-1 mirror of CURRENT_FEATURES.md. Use checkboxes to track manual t
 - [ ] **Resend**: Settings → Account → Send the link again sends a fresh one, and the old link stops working.
 - [ ] **No email yet**: without `RESEND_API_KEY`, sign-up says the confirmation couldn't be sent; `verify-account.js` confirms the account.
 - [ ] **Forgot password**: the sheet gives the same message for a real and an unknown address; the reset link sets a new password, signs every device out, and works once.
+
+## 16. UI overhaul — Phase 1: the cookbook foundation
+- [ ] **Paper by default**: with no theme stored (fresh browser), the app opens on warm paper, with no dark flash on load.
+- [ ] **Dark is warm**: Settings → Dark shows warm charcoal, not black; muted text and sheets stay readable.
+- [ ] **Theme control**: Settings → Appearance is a Light | Dark | System segmented control; Tab reaches it once and the arrow keys move the choice; "System" survives a reload and follows the device.
+- [ ] **Faces**: titles in Fraunces, recipe prose in Source Serif 4, controls and figures in Inter Tight — with the network off after one visit (precached).
+- [ ] **Sentence case**: no uppercase, letter-spaced labels anywhere (including the photo Before/After labels).
+- [ ] **No gradient, blur or glow**: panels are flat paper; a sheet's backdrop is a plain dim.
+- [ ] **The press**: buttons, icon buttons, tiles and segments sink slightly and tint while pressed; with reduced motion on, they tint without moving.
+- [ ] **IconButton**: icon-only controls are 44px, read their name to a screen reader, and show it as a tooltip.
+- [ ] **BackButton**: "‹ Name" goes back to the previous screen with its scroll kept; opened cold from a shared link, it goes to the parent screen instead of leaving the app.
+- [ ] **Segmented**: one option checked; arrow keys move it; a tick on a phone with haptics on.
+- [ ] **Readout**: figures are plain tabular numbers with a lower-case unit; a running timer past zero reads in paprika.
+- [ ] **Phases line**: the bake's phases show as a thin line of segments — running one paprika, done ones ink; tapping a segment in Baking Mode jumps to its first step.
+- [ ] **Drop cap**: a recipe with no photo (or a dead photo link) shows its initial on paper at the same size, never an empty box.
+- [ ] **Tile line**: a recipe with a real time shows "Chapter · 1 h 15"; one with the placeholder 20/30 shows its ingredient count instead.
+- [ ] **Publish state in words**: "Private · only on this device", "Waiting for review", "Public in the shared cookbook", "Public · edits not yet shared".
+- [ ] **Meter**: a single rounded track; a tiny real value still shows a sliver; zero shows none.
+- [ ] **Component lab**: `/lab` in development shows buttons, icon buttons, back, segmented, tiles and plates, phases, figures, panels, fields, sheets, menu, pantry chips, meters, publish states and tags.
 
 ## 7. UI/UX Foundation
 - [ ] **"Step Row" Visual World (Phase 0 foundation)**: Rhythm-machine design language — matte panels, silkscreen labels, lit step keys, segment readouts; colour is temporal, not decorative.

@@ -14,7 +14,7 @@ export default function ExpandableInstruction({ text = '', index }: { text: stri
 
   return (
     <li className="flex gap-3">
-      <span className="w-6 shrink-0 font-mono text-sm tabular-nums text-ink-muted">
+      <span className="w-6 shrink-0 font-sans text-sm tabular-nums text-ink-muted">
         {String(index + 1).padStart(2, '0')}
       </span>
       <div className="min-w-0 flex-1">
@@ -25,7 +25,7 @@ export default function ExpandableInstruction({ text = '', index }: { text: stri
           <button
             type="button"
             onClick={() => setExpanded(true)}
-            className="label-silkscreen mt-1.5 text-ink underline underline-offset-2"
+            className="ui-label mt-1.5 text-ink underline underline-offset-2"
           >
             Read more
           </button>

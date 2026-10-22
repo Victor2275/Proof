@@ -29,7 +29,7 @@ export default function PublicationStrip({ recipe }: { recipe: Recipe }) {
         <PublishState state={state === 'rejected' ? 'local' : state} />
         <div className="flex items-center gap-2">
           {publication && (state === 'live' || state === 'edits') ? (
-            <Link to={`/r/${publication.slug}`} className="label-silkscreen text-ink underline decoration-1 underline-offset-4">
+            <Link to={`/r/${publication.slug}`} className="ui-label text-ink underline decoration-1 underline-offset-4">
               Public page
             </Link>
           ) : null}

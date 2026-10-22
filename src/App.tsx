@@ -14,6 +14,7 @@ import { ACCOUNT_PROMPT_EVENT, type AccountPrompt } from './lib/accountPrompt';
 import ErrorBoundary from './components/ErrorBoundary';
 import { Delete } from 'lucide-react';
 import { Button, Field, Sheet, Skeleton } from './components/ui';
+import { readTheme } from './lib/theme';
 
 // Route components are split out of the initial bundle: each screen (and the heavy
 // libraries it pulls — the markdown editor, html2canvas/jspdf, framer-motion) now
@@ -114,7 +115,7 @@ function AuthModal({ open, onClose, onSuccess }: { open: boolean, onClose: () =>
         <div className="flex flex-col gap-3 md:hidden">
           <output
             aria-label={`${pin.length} ${pin.length === 1 ? 'digit' : 'digits'} entered`}
-            className="flex h-12 items-center justify-center rounded-control border border-rule bg-panel-sunk font-mono text-2xl tracking-[0.5em] text-ink"
+            className="flex h-12 items-center justify-center rounded-control border border-rule bg-panel-sunk font-sans text-2xl tracking-[0.5em] text-ink"
           >
             {pin.replace(/./g, '•')}
           </output>
@@ -129,7 +130,7 @@ function AuthModal({ open, onClose, onSuccess }: { open: boolean, onClose: () =>
                   else if (key === '<') setPin(pin.slice(0, -1));
                   else setPin(pin + key);
                 }}
-                className="h-14 rounded-key border border-rule bg-panel font-mono text-xl text-ink transition-colors active:bg-ink active:text-ground"
+                className="h-14 rounded-key border border-rule bg-panel font-sans text-xl text-ink transition-colors active:bg-ink active:text-ground"
               >
                 {key === '<' ? <Delete className="mx-auto h-5 w-5" aria-hidden="true" /> : key}
               </button>
@@ -201,7 +202,7 @@ function App() {
     // mode we have to mirror OS theme changes onto the class ourselves.
     const mq = window.matchMedia('(prefers-color-scheme: dark)');
     const handleSystemTheme = (e: MediaQueryListEvent) => {
-      if (localStorage.getItem('theme')) return; // an explicit choice wins
+      if (readTheme() !== 'system') return; // an explicit choice wins
       document.documentElement.classList.toggle('dark', e.matches);
     };
     mq.addEventListener('change', handleSystemTheme);

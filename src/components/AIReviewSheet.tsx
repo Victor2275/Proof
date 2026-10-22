@@ -72,7 +72,7 @@ function sameValue(a: unknown, b: unknown) {
 function Reading({ caption, lines }: { caption: string; lines: string[] }) {
   return (
     <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-      <span className="label-silkscreen">{caption}</span>
+      <span className="ui-label">{caption}</span>
       {lines.length === 0 ? (
         <p className="text-sm text-ink-muted">Empty</p>
       ) : (
@@ -174,7 +174,7 @@ export default function AIReviewSheet({
                 )}
               >
                 <header className="flex items-center justify-between gap-3 border-b border-rule px-3 py-2">
-                  <h3 className="label-silkscreen text-ink">{FIELD_LABELS[key]}</h3>
+                  <h3 className="ui-label text-ink">{FIELD_LABELS[key]}</h3>
                   <div className="flex items-center gap-1">
                     <Button
                       size="sm"

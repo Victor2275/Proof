@@ -422,7 +422,7 @@ export default function RecipeEditor() {
       <div className="mx-auto flex max-w-xl flex-col gap-4 py-16">
         <Panel title="Editor">
           <div className="flex flex-col gap-4" role="alert">
-            <p className="font-faceplate text-lg text-ink">
+            <p className="font-title text-lg text-ink">
               {stored.isError ? "Couldn't open this recipe on this device" : 'This recipe is not in the cookbook'}
             </p>
             <p className="text-sm text-ink-muted">
@@ -689,7 +689,7 @@ export default function RecipeEditor() {
                         className="hidden h-4 w-4 shrink-0 cursor-move text-ink-muted md:block"
                         aria-hidden="true"
                       />
-                      <span className="label-silkscreen text-ink">Step {i + 1}</span>
+                      <span className="ui-label text-ink">Step {i + 1}</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <Button
@@ -733,7 +733,7 @@ export default function RecipeEditor() {
                       .map((link, lidx) => (
                         <span
                           key={lidx}
-                          className="label-silkscreen flex items-center gap-1.5 rounded-control border border-rule px-2 py-1 text-ink"
+                          className="ui-label flex items-center gap-1.5 rounded-control border border-rule px-2 py-1 text-ink"
                         >
                           <LinkIcon className="h-3 w-3" aria-hidden="true" /> {link.recipeTitle}
                           <button

@@ -7,7 +7,7 @@ import { useRecipes, useBakeLogs, usePublications } from '../lib/queries';
 import { useActiveBake } from '../lib/useActiveBake';
 import { derivePhases } from '../lib/phases';
 import { totalRecipeMinutes, formatMinutesForSegments, isPlaceholderTiming } from '../lib/duration';
-import { Button, Field, StepRow, SegmentReadout, RecipePlate, RecipeTile, buttonClassName } from './ui';
+import { Button, Field, StepRow, Readout, RecipePlate, RecipeTile, buttonClassName } from './ui';
 import OnboardingModal from './OnboardingModal';
 import StarterShelf from './StarterShelf';
 
@@ -61,7 +61,7 @@ function ShelfItem({ recipe, caption }: { recipe: Recipe; caption: string }) {
   return (
     <div className="w-40 shrink-0 sm:w-48">
       <RecipeTile recipe={recipe} />
-      {caption ? <span className="label-silkscreen mt-1 block text-ink-muted">{caption}</span> : null}
+      {caption ? <span className="ui-label mt-1 block text-ink-muted">{caption}</span> : null}
     </div>
   );
 }
@@ -78,7 +78,7 @@ function Shelf({
   if (items.length === 0) return null;
   return (
     <section className="flex flex-col gap-3">
-      <h2 className="label-silkscreen border-b border-rule pb-2">{title}</h2>
+      <h2 className="ui-label border-b border-rule pb-2">{title}</h2>
       <div className="no-scrollbar flex gap-5 overflow-x-auto pb-1">
         {items.map(({ recipe, caption: itemCaption }) => (
           <ShelfItem key={recipe._id} recipe={recipe} caption={itemCaption ?? caption} />
@@ -126,12 +126,12 @@ function PatternRow({
               {/* Wraps to a second line rather than truncating: at 390px beside
                 * a plate, "Mini Bundt Cakes" would lose half its name, and a
                 * recipe a baker cannot identify is not a row worth listing. */}
-              <h3 className="font-faceplate line-clamp-2 text-xl text-ink sm:text-2xl">{recipe.title}</h3>
+              <h3 className="font-title line-clamp-2 text-xl text-ink sm:text-2xl">{recipe.title}</h3>
               {recipe.folder && recipe.folder !== 'Uncategorized' ? (
-                <span className="label-silkscreen text-ink-muted">{recipe.folder}</span>
+                <span className="ui-label text-ink-muted">{recipe.folder}</span>
               ) : null}
             </div>
-            <SegmentReadout
+            <Readout
               value={segment?.value ?? '--'}
               unit={segment?.unit}
               size="sm"
@@ -284,11 +284,11 @@ export default function Dashboard() {
         * the page at 768 and still pushed Inspire Me past the edge at 1024. */}
       <div className="flex flex-col gap-4 border-b border-rule pb-6 xl:flex-row xl:items-center xl:justify-between">
         <div>
-          <h1 className="font-faceplate text-3xl text-ink md:text-4xl">
+          <h1 className="font-title text-3xl text-ink md:text-4xl">
             {bank !== ALL_BANK ? bank : 'My Cookbook'}
           </h1>
           {settled && !emptyCookbook ? (
-            <p className="label-silkscreen text-ink-muted">
+            <p className="ui-label text-ink-muted">
               {recipes.length} {recipes.length === 1 ? 'recipe' : 'recipes'}
             </p>
           ) : null}
@@ -371,7 +371,7 @@ export default function Dashboard() {
           <button
             type="button"
             onClick={() => setBank(ALL_BANK)}
-            className={`label-silkscreen flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-control px-3 py-2 text-left lg:min-h-0 ${
+            className={`ui-label flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-control px-3 py-2 text-left lg:min-h-0 ${
               bank === ALL_BANK ? 'bg-panel-sunk text-ink' : 'text-ink-muted hover:text-ink'
             }`}
           >
@@ -382,7 +382,7 @@ export default function Dashboard() {
               key={name}
               type="button"
               onClick={() => setBank(name)}
-              className={`label-silkscreen flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-control px-3 py-2 text-left lg:min-h-0 ${
+              className={`ui-label flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-control px-3 py-2 text-left lg:min-h-0 ${
                 bank === name ? 'bg-panel-sunk text-ink' : 'text-ink-muted hover:text-ink'
               }`}
             >
@@ -397,7 +397,7 @@ export default function Dashboard() {
             <section className="border border-signal rounded-panel p-4">
               <div className="mb-3 flex items-center gap-2">
                 <span className="h-2 w-2 bg-signal" aria-hidden="true" />
-                <span className="label-silkscreen">Now baking</span>
+                <span className="ui-label">Now baking</span>
               </div>
               {/* The running bake is the one place a full step row belongs on
                 * this page: its keys are lit, so they are reporting rather
@@ -418,7 +418,7 @@ export default function Dashboard() {
               * drawn for it, rather than a skeleton that flashes (B30). */}
             {isPending ? null : loadError ? (
               <div className="border border-fault rounded-panel px-6 py-16 text-center" role="alert">
-                <p className="font-faceplate text-lg text-ink">Couldn't open the cookbook on this device</p>
+                <p className="font-title text-lg text-ink">Couldn't open the cookbook on this device</p>
                 <p className="mx-auto mt-2 max-w-prose text-sm text-ink-muted">
                   {loadError} Try again; if it keeps happening, the browser may be blocking storage for
                   this site, which private browsing does.
@@ -448,7 +448,7 @@ export default function Dashboard() {
 
                 {remaining > 0 && (
                   <div className="mt-8 flex items-center justify-center gap-4">
-                    <span className="label-silkscreen text-ink-muted">
+                    <span className="ui-label text-ink-muted">
                       {visibleCount} of {listed.length}
                     </span>
                     <Button variant="secondary" onClick={() => setVisibleCount((n) => n + PAGE_SIZE)}>

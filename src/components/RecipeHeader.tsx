@@ -9,7 +9,7 @@ import {
   formatMinutesForSegments,
   isPlaceholderTiming,
 } from '../lib/duration';
-import { RecipePlate, SegmentReadout, StepRow } from './ui';
+import { RecipePlate, Readout, StepRow } from './ui';
 
 /*
  * The recipe's masthead: title-led, with the photograph framed as a plate.
@@ -63,14 +63,14 @@ export default function RecipeHeader({ recipe, heroImage, scaleMultiplier }: Rec
         * as a kicker; they classify the recipe, so they moved down beside the
         * tags, which do the same job. */}
       <div className="flex flex-col gap-3">
-        <h1 className="font-faceplate text-3xl leading-[1.05] text-ink sm:text-5xl">
+        <h1 className="font-title text-3xl leading-[1.05] text-ink sm:text-5xl">
           {recipe.title}
         </h1>
 
         {/* Attribution is a first-class line, not a footnote (B5/B8): who a
           * saved copy came from, or who shared the recipe being read. */}
         {sharedBy || forkedFrom ? (
-          <p className="label-silkscreen text-ink-muted">
+          <p className="ui-label text-ink-muted">
             {sharedBy ? (
               <>
                 Shared by{' '}
@@ -123,14 +123,14 @@ export default function RecipeHeader({ recipe, heroImage, scaleMultiplier }: Rec
 
         <div className="flex min-w-0 flex-col gap-5">
           <div className="flex flex-wrap items-end gap-x-6 gap-y-4">
-            <SegmentReadout label="Total" value={totalSeg.value} unit={totalSeg.unit} size="md" tone="ink" />
-            <SegmentReadout label="Prep" value={prep.value} unit={prep.unit} size="sm" tone="ink" />
-            <SegmentReadout label="Cook" value={cook.value} unit={cook.unit} size="sm" tone="ink" />
+            <Readout label="Total" value={totalSeg.value} unit={totalSeg.unit} size="md" tone="ink" />
+            <Readout label="Prep" value={prep.value} unit={prep.unit} size="sm" tone="ink" />
+            <Readout label="Cook" value={cook.value} unit={cook.unit} size="sm" tone="ink" />
             {/* A scaled recipe says so in its label: the number on screen is no
               * longer the number the recipe was written at. It does not light
               * up — scaling is a setting, not something happening now, and red
               * here was a second "now" beside the Start key. */}
-            <SegmentReadout
+            <Readout
               label={scaleMultiplier === 1 ? 'Serves' : `Serves · ${scaleMultiplier}×`}
               value={servings}
               size="sm"
@@ -143,15 +143,15 @@ export default function RecipeHeader({ recipe, heroImage, scaleMultiplier }: Rec
             * any column width. */}
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
             {recipe.folder && recipe.folder !== 'Uncategorized' ? (
-              <span className="label-silkscreen text-silkscreen">{recipe.folder}</span>
+              <span className="ui-label text-silkscreen">{recipe.folder}</span>
             ) : null}
-            <span className="label-silkscreen text-ink-muted">{recipe.difficulty || 'Medium'}</span>
+            <span className="ui-label text-ink-muted">{recipe.difficulty || 'Medium'}</span>
             {recipe.tags && recipe.tags.length > 0 ? (
               <ul className="flex flex-wrap gap-1.5">
                 {recipe.tags.map((tag) => (
                   <li
                     key={tag}
-                    className="label-silkscreen rounded-key border border-rule px-2 py-1 text-ink-muted"
+                    className="ui-label rounded-key border border-rule px-2 py-1 text-ink-muted"
                   >
                     {tag}
                   </li>

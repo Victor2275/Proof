@@ -56,23 +56,23 @@ export default function RecipeDrawer({ isOpen, onClose, recipeId }: RecipeDrawer
         ) : (
           <div className="flex flex-col gap-8">
             <section className="flex flex-col gap-2">
-              <h3 className="label-silkscreen">Ingredients</h3>
+              <h3 className="ui-label">Ingredients</h3>
               <ul className="flex flex-col border-t border-rule">
                 {recipe.ingredients.map((ing, idx) => (
                   <li key={idx} className="flex items-baseline justify-between gap-4 border-b border-rule py-2">
                     <span className="text-ink">{ing.name}</span>
-                    <span className="shrink-0 font-mono tabular-nums text-ink">{formatAmount(ing)}</span>
+                    <span className="shrink-0 font-sans tabular-nums text-ink">{formatAmount(ing)}</span>
                   </li>
                 ))}
               </ul>
             </section>
 
             <section className="flex flex-col gap-2">
-              <h3 className="label-silkscreen">Method</h3>
+              <h3 className="ui-label">Method</h3>
               <ol className="flex flex-col gap-4">
                 {recipe.instructions.map((step, idx) => (
                   <li key={idx} className="flex gap-4">
-                    <span className="w-6 shrink-0 pt-1 font-mono text-sm tabular-nums text-ink-muted">
+                    <span className="w-6 shrink-0 pt-1 font-sans text-sm tabular-nums text-ink-muted">
                       {idx + 1}
                     </span>
                     <p className="max-w-prose text-lg leading-relaxed text-ink">{step}</p>

@@ -73,7 +73,7 @@ export default function BottomNav() {
                 )}
               >
                 <Icon className="h-5 w-5" aria-hidden="true" />
-                <span className="label-silkscreen">{item.label}</span>
+                <span className="ui-label">{item.label}</span>
               </Link>
             );
           })}
@@ -115,7 +115,7 @@ export default function BottomNav() {
               aria-current={isActive ? 'page' : undefined}
             >
               <Icon className={cn('h-5 w-5', isActive ? 'text-ink' : 'text-ink-muted')} strokeWidth={isActive ? 2.5 : 2} />
-              <span className={cn('label-silkscreen', isActive ? 'text-ink' : 'text-ink-muted')}>
+              <span className={cn('ui-label', isActive ? 'text-ink' : 'text-ink-muted')}>
                 {item.label}
               </span>
             </NavLink>
@@ -129,7 +129,7 @@ export default function BottomNav() {
           aria-expanded={moreOpen}
         >
           <MoreHorizontal className={cn('h-5 w-5', isMoreActive ? 'text-ink' : 'text-ink-muted')} strokeWidth={isMoreActive ? 2.5 : 2} />
-          <span className={cn('label-silkscreen', isMoreActive ? 'text-ink' : 'text-ink-muted')}>More</span>
+          <span className={cn('ui-label', isMoreActive ? 'text-ink' : 'text-ink-muted')}>More</span>
         </button>
       </nav>
     </div>

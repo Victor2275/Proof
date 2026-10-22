@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { derivePhases } from '../lib/phases';
-import { Button, StepRow, SegmentReadout, Panel } from './ui';
+import { Button, StepRow, Readout, Panel } from './ui';
 
 /*
  * The landing page — the one Persuade surface in an Operate product.
@@ -74,7 +74,7 @@ export default function LandingPage() {
     <div className="min-h-screen bg-ground px-6 py-16 text-ink">
       <div className="mx-auto flex max-w-3xl flex-col gap-12">
         <header className="flex flex-col items-center gap-5 text-center">
-          <h1 className="font-faceplate text-5xl leading-none text-ink sm:text-7xl">Proof</h1>
+          <h1 className="font-title text-5xl leading-none text-ink sm:text-7xl">Proof</h1>
           <p className="max-w-prose text-lg text-ink-muted sm:text-xl">
             A recipe is a pattern. A bake is that pattern running. This is the machine that runs
             it, with a light that always says where <span className="text-ink">now</span> is.
@@ -91,12 +91,12 @@ export default function LandingPage() {
             />
             <div className="flex flex-wrap items-end justify-between gap-4 border-t border-rule pt-4">
               <div className="flex flex-col gap-1">
-                <span className="label-silkscreen">Now</span>
-                <span className="font-faceplate text-xl text-signal">
+                <span className="ui-label">Now</span>
+                <span className="font-title text-xl text-signal">
                   {runningPhase?.label ?? '—'}
                 </span>
               </div>
-              <SegmentReadout
+              <Readout
                 value={String(phaseIndex + 1).padStart(2, '0')}
                 unit={`OF ${String(phases.length).padStart(2, '0')}`}
                 label="Phase"
@@ -123,7 +123,7 @@ export default function LandingPage() {
           >
             Open the cookbook
           </Button>
-          <p className="label-silkscreen">No account. Nothing to set up.</p>
+          <p className="ui-label">No account. Nothing to set up.</p>
         </div>
 
         {/*

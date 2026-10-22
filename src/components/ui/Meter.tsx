@@ -1,14 +1,11 @@
 import { cn } from '../../lib/cn';
 
 /*
- * The output meter.
+ * A level: hydration, how many recipes have been baked, a share of a total.
  *
- * A row of discrete cells that fill left to right, climbing red at the top of
- * the scale exactly as a level meter does. Discrete rather than continuous
- * because a machine's meter counts in cells, and because a countable row is
- * easier to read at a glance across a counter than a smooth bar.
- *
- * Used for hydration, bake counts, and the analytics rows.
+ * One rounded track with an ink fill — a measuring line, not a progress bar
+ * pretending to be busy. A value past `hotAt` turns the fill paprika, for the
+ * rare reading where the top of the scale is worth noticing.
  */
 
 export interface MeterProps {
@@ -16,82 +13,47 @@ export interface MeterProps {
   value: number;
   /** Top of the scale. */
   max: number;
-  /** Cells in the row. More cells read as finer instrumentation. */
-  cells?: number;
   /**
-   * Fraction of the scale above which cells climb into warning colour. Defaults
-   * to 1 — no hot end — because most values Proof meters (hydration, bake
-   * counts) are not dangerous at the top of their range, and a meter that runs
-   * warm by default spends the signal colour on nothing.
+   * Fraction of the scale above which the fill turns paprika. Defaults to 1 —
+   * no hot end — because most values Proof measures are not dangerous at the
+   * top of their range, and a meter that runs warm by default spends the
+   * accent on nothing.
    */
   hotAt?: number;
   label?: string;
-  /** Printed at the right of the label rule. */
+  /** Printed at the right of the label. */
   readout?: string;
   className?: string;
 }
 
-export function Meter({
-  value,
-  max,
-  cells = 16,
-  hotAt = 1,
-  label,
-  readout,
-  className,
-}: MeterProps) {
+export function Meter({ value, max, hotAt = 1, label, readout, className }: MeterProps) {
   const safeMax = max > 0 ? max : 1;
   const ratio = Math.min(Math.max(value / safeMax, 0), 1);
-  // A present-but-tiny value lights one cell rather than none. 3 of 203
-  // recipes rounds to zero cells across the row, and a meter that reads "3 of
-  // 203" beside an entirely dark row is reporting the wrong thing: some is not
-  // none, and the difference is the whole point of the reading.
-  const scaled = Math.round(ratio * cells);
-  const filled = value > 0 && scaled === 0 ? 1 : scaled;
-  // `hotAt` of 1 means the scale has no hot end at all, so the warm band below
-  // it must not appear either — otherwise every meter that runs near full grows
-  // an orange tip it was never asked for.
-  const hasHotEnd = hotAt < 1;
+  // A present-but-tiny value still shows. 3 of 203 recipes is not none, and a
+  // meter that reads "3 of 203" beside an empty track reports the wrong thing.
+  const shown = value > 0 ? Math.max(ratio, 0.02) : 0;
+  const hot = hotAt < 1 && ratio > hotAt;
 
   return (
     <div className={cn('flex flex-col gap-1.5', className)}>
       {label || readout ? (
         <div className="flex items-baseline justify-between gap-3">
-          {label ? <span className="label-silkscreen">{label}</span> : null}
-          {readout ? <span className="label-silkscreen text-ink">{readout}</span> : null}
+          {label ? <span className="text-sm text-ink-2">{label}</span> : null}
+          {readout ? <span className="text-sm font-semibold text-ink">{readout}</span> : null}
         </div>
       ) : null}
       <div
-        className="flex h-3 w-full gap-px"
+        className="h-2 w-full overflow-hidden rounded-full bg-paper-tonal"
         role="meter"
         aria-valuenow={value}
         aria-valuemin={0}
         aria-valuemax={max}
         aria-label={label}
       >
-        {Array.from({ length: cells }).map((_, i) => {
-          const position = (i + 1) / cells;
-          const isFilled = i < filled;
-          return (
-            <div
-              key={i}
-              className={cn(
-                'flex-1 rounded-key',
-                // Filled cells are neutral until they enter the hot zone, so a
-                // meter reads as a level first and a warning only when it is one.
-                !isFilled
-                  ? 'bg-key-unlit'
-                  : !hasHotEnd
-                    ? 'bg-key-done'
-                    : position > hotAt
-                      ? 'bg-key-now'
-                      : position > hotAt - 0.15
-                        ? 'bg-key-due'
-                        : 'bg-key-done',
-              )}
-            />
-          );
-        })}
+        <div
+          className={cn('h-full rounded-full transition-[width] duration-300', hot ? 'bg-accent' : 'bg-ink-2')}
+          style={{ width: `${shown * 100}%` }}
+        />
       </div>
     </div>
   );

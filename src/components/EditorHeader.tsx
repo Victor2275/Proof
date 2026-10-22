@@ -31,7 +31,7 @@ function Count({ label, value }: { label: string; value: number }) {
   return (
     <span className="flex items-baseline gap-1.5">
       <span className="text-sm text-ink">{value}</span>
-      <span className="label-silkscreen">{label}</span>
+      <span className="ui-label">{label}</span>
     </span>
   );
 }
@@ -60,7 +60,7 @@ export default function EditorHeader({
             <span className="hidden sm:inline">Back</span>
           </Button>
           <div className="min-w-0">
-            <p className="truncate font-faceplate text-base leading-tight text-ink">
+            <p className="truncate font-title text-base leading-tight text-ink">
               {title.trim() || (id ? 'Untitled recipe' : 'New recipe')}
             </p>
             <div className="flex items-center gap-3">

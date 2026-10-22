@@ -7,7 +7,7 @@ import { userToken, useSession } from '../lib/session';
 import { ulid } from '../lib/ulid';
 import { hapticsEnabled, ttsEnabled } from '../lib/settings';
 import { publishRunningTimers, formatTimerClock } from '../lib/timerBus';
-import { Button, SegmentReadout, Sheet, cn } from './ui';
+import { Button, Readout, Sheet, cn } from './ui';
 
 export interface Timer {
   id: string;
@@ -227,12 +227,12 @@ export default function TimerManager() {
             <section
               key={t.id}
               className={cn(
-                'flex flex-col rounded-panel border bg-panel faceplate',
+                'flex flex-col rounded-panel border bg-panel',
                 isNegative ? 'border-signal' : 'border-rule',
               )}
             >
               <header className={cn('flex items-center justify-between gap-2 border-b pl-3', isNegative ? 'border-signal' : 'border-rule')}>
-                <h2 className="label-silkscreen min-w-0 truncate">
+                <h2 className="ui-label min-w-0 truncate">
                   {t.name}
                   {paused ? ' · paused' : ''}
                 </h2>
@@ -247,10 +247,10 @@ export default function TimerManager() {
               </header>
 
               <div className="flex items-center justify-between gap-3 py-2 pl-3 pr-1">
-                <SegmentReadout
+                <Readout
                   value={formatTimerClock(currentRemaining)}
                   size="md"
-                  tone={isNegative ? 'signal' : 'ink'}
+                  tone={isNegative ? 'accent' : 'ink'}
                   label={isNegative ? 'Overtime' : undefined}
                 />
                 <button
@@ -297,7 +297,7 @@ export default function TimerManager() {
             <p className="text-ink-muted">
               Start a timer for <strong className="font-medium text-ink">{pendingTimer.name}</strong>?
             </p>
-            <SegmentReadout value={formatTimerClock(pendingTimer.durationSecs * 1000)} size="lg" tone="ink" />
+            <Readout value={formatTimerClock(pendingTimer.durationSecs * 1000)} size="lg" tone="ink" />
           </div>
         ) : null}
       </Sheet>

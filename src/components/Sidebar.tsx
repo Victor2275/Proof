@@ -43,7 +43,7 @@ export default function Sidebar({ className = '' }: { className?: string }) {
   return (
     <aside className={cn('w-16 lg:w-64 bg-panel h-screen flex flex-col fixed left-0 top-0 border-r border-rule z-20', className)}>
       <div className="flex h-[4.5rem] items-center justify-center lg:block lg:h-auto lg:p-6">
-        <span className="font-faceplate text-xl text-ink" aria-label="Proof">
+        <span className="font-title text-xl text-ink" aria-label="Proof">
           <span aria-hidden="true" className="lg:hidden">P</span>
           <span aria-hidden="true" className="hidden lg:inline">Proof</span>
         </span>
@@ -59,7 +59,7 @@ export default function Sidebar({ className = '' }: { className?: string }) {
         >
           <span className="h-2 w-2 shrink-0 bg-signal" aria-hidden="true" />
           <span className="sr-only lg:not-sr-only lg:min-w-0 lg:flex-1 lg:truncate lg:text-xs lg:text-ink">{activeBake.recipeTitle}</span>
-          <span className="label-silkscreen sr-only shrink-0 text-ink-muted lg:not-sr-only">Resume</span>
+          <span className="ui-label sr-only shrink-0 text-ink-muted lg:not-sr-only">Resume</span>
         </Link>
       ) : null}
 

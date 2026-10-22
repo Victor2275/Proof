@@ -42,7 +42,15 @@ export function totalRecipeMinutes(recipe: {
   return (prep ?? 0) + (cook ?? 0);
 }
 
-/** Formats total minutes for a SegmentReadout: "45" / "MIN" or "1:30" / "HR". */
+/** Formats total minutes the way a cookbook prints them: "45 min", "1 h 15", "2 h". */
+export function formatMinutes(totalMinutes: number): string {
+  if (totalMinutes < 60) return `${totalMinutes} min`;
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return minutes === 0 ? `${hours} h` : `${hours} h ${String(minutes).padStart(2, '0')}`;
+}
+
+/** Formats total minutes for a Readout: "45" / "MIN" or "1:30" / "HR". */
 export function formatMinutesForSegments(totalMinutes: number): { value: string; unit: string } {
   if (totalMinutes < 60) return { value: String(totalMinutes), unit: 'MIN' };
   const hours = Math.floor(totalMinutes / 60);

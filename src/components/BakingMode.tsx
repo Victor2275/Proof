@@ -17,7 +17,7 @@ import { getActiveBake, startActiveBake, clearActiveBake } from '../lib/activeBa
 import { derivePhases, type Phase } from '../lib/phases';
 import { ingredientsForStep, scaleTargetGrams } from '../lib/stepIngredients';
 import { subscribeRunningTimers, getRunningTimers, formatTimerClock } from '../lib/timerBus';
-import { Button, Panel, SegmentReadout, Sheet, StepRow, cn } from './ui';
+import { Button, Panel, Readout, Sheet, StepRow, cn } from './ui';
 
 /*
  * Baking Mode — the surface the whole product exists for.
@@ -517,7 +517,7 @@ export default function BakingMode() {
   if (!recipe) {
     return (
       <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-ground px-6 text-center">
-        <span className="label-silkscreen text-ink-muted">
+        <span className="ui-label text-ink-muted">
           {loadFailed ? "Couldn't open this recipe on this device" : 'This recipe is not in the cookbook'}
         </span>
         <p className="max-w-prose text-sm text-ink-muted">
@@ -577,7 +577,7 @@ export default function BakingMode() {
         every remaining pixel — on a 390px phone in landscape that is the whole
         difference between two lines of instruction and four.
       */}
-      <header className="shrink-0 border-b border-rule bg-panel faceplate">
+      <header className="shrink-0 border-b border-rule bg-panel">
         <div className="flex items-center gap-2 px-2 py-2 sm:px-3">
           <Button
             variant="ghost"
@@ -586,7 +586,7 @@ export default function BakingMode() {
             aria-label="Leave baking mode"
             icon={<X className="h-4 w-4" />}
           />
-          <h1 className="label-silkscreen min-w-0 flex-1 truncate text-ink">{recipe.title}</h1>
+          <h1 className="ui-label min-w-0 flex-1 truncate text-ink">{recipe.title}</h1>
 
           {/* Controls scroll rather than wrap: the head must stay one bar tall,
             * and a second row of chrome is a second row stolen from the step. */}
@@ -687,12 +687,12 @@ export default function BakingMode() {
             aria-label="Running timers"
           >
             {timers.map((timer) => (
-              <SegmentReadout
+              <Readout
                 key={timer.id}
                 label={timer.running ? timer.name : `${timer.name} · paused`}
                 value={formatTimerClock(timer.remainingMs)}
                 size="sm"
-                tone={timer.remainingMs < 0 ? 'signal' : 'ink'}
+                tone={timer.remainingMs < 0 ? 'accent' : 'ink'}
                 className="shrink-0"
               />
             ))}
@@ -717,13 +717,13 @@ export default function BakingMode() {
                     * because the keys have no room for labels there. Repeating
                     * the phase here would say it twice on the narrowest screen. */}
                   {currentPhase ? (
-                    <span className="label-silkscreen hidden text-signal sm:inline">
+                    <span className="ui-label hidden text-signal sm:inline">
                       {currentPhase.label}
                     </span>
                   ) : null}
                   {/* A step index is a count, not an instrument value, so it is
                     * set in tabular mono rather than spent on segments. */}
-                  <span className="font-mono text-xs tabular-nums text-ink-muted">
+                  <span className="font-sans text-xs tabular-nums text-ink-muted">
                     STEP {String(currentStep + 1).padStart(2, '0')} / {String(recipe.instructions.length).padStart(2, '0')}
                   </span>
                 </div>
@@ -731,7 +731,7 @@ export default function BakingMode() {
 
               <div className="text-2xl leading-snug text-ink sm:text-4xl sm:leading-tight">
                 {isFinished ? (
-                  <span className="font-faceplate">Bake complete.</span>
+                  <span className="font-title">Bake complete.</span>
                 ) : (
                   renderWithTimers(stepText, `Step ${currentStep + 1}`)
                 )}
@@ -759,7 +759,7 @@ export default function BakingMode() {
                     {smartIngredients.map((ing, idx) => (
                       <li key={idx} className="flex items-baseline justify-between gap-4 py-2">
                         <span className="min-w-0 truncate text-ink">{ing.name}</span>
-                        <span className="shrink-0 font-mono text-sm tabular-nums text-ink">
+                        <span className="shrink-0 font-sans text-sm tabular-nums text-ink">
                           {formatAmount(ing)}
                         </span>
                       </li>
@@ -768,16 +768,16 @@ export default function BakingMode() {
 
                   {scaleConnected && scaleTarget > 0 && (
                     <div className="mt-4 flex items-end gap-6 border-t border-rule pt-4">
-                      <SegmentReadout
+                      <Readout
                         label="On scale"
                         value={scaleWeight ? scaleWeight.weight : '---'}
                         unit={scaleWeight ? scaleWeight.unit : 'G'}
                         size="lg"
                         tone={
-                          scaleWeight && scaleWeight.weight >= scaleTarget * 0.95 ? 'signal' : 'ink'
+                          scaleWeight && scaleWeight.weight >= scaleTarget * 0.95 ? 'accent' : 'ink'
                         }
                       />
-                      <SegmentReadout label="Target" value={scaleTarget} unit="G" size="md" tone="ink" />
+                      <Readout label="Target" value={scaleTarget} unit="G" size="md" tone="ink" />
                     </div>
                   )}
                 </Panel>
@@ -812,7 +812,7 @@ export default function BakingMode() {
                       )}
                       aria-hidden="true"
                     />
-                    <h2 className="label-silkscreen">{phase.label}</h2>
+                    <h2 className="ui-label">{phase.label}</h2>
                   </div>
 
                   {phase.stepIndices.map((stepIndex) => {
@@ -829,7 +829,7 @@ export default function BakingMode() {
                             stepIndex === currentStep && 'border-signal',
                           )}
                         >
-                          <span className="shrink-0 font-mono text-sm tabular-nums text-ink-muted">
+                          <span className="shrink-0 font-sans text-sm tabular-nums text-ink-muted">
                             {String(stepIndex + 1).padStart(2, '0')}
                           </span>
                           <span className="text-lg leading-relaxed text-ink sm:text-xl">
@@ -874,7 +874,7 @@ export default function BakingMode() {
         floating arrow on a phone sat on top of the ingredient quantities.
       */}
       {!isFinished && (
-        <div className="shrink-0 border-t border-rule bg-panel faceplate px-3 py-3 pb-safe">
+        <div className="shrink-0 border-t border-rule bg-panel px-3 py-3 pb-safe">
           <div className="mx-auto flex max-w-3xl items-stretch gap-3">
             <Button
               size="lg"
@@ -918,7 +918,7 @@ export default function BakingMode() {
                 />
                 <span className={cn('flex min-w-0 flex-1 items-baseline justify-between gap-3', checkedIngredients[i] && 'opacity-40 line-through')}>
                   <span className="min-w-0 truncate text-ink">{ing.name}</span>
-                  <span className="shrink-0 font-mono text-sm tabular-nums text-ink-muted">
+                  <span className="shrink-0 font-sans text-sm tabular-nums text-ink-muted">
                     {formatAmount(ing)}
                   </span>
                 </span>
@@ -970,7 +970,7 @@ export default function BakingMode() {
         <form id="bake-log-form" onSubmit={handleFinishSubmit} className="flex flex-col gap-6">
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between gap-3">
-              <label htmlFor="bake-notes" className="label-silkscreen">Bake notes</label>
+              <label htmlFor="bake-notes" className="ui-label">Bake notes</label>
               {browserSupportsSpeechRecognition && (
                 <Button
                   size="sm"
@@ -993,7 +993,7 @@ export default function BakingMode() {
           </div>
 
           <div className="flex flex-col gap-3">
-            <span className="label-silkscreen">Photos</span>
+            <span className="ui-label">Photos</span>
             <div className="relative flex min-h-24 cursor-pointer flex-col items-center justify-center gap-2 rounded-control border border-dashed border-rule bg-panel-sunk p-6 transition-colors hover:border-ink-muted">
               <input
                 type="file"
@@ -1007,7 +1007,7 @@ export default function BakingMode() {
                 className="absolute inset-0 cursor-pointer opacity-0"
               />
               <Upload className="h-6 w-6 text-ink-muted" />
-              <span className="label-silkscreen">Add photos</span>
+              <span className="ui-label">Add photos</span>
             </div>
 
             {imageFiles.length > 0 && (
@@ -1059,7 +1059,7 @@ export default function BakingMode() {
             ['"Close"', 'Closes open panels'],
           ].map(([command, effect]) => (
             <div key={command} className="flex items-baseline justify-between gap-4 py-2">
-              <dt className="font-mono text-xs text-ink">{command}</dt>
+              <dt className="font-sans text-xs text-ink">{command}</dt>
               <dd className="text-right text-ink-muted">{effect}</dd>
             </div>
           ))}

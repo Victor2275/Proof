@@ -17,13 +17,13 @@ import { cn } from '../../lib/cn';
  * A dropdown: a short list of actions hung from the control that opened it.
  *
  * Not a Sheet. A menu does not cover the page or ask for a decision; it is a
- * panel of keys that drops open under its trigger and goes away when anything
+ * short list that drops open under its trigger and goes away when anything
  * else is touched. What it shares with a Sheet is the part that was missing
  * from the three hand-rolled copies it replaces in the Recipe Viewer: Escape
  * closes it and hands focus back to the trigger, a click anywhere else closes
  * it, and the arrow keys walk its items.
  *
- * Items are separated by rules, not floated as cards with shadows.
+ * One raised sheet of paper; items are rows, not cards.
  */
 
 interface TriggerProps {
@@ -120,7 +120,7 @@ export function Menu({ trigger, align = 'left', label, children, className }: Me
             aria-label={label}
             onKeyDown={onKeyDown}
             className={cn(
-              'absolute top-full z-50 mt-2 w-56 overflow-hidden rounded-panel border border-rule bg-panel faceplate',
+              'absolute top-full z-50 mt-2 w-60 overflow-hidden rounded-panel border border-rule bg-paper-raised py-1 shadow-[var(--lift)]',
               align === 'right' ? 'right-0' : 'left-0',
             )}
           >
@@ -133,7 +133,7 @@ export function Menu({ trigger, align = 'left', label, children, className }: Me
 }
 
 const ITEM =
-  'flex min-h-11 w-full items-center gap-2 border-b border-rule px-4 text-left text-sm text-ink last:border-b-0 hover:bg-panel-sunk focus:bg-panel-sunk focus:outline-none';
+  'flex min-h-11 w-full items-center gap-3 px-4 text-left text-[0.9375rem] text-ink hover:bg-paper-sunk focus:bg-paper-sunk focus:outline-none active:bg-paper-tonal';
 
 export interface MenuItemProps {
   /** Runs the action; the menu closes after it. */

@@ -154,7 +154,7 @@ export default function AccountSheet({ open, mode, onModeChange, onClose, reason
           <>
             <Field
               label="Handle"
-              leading={<span className="font-mono text-ink-muted">@</span>}
+              leading={<span className="font-sans text-ink-muted">@</span>}
               autoComplete="username"
               autoCapitalize="none"
               spellCheck={false}
@@ -189,7 +189,7 @@ export default function AccountSheet({ open, mode, onModeChange, onClose, reason
           <button
             type="button"
             onClick={() => onModeChange('forgot')}
-            className="label-silkscreen flex min-h-11 items-center self-start text-ink-muted underline decoration-1 underline-offset-4 hover:text-ink"
+            className="ui-label flex min-h-11 items-center self-start text-ink-muted underline decoration-1 underline-offset-4 hover:text-ink"
           >
             Forgot password?
           </button>

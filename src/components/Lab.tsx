@@ -1,12 +1,16 @@
 import { useState } from 'react';
+import { Heart, MoreHorizontal, Share } from 'lucide-react';
 import {
   Panel,
   PanelRow,
   Button,
+  IconButton,
+  BackButton,
+  Segmented,
   Field,
   TextArea,
   Select,
-  SegmentReadout,
+  Readout,
   StepRow,
   InstrumentRow,
   Meter,
@@ -14,6 +18,8 @@ import {
   Menu,
   MenuItem,
   PublishState,
+  RecipePlate,
+  RecipeTile,
   Tag,
   Prose,
 } from './ui';
@@ -25,7 +31,7 @@ import AIReviewSheet from './AIReviewSheet';
  *
  * Registered behind import.meta.env.DEV in App.tsx so it never reaches a
  * production bundle. It exists so the component layer can be judged on its own
- * before a surface composes it, and so later phases have one place to check a
+ * before a screen composes it, and so later phases have one place to check a
  * control's real states instead of hunting for a screen that happens to use it.
  */
 
@@ -41,18 +47,27 @@ const SOURDOUGH = [
 ];
 
 const PANTRY = [
-  { id: '1', label: 'FLR', lit: true, title: 'Bread flour' },
-  { id: '2', label: 'WTR', lit: true, title: 'Water' },
-  { id: '3', label: 'SLT', lit: true, title: 'Fine sea salt' },
-  { id: '4', label: 'LVN', lit: true, title: 'Levain' },
-  { id: '5', label: 'RYE', lit: false, title: 'Wholegrain rye' },
-  { id: '6', label: 'SEM', lit: false, title: 'Semolina' },
+  { id: '1', label: 'Flour', lit: true, title: 'Bread flour' },
+  { id: '2', label: 'Water', lit: true, title: 'Water' },
+  { id: '3', label: 'Salt', lit: true, title: 'Fine sea salt' },
+  { id: '4', label: 'Levain', lit: true, title: 'Levain' },
+  { id: '5', label: 'Rye', lit: false, title: 'Wholegrain rye' },
+  { id: '6', label: 'Semolina', lit: false, title: 'Semolina' },
 ];
+
+const TILE = {
+  _id: 'lab-sourdough',
+  title: 'Country sourdough',
+  imageUrls: [],
+  prepTime: '30',
+  cookTime: '45',
+  folder: 'Bread',
+};
 
 function Section({ name, children }: { name: string; children: React.ReactNode }) {
   return (
     <section className="flex flex-col gap-3">
-      <h2 className="label-silkscreen border-b border-rule pb-2">{name}</h2>
+      <h2 className="font-title border-b border-rule pb-2 text-xl text-ink">{name}</h2>
       {children}
     </section>
   );
@@ -62,89 +77,136 @@ export default function Lab() {
   const phases = derivePhases(SOURDOUGH);
   const [activeStep, setActiveStep] = useState(3);
   const [engaged, setEngaged] = useState(false);
+  const [favourite, setFavourite] = useState(false);
+  const [view, setView] = useState<'chapters' | 'az'>('chapters');
   const [sheet, setSheet] = useState<'center' | 'bottom' | null>(null);
   const [review, setReview] = useState(false);
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-10 px-4 py-10">
       <header className="flex flex-col gap-2">
-        <h1 className="font-faceplate text-4xl text-ink">Proof / Component Lab</h1>
-        <p className="text-sm text-ink-muted">
-          Every primitive in the Step Row world, with its real states.
-        </p>
+        <BackButton to="/" label="Cookbook" />
+        <h1 className="font-title text-4xl text-ink">Component lab</h1>
+        <p className="text-sm text-ink-muted">Every primitive in the cookbook, with its real states.</p>
       </header>
 
-      <Section name="Step row — full, running">
-        <StepRow phases={phases} activeStep={activeStep} onSelect={(p) => setActiveStep(p.stepIndices[0])} />
-        <div className="flex flex-wrap gap-2">
-          <Button size="sm" onClick={() => setActiveStep((s) => Math.max(0, s - 1))}>
-            Back
-          </Button>
-          <Button size="sm" variant="primary" onClick={() => setActiveStep((s) => Math.min(SOURDOUGH.length - 1, s + 1))}>
-            Advance
-          </Button>
-          <Button size="sm" variant="ghost" onClick={() => setActiveStep(-1)}>
-            Stop bake
-          </Button>
-        </div>
-      </Section>
-
-      <Section name="Step row — at rest, and as a dashboard signature">
-        <StepRow phases={phases} />
-        <div className="flex flex-col gap-2 pt-2">
-          <StepRow phases={phases} size="mini" activeStep={3} />
-          <StepRow phases={phases} size="mini" />
-          <StepRow phases={[]} size="mini" />
-        </div>
-      </Section>
-
-      <Section name="Segment readouts">
-        <div className="flex flex-wrap items-end gap-8">
-          <SegmentReadout value="12:40" unit="MIN" size="xl" label="Bulk remaining" />
-          <SegmentReadout value="78.5" unit="%" size="lg" label="Hydration" />
-          <SegmentReadout value="250" unit="°C" size="md" label="Oven" />
-          <SegmentReadout value="900" unit="G" size="sm" label="Flour" />
-          <SegmentReadout value="88:88" size="lg" label="All segments" tone="ink" />
-        </div>
-      </Section>
-
-      <Section name="Panels">
-        <div className="grid gap-4 md:grid-cols-2">
-          <Panel title="Specification">
-            <PanelRow label="Total time" value="18h 30m" />
-            <PanelRow label="Hydration" value="78%" />
-            <PanelRow label="Yield" value="2 loaves" />
-          </Panel>
-          <Panel title="Bulk ferment" lit active>
-            <PanelRow label="Started" value="06:15" />
-            <PanelRow label="Remaining" value="1h 12m" />
-            <PanelRow label="Folds" value="3 of 4" />
-          </Panel>
-        </div>
-      </Section>
-
-      <Section name="Controls">
+      <Section name="Buttons">
         <div className="flex flex-wrap items-center gap-3">
-          <Button variant="primary">Run</Button>
-          <Button variant="secondary">Clear</Button>
+          <Button variant="primary">Start cooking</Button>
+          <Button variant="secondary">Log a bake</Button>
+          <Button variant="tonal">Add 9 missing to Shop</Button>
           <Button variant="ghost">Cancel</Button>
           <Button variant="danger">Delete</Button>
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
           <Button engaged={engaged} onClick={() => setEngaged((v) => !v)}>
             Baker&apos;s %
           </Button>
           <Button busy>Saving</Button>
           <Button disabled>Unavailable</Button>
-        </div>
-        <div className="flex flex-wrap items-center gap-3">
           <Button size="sm">Small</Button>
-          <Button size="md">Medium</Button>
-          <Button size="lg">Large</Button>
+          <Button size="lg" variant="primary">
+            Large
+          </Button>
+        </div>
+      </Section>
+
+      <Section name="Icon buttons and back">
+        <div className="flex flex-wrap items-center gap-2">
+          <BackButton to="/" label="Dessert" />
+          <span className="flex-1" />
+          <IconButton
+            label="Favourite"
+            pressed={favourite}
+            onClick={() => setFavourite((v) => !v)}
+            icon={<Heart className="h-5 w-5" fill={favourite ? 'currentColor' : 'none'} />}
+          />
+          <IconButton label="Share" icon={<Share className="h-5 w-5" />} />
+          <IconButton label="More" icon={<MoreHorizontal className="h-5 w-5" />} />
+        </div>
+      </Section>
+
+      <Section name="Segmented">
+        <Segmented
+          label="Contents view"
+          value={view}
+          onChange={setView}
+          options={[
+            { value: 'chapters', label: 'Chapters' },
+            { value: 'az', label: 'A–Z' },
+          ]}
+        />
+        <Segmented
+          label="Theme"
+          value="light"
+          onChange={() => {}}
+          block
+          options={[
+            { value: 'light', label: 'Light' },
+            { value: 'dark', label: 'Dark' },
+            { value: 'system', label: 'System' },
+          ]}
+        />
+      </Section>
+
+      <Section name="Tiles and plates">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+          <RecipeTile recipe={TILE} to="/lab" />
+          <RecipeTile recipe={{ ...TILE, _id: 'lab-2', title: 'Arepa pelua', folder: 'Beef' }} to="/lab" active />
+        </div>
+        <div className="flex gap-3">
+          <RecipePlate alt="Banana pancakes" size="row" />
+          <RecipePlate alt="Cheese borek" size="row" />
+        </div>
+      </Section>
+
+      <Section name="Phases — running, at rest, and mini">
+        <StepRow phases={phases} activeStep={activeStep} onSelect={(p) => setActiveStep(p.stepIndices[0])} />
+        <div className="flex flex-wrap gap-2">
+          <Button size="sm" onClick={() => setActiveStep((s) => Math.max(0, s - 1))}>
+            Back
+          </Button>
+          <Button size="sm" onClick={() => setActiveStep((s) => Math.min(SOURDOUGH.length - 1, s + 1))}>
+            Next
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => setActiveStep(-1)}>
+            Stop bake
+          </Button>
+        </div>
+        <StepRow phases={phases} />
+        <div className="flex flex-col gap-2 pt-2">
+          <StepRow phases={phases} size="mini" activeStep={3} />
+          <StepRow phases={[]} size="mini" />
+        </div>
+      </Section>
+
+      <Section name="Figures">
+        <div className="flex flex-wrap items-end gap-8">
+          <Readout value="38:12" size="xl" label="Bulk remaining" tone="accent" />
+          <Readout value="78.5" unit="%" size="lg" label="Hydration" />
+          <Readout value="250" unit="°C" size="md" label="Oven" />
+          <Readout value="900" unit="g" size="sm" label="Flour" />
+        </div>
+      </Section>
+
+      <Section name="Panels">
+        <div className="grid gap-4 md:grid-cols-2">
+          <Panel title="Totals">
+            <PanelRow label="Bakes logged" value="17" />
+            <PanelRow label="Recipes baked" value="6" />
+            <PanelRow label="Personal bests" value="1" />
+          </Panel>
+          <Panel title="Bulk ferment" lit active>
+            <PanelRow label="Started" value="06:15" />
+            <PanelRow label="Remaining" value="1 h 12" />
+            <PanelRow label="Folds" value="3 of 4" />
+          </Panel>
         </div>
       </Section>
 
       <Section name="Fields">
         <div className="grid gap-4 md:grid-cols-3">
-          <Field label="Flour" unit="G" defaultValue="900" />
+          <Field label="Flour" unit="g" defaultValue="900" />
           <Field label="Hydration" unit="%" defaultValue="112" error="Must be 50–100. Try 78." />
           <Field label="Recipe name" hint="Shown across the cookbook." placeholder="Country loaf" />
           <Select label="Difficulty" defaultValue="Medium">
@@ -152,8 +214,8 @@ export default function Lab() {
             <option>Medium</option>
             <option>Hard</option>
           </Select>
-          <TextArea label="Lab notes" rows={3} placeholder="Half the salt next time." />
-          <TextArea label="Step text" prose rows={3} defaultValue="Shape into a boule and rest." />
+          <TextArea label="Notes" rows={3} placeholder="Half the salt next time." />
+          <TextArea label="Step" prose rows={3} defaultValue="Shape into a boule and rest." />
         </div>
       </Section>
 
@@ -166,7 +228,7 @@ export default function Lab() {
           open={sheet !== null}
           onClose={() => setSheet(null)}
           placement={sheet === 'bottom' ? 'bottom' : 'center'}
-          title={sheet === 'bottom' ? 'More sections' : 'Delete recipe'}
+          title={sheet === 'bottom' ? 'New recipe' : 'Delete this recipe?'}
           size={sheet === 'bottom' ? 'md' : 'sm'}
           footer={
             <>
@@ -178,8 +240,7 @@ export default function Lab() {
           }
         >
           <p className="text-sm text-ink">
-            The scrim is the one place backdrop blur belongs: it says the panel beneath is still
-            there and is not what you are operating.
+            The page beneath dims but stays in place; this layer is the one you are operating.
           </p>
         </Sheet>
       </Section>
@@ -220,7 +281,7 @@ export default function Lab() {
         />
       </Section>
 
-      <Section name="Instrument row">
+      <Section name="Pantry chips">
         <InstrumentRow items={PANTRY} legend="In pantry" />
       </Section>
 
@@ -233,7 +294,7 @@ export default function Lab() {
       </Section>
 
       <Section name="Publish state — every position">
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-3">
           <PublishState state="local" />
           <PublishState state="pending" />
           <PublishState state="live" />
@@ -241,10 +302,10 @@ export default function Lab() {
         </div>
       </Section>
 
-      <Section name="Tags and printed matter">
+      <Section name="Tags and people's words">
         <div className="flex flex-col gap-4">
           <div className="flex gap-2">
-            <Tag>Live</Tag>
+            <Tag>Public</Tag>
             <Tag>Pro</Tag>
           </div>
           <Panel title="@ada">

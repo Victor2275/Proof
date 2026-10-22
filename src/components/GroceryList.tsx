@@ -203,7 +203,7 @@ export default function GroceryList() {
   if (failed) {
     return (
       <div className="mx-auto flex max-w-4xl flex-col gap-6 pb-20">
-        <h1 className="font-faceplate border-b border-rule pb-6 text-3xl leading-none text-ink sm:text-4xl">Grocery list</h1>
+        <h1 className="font-title border-b border-rule pb-6 text-3xl leading-none text-ink sm:text-4xl">Grocery list</h1>
         <Panel title="This device">
           <div className="flex flex-col gap-3" role="alert">
             <p className="text-ink">Couldn't read the cookbook and pantry on this device, so there is no list to build.</p>
@@ -226,7 +226,7 @@ export default function GroceryList() {
     <div className="mx-auto flex max-w-4xl flex-col gap-8 pb-20">
       <header className="flex flex-col gap-4 border-b border-rule pb-6 md:flex-row md:items-end md:justify-between">
         <div className="flex flex-col gap-2">
-          <h1 className="font-faceplate text-3xl leading-none text-ink sm:text-4xl">Grocery list</h1>
+          <h1 className="font-title text-3xl leading-none text-ink sm:text-4xl">Grocery list</h1>
           <p className="max-w-prose text-ink-muted">
             Pick what you are baking. Everything those recipes need that the pantry does not
             already hold lands on the list.
@@ -288,7 +288,7 @@ export default function GroceryList() {
             {bank.list.length === 0 ? (
               <p className="text-ink-muted">Nothing in the cookbook matches “{recipeQuery}”.</p>
             ) : bank.hidden > 0 ? (
-              <span className="label-silkscreen text-silkscreen">
+              <span className="ui-label text-silkscreen">
                 {bank.hidden} more — search to narrow
               </span>
             ) : null}
@@ -332,24 +332,24 @@ export default function GroceryList() {
 
       <section className="flex flex-col gap-4">
         <div className="flex flex-wrap items-baseline justify-between gap-3 border-b border-rule pb-2">
-          <h2 className="label-silkscreen">Checklist</h2>
+          <h2 className="ui-label">Checklist</h2>
           <div className="flex items-baseline gap-4">
             {selectedRecipeIds.length > 0 && (
-              <span className="label-silkscreen text-silkscreen">
+              <span className="ui-label text-silkscreen">
                 against {pantry.length} in stock
               </span>
             )}
-            <span className="font-mono text-sm tabular-nums text-ink">
+            <span className="font-sans text-sm tabular-nums text-ink">
               {remaining} remaining
             </span>
           </div>
         </div>
 
         {groceryItems.length === 0 ? (
-          <div className="flex flex-col items-start gap-3 rounded-panel border border-rule bg-panel faceplate p-4">
+          <div className="flex flex-col items-start gap-3 rounded-panel border border-rule bg-panel p-4">
             <div className="flex items-center gap-2">
               <span className="h-2 w-2 border border-key-unlit" aria-hidden="true" />
-              <span className="label-silkscreen text-silkscreen">Nothing to buy</span>
+              <span className="ui-label text-silkscreen">Nothing to buy</span>
             </div>
             <p className="max-w-prose text-ink-muted">
               Select a recipe above, or add an extra item by hand.
@@ -374,10 +374,10 @@ export default function GroceryList() {
                   >
                     <span className="min-w-0 truncate text-ink">{item.name}</span>
                     {formatAmount(item) ? (
-                      <span className="font-mono text-sm tabular-nums text-ink-muted">{formatAmount(item)}</span>
+                      <span className="font-sans text-sm tabular-nums text-ink-muted">{formatAmount(item)}</span>
                     ) : null}
                     {item.sourceRecipe ? (
-                      <span className="label-silkscreen text-silkscreen">{item.sourceRecipe}</span>
+                      <span className="ui-label text-silkscreen">{item.sourceRecipe}</span>
                     ) : null}
                   </span>
                 </label>

@@ -2,55 +2,47 @@ import type { ButtonHTMLAttributes, ReactNode, Ref } from 'react';
 import { cn } from '../../lib/cn';
 
 /*
- * Panel buttons.
+ * Buttons.
  *
- * Outlined at rest, filled when engaged — the machine's own logic, where a
- * control lights up because it is doing something rather than to attract a
- * click. `primary` fills with the signal colour and is the screen's one solid
- * red: the thing happening now. Everything else is outlined or quiet.
+ * `primary` is filled paprika and is the screen's one main action: Start
+ * cooking, Save. `secondary` is outlined in ink, `tonal` sits on a paper-tonal
+ * fill for a strong second action that should not compete with the primary
+ * (Add missing to Shop), `ghost` is a quiet text control. `danger` is outlined
+ * in the spoiled rule and never filled, so a destructive control can never be
+ * mistaken for the primary one.
  *
- * Controls have real travel. The pressed state moves the label down a pixel and
- * pairs with a haptic tick at the call site, so a control looks operable before
- * it is touched — which matters when hands are wet.
+ * Every button answers the press the same way (`.pressable`): it sinks a
+ * little and tints, on pointer-down. Labels are sentence case.
  */
 
-type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
+type Variant = 'primary' | 'secondary' | 'tonal' | 'ghost' | 'danger';
 type Size = 'sm' | 'md' | 'lg';
 
 const VARIANTS: Record<Variant, string> = {
   /*
-   * The legend on a lit key.
-   *
-   * White on the dark theme's signal red is 3.55:1, under the 4.5 that text
-   * this size needs, and the direction contract flags arm's-length legibility
-   * as the product working rather than as a checkbox. `--on-signal` flips with
-   * the theme because the red does not: black on the dark theme's bright red
-   * is 5.94:1, white on the light theme's deeper red is 5.75:1, and either
-   * value alone would fail the other theme.
+   * `--on-accent` flips with the theme because the paprika does not: white on
+   * the light theme's deep paprika, charcoal on the dark theme's brighter one.
    */
-  primary:
-    'border-signal bg-signal text-on-signal hover:opacity-90 active:opacity-100',
+  primary: 'border-accent bg-accent text-on-accent hover:brightness-95 active:brightness-90',
   secondary:
-    'border-rule bg-transparent text-ink hover:border-ink-muted active:bg-ink active:text-ground',
-  ghost:
-    'border-transparent bg-transparent text-ink-muted hover:text-ink hover:border-rule',
-  danger:
-    'border-spoiled bg-transparent text-ink hover:bg-spoiled hover:text-white',
+    'border-rule-strong bg-transparent text-ink hover:bg-paper-sunk active:bg-paper-tonal',
+  tonal: 'border-transparent bg-paper-tonal text-ink hover:brightness-[0.98] active:brightness-95',
+  ghost: 'border-transparent bg-transparent text-ink-2 hover:bg-paper-sunk hover:text-ink active:bg-paper-tonal',
+  danger: 'border-spoiled bg-transparent text-ink hover:bg-paper-sunk active:bg-paper-tonal',
 };
 
 const SIZES: Record<Size, string> = {
   // 44px minimum touch target on anything reachable mid-bake; `sm` is for
-  // dense desktop chrome only.
-  sm: 'h-9 px-3 text-xs',
-  md: 'h-11 px-4 text-sm',
-  lg: 'h-14 px-6 text-base',
+  // dense desktop chrome and inline affordances only.
+  sm: 'h-9 px-3 text-sm',
+  md: 'h-11 px-4 text-[0.9375rem]',
+  lg: 'h-13 px-6 text-base',
 };
 
 /**
  * The button's visual classes, exposed for the rare non-<button> element that
- * must look like one — a routed `<Link>` acting as a control (the dashboard's
- * RESUME jumps into Baking Mode, which is navigation, not a click handler).
- * Kept in one place so the Link and the real button can never drift apart.
+ * must look like one — a routed `<Link>` acting as a control. Kept in one place
+ * so the Link and the real button can never drift apart.
  */
 export function buttonClassName({
   variant = 'secondary',
@@ -64,16 +56,15 @@ export function buttonClassName({
   className?: string;
 } = {}) {
   return cn(
-    'label-silkscreen inline-flex items-center justify-center gap-2 rounded-control border',
-    // Buttons ranged edge to edge in a bank (gap-px) paint over each other's
-    // focus ring; lifting the focused one keeps its whole ring visible.
+    'pressable inline-flex items-center justify-center gap-2 rounded-control border font-sans font-semibold',
+    // Buttons ranged edge to edge in a bank paint over each other's focus
+    // ring; lifting the focused one keeps its whole ring visible.
     'relative focus-visible:z-10',
-    'transition-[background-color,border-color,color,transform] duration-75',
-    'active:translate-y-px',
-    'disabled:cursor-not-allowed disabled:opacity-40 disabled:active:translate-y-0',
+    'disabled:cursor-not-allowed disabled:opacity-45 aria-disabled:opacity-45',
     SIZES[size],
     VARIANTS[variant],
-    engaged && variant === 'secondary' && 'border-ink bg-ink text-ground',
+    // A latched toggle reads as pressed in: the tonal fill and an ink rule.
+    engaged && variant !== 'primary' && 'border-ink bg-paper-tonal text-ink',
     className,
   );
 }
@@ -84,8 +75,7 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /**
    * Toggle state. Passing it at all declares the control a toggle, so it is
    * left undefined by default: `aria-pressed="false"` on every ordinary button
-   * would announce the whole app as a panel of switches, and omitting it on a
-   * latched control announces a switch as a plain button. Only a control that
+   * would announce the whole app as a panel of switches. Only a control that
    * actually latches passes this.
    */
   engaged?: boolean;

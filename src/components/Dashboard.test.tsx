@@ -79,23 +79,19 @@ describe('Dashboard Component', () => {
     expect(screen.getByRole('heading', { name: 'Sourdough Bread' })).toBeInTheDocument();
   });
 
-  it('shows phases only for a recipe whose instructions proved them', async () => {
+  it('leaves phases to the recipe page rather than drawing them on every tile', async () => {
     renderWithProviders(<Dashboard />);
     await waitFor(() => expect(screen.getByText('Sourdough Bread')).toBeDefined());
-
-    // The sourdough names a levain and a bulk ferment, so its keys mean
-    // something.
-    expect(screen.getByRole('img', { name: /Sourdough Bread phases/i })).toBeInTheDocument();
-    // The cookies read as generic prep/cook — true of almost anything, and not
-    // worth a row of keys that would look like data.
-    expect(screen.queryByRole('img', { name: /Chocolate Chip Cookies phases/i })).not.toBeInTheDocument();
+    // A cookbook tile is a picture, a name and one line; the shape of a bake
+    // is read on the recipe itself.
+    expect(screen.queryByRole('img', { name: /Sourdough Bread phases/i })).not.toBeInTheDocument();
   });
 
-  it('shows the total time as a segment readout, not raw prepTime/cookTime text', async () => {
+  it('prints a real total time the way a cookbook does, not raw prepTime/cookTime text', async () => {
     renderWithProviders(<Dashboard />);
     await waitFor(() => expect(screen.getByText('Sourdough Bread')).toBeDefined());
-    // 30 (prep) + 45 (cook) = 75 minutes = 1:15, announced as one value.
-    expect(screen.getByRole('img', { name: '1:15 HR' })).toBeInTheDocument();
+    // 30 (prep) + 45 (cook) = 75 minutes.
+    expect(screen.getByText(/· 1 h 15$/)).toBeInTheDocument();
   });
 
   it('names the failure, and offers a retry, when the device database will not open', async () => {
@@ -227,7 +223,7 @@ describe('Dashboard Component', () => {
     fireEvent.click(inspireButton);
     expect(inspireButton).toBeInTheDocument();
   });
-  it("shows each recipe's photograph on a plate, and an unlit plate where there is none", async () => {
+  it("shows each recipe's photograph on a plate, and a drop cap where there is none", async () => {
     renderWithProviders(<Dashboard />);
     await waitFor(() => expect(screen.getByText('Sourdough Bread')).toBeDefined());
 

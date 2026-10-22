@@ -83,7 +83,7 @@ export default function OnboardingModal({ open, onClose }: OnboardingModalProps)
       <div className="flex flex-col gap-6">
         <StepRow phases={PHASES} activeStep={step} label="Tour" />
         <div className="flex flex-col gap-2" aria-live="polite">
-          <h3 className="font-faceplate text-2xl leading-tight text-ink">{current.title}</h3>
+          <h3 className="font-title text-2xl leading-tight text-ink">{current.title}</h3>
           <p className="max-w-prose leading-relaxed text-ink-muted">{current.description}</p>
         </div>
       </div>

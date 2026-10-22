@@ -25,7 +25,7 @@ export default function InstructionList({ recipe }: InstructionListProps) {
     <section className="flex flex-col gap-4">
       {/* Held to the height of the controls in the ingredients head, so where
         * the two columns sit side by side their rules draw one line. */}
-      <h2 className="label-silkscreen border-b border-rule pb-2">
+      <h2 className="ui-label border-b border-rule pb-2">
         <span className="flex min-h-9 items-center">Method</span>
       </h2>
 
@@ -36,7 +36,7 @@ export default function InstructionList({ recipe }: InstructionListProps) {
               {/* An unlit key beside the heading: this phase is not running.
                 * Baking Mode is where it lights. */}
               <span className="h-2.5 w-2.5 shrink-0 rounded-key bg-key-unlit" aria-hidden="true" />
-              <h3 className="label-silkscreen text-silkscreen">{phase.label}</h3>
+              <h3 className="ui-label text-silkscreen">{phase.label}</h3>
             </div>
             <ol className="flex flex-col gap-4">
               {phase.stepIndices.map((stepIndex) => (

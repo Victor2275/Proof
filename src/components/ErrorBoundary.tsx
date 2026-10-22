@@ -28,8 +28,8 @@ export default class ErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       return (
         <div className="m-4 overflow-auto rounded-panel border border-fault bg-panel p-8 text-ink" role="alert">
-          <h2 className="font-faceplate mb-4 text-xl">Something went wrong.</h2>
-          <pre className="whitespace-pre-wrap font-mono text-xs text-ink-muted">
+          <h2 className="font-title mb-4 text-xl">Something went wrong.</h2>
+          <pre className="whitespace-pre-wrap font-sans text-xs text-ink-muted">
             {this.state.error?.toString()}
             {'\n'}
             {this.state.error?.stack}

@@ -72,13 +72,13 @@ describe('LandingPage', () => {
 
     it('advances on its own', () => {
       renderLanding();
-      const first = screen.getByText('Levain', { selector: '.font-faceplate' });
+      const first = screen.getByText('Levain', { selector: '.font-title' });
       expect(first).toBeInTheDocument();
 
       act(() => {
         vi.advanceTimersByTime(1600);
       });
-      expect(screen.getByText('Autolyse', { selector: '.font-faceplate' })).toBeInTheDocument();
+      expect(screen.getByText('Autolyse', { selector: '.font-title' })).toBeInTheDocument();
     });
 
     it('holds still under reduced motion', () => {
@@ -90,7 +90,7 @@ describe('LandingPage', () => {
       act(() => {
         vi.advanceTimersByTime(1600 * 4);
       });
-      expect(screen.getByText('Levain', { selector: '.font-faceplate' })).toBeInTheDocument();
+      expect(screen.getByText('Levain', { selector: '.font-title' })).toBeInTheDocument();
     });
   });
 });
@@ -115,7 +115,7 @@ describe('NotFound', () => {
         <NotFound />
       </MemoryRouter>,
     );
-    expect(container.querySelectorAll('polygon.fill-signal')).toHaveLength(0);
-    expect(container.querySelectorAll('polygon.fill-ink').length).toBeGreaterThan(0);
+    expect(container.querySelector('.text-accent')).toBeNull();
+    expect(container.querySelector('.text-ink.tabular-nums')).not.toBeNull();
   });
 });

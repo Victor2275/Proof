@@ -148,7 +148,7 @@ describe('the publication strip', () => {
   it('reads live with edits, and offers to push them', async () => {
     vi.mocked(api.getMyPublications).mockResolvedValue({ items: [publication({ sourceUpdatedAt: '2026-10-01T00:00:00.000Z' })] });
     renderScreen(<PublicationStrip recipe={RYE} />);
-    expect(await screen.findByText('Live, with edits not yet pushed')).toBeInTheDocument();
+    expect(await screen.findByText('Public · edits not yet shared')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Push update' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Public page' })).toHaveAttribute('href', '/r/dark-rye');
   });
@@ -159,13 +159,13 @@ describe('the publication strip', () => {
     });
     renderScreen(<PublicationStrip recipe={RYE} />);
     expect(await screen.findByText(/Held back: Credit the source. Edit the recipe, then publish again./)).toBeInTheDocument();
-    expect(screen.getByText('Only on this device')).toBeInTheDocument();
+    expect(screen.getByText('Private · only on this device')).toBeInTheDocument();
   });
 
   it('is simply local when signed out', () => {
     setAccount(null);
     renderScreen(<PublicationStrip recipe={RYE} />);
-    expect(screen.getByText('Only on this device')).toBeInTheDocument();
+    expect(screen.getByText('Private · only on this device')).toBeInTheDocument();
     expect(api.getMyPublications).not.toHaveBeenCalled();
   });
 });

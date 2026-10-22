@@ -35,7 +35,7 @@ export const renderWithTimers = (text: string, title = "Timer") => {
           // key the baker can press. It lights only once it is counting, in the
           // timer readout — red here put a dozen "nows" on a page where
           // nothing had started.
-          className="mx-1 inline-flex items-center gap-1 rounded-key border border-rule px-1.5 py-0.5 align-baseline font-mono text-[0.9em] tabular-nums text-ink transition-colors hover:border-ink print:hidden"
+          className="mx-1 inline-flex items-center gap-1 rounded-key border border-rule px-1.5 py-0.5 align-baseline font-sans text-[0.9em] tabular-nums text-ink transition-colors hover:border-ink print:hidden"
           title="Start timer"
         >
           <Clock className="h-3.5 w-3.5 text-ink-muted" aria-hidden="true" />

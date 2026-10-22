@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Panel, SegmentReadout, buttonClassName } from './ui';
+import { Panel, Readout, buttonClassName } from './ui';
 
 /*
  * 404, as an unlit panel.
@@ -19,10 +19,10 @@ export default function NotFound() {
         <div className="flex flex-col items-center gap-6 py-6 text-center">
           {/* Ink, not signal: red in this world means a thing is running now, and
               nothing here is. */}
-          <SegmentReadout value="404" size="xl" tone="ink" label="Status" />
+          <Readout value="404" size="xl" tone="ink" label="Status" />
 
           <div className="flex flex-col gap-2">
-            <h1 className="font-faceplate text-2xl text-ink">Nothing at this address</h1>
+            <h1 className="font-title text-2xl text-ink">Nothing at this address</h1>
             <p className="mx-auto max-w-prose text-ink-muted">
               The page or recipe you asked for is not here. It may have been deleted, or the link
               may have been mistyped.

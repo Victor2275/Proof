@@ -34,7 +34,7 @@ export default function BakeLogsGrid({ logs, onSelect, onExportInstagram }: Bake
       <div className="flex flex-col items-start gap-3">
         <div className="flex items-center gap-2">
           <span className="h-2 w-2 border border-key-unlit" aria-hidden="true" />
-          <span className="label-silkscreen text-silkscreen">No bakes logged</span>
+          <span className="ui-label text-silkscreen">No bakes logged</span>
         </div>
         <p className="max-w-prose text-ink-muted">
           Run this recipe in Baking Mode and log it at the end. The second time you do, this turns
@@ -67,12 +67,12 @@ export default function BakeLogsGrid({ logs, onSelect, onExportInstagram }: Bake
               <div
                 className={cn(
                   'pointer-events-none absolute inset-x-0 bottom-0 translate-y-full',
-                  'border-t border-rule bg-panel faceplate px-3 py-2.5',
+                  'border-t border-rule bg-panel px-3 py-2.5',
                   'transition-transform duration-150 ease-out',
                   'group-hover:translate-y-0 group-focus-visible:translate-y-0',
                 )}
               >
-                <span className="label-silkscreen block truncate text-silkscreen">
+                <span className="ui-label block truncate text-silkscreen">
                   {formatDate(log.date)}
                 </span>
                 <p className="mt-1 line-clamp-3 text-sm leading-snug text-ink">
@@ -83,7 +83,7 @@ export default function BakeLogsGrid({ logs, onSelect, onExportInstagram }: Bake
 
             <div className="flex items-center justify-between gap-2">
               <span className="flex min-w-0 items-center gap-1.5">
-                <span className="font-mono text-xs tabular-nums text-ink">Make {attempt}</span>
+                <span className="font-sans text-xs tabular-nums text-ink">Make {attempt}</span>
                 {log.isPersonalBest && (
                   <span className="flex items-center gap-1 text-ink" title="Personal best">
                     <Award className="h-3.5 w-3.5" aria-hidden="true" />

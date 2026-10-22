@@ -91,8 +91,8 @@ const PALETTES: Record<'dark' | 'light', Palette> = {
   },
 };
 
-const DISPLAY = "'Archivo Variable', ui-sans-serif, system-ui, sans-serif";
-const MONO = "'JetBrains Mono Variable', ui-monospace, Menlo, monospace";
+const DISPLAY = "'Fraunces Variable', Georgia, serif";
+const MONO = "'Inter Tight Variable', ui-sans-serif, system-ui, sans-serif";
 
 const silkscreen = (p: Palette, size = 22): CSSProperties => ({
   fontFamily: MONO,
@@ -687,8 +687,8 @@ export default function InstagramExporter({ recipe, bakeLog, onClose }: Instagra
 
   return (
     <div className="fixed inset-0 z-[100] flex flex-col bg-ground">
-      <header className="flex shrink-0 items-center justify-between gap-3 border-b border-rule bg-panel faceplate px-4 py-3">
-        <h2 className="label-silkscreen">Share this bake</h2>
+      <header className="flex shrink-0 items-center justify-between gap-3 border-b border-rule bg-panel px-4 py-3">
+        <h2 className="ui-label">Share this bake</h2>
         <Button
           variant="ghost"
           size="sm"
@@ -746,7 +746,7 @@ export default function InstagramExporter({ recipe, bakeLog, onClose }: Instagra
         </div>
       </div>
 
-      <div className="flex shrink-0 justify-center border-t border-rule bg-panel faceplate p-4 pb-safe">
+      <div className="flex shrink-0 justify-center border-t border-rule bg-panel p-4 pb-safe">
         <Button
           variant="primary"
           size="lg"

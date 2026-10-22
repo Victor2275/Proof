@@ -153,7 +153,7 @@ export default function GeneralNotes() {
     <div className="mx-auto flex max-w-6xl flex-col gap-8 pb-20">
       <header className="flex flex-wrap items-end justify-between gap-4 border-b border-rule pb-6">
         <div className="flex flex-col gap-2">
-          <h1 className="font-faceplate text-3xl leading-none text-ink sm:text-4xl">
+          <h1 className="font-title text-3xl leading-none text-ink sm:text-4xl">
             General Notes
           </h1>
           <p className="max-w-prose text-ink-muted">
@@ -206,7 +206,7 @@ export default function GeneralNotes() {
                 {saving ? 'Saving' : 'Save'}
               </Button>
             ) : (
-              <span className="label-silkscreen pr-1">Saved</span>
+              <span className="ui-label pr-1">Saved</span>
             )
           }
         >

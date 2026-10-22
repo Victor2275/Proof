@@ -6,16 +6,14 @@ import { cn } from '../../lib/cn';
 /*
  * A layer that sits over the interface.
  *
- * This is the one place `.scrim` belongs: a modal, a sheet, a drawer. The blur
- * says the panel beneath is still there and is not the thing you are operating.
+ * This is the one place `.scrim` belongs: a sheet, a dialog, a drawer. The dim
+ * says the page beneath is still there and is not the thing you are operating.
  *
- * It exists because the same scrim-and-panel was hand-rolled eleven times —
- * four in Baking Mode alone, three more in the Recipe Viewer, the bottom nav's
- * More sheet, the pantry scanner, and the editor's own dialogs. Every copy drew
- * the panel slightly differently, and not one of them trapped focus, closed on
- * Escape, restored focus to whatever opened it, or stopped the page behind from
- * scrolling. Those are not embellishments — a modal you cannot leave by
- * keyboard is a trap — so they live here, once.
+ * It exists because the same scrim-and-panel was hand-rolled eleven times, and
+ * not one copy trapped focus, closed on Escape, restored focus to whatever
+ * opened it, or stopped the page behind from scrolling. Those are not
+ * embellishments — a modal you cannot leave by keyboard is a trap — so they
+ * live here, once.
  *
  * `placement` is the only real variant. A sheet rises from the bottom edge,
  * which is where a thumb is; a dialog sits in the middle, which is where a
@@ -251,7 +249,7 @@ export function Sheet({
     <div className="fixed inset-0" style={{ zIndex: layer }}>
       <div
         className={cn(
-          'scrim absolute inset-0 transition-opacity duration-150',
+          'scrim absolute inset-0 transition-opacity duration-200',
           entered ? 'opacity-100' : 'opacity-0',
         )}
         onClick={dismissible ? onClose : undefined}
@@ -267,10 +265,9 @@ export function Sheet({
         )}
       >
         {/*
-         * The panel's chrome is drawn here rather than by composing <Panel>,
+         * The sheet's chrome is drawn here rather than by composing <Panel>,
          * because a sheet needs a fixed head and foot with only its body
-         * scrolling, and Panel is a single flow. The classes are kept in step
-         * with Panel by hand: same rule, same faceplate, same head.
+         * scrolling, and Panel is a single flow.
          */}
         <div
           ref={panelRef}
@@ -281,12 +278,15 @@ export function Sheet({
           tabIndex={-1}
           onKeyDown={handleKeyDown}
           className={cn(
-            'flex w-full flex-col border border-rule bg-panel faceplate focus:outline-none',
-            'transition-[transform,opacity] duration-150 ease-out',
+            'flex w-full flex-col bg-paper text-ink focus:outline-none',
+            'transition-[transform,opacity] duration-[280ms] ease-[cubic-bezier(0.32,0.72,0,1)]',
             isBottom
-              ? ['max-h-[85vh] rounded-t-panel border-b-0 pb-safe', entered ? 'translate-y-0' : 'translate-y-full']
+              ? [
+                  'max-h-[85vh] rounded-t-sheet pb-safe shadow-[var(--lift-sheet)]',
+                  entered ? 'translate-y-0' : 'translate-y-full',
+                ]
               : [
-                  'max-h-[calc(100vh-2rem)] rounded-panel',
+                  'max-h-[calc(100vh-2rem)] rounded-sheet border border-rule shadow-[var(--lift-sheet)]',
                   entered ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-0',
                 ],
             SIZES[size],
@@ -294,12 +294,17 @@ export function Sheet({
             className,
           )}
         >
+          {isBottom && size !== 'full' ? (
+            /* The grabber says the sheet can be pulled down; Close and Escape
+             * are the controls that actually do it. */
+            <span className="mx-auto mt-2 h-[5px] w-9 shrink-0 rounded-full bg-rule-strong" aria-hidden="true" />
+          ) : null}
+
           {title || actions || dismissible ? (
-            <header className="flex shrink-0 items-center justify-between gap-3 border-b border-rule px-4 py-2.5">
-              <div className="flex min-w-0 items-center gap-2">
-                <span className="h-2 w-2 shrink-0 bg-key-unlit" aria-hidden="true" />
+            <header className="flex shrink-0 items-center justify-between gap-3 px-4 pt-3 pb-1">
+              <div className="min-w-0">
                 {title ? (
-                  <h2 id={titleId} className="label-silkscreen truncate">
+                  <h2 id={titleId} className="font-title truncate text-xl text-ink">
                     {title}
                   </h2>
                 ) : null}
@@ -311,13 +316,11 @@ export function Sheet({
                     type="button"
                     onClick={onClose}
                     aria-label="Close"
-                    // The glyph stays small; the target does not. A 16px cross
-                    // with 4px of padding is a 24px target, and the floor for
-                    // anything a thumb has to hit is 44. The negative margin
-                    // keeps the head's optical spacing where it was.
-                    className="-mr-2 flex h-11 w-11 items-center justify-center rounded-control text-ink-muted transition-colors hover:text-ink"
+                    // The glyph stays small; the target does not. The floor for
+                    // anything a thumb has to hit is 44.
+                    className="pressable -mr-2 flex h-11 w-11 items-center justify-center rounded-full text-ink-2 hover:bg-paper-sunk hover:text-ink"
                   >
-                    <X className="h-4 w-4" />
+                    <X className="h-5 w-5" />
                   </button>
                 ) : null}
               </div>

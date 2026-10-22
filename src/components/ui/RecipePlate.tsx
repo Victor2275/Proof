@@ -3,34 +3,24 @@ import { cn } from '../../lib/cn';
 import { usePhotoSrc } from '../../lib/usePhotoSrc';
 
 /*
- * The plate — a photograph mounted on the faceplate.
+ * A recipe's photograph, at a fixed footprint.
  *
- * The direction contract assumed uneven photo coverage and concluded that no
- * photograph was required for a row to read. The live library says otherwise:
- * every recipe carries exactly one final-product shot, and none carries two.
- * Coverage is uniform, so the defensive posture was paying for a cold first
- * screen to solve a problem that does not exist.
- *
- * What it is not: a card. No shadow, no floating, no gradient scrim over the
- * image (the scrim is a ban in this world anyway). The plate sits inside the
- * panel's own hairline rule, square, like a specimen mounted for inspection —
- * which is also why it never crops to a circle or a soft-cornered tile.
- *
- * What it is not, second: load-bearing. A missing, empty or broken image
- * degrades to an unlit plate at exactly the same size, so the row's geometry
- * never shifts and the pattern beside it still reads on its own. If every URL
- * in the database went dead tomorrow the dashboard would look deliberate.
+ * Soft corners, no frame, no scrim over the food. A missing, empty or broken
+ * image never leaves an empty box: it becomes a drop cap — the recipe's
+ * initial set large in italic Fraunces on a paper-sunk ground, like a chapter
+ * opening in a printed book — at exactly the same size, so a grid never
+ * shifts. The name itself is printed once, under the plate, not twice.
  */
 
 export type PlateSize = 'row' | 'tile' | 'hero';
 
 const SIZE: Record<PlateSize, string> = {
-  /** Beside a pattern row in the dashboard list. */
+  /** Beside a title in a list. */
   row: 'h-16 w-16 sm:h-20 sm:w-20',
-  /** On a smart-shelf tile. */
+  /** On a shelf tile. */
   tile: 'h-32 w-full',
-  /** The framed plate on a recipe, which leads with its title, not its photo. */
-  hero: 'aspect-square w-full',
+  /** A recipe's own photograph, and a grid tile. */
+  hero: 'aspect-[4/3] w-full',
 };
 
 export interface RecipePlateProps {
@@ -46,37 +36,33 @@ export function RecipePlate({ src: ref, alt, size = 'row', className }: RecipePl
   const src = usePhotoSrc(ref);
   const [failed, setFailed] = useState(false);
   // A new photograph deserves a fresh attempt, or one dead link would leave
-  // every later plate in this slot unlit.
+  // every later plate in this slot without its picture.
   useEffect(() => setFailed(false), [src]);
   const usable = Boolean(src) && !failed;
 
   return (
-    <div
-      className={cn(
-        'shrink-0 overflow-hidden rounded-key border border-rule bg-panel-sunk',
-        SIZE[size],
-        className,
-      )}
-    >
+    <div className={cn('shrink-0 overflow-hidden rounded-key bg-paper-sunk', SIZE[size], className)}>
       {usable ? (
         <img
           src={src}
           alt={alt}
-          // Two hundred rows of photographs is two hundred requests the list
-          // does not need up front; the browser's own lazy loading keeps the
-          // first paint to what is actually on screen.
+          // Two hundred photographs is two hundred requests a list does not
+          // need up front; the browser's lazy loading keeps the first paint to
+          // what is actually on screen.
           loading="lazy"
           decoding="async"
           onError={() => setFailed(true)}
           className="h-full w-full object-cover"
         />
       ) : (
-        /*
-         * The unlit plate. Empty, but drawn — the same treatment an unlit step
-         * key gets, so an absent photo reads as a slot with nothing in it
-         * rather than as a broken image.
-         */
-        <div className="h-full w-full bg-key-unlit" role="presentation" />
+        <div className="flex h-full w-full items-center justify-center" role="presentation">
+          <span
+            className={cn('font-title italic leading-none text-pencil', size === 'row' ? 'text-3xl' : 'text-7xl')}
+            aria-hidden="true"
+          >
+            {alt.trim().charAt(0).toUpperCase()}
+          </span>
+        </div>
       )}
     </div>
   );

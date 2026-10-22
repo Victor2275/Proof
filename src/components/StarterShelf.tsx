@@ -24,7 +24,7 @@ export default function StarterShelf() {
   return (
     <section className="flex flex-col gap-5" aria-labelledby="starter-shelf-heading">
       <div className="flex flex-col gap-2 border-b border-rule pb-3">
-        <h2 id="starter-shelf-heading" className="font-faceplate text-2xl text-ink">
+        <h2 id="starter-shelf-heading" className="font-title text-2xl text-ink">
           Start from one of these
         </h2>
         <p className="max-w-prose text-ink-muted">
@@ -82,7 +82,7 @@ export default function StarterShelf() {
       ) : null}
 
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-rule pt-4">
-        <p className="label-silkscreen text-ink-muted">{STORED_ON_DEVICE}</p>
+        <p className="ui-label text-ink-muted">{STORED_ON_DEVICE}</p>
         <Link to="/new" className={buttonClassName({ variant: 'secondary' })}>
           Write a recipe
         </Link>
