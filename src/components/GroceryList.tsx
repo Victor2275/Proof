@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
-import type { Recipe, PantryItem } from '../lib/types';
-import { usePantry, useRecipes } from '../lib/queries';
+import type { Recipe, PantryItem, ShoppingItem } from '../lib/types';
+import { useDeleteShoppingItems, usePantry, useRecipes, useShopping, useUpdateShoppingItem } from '../lib/queries';
 import { formatAmount } from '../lib/ingredients';
 import { Copy, Download, Share2, Plus, Trash2, Check } from 'lucide-react';
 import Fuse from 'fuse.js';
@@ -37,6 +37,7 @@ export interface GroceryItem {
 
 const EMPTY_RECIPES: Recipe[] = [];
 const EMPTY_PANTRY: PantryItem[] = [];
+const EMPTY_SAVED: ShoppingItem[] = [];
 
 /** `embedded`: drawn inside the Shop destination, which names the page itself. */
 export default function GroceryList({ embedded = false }: { embedded?: boolean } = {}) {
@@ -44,6 +45,10 @@ export default function GroceryList({ embedded = false }: { embedded?: boolean }
   const pantryQuery = usePantry();
   const recipes = recipesQuery.data ?? EMPTY_RECIPES;
   const pantry = pantryQuery.data ?? EMPTY_PANTRY;
+  // What a recipe page added ("Add missing to Shop"), kept on the device.
+  const { data: saved = EMPTY_SAVED } = useShopping();
+  const updateSaved = useUpdateShoppingItem();
+  const deleteSaved = useDeleteShoppingItems();
   const [selectedRecipeIds, setSelectedRecipeIds] = useState<string[]>([]);
   const [manualItems, setManualItems] = useState<GroceryItem[]>([]);
   const [checkedItemIds, setCheckedItemIds] = useState<Record<string, boolean>>({});
@@ -84,6 +89,17 @@ export default function GroceryList({ embedded = false }: { embedded?: boolean }
       });
     });
 
+    saved.forEach((item) => {
+      items.push({
+        id: `saved-${item._id}`,
+        name: item.name,
+        quantity: item.quantity,
+        unit: item.unit,
+        checked: item.checked,
+        sourceRecipe: item.recipeTitle,
+      });
+    });
+
     // Append manual items
     manualItems.forEach(item => {
       items.push({
@@ -93,9 +109,14 @@ export default function GroceryList({ embedded = false }: { embedded?: boolean }
     });
 
     return items;
-  }, [recipes, pantry, selectedRecipeIds, manualItems, checkedItemIds]);
+  }, [recipes, pantry, selectedRecipeIds, manualItems, checkedItemIds, saved]);
 
   const toggleCheckItem = (id: string) => {
+    if (id.startsWith('saved-')) {
+      const item = saved.find((s) => `saved-${s._id}` === id);
+      if (item) updateSaved.mutate({ id: item._id, patch: { checked: !item.checked } });
+      return;
+    }
     setCheckedItemIds(prev => ({
       ...prev,
       [id]: !prev[id]
@@ -393,10 +414,12 @@ export default function GroceryList({ embedded = false }: { embedded?: boolean }
                   </span>
                 </label>
 
-                {item.id.startsWith('manual-') && (
+                {(item.id.startsWith('manual-') || item.id.startsWith('saved-')) && (
                   <button
                     type="button"
-                    onClick={() => removeManualItem(item.id)}
+                    onClick={() =>
+                      item.id.startsWith('saved-') ? deleteSaved.mutate([item.id.slice('saved-'.length)]) : removeManualItem(item.id)
+                    }
                     aria-label={`Remove ${item.name} from the list`}
                     className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control text-ink-muted transition-colors hover:text-ink"
                   >

@@ -85,7 +85,11 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./src/setupTests.ts'],
-    include: ['src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}']
+    include: ['src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
+    // Whole screens against a real in-memory IndexedDB, typed into by a
+    // simulated user: under a full parallel run some take longer than the
+    // 5 s default without anything being wrong.
+    testTimeout: 20_000,
   },
   base: '/',
 })

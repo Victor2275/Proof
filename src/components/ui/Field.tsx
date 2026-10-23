@@ -106,8 +106,14 @@ export interface TextAreaProps extends TextareaHTMLAttributes<HTMLTextAreaElemen
   /** Sets the text in the reading serif rather than the UI face, for prose. */
   prose?: boolean;
   className?: string;
+  ref?: Ref<HTMLTextAreaElement>;
 }
 
+/*
+ * The field grows with what is written in it (change 116), from `rows` lines
+ * up, where the browser can size a field to its content; elsewhere it keeps
+ * its handle to be dragged taller.
+ */
 export function TextArea({
   label,
   error,
@@ -117,6 +123,7 @@ export function TextArea({
   className,
   id,
   rows = 4,
+  ref,
   ...props
 }: TextAreaProps) {
   const generatedId = useId();
@@ -130,13 +137,15 @@ export function TextArea({
         {label}
       </label>
       <textarea
+        ref={ref}
         id={fieldId}
         rows={rows}
+        style={{ minHeight: `calc(${rows} * 1.5em + 1.5rem)` }}
         aria-invalid={error ? true : undefined}
         aria-describedby={message ? messageId : undefined}
         className={cn(
           WELL,
-          'w-full resize-y p-3 focus:border-ink focus:outline-none',
+          'w-full resize-y p-3 [field-sizing:content] focus:border-ink focus:outline-none',
           prose && 'font-prose text-[1.0625rem]',
           error ? 'border-fault' : 'border-rule-strong',
         )}

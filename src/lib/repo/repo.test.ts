@@ -146,6 +146,49 @@ describe('photo garbage collection', () => {
   });
 });
 
+describe('bakes as Phase 3 logs them', () => {
+  it('keeps stars, what changed, the note to next time and the step notes', async () => {
+    const log = await repo.createBakeLog({
+      recipeId: 'r1',
+      notes: 'Good.',
+      rating: 4,
+      changes: 'Lower rack.',
+      nextTime: 'Ten minutes longer.',
+      stepNotes: [{ stepIndex: 3, text: 'Pale.', at: '2026-10-22T08:00:00.000Z' }],
+    });
+    expect(await repo.getRecipeBakeLogs('r1')).toEqual([log]);
+    expect(log).toMatchObject({ rating: 4, changes: 'Lower rack.', nextTime: 'Ten minutes longer.' });
+  });
+
+  it('keeps one personal best per recipe', async () => {
+    const first = await repo.createBakeLog({ recipeId: 'r1', notes: '', isPersonalBest: true });
+    const second = await repo.createBakeLog({ recipeId: 'r1', notes: '', isPersonalBest: true });
+    const other = await repo.createBakeLog({ recipeId: 'r2', notes: '', isPersonalBest: true });
+    const best = async () => (await repo.getBakeLogs()).filter((l) => l.isPersonalBest).map((l) => l._id).sort();
+    expect(await best()).toEqual([second._id, other._id].sort());
+    await repo.updateBakeLog(first._id, { isPersonalBest: true });
+    expect(await best()).toEqual([first._id, other._id].sort());
+  });
+});
+
+describe('the shopping list', () => {
+  it('keeps what is added, in order, ticks it and takes it off', async () => {
+    const [flour, eggs] = await repo.addShoppingItems([
+      { name: 'Flour', quantity: 500, unit: 'g', recipeId: 'r1', recipeTitle: 'Rye' },
+      { name: 'Eggs', quantity: 4, unit: '' },
+    ]);
+    expect((await repo.getShopping()).map((s) => [s.name, s.checked])).toEqual([
+      ['Flour', false],
+      ['Eggs', false],
+    ]);
+    await repo.updateShoppingItem(eggs._id, { checked: true });
+    await repo.deleteShoppingItems([flour._id]);
+    expect((await repo.getShopping()).map((s) => [s.name, s.checked])).toEqual([['Eggs', true]]);
+    await repo.restore('shopping', flour._id);
+    expect(await repo.getShopping()).toHaveLength(2);
+  });
+});
+
 describe('undo', () => {
   it('restores a deleted record by clearing its tombstone', async () => {
     const recipe = await repo.createRecipe(draft('Rye'));

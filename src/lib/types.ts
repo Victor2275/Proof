@@ -67,6 +67,15 @@ export interface BakePhoto {
   label: string;
 }
 
+/** A note jotted mid-bake, tied to the step it was about. */
+export interface StepNote {
+  /** Index into the recipe's `instructions`, the same index baking mode uses. */
+  stepIndex: number;
+  text: string;
+  /** ISO timestamp of when it was written. */
+  at: string;
+}
+
 export interface BakeLog extends RecordFields {
   recipeId: string;
   date: string;
@@ -74,6 +83,14 @@ export interface BakeLog extends RecordFields {
   notes: string;
   imageUrls: string[];
   images?: BakePhoto[];
+  /** 1–5 stars; absent or null when the baker didn't say. */
+  rating?: number | null;
+  /** What was done differently this time. */
+  changes?: string;
+  /** A note to the next attempt, shown when the recipe is next opened. */
+  nextTime?: string;
+  /** Notes written during the bake, each on the step it was about. */
+  stepNotes?: StepNote[];
 }
 
 export interface Note extends RecordFields {
@@ -83,6 +100,18 @@ export interface Note extends RecordFields {
 
 export interface PantryItem extends RecordFields {
   name: string;
+}
+
+/** A line on the shopping list (Shop → To buy). */
+export interface ShoppingItem extends RecordFields {
+  name: string;
+  /** null for "to taste": there is no measure to buy. */
+  quantity: number | null;
+  unit: string;
+  checked: boolean;
+  /** The recipe it was added from, if any. */
+  recipeId?: string;
+  recipeTitle?: string;
 }
 
 export interface Folder extends RecordFields {

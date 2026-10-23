@@ -87,7 +87,8 @@ medium weight, sentence case. Times print as a cookbook does: "45 min",
 
 `src/components/ui` is the whole vocabulary: `Panel`/`PanelRow`, `Button`,
 `IconButton`, `BackButton`, `Segmented`, `Field`/`TextArea`/`Select`, `Sheet`
-(with detents), `Menu`, `Disclosure`, `Toast` (`useToast`), `PageHeader`, `Readout`, `StepRow`, `RecipePlate`, `Photo`, `RecipeTile`,
+(with detents), `Menu`, `Disclosure`, `Toast` (`useToast`), `PageHeader`, `Stars`/`StarRating`,
+`Stamp`, `MarginNote`, `DockedAction`, `Readout`, `StepRow`, `RecipePlate`, `Photo`, `RecipeTile`,
 `InstrumentRow`, `Meter`, `Skeleton`, `PublishState`, `Tag`, `Prose`.
 
 - **Compose these rather than hand-rolling inline Tailwind** for a section, a

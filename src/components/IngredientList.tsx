@@ -1,189 +1,257 @@
-import type { Component } from '../lib/types';
-import { bakersMath, bakersMathUnavailable } from '../lib/bakersMath';
-import { scaledQuantity } from '../lib/ingredients';
-import { Sparkles } from 'lucide-react';
-import { Button, cn } from './ui';
+import { useMemo, useState } from 'react';
+import Fuse from 'fuse.js';
+import { Check, Minus, Plus, ShoppingBasket, Sparkles } from 'lucide-react';
+import type { Component, PantryItem, ShoppingItem } from '../lib/types';
+import { bakersMath } from '../lib/bakersMath';
+import { friendlyAmount, ingredientParts } from '../lib/quantities';
+import { cleanText } from '../lib/recipeText';
+import { usePantry, useShopping, useAddShoppingItems, useDeleteShoppingItems } from '../lib/queries';
+import { useUndoableAction } from '../lib/useUndoableAction';
+import { haptic } from '../lib/haptics';
+import { SETTINGS_KEYS } from '../lib/settings';
+import { baseServings } from '../lib/facts';
+import { Button, IconButton, cn } from './ui';
 
 /*
- * Ingredients as an instrument panel.
+ * The ingredients, as a cookbook prints them (changes 70–76).
  *
- * Every quantity is a measured value, so quantities are set in mono at a fixed
- * column width and tabular figures: the numbers line up down the list and a
- * baker can read the scale of a recipe without reading the words. The name
- * follows in the reading voice.
+ * One tick per row, for mise en place: the whole row is the control. The
+ * amount is a kitchen fraction in its own column; a weight the recipe wrote
+ * into the name moves to a quiet column on the right. The pantry only speaks
+ * when there is one, and only to say "have" — ten lines of "Not in your
+ * pantry" for someone who never set one up was ten lines of nothing.
  *
- * The pantry lamp is a lamp, not a green tick. Lit means the pantry has it;
- * dark is a designed state rather than an absence of feedback, and the lit
- * state is bone rather than signal — having flour in the cupboard is not an
- * event that is happening now.
+ * Serves is a stepper on the heading. Baker's percentages appear only for a
+ * recipe whose flour is weighed, as a column of the same table.
  */
 
-interface IngredientListProps {
-  recipe: { ingredients?: Component[] };
-  scaleMultiplier: number;
-  /** Drawn as a scale bank under the heading when given. */
-  setScaleMultiplier?: (multiplier: number) => void;
-  showBakersMath: boolean;
-  setShowBakersMath: (val: boolean) => void;
-  inPantryMap: Record<string, boolean>;
-  checkedIngredients: Record<number, boolean>;
-  toggleCheck: (index: number) => void;
-  setAiSubstituteIngredient: (name: string) => void;
-  handleExportGroceryList: () => void;
+const EMPTY_PANTRY: PantryItem[] = [];
+const EMPTY_SHOPPING: ShoppingItem[] = [];
+const EMPTY_INGREDIENTS: Component[] = [];
+
+export interface IngredientListProps {
+  recipe: { _id: string; title: string; ingredients?: Component[]; servings?: number | null };
+  /** The servings the list is drawn for; the recipe's own count is the base. */
+  servings: number;
+  onServingsChange?: (servings: number) => void;
+  checked: Record<number, boolean>;
+  onToggle: (index: number) => void;
+  onSubstitute?: (name: string) => void;
 }
 
-export default function IngredientList({
-  recipe,
-  scaleMultiplier,
-  setScaleMultiplier,
-  showBakersMath,
-  setShowBakersMath,
-  inPantryMap,
-  checkedIngredients,
-  toggleCheck,
-  setAiSubstituteIngredient,
-  handleExportGroceryList,
-}: IngredientListProps) {
-  const ingredients = recipe.ingredients || [];
-
-  // Baker's percentages are relative to total flour *by weight*. A recipe that
-  // has no flour, or measures it in cups, has no percentages to show — and
-  // says so, rather than drawing a figure built from cups and grams together.
+export default function IngredientList({ recipe, servings, onServingsChange, checked, onToggle, onSubstitute }: IngredientListProps) {
+  const ingredients = recipe.ingredients ?? EMPTY_INGREDIENTS;
+  const base = baseServings(recipe);
+  const scale = servings / base;
+  const { data: pantry = EMPTY_PANTRY } = usePantry();
+  const { data: shopping = EMPTY_SHOPPING } = useShopping();
+  const addShopping = useAddShoppingItems();
+  const removeShopping = useDeleteShoppingItems();
+  const undoable = useUndoableAction();
+  // Settings → Baker's math turns the column on by default, where there is one.
+  const [percent, setPercent] = useState(() => localStorage.getItem(SETTINGS_KEYS.defaultBakersMath) === 'true');
   const math = bakersMath(ingredients);
 
+  const have = useMemo(() => {
+    const set = new Set<number>();
+    if (!pantry.length) return set;
+    const fuse = new Fuse(pantry, { keys: ['name'], threshold: 0.35 });
+    ingredients.forEach((ing, i) => {
+      if (fuse.search(ingredientParts(cleanText(ing.name)).name).length) set.add(i);
+    });
+    return set;
+  }, [ingredients, pantry]);
+
+  const onList = useMemo(() => {
+    const names = new Set(shopping.filter((s) => s.recipeId === recipe._id && !s.checked).map((s) => s.name.toLowerCase()));
+    const set = new Set<number>();
+    ingredients.forEach((ing, i) => {
+      if (names.has(ingredientParts(cleanText(ing.name)).name.toLowerCase())) set.add(i);
+    });
+    return set;
+  }, [ingredients, shopping, recipe._id]);
+
+  const missing = ingredients
+    .map((ing, i) => ({ ing, i }))
+    .filter(({ i }) => !have.has(i) && !onList.has(i));
+
+  const addMissing = () => {
+    const items = missing.map(({ ing }) => ({
+      name: ingredientParts(cleanText(ing.name)).name,
+      quantity: ing.quantity === null ? null : Number((ing.quantity * scale).toFixed(3)),
+      unit: ing.unit,
+      recipeId: recipe._id,
+      recipeTitle: recipe.title,
+    }));
+    let added: string[] = [];
+    haptic('light');
+    void undoable({
+      message: `Added ${items.length} to Shop`,
+      run: async () => {
+        added = (await addShopping.mutateAsync(items)).map((s) => s._id);
+      },
+      undo: () => removeShopping.mutateAsync(added),
+      failure: "Couldn't add those to the list on this device. Try again.",
+    });
+  };
+
+  const step = (by: number) => {
+    const next = Math.min(base * 8, Math.max(1, servings + by));
+    if (next !== servings) {
+      haptic('selection');
+      onServingsChange?.(next);
+    }
+  };
+
+  const preview = missing
+    .slice(0, 2)
+    .map(({ ing }) => ingredientParts(cleanText(ing.name)).name)
+    .join(', ');
+
   return (
-    <section className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-rule pb-2">
-        <h2 className="ui-label">Ingredients</h2>
-        <div className="flex gap-1">
-          <Button variant="ghost" size="sm" onClick={handleExportGroceryList}>
-            Copy list
-          </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            engaged={showBakersMath}
-            onClick={() => setShowBakersMath(!showBakersMath)}
-          >
-            Baker&apos;s %
-          </Button>
+    <section aria-labelledby="ingredients-heading" className="flex flex-col">
+      <div className="flex min-h-11 flex-wrap items-center justify-between gap-2 border-b border-rule pb-2.5">
+        <h2 id="ingredients-heading" className="font-title text-2xl text-ink">
+          Ingredients
+        </h2>
+        <div className="flex items-center gap-2">
+          {math.ok ? (
+            <Button size="sm" variant="ghost" engaged={percent} onClick={() => setPercent((v) => !v)}>
+              Baker&apos;s %
+            </Button>
+          ) : null}
+          {onServingsChange ? (
+            <div role="group" aria-label="Servings" className="flex items-center gap-0.5 rounded-full bg-paper-tonal p-[3px] text-sm">
+              <button
+                type="button"
+                onClick={() => step(-1)}
+                disabled={servings <= 1}
+                aria-label="Fewer servings"
+                className="pressable flex h-[38px] w-[38px] items-center justify-center rounded-full bg-paper-raised text-ink disabled:opacity-40"
+              >
+                <Minus className="h-4 w-4" aria-hidden="true" />
+              </button>
+              <output aria-live="polite" className="min-w-[4.5rem] text-center tabular-nums text-ink">
+                Serves {servings}
+              </output>
+              <button
+                type="button"
+                onClick={() => step(1)}
+                aria-label="More servings"
+                className="pressable flex h-[38px] w-[38px] items-center justify-center rounded-full bg-paper-raised text-ink"
+              >
+                <Plus className="h-4 w-4" aria-hidden="true" />
+              </button>
+            </div>
+          ) : null}
         </div>
       </div>
 
-      {/* The scale bank sits on the quantities it changes. It used to sit
-        * above the title, the first thing on the page, setting a value for a
-        * list the baker could not yet see. A multiplier switch: one engaged at
-        * a time, and the recipe as written is 1x. A PDF prints the quantities,
-        * not the switch. */}
-      {setScaleMultiplier ? (
-        <div className="flex items-center gap-3" role="group" aria-label="Scale recipe" data-html2canvas-ignore="true">
-          <span className="ui-label text-silkscreen">Scale</span>
-          <div className="flex gap-px">
-            {[0.5, 1, 2, 3].map((m) => (
-              <Button
-                key={m}
-                variant="secondary"
-                size="sm"
-                engaged={scaleMultiplier === m}
-                onClick={() => setScaleMultiplier(m)}
-              >
-                {m}x
-              </Button>
-            ))}
-          </div>
-        </div>
-      ) : null}
-
-      {showBakersMath && !math.ok ? (
-        <p className="text-sm text-ink-muted" role="status">{bakersMathUnavailable(math)}</p>
+      {servings !== base ? (
+        <p className="pt-2 text-sm text-ink-muted">
+          Scaled from {base}.{' '}
+          {onServingsChange ? (
+            <button type="button" onClick={() => onServingsChange(base)} className="pressable rounded-control px-1 font-medium text-ink">
+              Back to {base}
+            </button>
+          ) : null}
+        </p>
       ) : null}
 
       <ul className="flex flex-col">
         {ingredients.map((ing, i) => {
-          const checked = !!checkedIngredients[i];
-          const share = math.ok ? math.percentages[i] : null;
-          // An ingredient that is not weighed has no share of the flour: a
-          // dash says "not computable" rather than leaving a gap that reads as
-          // zero.
-          const pct = share === null ? '—' : `${share.toFixed(1)}%`;
-
+          const parts = ingredientParts(cleanText(ing.name), scale);
+          const amount = friendlyAmount(ing.quantity, ing.unit, scale);
+          const done = !!checked[i];
+          const side = onList.has(i) ? 'On list' : have.has(i) ? 'Have' : parts.weight;
+          // An ingredient that is not weighed has no share of the flour: a dash, not a gap.
+          const share = percent && math.ok ? math.percentages[i] : undefined;
           return (
-            <li key={i} className="group flex items-center gap-3 border-b border-rule py-2.5 last:border-0">
-              <label className="flex cursor-pointer items-center p-1.5 -ml-1.5 touch-manipulation">
-                <input
-                  type="checkbox"
-                  checked={checked}
-                  onChange={() => toggleCheck(i)}
-                  className="h-5 w-5 shrink-0 cursor-pointer rounded-key border-rule accent-ink"
-                  aria-label={ing.name}
-                />
-              </label>
-
-              {/* The quantity column is a fixed width so the figures line up. A
-                * long unit ("tablespoon heaped", "cm piece") wraps under its
-                * figure inside that width instead of running into the name. */}
-              <span
-                className={cn(
-                  'flex w-[4.5rem] shrink-0 flex-wrap items-baseline justify-end gap-x-1 text-right font-sans text-sm tabular-nums sm:w-24',
-                  checked ? 'text-ink-muted line-through' : 'text-ink',
-                )}
-              >
-                {/* No amount ("to serve") leaves the column empty rather than
-                  * printing a figure the recipe never gave. */}
-                <span>{scaledQuantity(ing.quantity, scaleMultiplier) ?? ''}</span>
-                <span className="min-w-0 text-xs leading-snug text-ink-muted hyphens-auto [overflow-wrap:anywhere]">
-                  {ing.quantity === null ? '' : ing.unit}
-                </span>
-              </span>
-
-              {showBakersMath && math.ok ? (
-                <span className="w-14 shrink-0 text-right font-sans text-xs tabular-nums text-ink-muted">
-                  {pct}
-                </span>
-              ) : null}
-
-              <span
-                className={cn(
-                  'min-w-0 flex-1 break-words',
-                  checked ? 'text-ink-muted line-through' : 'text-ink',
-                )}
-              >
-                {ing.name}
-              </span>
-
-              {/* The pantry lamp. Square and filled when the pantry has it,
-                * hollow when it does not — shape carries the state as well as
-                * fill, so it survives a colour vision difference. */}
-              <span
-                className={cn(
-                  'h-2 w-2 shrink-0',
-                  inPantryMap[ing.name] ? 'bg-ink' : 'border border-key-unlit',
-                )}
-                title={inPantryMap[ing.name] ? 'In your pantry' : 'Not in your pantry'}
-                aria-hidden="true"
-              />
-              <span className="sr-only">
-                {inPantryMap[ing.name] ? 'In your pantry' : 'Not in your pantry'}
-              </span>
-
+            <li key={i} className="group flex items-stretch border-b border-rule">
               <button
                 type="button"
-                onClick={() => setAiSubstituteIngredient(ing.name)}
-                title={`Substitutions for ${ing.name}`}
-                className="ui-label flex shrink-0 items-center gap-1 rounded-control border border-rule px-2 py-1 text-ink-muted opacity-80 hover:text-ink focus-visible:opacity-100 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100"
+                role="checkbox"
+                aria-checked={done}
+                onClick={() => {
+                  haptic('light');
+                  onToggle(i);
+                }}
+                className="pressable -mx-1.5 flex min-h-12 min-w-0 flex-1 items-baseline gap-3 rounded-key px-1.5 py-2.5 text-left hover:bg-paper-sunk"
               >
-                {/* At phone width the word does not fit beside a quantity, a
-                  * name and a pantry lamp — the icon carries it, and the
-                  * button keeps its accessible name from the title. It hides
-                  * until hover only where there is a hover: keyed to `sm`, it
-                  * was invisible on every touch tablet. */}
-                <Sparkles className="h-3 w-3" />
-                <span className="hidden sm:inline">Sub</span>
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    'flex h-[18px] w-[18px] shrink-0 items-center justify-center self-center rounded-full border-[1.5px]',
+                    done ? 'border-sage bg-sage text-paper' : 'border-rule-strong',
+                  )}
+                >
+                  {done ? <Check className="h-3 w-3" strokeWidth={3} /> : null}
+                </span>
+                <span className={cn('w-[4.25rem] shrink-0 font-sans text-[0.9375rem] font-semibold tabular-nums text-ink', done && 'text-ink-muted line-through')}>
+                  {amount.quantity}
+                  {amount.unit ? <span className="font-normal"> {amount.unit}</span> : null}
+                </span>
+                <span className={cn('font-prose min-w-0 flex-1 text-[1.0625rem] leading-snug text-ink', done && 'text-ink-muted line-through')}>
+                  {parts.name}
+                  {parts.note ? <span className="italic text-ink-muted">, {parts.note}</span> : null}
+                </span>
+                {share !== undefined ? (
+                  <span className="w-12 shrink-0 text-right font-sans text-sm tabular-nums text-ink-2">
+                    {share === null ? '—' : `${share.toFixed(1)}%`}
+                  </span>
+                ) : null}
+                {side ? (
+                  <span
+                    className={cn(
+                      'shrink-0 font-sans text-[0.8125rem] tabular-nums',
+                      side === 'Have' ? 'text-sage' : side === 'On list' ? 'text-pencil' : 'text-ink-muted',
+                    )}
+                  >
+                    {side === 'Have' ? '✓ have' : side}
+                  </span>
+                ) : null}
               </button>
+              {onSubstitute ? (
+                <IconButton
+                  label={`Substitutes for ${parts.name}`}
+                  icon={<Sparkles className="h-4 w-4" aria-hidden="true" />}
+                  onClick={() => onSubstitute(parts.name)}
+                  className="self-center text-ink-muted [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:focus-visible:opacity-100"
+                />
+              ) : null}
             </li>
           );
         })}
       </ul>
+
+      {percent && math.ok ? (
+        <p className="pt-2 text-sm text-ink-muted">Each weighed ingredient as a share of the flour, which is 100%.</p>
+      ) : null}
+
+      {missing.length > 0 ? (
+        <Button
+          variant="tonal"
+          onClick={addMissing}
+          className="mt-4 h-auto min-h-14 justify-start gap-3 px-4 py-2 text-left"
+          icon={<ShoppingBasket className="h-5 w-5 shrink-0" aria-hidden="true" />}
+        >
+          <span className="flex flex-col">
+            <span>
+              {missing.length === ingredients.length && !pantry.length
+                ? `Add all ${missing.length} to Shop`
+                : `Add ${missing.length} missing to Shop`}
+            </span>
+            <span className="text-[0.8125rem] font-normal text-ink-muted">
+              {preview}
+              {missing.length > 2 ? ` +${missing.length - 2}` : ''}
+            </span>
+          </span>
+        </Button>
+      ) : ingredients.length > 0 && (have.size > 0 || onList.size > 0) ? (
+        <p className="mt-4 text-sm text-ink-muted">
+          {onList.size > 0 ? 'Everything you need is in the cupboard or on the list.' : 'Everything is in the cupboard.'}
+        </p>
+      ) : null}
     </section>
   );
 }

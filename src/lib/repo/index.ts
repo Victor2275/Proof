@@ -12,7 +12,7 @@
  */
 import { ulid } from '../ulid';
 import { ensurePersistentStorage } from '../storage';
-import type { BakeLog, Draft, Folder, Note, PantryItem, PublishedRecipe, Recipe, RecordFields } from '../types';
+import type { BakeLog, Draft, Folder, Note, PantryItem, PublishedRecipe, Recipe, RecordFields, ShoppingItem, StepNote } from '../types';
 import { getAll, getByIndex, getOne, putOne, type RecordStore } from './db';
 import { adoptRemotePhoto, collectPhotoGarbage, savePhoto } from './photos';
 
@@ -88,6 +88,18 @@ export interface NewBakePhoto {
   label: string;
 }
 
+/** What a baker writes when logging a bake. */
+export interface NewBakeLog {
+  recipeId: string;
+  notes: string;
+  date?: string;
+  isPersonalBest?: boolean;
+  rating?: number | null;
+  changes?: string;
+  nextTime?: string;
+  stepNotes?: StepNote[];
+}
+
 export const repo = {
   /* ── Recipes ─────────────────────────────────────────────────────────── */
 
@@ -160,20 +172,34 @@ export const repo = {
     return live(await getByIndex<BakeLog>('bakeLogs', 'recipeId', recipeId)).sort((a, b) => b.date.localeCompare(a.date));
   },
 
-  async createBakeLog(
-    draft: { recipeId: string; notes: string; date?: string; isPersonalBest?: boolean },
-    photos: NewBakePhoto[] = [],
-  ): Promise<BakeLog> {
+  async createBakeLog(draft: NewBakeLog, photos: NewBakePhoto[] = []): Promise<BakeLog> {
     const images = [];
     for (const p of photos) images.push({ url: await savePhoto(p.file), label: p.label });
-    return create<BakeLog>('bakeLogs', {
+    const log = await create<BakeLog>('bakeLogs', {
       recipeId: draft.recipeId,
       notes: draft.notes,
       date: draft.date ?? nowIso(),
       isPersonalBest: draft.isPersonalBest ?? false,
+      rating: draft.rating ?? null,
+      changes: draft.changes ?? '',
+      nextTime: draft.nextTime ?? '',
+      stepNotes: draft.stepNotes ?? [],
       images,
       imageUrls: images.map((i) => i.url),
     });
+    if (log.isPersonalBest) await repo.keepOnePersonalBest(log);
+    return log;
+  },
+
+  /**
+   * A recipe has one personal best: marking a bake as the best unmarks the
+   * one before it, so "best" never means two different loaves.
+   */
+  async keepOnePersonalBest(best: BakeLog): Promise<void> {
+    const others = live(await getByIndex<BakeLog>('bakeLogs', 'recipeId', best.recipeId)).filter(
+      (l) => l._id !== best._id && l.isPersonalBest,
+    );
+    for (const other of others) await update<BakeLog>('bakeLogs', other._id, { isPersonalBest: false }, 'bake log');
   },
 
   async updateBakeLog(id: string, patch: Partial<Draft<BakeLog>>): Promise<BakeLog> {
@@ -181,6 +207,7 @@ export const repo = {
     const next = patch.images ? { ...patch, imageUrls: patch.images.map((i) => i.url) } : patch;
     const log = await update<BakeLog>('bakeLogs', id, next, 'bake log');
     if (patch.images || patch.imageUrls) tidyPhotos();
+    if (patch.isPersonalBest) await repo.keepOnePersonalBest(log);
     return log;
   },
 
@@ -221,6 +248,27 @@ export const repo = {
     await tombstone('notes', id);
   },
 
+  /* ── Shopping ────────────────────────────────────────────────────────── */
+
+  /** The list in the order things were added. */
+  async getShopping(): Promise<ShoppingItem[]> {
+    return live(await getAll<ShoppingItem>('shopping')).sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a._id.localeCompare(b._id));
+  },
+
+  async addShoppingItems(items: Omit<Draft<ShoppingItem>, 'checked'>[]): Promise<ShoppingItem[]> {
+    const added: ShoppingItem[] = [];
+    for (const item of items) added.push(await create<ShoppingItem>('shopping', { ...item, name: item.name.trim(), checked: false }));
+    return added;
+  },
+
+  async updateShoppingItem(id: string, patch: Partial<Draft<ShoppingItem>>): Promise<ShoppingItem> {
+    return update<ShoppingItem>('shopping', id, patch, 'shopping item');
+  },
+
+  async deleteShoppingItems(ids: string[]): Promise<void> {
+    for (const id of ids) await tombstone('shopping', id);
+  },
+
   /* ── Folders ─────────────────────────────────────────────────────────── */
 
   async getFolders(): Promise<Folder[]> {
@@ -234,7 +282,8 @@ export const repo = {
    * photo collector counts a record deleted within the last hour as live.
    */
   async restore(store: RecordStore, id: string): Promise<void> {
-    const what = store === 'bakeLogs' ? 'bake log' : store === 'pantry' ? 'pantry item' : store.replace(/s$/, '');
+    const what =
+      store === 'bakeLogs' ? 'bake log' : store === 'pantry' ? 'pantry item' : store === 'shopping' ? 'shopping item' : store.replace(/s$/, '');
     await untombstone(store, id, what);
   },
 };

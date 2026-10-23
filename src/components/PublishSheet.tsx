@@ -165,6 +165,24 @@ export default function PublishSheet({ open, onClose, recipe, publication }: Pub
       }
     >
       <form id={formId} onSubmit={submit} className="flex flex-col gap-4" noValidate>
+        {/* Where it stands now, said in words: held back with the reason and the fix, never in red. */}
+        {publication?.moderation.state === 'rejected' && live ? (
+          <p className="text-sm text-ink" role="status">
+            Held back: {publication.moderation.reason || 'it needs another look.'} Edit the recipe, then publish again.
+          </p>
+        ) : publication?.moderation.state === 'pending' && live ? (
+          <p className="text-sm text-ink" role="status">
+            Waiting for review.{publication.moderation.reason ? ` ${publication.moderation.reason}` : ''}
+          </p>
+        ) : live ? (
+          <Link
+            to={`/r/${publication!.slug}`}
+            onClick={onClose}
+            className={buttonClassName({ variant: 'secondary', size: 'sm', className: 'self-start' })}
+          >
+            Open the public page
+          </Link>
+        ) : null}
         <p className="text-sm text-ink">
           {live
             ? 'The public copy is replaced with this recipe as it is now, at the same address.'

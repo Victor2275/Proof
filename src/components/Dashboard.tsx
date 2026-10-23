@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import Fuse from 'fuse.js';
 import { Search, Shuffle } from 'lucide-react';
 import type { Recipe, BakeLog } from '../lib/types';
@@ -169,7 +169,9 @@ export default function Dashboard() {
   const navigate = useNavigate();
 
   const [search, setSearch] = useState('');
-  const [bank, setBank] = useState<string>(ALL_BANK);
+  // A recipe's back button names its chapter and returns to it: /?chapter=Dessert.
+  const [params] = useSearchParams();
+  const [bank, setBank] = useState<string>(() => params.get('chapter') ?? ALL_BANK);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [showOnboarding, setShowOnboarding] = useState(false);
 

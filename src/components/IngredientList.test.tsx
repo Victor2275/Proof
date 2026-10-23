@@ -1,121 +1,122 @@
-import { render, screen, within } from '@testing-library/react';
+import { useState } from 'react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import IngredientList from './IngredientList';
-import type { Recipe } from '../lib/types';
-import { makeRecipe } from '../test/utils';
+import { ToastProvider } from './ui';
+import { repo } from '../lib/repo';
+import type { Component } from '../lib/types';
+import { makePantryItem, renderScreen, seed } from '../test/utils';
 
-const base: Recipe = makeRecipe({
-  _id: 'r1',
-  title: 'Loaf',
-  description: '',
-  imageUrls: [],
-  servings: 1,
-  prepTime: '',
-  cookTime: '',
-  tags: [],
-  ingredients: [],
-  instructions: [],
-});
+const CHEESECAKE: Component[] = [
+  { name: 'graham cracker crumbs (170g)', quantity: 1, unit: 'cup' },
+  { name: 'sour cream', quantity: 0.6666, unit: 'cup' },
+  { name: 'vanilla extract', quantity: 0.51, unit: 'fl oz' },
+  { name: 'eggs, room temperature', quantity: 4, unit: '' },
+];
 
-const renderList = (ingredients: Recipe['ingredients']) =>
-  render(
-    <IngredientList
-      recipe={{ ...base, ingredients }}
-      scaleMultiplier={1}
-      showBakersMath
-      setShowBakersMath={vi.fn()}
-      inPantryMap={{}}
-      checkedIngredients={{}}
-      toggleCheck={vi.fn()}
-      setAiSubstituteIngredient={vi.fn()}
-      handleExportGroceryList={vi.fn()}
-    />,
-  );
-
-describe("IngredientList baker's percentages", () => {
-  it('reads each weighed ingredient as a share of the flour', () => {
-    renderList([
-      { name: 'Strong white flour', quantity: 1000, unit: 'g' },
-      { name: 'Water', quantity: 750, unit: 'ml' },
-    ]);
-    expect(screen.getByText('100.0%')).toBeInTheDocument();
-    expect(screen.getByText('75.0%')).toBeInTheDocument();
-  });
-
-  /*
-   * The live Danish rye printed 6153.8% beside its rye grain: grams over a
-   * flour total summed from cups.
-   */
-  it('says why there are none, instead of a figure built from cups and grams', () => {
-    renderList([
-      { name: 'Rye Grain', quantity: 200, unit: 'g' },
-      { name: 'Rye Flour', quantity: 2.5, unit: 'cup' },
-    ]);
-    expect(screen.queryByText(/^[\d.]+%$/)).not.toBeInTheDocument();
-    expect(screen.getByRole('status')).toHaveTextContent(/flour by weight.*cup/);
-  });
-});
-
-describe('IngredientList scale bank', () => {
-  const props = {
-    recipe: { ...base, ingredients: [{ name: 'Flour', quantity: 500, unit: 'g' }] },
-    showBakersMath: false,
-    setShowBakersMath: vi.fn(),
-    inPantryMap: {},
-    checkedIngredients: {},
-    toggleCheck: vi.fn(),
-    setAiSubstituteIngredient: vi.fn(),
-    handleExportGroceryList: vi.fn(),
-  };
-
-  it('sits with the quantities it changes, one multiplier engaged', async () => {
-    const setScale = vi.fn();
-    render(<IngredientList {...props} scaleMultiplier={2} setScaleMultiplier={setScale} />);
-
-    const bank = screen.getByRole('group', { name: 'Scale recipe' });
-    expect(within(bank).getByRole('button', { name: '2x' })).toHaveAttribute('aria-pressed', 'true');
-    expect(within(bank).getByRole('button', { name: '1x' })).toHaveAttribute('aria-pressed', 'false');
-    // The list it scales is printed at the multiplier.
-    expect(screen.getByText('1000')).toBeInTheDocument();
-
-    await userEvent.setup().click(within(bank).getByRole('button', { name: '3x' }));
-    expect(setScale).toHaveBeenCalledWith(3);
-  });
-
-  it('is left out of an exported PDF', () => {
-    render(<IngredientList {...props} scaleMultiplier={1} setScaleMultiplier={vi.fn()} />);
-    expect(screen.getByRole('group', { name: 'Scale recipe' })).toHaveAttribute(
-      'data-html2canvas-ignore',
-      'true',
-    );
-  });
-
-  it('draws no bank when nothing can change the scale', () => {
-    render(<IngredientList {...props} scaleMultiplier={1} />);
-    expect(screen.queryByRole('group', { name: 'Scale recipe' })).not.toBeInTheDocument();
-  });
-});
-
-describe('IngredientList quantity column', () => {
-  it('keeps a long unit inside the column, under its figure', () => {
-    render(
+function Harness({ ingredients = CHEESECAKE, servings: initial = 12 }: { ingredients?: Component[]; servings?: number }) {
+  const [servings, setServings] = useState(initial);
+  const [checked, setChecked] = useState<Record<number, boolean>>({});
+  return (
+    <ToastProvider>
       <IngredientList
-        recipe={{ ...base, ingredients: [{ name: 'Spelt', quantity: 1, unit: 'tablespoon heaped' }] }}
-        scaleMultiplier={1}
-        showBakersMath={false}
-        setShowBakersMath={vi.fn()}
-        inPantryMap={{}}
-        checkedIngredients={{}}
-        toggleCheck={vi.fn()}
-        setAiSubstituteIngredient={vi.fn()}
-        handleExportGroceryList={vi.fn()}
-      />,
-    );
-    const unit = screen.getByText('tablespoon heaped');
-    // A wrapping flex column, so the unit breaks under the figure rather than
-    // overflowing the fixed width into the ingredient's name.
-    expect(unit.parentElement).toHaveClass('flex-wrap');
-    expect(unit).toHaveClass('min-w-0');
+        recipe={{ _id: 'r1', title: 'Cheesecake', ingredients, servings: 12 }}
+        servings={servings}
+        onServingsChange={setServings}
+        checked={checked}
+        onToggle={(i) => setChecked((p) => ({ ...p, [i]: !p[i] }))}
+      />
+    </ToastProvider>
+  );
+}
+
+const rows = () => screen.getAllByRole('checkbox');
+
+describe('ingredients as a cookbook prints them', () => {
+  it('prints kitchen fractions and a sensible unit, never "0.51 fl oz"', () => {
+    renderScreen(<Harness />);
+    expect(rows()[1]).toHaveTextContent('⅔ cup');
+    expect(rows()[2]).toHaveTextContent('1 tbsp');
+    expect(screen.queryByText(/0\.51|0\.67/)).not.toBeInTheDocument();
+  });
+
+  it('moves a weight out of the name into its own column, and sets the note apart', () => {
+    renderScreen(<Harness />);
+    expect(rows()[0]).toHaveTextContent('1 cupgraham cracker crumbs170 g');
+    expect(within(rows()[3]).getByText(', room temperature')).toHaveClass('italic');
+  });
+
+  it('ticks one row at a time, the whole row being the control', async () => {
+    const user = userEvent.setup();
+    renderScreen(<Harness />);
+    await user.click(rows()[1]);
+    expect(rows()[1]).toHaveAttribute('aria-checked', 'true');
+    expect(rows()[0]).toHaveAttribute('aria-checked', 'false');
+  });
+
+  it('scales with the Serves stepper and offers the way back', async () => {
+    const user = userEvent.setup();
+    renderScreen(<Harness />);
+    for (let i = 0; i < 12; i++) await user.click(screen.getByRole('button', { name: 'More servings' }));
+    expect(screen.getByText('Serves 24')).toBeInTheDocument();
+    expect(rows()[0]).toHaveTextContent('2 cup');
+    expect(rows()[0]).toHaveTextContent('340 g');
+    await user.click(screen.getByRole('button', { name: 'Back to 12' }));
+    expect(screen.getByText('Serves 12')).toBeInTheDocument();
+  });
+});
+
+describe('the pantry and the shopping list', () => {
+  it('says nothing about a pantry that was never set up', () => {
+    renderScreen(<Harness />);
+    expect(screen.queryByText(/pantry/i)).not.toBeInTheDocument();
+    expect(screen.queryByText('✓ have')).not.toBeInTheDocument();
+  });
+
+  it('marks only what you have, once there is a pantry', async () => {
+    await seed('pantry', [makePantryItem({ name: 'Eggs' })]);
+    renderScreen(<Harness />);
+    await waitFor(() => expect(rows()[3]).toHaveTextContent('✓ have'));
+    expect(rows()[1]).not.toHaveTextContent('have');
+  });
+
+  it('adds what is missing to Shop in one press, and Undo takes it back', async () => {
+    const user = userEvent.setup();
+    await seed('pantry', [makePantryItem({ name: 'Eggs' })]);
+    renderScreen(<Harness />);
+    const add = await screen.findByRole('button', { name: /Add 3 missing to Shop/ });
+    expect(add).toHaveTextContent('graham cracker crumbs, sour cream +1');
+    await user.click(add);
+    await waitFor(async () => expect((await repo.getShopping()).map((s) => s.name)).toEqual(['graham cracker crumbs', 'sour cream', 'vanilla extract']));
+    expect((await repo.getShopping())[0]).toMatchObject({ recipeId: 'r1', recipeTitle: 'Cheesecake', quantity: 1, unit: 'cup' });
+    await waitFor(() => expect(rows()[0]).toHaveTextContent('On list'));
+    await user.click(await screen.findByRole('button', { name: 'Undo' }));
+    await waitFor(async () => expect(await repo.getShopping()).toEqual([]));
+  });
+});
+
+describe("baker's percentages", () => {
+  const BREAD: Component[] = [
+    { name: 'Bread flour', quantity: 500, unit: 'g' },
+    { name: 'Water', quantity: 375, unit: 'g' },
+    { name: 'Salt', quantity: 1, unit: 'tsp' },
+  ];
+
+  it('are offered only for a recipe whose flour is weighed', () => {
+    const { unmount } = renderScreen(<Harness />);
+    expect(screen.queryByRole('button', { name: "Baker's %" })).not.toBeInTheDocument();
+    unmount();
+    renderScreen(<Harness ingredients={BREAD} />);
+    expect(screen.getByRole('button', { name: "Baker's %" })).toBeInTheDocument();
+  });
+
+  it('read each weighed ingredient as a share of the flour, and a dash where there is none', async () => {
+    const user = userEvent.setup();
+    renderScreen(<Harness ingredients={BREAD} />);
+    await user.click(screen.getByRole('button', { name: "Baker's %" }));
+    expect(rows()[0]).toHaveTextContent('100.0%');
+    expect(rows()[1]).toHaveTextContent('75.0%');
+    expect(rows()[2]).toHaveTextContent('—');
   });
 });

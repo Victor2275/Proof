@@ -25,6 +25,10 @@ import {
   Disclosure,
   PageHeader,
   useToast,
+  Stars,
+  StarRating,
+  Stamp,
+  MarginNote,
 } from './ui';
 import { derivePhases } from '../lib/phases';
 import AIReviewSheet from './AIReviewSheet';
@@ -84,6 +88,7 @@ export default function Lab() {
   const [view, setView] = useState<'chapters' | 'az'>('chapters');
   const [sheet, setSheet] = useState<'center' | 'bottom' | 'detents' | null>(null);
   const toast = useToast();
+  const [rating, setRating] = useState<number | null>(4);
   const [review, setReview] = useState(false);
 
   return (
@@ -278,6 +283,22 @@ export default function Lab() {
             <li className="py-2">Loose notes</li>
           </ul>
         </Disclosure>
+      </Section>
+
+      <Section name="Stars, stamp and margin notes">
+        <div className="flex flex-col gap-4">
+          <Stars value={4} size="md" />
+          <StarRating label="Stars" value={rating} onChange={setRating} />
+          <div className="flex items-center gap-6">
+            <Stamp rating={4} />
+            <Stamp rating={5} fresh />
+          </div>
+          <MarginNote lead="Next time">Leave it in the switched-off oven ten minutes longer.</MarginNote>
+          <MarginNote lead="Oct 17">Pulled at 55 minutes. Perfect.</MarginNote>
+          <p className="text-sm text-ink-muted">
+            The docked action bar lives on the recipe page: scroll its Start cooking off the top of a phone screen.
+          </p>
+        </div>
       </Section>
 
       <Section name="Toast">

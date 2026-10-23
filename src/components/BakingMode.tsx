@@ -1,926 +1,595 @@
-import { useState, useEffect, useRef, useMemo, useSyncExternalStore } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import type { Recipe, Component } from '../lib/types';
-import { repo } from '../lib/repo';
-import { useCreateBakeLog } from '../lib/queries';
-import { formatAmount, formatIngredient } from '../lib/ingredients';
-import { X, Check, Upload, Loader2, List, Link as LinkIcon, Mic, MicOff, Bluetooth, Video, VideoOff, PictureInPicture } from 'lucide-react';
-import { renderWithTimers } from '../utils/timerParser';
-import { scaleService, type WeightMeasurement } from '../lib/bluetoothScale';
-import RecipeDrawer from './RecipeDrawer';
-import { Haptics, ImpactStyle } from '@capacitor/haptics';
-import { Capacitor } from '@capacitor/core';
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { Link as LinkIcon, MoreHorizontal, PencilLine, Timer as TimerIcon, X } from 'lucide-react';
 import 'regenerator-runtime/runtime';
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
-import { hapticsEnabled, voiceCommandsEnabled, waveToAdvanceEnabled } from '../lib/settings';
-import { getActiveBake, startActiveBake, clearActiveBake } from '../lib/activeBake';
-import { derivePhases, type Phase } from '../lib/phases';
+import type { BakeLog, Component, Recipe, StepNote } from '../lib/types';
+import { repo } from '../lib/repo';
+import { useRecipeBakeLogs } from '../lib/queries';
+import { friendlyAmountText, ingredientParts } from '../lib/quantities';
+import { cleanText, methodSteps } from '../lib/recipeText';
+import { bakePhases } from '../lib/method';
+import { scaleService, type WeightMeasurement } from '../lib/bluetoothScale';
+import { haptic } from '../lib/haptics';
+import { voiceCommandsEnabled, waveToAdvanceEnabled } from '../lib/settings';
+import { addActiveBakeNote, clearActiveBake, getActiveBake, startActiveBake } from '../lib/activeBake';
+import { useActiveBake } from '../lib/useActiveBake';
 import { ingredientsForStep, scaleTargetGrams } from '../lib/stepIngredients';
-import { subscribeRunningTimers, getRunningTimers, formatTimerClock } from '../lib/timerBus';
-import { Button, Panel, Readout, Sheet, StepRow, cn } from './ui';
+import { findTimers, startTimer } from '../lib/stepTimers';
+import { formatTimerClock, getRunningTimers, OPEN_TIMERS_EVENT, subscribeRunningTimers } from '../lib/timerBus';
+import RecipeDrawer from './RecipeDrawer';
+import LogBakeSheet from './LogBakeSheet';
+import StepText from './StepText';
+import { Button, IconButton, MarginNote, Menu, MenuItem, Readout, Sheet, StepRow, TextArea, cn, useToast } from './ui';
 
 /*
- * Baking Mode — the surface the whole product exists for.
+ * Baking mode: one step at a time, at arm's length (changes 87–97).
  *
- * One baker, a phone propped at arm's length, hands covered in flour. Every
- * decision here is made for that scene rather than for a screenshot: the step
- * is the largest type in the app, the controls are wide enough to hit without
- * looking, and nothing floats over the instruction.
+ * One baker, a phone propped against the mixer, hands in the dough. The step
+ * is set in the reading face, large, in the top third; under it, what this
+ * step needs, its timer as one big press, and — pencilled — what the last
+ * bake noted about this very step. Along the foot: a Note button that files a
+ * thought against this step, Back, and a wide Next. The last Next asks "How
+ * did it go?" and opens the bake log with the step notes already filed.
  *
- * The step row is the navigation. Elsewhere in Proof it is an instrument that
- * reports the shape of a bake; here its keys are live — the running phase is
- * the one red thing on screen, and tapping "Shape" jumps to the first step of
- * shaping. That is the whole reason the row exists: a baker who walks back into
- * the kitchen mid-bulk wants the phase, not instruction seventeen.
+ * The head is four things: leave, the recipe, "3 of 12", and ⋯ for the rest
+ * (every ingredient, every step, the scale, voice, the camera). Under it, a
+ * thin line of the bake's named phases: where you are, and a way to jump.
  *
- * Timers dock in the header as segment readouts rather than floating over the
- * step, because the floating stack sits exactly where the instruction is.
+ * Kept from before, all of it: swipe, the arrow keys, voice commands, wave to
+ * advance, the Bluetooth scale, the screen kept awake, haptics. On a wide
+ * screen the step's ingredients, timers, last note and a quick note sit in a
+ * column beside it instead of under it.
  */
+
+const shortDate = (iso: string) => new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+const EMPTY_LOGS: BakeLog[] = [];
 
 export default function BakingMode() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const toast = useToast();
   const [recipe, setRecipe] = useState<Recipe | null>(null);
-  const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
-  const createBakeLog = useCreateBakeLog();
-  const wakeLock = useRef<any>(null);
-  // Baking Mode is a fixed overlay, so the window itself never scrolls — the
-  // step content is its own scroll container and the voice scroll commands need it.
-  const contentRef = useRef<HTMLDivElement>(null);
-  const [showIngredients, setShowIngredients] = useState(false);
-  const [viewMode, setViewMode] = useState<'focus' | 'all'>('focus');
-  const [checkedIngredients, setCheckedIngredients] = useState<Record<number, boolean>>({});
-
-  // Settings
-  const [waveToAdvanceSetting] = useState(waveToAdvanceEnabled);
-  const [voiceCommandsSetting] = useState(voiceCommandsEnabled);
-
-  // Motion Detection State
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const lastImageData = useRef<ImageData | null>(null);
-  const motionCooldown = useRef(false);
-  const [cameraActive, setCameraActive] = useState(() => localStorage.getItem('waveToAdvance') === 'true');
-
-  // Sub-recipe Drawer State
-  const [openSubRecipeId, setOpenSubRecipeId] = useState<string | null>(null);
-
-  // Finish Modal State
-  const [showFinishModal, setShowFinishModal] = useState(false);
-  /*
-   * Baking Mode reports in the panel, never through the browser.
-   *
-   * This surface is used at arm's length with floured hands. An operating
-   * system dialog appearing mid-bake — which is what alert() and confirm() are
-   * — has to be dismissed with a precise tap before anything else can happen,
-   * and it cannot be read from across a counter. Three of them lived here.
-   */
-  const [bakeNotice, setBakeNotice] = useState('');
-  const [confirmingFinish, setConfirmingFinish] = useState(false);
-  const [showVoiceHelp, setShowVoiceHelp] = useState(false);
-
-  // Bluetooth Scale State
+  const [position, setPosition] = useState(0);
+  const [view, setView] = useState<'focus' | 'all'>('focus');
+  const [sheet, setSheet] = useState<null | 'ingredients' | 'note' | 'voice' | 'finish' | 'log'>(null);
+  const [noteDraft, setNoteDraft] = useState('');
+  const [quickNote, setQuickNote] = useState('');
+  const [checked, setChecked] = useState<Record<number, boolean>>({});
+  const [notice, setNotice] = useState('');
+  const [subRecipeId, setSubRecipeId] = useState<string | null>(null);
   const [scaleConnected, setScaleConnected] = useState(false);
   const [scaleWeight, setScaleWeight] = useState<WeightMeasurement | null>(null);
-
-  const [notes, setNotes] = useState('');
-  const [imageFiles, setImageFiles] = useState<{file: File, label: string}[]>([]);
-  const [savingLog, setSavingLog] = useState(false);
-  const [isDictating, setIsDictating] = useState(false);
-
-  /*
-   * The timers, read from the manager that owns them. `useSyncExternalStore`
-   * rather than a subscribe-into-state effect so the header cannot render one
-   * tick behind the stack a baker is watching.
-   */
+  const [cameraActive, setCameraActive] = useState(waveToAdvanceEnabled);
+  const [voiceSetting] = useState(voiceCommandsEnabled);
+  const [waveSetting] = useState(waveToAdvanceEnabled);
+  const wakeLock = useRef<{ release: () => Promise<void> } | null>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const noteRef = useRef<HTMLTextAreaElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const timers = useSyncExternalStore(subscribeRunningTimers, getRunningTimers, getRunningTimers);
+  const active = useActiveBake();
+  const { data: bakes = EMPTY_LOGS } = useRecipeBakeLogs(id);
 
-  const phases = useMemo(() => derivePhases(recipe?.instructions), [recipe]);
+  const steps = useMemo(() => methodSteps(recipe?.instructions), [recipe]);
+  const phases = useMemo(() => bakePhases(recipe?.instructions), [recipe]);
+  const step = steps[position];
+  const last = position >= steps.length - 1;
+  const notesThisBake: StepNote[] = active && active.recipeId === id ? active.notes ?? [] : [];
+  const lastBake = bakes[0];
 
-  // Voice Commands
-  const { listening, browserSupportsSpeechRecognition, transcript, resetTranscript } = useSpeechRecognition({
-    commands: [
-      {
-        command: ['next', 'next step', 'forward'],
-        callback: () => handleNextStep()
-      },
-      {
-        command: ['back', 'previous', 'previous step'],
-        callback: () => handlePrevStep()
-      },
-      {
-        command: ['finish', 'done', 'complete'],
-        callback: () => {
-          // Spoken "finish" still asks, because it is the one voice command
-          // that ends the bake — but it asks on the panel, in the world's own
-          // voice, where it can be answered by voice or by a large key.
-          setConfirmingFinish(true);
-        }
-      },
-      {
-        command: ['read', 'repeat', 'read step', 'read that'],
-        callback: () => {
-          if (recipe && recipe.instructions[currentStep]) {
-            const msg = new SpeechSynthesisUtterance(recipe.instructions[currentStep]);
-            window.speechSynthesis.speak(msg);
-          }
-        }
-      },
-      {
-        command: ['ingredients', 'read ingredients', 'what do i need'],
-        callback: () => {
-          if (recipe && recipe.instructions[currentStep]) {
-            const ings = getSmartIngredients(recipe.instructions[currentStep]);
-            if (ings.length > 0) {
-              const text = "You need: " + ings.map((i) => formatIngredient(i)).join(", ");
-              const msg = new SpeechSynthesisUtterance(text);
-              window.speechSynthesis.speak(msg);
-            } else {
-              window.speechSynthesis.speak(new SpeechSynthesisUtterance("No specific ingredients required for this step."));
-            }
-          }
-        }
-      },
-      {
-        command: ['start timer', 'start'],
-        callback: () => {
-          if (recipe && recipe.instructions[currentStep]) {
-            const step = recipe.instructions[currentStep];
-            // Naive timer parsing for voice: find first "X min" or "X hour"
-            const minMatch = step.match(/(\d+)\s*(?:min|minute)/i);
-            const hrMatch = step.match(/(\d+)\s*(?:hr|hour)/i);
-            let totalSecs = 0;
-            if (minMatch) totalSecs += parseInt(minMatch[1]) * 60;
-            if (hrMatch) totalSecs += parseInt(hrMatch[1]) * 3600;
-            if (totalSecs > 0) {
-              window.dispatchEvent(new CustomEvent('add-timer', { detail: { durationSecs: totalSecs, name: 'Voice Timer', forceStart: true } }));
-              window.speechSynthesis.speak(new SpeechSynthesisUtterance("Timer started."));
-            } else {
-              window.speechSynthesis.speak(new SpeechSynthesisUtterance("I didn't find a timer in this step."));
-            }
-          }
-        }
-      },
-      {
-        command: ['quiet', 'quite', 'stop timer', 'stop'],
-        callback: () => {
-          window.dispatchEvent(new Event('stop-alarms'));
-        }
-      },
-      {
-        command: ['show all', 'focus mode', 'toggle view'],
-        callback: () => {
-          setViewMode(prev => prev === 'focus' ? 'all' : 'focus');
-        }
-      },
-      {
-        command: ['up', 'scroll up'],
-        callback: () => {
-          contentRef.current?.scrollBy({ top: -500, behavior: 'smooth' });
-        }
-      },
-      {
-        command: ['down', 'scroll down'],
-        callback: () => {
-          contentRef.current?.scrollBy({ top: 500, behavior: 'smooth' });
-        }
-      },
-      {
-        command: ['help', 'voice commands'],
-        callback: () => setShowVoiceHelp(true)
-      },
-      {
-        command: ['close'],
-        callback: () => {
-          setShowVoiceHelp(false);
-          setShowFinishModal(false);
-        }
-      }
-    ]
-  });
-
-  const toggleMic = () => {
-    if (listening) {
-      SpeechRecognition.stopListening();
-    } else {
-      SpeechRecognition.startListening({ continuous: true });
-    }
-  };
-
-  const toggleDictation = () => {
-    if (isDictating) {
-      SpeechRecognition.stopListening();
-      setIsDictating(false);
-
-      // Parse context-aware ingredients
-      if (recipe) {
-        let newNotes = notes;
-        recipe.ingredients.forEach(ing => {
-          if (ing.name.length > 2) {
-            const regex = new RegExp(`\\b${ing.name}\\b`, 'gi');
-            newNotes = newNotes.replace(regex, `**${ing.name}**`);
-          }
-        });
-        setNotes(newNotes);
-      }
-    } else {
-      resetTranscript();
-      SpeechRecognition.startListening({ continuous: true });
-      setIsDictating(true);
-    }
-  };
-
+  /* ── Loading, and resuming a bake left running ─────────────────────── */
   useEffect(() => {
-    if (isDictating && transcript) {
-      setNotes(prev => {
-        const base = prev.replace(/ \(Dictating: .*\)/, '');
-        return `${base} (Dictating: ${transcript})`;
-      });
-    }
-  }, [transcript, isDictating]);
-
-  useEffect(() => {
-    if (id) {
-      repo.getRecipe(id)
-        .then((r) => {
-          setRecipe(r);
-          // Resume rather than restart: if this recipe is already the active
-          // bake (opened from the dashboard's RESUME control, or the tab was
-          // simply closed mid-bake), pick the step back up instead of
-          // silently rewinding to the first instruction.
-          const existing = getActiveBake();
-          if (r && existing?.recipeId === id) setCurrentStep(existing.stepIndex);
-        })
-        .catch(() => setLoadFailed(true))
-        .finally(() => setLoading(false));
-    }
+    if (!id) return;
+    repo
+      .getRecipe(id)
+      .then((r) => {
+        setRecipe(r);
+        const running = getActiveBake();
+        if (r && running?.recipeId === id) {
+          const at = methodSteps(r.instructions).findIndex((s) => s.index >= running.stepIndex);
+          if (at > 0) setPosition(at);
+        }
+      })
+      .catch(() => setLoadFailed(true))
+      .finally(() => setLoading(false));
   }, [id]);
 
-  // Announce this bake to the rest of the app (the dashboard's lit row, and any
-  // future consumer) whenever the recipe is known and the step advances.
-  // `startActiveBake` is itself resume-aware — it only touches `startedAt`
-  // when the active recipe actually changes — so a single call here covers
-  // both "first step of a fresh bake" and "step N of a bake already running."
-  // A baker works one loaf at a time on one device: opening Baking Mode for a
-  // different recipe supersedes whatever was previously flagged as running.
+  // The rest of the app (the pill, the cookbook) learns which step this is.
   useEffect(() => {
-    if (!id || !recipe) return;
-    if (currentStep >= recipe.instructions.length) {
-      clearActiveBake(id);
-      return;
-    }
-    startActiveBake(id, recipe.title, currentStep);
-  }, [id, recipe, currentStep]);
+    if (id && recipe && step) startActiveBake(id, recipe.title, step.index);
+  }, [id, recipe, step]);
 
+  /* ── The screen stays awake; the scale lets go on the way out ───────── */
   useEffect(() => {
-    const requestWakeLock = async () => {
-      try {
-        if ('wakeLock' in navigator) {
-          wakeLock.current = await (navigator as any).wakeLock.request('screen');
-        }
-      } catch (err: any) {
-        console.warn('Wake Lock error:', err.name, err.message);
-      }
-    };
-    requestWakeLock();
+    const nav = navigator as Navigator & { wakeLock?: { request: (type: 'screen') => Promise<{ release: () => Promise<void> }> } };
+    nav.wakeLock
+      ?.request('screen')
+      .then((lock) => {
+        wakeLock.current = lock;
+      })
+      .catch(() => undefined);
     return () => {
-      if (wakeLock.current) {
-        wakeLock.current.release();
-      }
+      void wakeLock.current?.release().catch(() => undefined);
       scaleService.disconnect();
     };
   }, []);
 
+  /* ── Moving between steps ──────────────────────────────────────────── */
+  const positionRef = useRef(position);
+  positionRef.current = position;
+  const stepsRef = useRef(steps);
+  stepsRef.current = steps;
+
+  const next = () => {
+    if (positionRef.current >= stepsRef.current.length - 1) {
+      setSheet('log');
+      return;
+    }
+    haptic('light');
+    setPosition((p) => p + 1);
+    contentRef.current?.scrollTo?.({ top: 0 });
+  };
+  const back = () => {
+    if (positionRef.current === 0) return;
+    haptic('light');
+    setPosition((p) => p - 1);
+    contentRef.current?.scrollTo?.({ top: 0 });
+  };
+  const goTo = (index: number) => {
+    const at = stepsRef.current.findIndex((s) => s.index === index);
+    if (at === -1) return;
+    haptic('selection');
+    setPosition(at);
+    setView('focus');
+  };
+
+  /* ── Voice ─────────────────────────────────────────────────────────── */
+  const stepIngredients = (s = step): Component[] => (recipe && s ? ingredientsForStep(s.text, recipe.ingredients) : []);
+  const speak = (text: string) => window.speechSynthesis?.speak(new SpeechSynthesisUtterance(text));
+  const { listening, browserSupportsSpeechRecognition } = useSpeechRecognition({
+    commands: [
+      { command: ['next', 'next step', 'forward'], callback: () => next() },
+      { command: ['back', 'previous', 'previous step'], callback: () => back() },
+      { command: ['finish', 'done', 'complete'], callback: () => setSheet('finish') },
+      { command: ['read', 'repeat', 'read step', 'read that'], callback: () => step && speak(step.text) },
+      {
+        command: ['ingredients', 'read ingredients', 'what do i need'],
+        callback: () => {
+          const needs = stepIngredients();
+          speak(
+            needs.length
+              ? `You need: ${needs.map((i) => `${friendlyAmountText(i.quantity, i.unit)} ${ingredientParts(cleanText(i.name)).name}`).join(', ')}`
+              : 'No particular ingredients for this step.',
+          );
+        },
+      },
+      {
+        command: ['start timer', 'start'],
+        callback: () => {
+          const t = step ? findTimers(step.text)[0] : undefined;
+          if (t) {
+            startTimer(t.seconds, `Step ${step!.number} · ${t.label}`);
+            speak('Timer started.');
+          } else {
+            speak("I didn't find a time in this step.");
+          }
+        },
+      },
+      { command: ['quiet', 'quite', 'stop timer', 'stop'], callback: () => window.dispatchEvent(new Event('stop-alarms')) },
+      { command: ['show all', 'focus mode', 'toggle view'], callback: () => setView((v) => (v === 'focus' ? 'all' : 'focus')) },
+      { command: ['up', 'scroll up'], callback: () => contentRef.current?.scrollBy({ top: -500, behavior: 'smooth' }) },
+      { command: ['down', 'scroll down'], callback: () => contentRef.current?.scrollBy({ top: 500, behavior: 'smooth' }) },
+      { command: ['help', 'voice commands'], callback: () => setSheet('voice') },
+      { command: ['close'], callback: () => setSheet(null) },
+    ],
+  });
+  const toggleMic = () => {
+    if (listening) SpeechRecognition.stopListening();
+    else void SpeechRecognition.startListening({ continuous: true });
+  };
+
+  /* ── Wave to advance: a hand across the camera is Next ─────────────── */
+  useEffect(() => {
+    if (!cameraActive) return;
+    let alive = true;
+    let stream: MediaStream | null = null;
+    let frame = 0;
+    let previous: ImageData | null = null;
+    let coolingUntil = 0;
+    const video = videoRef.current;
+
+    const detect = () => {
+      if (!alive) return;
+      const canvas = canvasRef.current;
+      const ctx = canvas?.getContext('2d');
+      if (video && canvas && ctx && video.readyState === video.HAVE_ENOUGH_DATA && Date.now() > coolingUntil) {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const current = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        if (previous) {
+          let changed = 0;
+          for (let i = 0; i < current.data.length; i += 16) {
+            const diff =
+              Math.abs(current.data[i] - previous.data[i]) +
+              Math.abs(current.data[i + 1] - previous.data[i + 1]) +
+              Math.abs(current.data[i + 2] - previous.data[i + 2]);
+            if (diff > 50) changed++;
+          }
+          // A hand across the lens changes more than an eighth of the picture.
+          if (changed / (current.data.length / 16) > 0.15) {
+            coolingUntil = Date.now() + 2000;
+            previous = null;
+            next();
+            frame = requestAnimationFrame(detect);
+            return;
+          }
+        }
+        previous = current;
+      }
+      frame = requestAnimationFrame(detect);
+    };
+
+    navigator.mediaDevices
+      ?.getUserMedia({ video: { facingMode: 'user', width: 320, height: 240 } })
+      .then((s) => {
+        if (!alive) return s.getTracks().forEach((t) => t.stop());
+        stream = s;
+        if (video) video.srcObject = s;
+        frame = requestAnimationFrame(detect);
+      })
+      .catch(() => setNotice("The camera isn't available, so waving won't turn the page. Next still works."));
+
+    return () => {
+      alive = false;
+      cancelAnimationFrame(frame);
+      stream?.getTracks().forEach((t) => t.stop());
+      if (video) video.srcObject = null;
+    };
+    // `next` reads refs; the camera follows the toggle alone.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cameraActive]);
+
+  /* ── The Bluetooth scale ───────────────────────────────────────────── */
   const connectScale = async () => {
     try {
       await scaleService.connect();
       setScaleConnected(true);
-      scaleService.onWeightChange((measurement) => {
-        setScaleWeight(measurement);
-      });
+      scaleService.onWeightChange(setScaleWeight);
       scaleService.onDisconnect(() => {
         setScaleConnected(false);
         setScaleWeight(null);
       });
-    } catch (err) {
-      setBakeNotice('The scale did not connect. Check that Bluetooth is on and that this site is allowed to use it, then press Connect again.');
-    }
-  };
-
-  const currentStepRef = useRef(currentStep);
-  useEffect(() => { currentStepRef.current = currentStep; }, [currentStep]);
-
-  const handleNextStep = async () => {
-    if (recipe && currentStepRef.current < recipe.instructions.length) {
-      setCurrentStep(prev => prev + 1);
-      if (Capacitor.isNativePlatform() && hapticsEnabled()) await Haptics.impact({ style: ImpactStyle.Light });
-    }
-  };
-
-  const handlePrevStep = async () => {
-    if (currentStepRef.current > 0) {
-      setCurrentStep(prev => prev - 1);
-      if (Capacitor.isNativePlatform() && hapticsEnabled()) await Haptics.impact({ style: ImpactStyle.Light });
-    }
-  };
-
-  /*
-   * Jumping by phase. The row's keys are the coarse navigation a baker actually
-   * thinks in, so a key lands on the first step of its phase — never in the
-   * middle of one, which would be a jump nobody could predict from the label.
-   */
-  const handleSelectPhase = async (phase: Phase) => {
-    const target = phase.stepIndices[0];
-    if (target === undefined) return;
-    setCurrentStep(target);
-    setViewMode('focus');
-    if (Capacitor.isNativePlatform() && hapticsEnabled()) await Haptics.impact({ style: ImpactStyle.Light });
-  };
-
-  useEffect(() => {
-    let isActive = true;
-    let stream: MediaStream | null = null;
-    let animationFrame: number;
-
-    if (!cameraActive) {
-      if (videoRef.current && videoRef.current.srcObject) {
-         const oldStream = videoRef.current.srcObject as MediaStream;
-         oldStream.getTracks().forEach(t => t.stop());
-         videoRef.current.srcObject = null;
-      }
-      return;
-    }
-
-    const startCamera = async () => {
-      try {
-        const mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: 320, height: 240 } });
-        if (!isActive) {
-          mediaStream.getTracks().forEach(t => t.stop());
-          return;
-        }
-        stream = mediaStream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-        }
-      } catch (err) {
-        console.error("Camera access denied for wave detection", err);
-      }
-    };
-
-    const detectMotion = () => {
-      if (!isActive || !videoRef.current || !canvasRef.current || motionCooldown.current) {
-        if (isActive) animationFrame = requestAnimationFrame(detectMotion);
-        return;
-      }
-
-      const ctx = canvasRef.current.getContext('2d');
-      if (!ctx || videoRef.current.readyState !== videoRef.current.HAVE_ENOUGH_DATA) {
-        animationFrame = requestAnimationFrame(detectMotion);
-        return;
-      }
-
-      ctx.drawImage(videoRef.current, 0, 0, canvasRef.current.width, canvasRef.current.height);
-      const currentImageData = ctx.getImageData(0, 0, canvasRef.current.width, canvasRef.current.height);
-
-      if (lastImageData.current) {
-        let diffPixels = 0;
-        const threshold = 50;
-        const length = currentImageData.data.length;
-
-        // Downsample check for performance (every 4th pixel)
-        for (let i = 0; i < length; i += 16) {
-          const rDiff = Math.abs(currentImageData.data[i] - lastImageData.current.data[i]);
-          const gDiff = Math.abs(currentImageData.data[i+1] - lastImageData.current.data[i+1]);
-          const bDiff = Math.abs(currentImageData.data[i+2] - lastImageData.current.data[i+2]);
-          if (rDiff + gDiff + bDiff > threshold) {
-            diffPixels++;
-          }
-        }
-
-        const totalCheckedPixels = length / 16;
-        if (diffPixels / totalCheckedPixels > 0.15) { // 15% of image changed
-          motionCooldown.current = true;
-          handleNextStep();
-          setTimeout(() => {
-            motionCooldown.current = false;
-            lastImageData.current = null;
-          }, 2000); // 2 second cooldown
-        }
-      }
-
-      lastImageData.current = currentImageData;
-      animationFrame = requestAnimationFrame(detectMotion);
-    };
-
-    startCamera().then(() => {
-      if (isActive) animationFrame = requestAnimationFrame(detectMotion);
-    });
-
-    return () => {
-      isActive = false;
-      if (stream) stream.getTracks().forEach(t => t.stop());
-      if (videoRef.current && videoRef.current.srcObject) {
-        const oldStream = videoRef.current.srcObject as MediaStream;
-        oldStream.getTracks().forEach(t => t.stop());
-        videoRef.current.srcObject = null;
-      }
-      cancelAnimationFrame(animationFrame);
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cameraActive]);
-
-  const getSmartIngredients = (stepText: string): Component[] =>
-    recipe ? ingredientsForStep(stepText, recipe.ingredients) : [];
-
-  useEffect(() => {
-    if (scaleWeight && recipe && currentStep < recipe.instructions.length) {
-      const stepText = recipe.instructions[currentStep];
-      const smartIngs = getSmartIngredients(stepText);
-      // Only a step whose every ingredient is weighed has a target to reach.
-      const targetWeight = scaleTargetGrams(smartIngs) ?? 0;
-
-      if (targetWeight > 0) {
-        // Auto-advance if weight is within 5% of target
-        const threshold = targetWeight * 0.95;
-        if (scaleWeight.weight >= threshold) {
-          handleNextStep();
-        }
-      }
-    }
-  }, [scaleWeight, currentStep, recipe]);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // An open sheet owns the keyboard: Escape closes it rather than leaving
-      // Baking Mode, and the arrows do not turn the step hidden behind it.
-      if (showFinishModal || showIngredients || showVoiceHelp || confirmingFinish || openSubRecipeId) return;
-      if (e.key === 'Escape') navigate(`/recipe/${id}`);
-
-      if (viewMode === 'focus') {
-        if (e.key === 'ArrowRight') handleNextStep();
-        if (e.key === 'ArrowLeft') handlePrevStep();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentStep, recipe, navigate, id, showFinishModal, showIngredients, showVoiceHelp, confirmingFinish, openSubRecipeId, viewMode]);
-
-  const touchStartX = useRef<number | null>(null);
-  const touchEndX = useRef<number | null>(null);
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartX.current = e.targetTouches[0].clientX;
-  };
-  const handleTouchMove = (e: React.TouchEvent) => {
-    touchEndX.current = e.targetTouches[0].clientX;
-  };
-  const handleTouchEnd = () => {
-    if (!touchStartX.current || !touchEndX.current) return;
-    const distance = touchStartX.current - touchEndX.current;
-    if (distance > 50) handleNextStep(); // Swipe left -> Next
-    else if (distance < -50) handlePrevStep(); // Swipe right -> Prev
-    touchStartX.current = null;
-    touchEndX.current = null;
-  };
-
-
-  const handleFinishSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSavingLog(true);
-    try {
-      // The bake is saved on this device, photographs and all. It needs no
-      // account and no connection: a bake finished offline is still logged.
-      const saved = await createBakeLog.mutateAsync({
-        draft: { recipeId: id!, notes },
-        photos: imageFiles,
-      });
-      const newLogId: string | null = saved._id;
-
-      if (newLogId) {
-        navigate(`/recipe/${id}?makeId=${newLogId}&export=instagram`);
-      } else {
-        navigate(`/recipe/${id}`);
-      }
     } catch {
-      setBakeNotice("The bake log didn't save to this device. Your notes and photographs are still here; try again.");
-    } finally {
-      setSavingLog(false);
+      setNotice("The scale didn't connect. Check Bluetooth is on and this site may use it, then try again.");
     }
   };
+  const scaleTarget = scaleTargetGrams(stepIngredients()) ?? 0;
+  useEffect(() => {
+    // Within 5% of what the step weighs: on to the next one.
+    if (scaleWeight && scaleTarget > 0 && scaleWeight.weight >= scaleTarget * 0.95) next();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scaleWeight]);
 
-  // The recipe is read from the device in a few milliseconds: the overlay's
-  // ground is drawn, and nothing on it, rather than a skeleton that flashes (B30).
-  if (loading) return <div className="fixed inset-0 z-50 bg-ground" />;
+  /* ── Keys and swipes ───────────────────────────────────────────────── */
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      // An open sheet owns the keyboard.
+      if (sheet || subRecipeId) return;
+      if (e.key === 'Escape') navigate(`/recipe/${id}`);
+      if (view !== 'focus') return;
+      if (e.key === 'ArrowRight') next();
+      if (e.key === 'ArrowLeft') back();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sheet, subRecipeId, view, id]);
+
+  const touchX = useRef<number | null>(null);
+  const onTouchStart = (e: React.TouchEvent) => (touchX.current = e.touches[0].clientX);
+  const onTouchEnd = (e: React.TouchEvent) => {
+    if (touchX.current === null) return;
+    const moved = touchX.current - e.changedTouches[0].clientX;
+    touchX.current = null;
+    if (moved > 60) next();
+    else if (moved < -60) back();
+  };
+
+  /* ── Notes ─────────────────────────────────────────────────────────── */
+  const saveNote = (text: string) => {
+    const words = text.trim();
+    if (!words || !id || !step) return false;
+    addActiveBakeNote(id, { stepIndex: step.index, text: words, at: new Date().toISOString() });
+    haptic('light');
+    toast.show({ message: `Noted on step ${step.number}` });
+    return true;
+  };
+
+  const leave = () => navigate(`/recipe/${id}`);
+  const stopBake = () => {
+    clearActiveBake(id);
+    navigate(`/recipe/${id}`);
+  };
+
+  if (loading) return <div className="fixed inset-0 z-50 bg-paper" />;
 
   if (!recipe) {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-ground px-6 text-center">
-        <span className="ui-label text-ink-muted">
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-paper px-6 text-center">
+        <p className="font-title text-2xl text-ink">
           {loadFailed ? "Couldn't open this recipe on this device" : 'This recipe is not in the cookbook'}
-        </span>
-        <p className="max-w-prose text-sm text-ink-muted">
+        </p>
+        <p className="max-w-prose text-ink-2">
           {loadFailed
             ? 'Go back and open it again. If it keeps happening, reload the app.'
-            : 'It may have been deleted. Your bakes of it are still in the bake history.'}
+            : 'It may have been deleted. Your bakes of it are still in Bakes.'}
         </p>
-        <Button onClick={() => navigate('/')}>Back to cookbook</Button>
+        <Button onClick={() => navigate('/')}>Back to the cookbook</Button>
       </div>
     );
   }
 
-  const isFinished = currentStep === recipe.instructions.length;
-  // The last card. The machine reports that the pattern has finished running;
-  // it does not congratulate anyone.
-  const stepText = isFinished ? 'Every step is complete.' : recipe.instructions[currentStep];
-  const smartIngredients = isFinished ? [] : getSmartIngredients(stepText);
-  const currentPhase = isFinished
-    ? null
-    : phases.find((phase) => phase.stepIndices.includes(currentStep)) ?? null;
-  // The scale's target for this step: the sum of what the step actually calls
-  // for. Shown only when there is something to weigh, so the readout never sits
-  // there reporting a target of zero.
-  const scaleTarget = scaleTargetGrams(smartIngredients) ?? 0;
+  const needs = stepIngredients();
+  const stepTimer = step ? findTimers(step.text)[0] : undefined;
+  const runningForStep = stepTimer ? timers.find((t) => t.name === `Step ${step!.number} · ${stepTimer.label}`) : undefined;
+  const lastOnStep = step ? lastBake?.stepNotes?.filter((n) => n.stepIndex === step.index).at(-1) : undefined;
+  const mineOnStep = step ? notesThisBake.filter((n) => n.stepIndex === step.index) : [];
+  const links = step ? (recipe.instructionLinks ?? []).filter((l) => l.stepIndex === step.index) : [];
+
+  const youNeed = needs.length ? (
+    <section aria-labelledby="you-need" className="flex flex-col gap-1">
+      <h2 id="you-need" className="ui-label">
+        You need
+      </h2>
+      <ul className="flex flex-col">
+        {needs.map((ing, i) => (
+          <li key={i} className="flex items-baseline gap-3 border-b border-rule py-1.5 text-[1.0625rem] last:border-0">
+            <span className="w-20 shrink-0 font-sans font-semibold tabular-nums text-ink">{friendlyAmountText(ing.quantity, ing.unit)}</span>
+            <span className="font-prose min-w-0 text-ink">{ingredientParts(cleanText(ing.name)).name}</span>
+          </li>
+        ))}
+      </ul>
+      {scaleConnected && scaleTarget > 0 ? (
+        <div className="mt-2 flex items-end gap-6">
+          <Readout label="On the scale" value={scaleWeight ? scaleWeight.weight : '—'} unit={scaleWeight ? scaleWeight.unit : 'g'} size="lg" />
+          <Readout label="Target" value={scaleTarget} unit="g" size="md" />
+        </div>
+      ) : null}
+    </section>
+  ) : null;
+
+  const timerChip = stepTimer ? (
+    <button
+      type="button"
+      onClick={() => {
+        if (runningForStep) window.dispatchEvent(new Event(OPEN_TIMERS_EVENT));
+        else {
+          haptic('medium');
+          startTimer(stepTimer.seconds, `Step ${step!.number} · ${stepTimer.label}`);
+        }
+      }}
+      className="pressable inline-flex min-h-16 items-center gap-3 self-start rounded-full bg-butter pl-5 pr-6 font-sans text-on-butter"
+    >
+      <TimerIcon className="h-6 w-6" strokeWidth={1.8} aria-hidden="true" />
+      {runningForStep ? (
+        <>
+          <span className="text-[1.625rem] font-semibold tabular-nums">{formatTimerClock(runningForStep.remainingMs).replace(/^-/, '−')}</span>{' '}
+          <span className="text-sm">of {stepTimer.label}</span>
+        </>
+      ) : (
+        <span className="text-xl font-semibold">Start {stepTimer.label}</span>
+      )}
+    </button>
+  ) : null;
+
+  const lastTime = lastOnStep ? (
+    <div className="flex flex-col gap-1.5 rounded-key bg-paper-sunk px-4 py-3.5">
+      <span className="text-xs font-semibold text-pencil">Last time on this step · {shortDate(lastOnStep.at)}</span>
+      <span className="font-prose text-[1.0625rem] italic leading-snug text-ink-2">“{lastOnStep.text}”</span>
+    </div>
+  ) : null;
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-ground">
-      {/* Hidden Camera Elements for Motion Detection */}
-      <video ref={videoRef} autoPlay playsInline muted className="opacity-0 pointer-events-none absolute w-px h-px" />
+    <div className="fixed inset-0 z-50 flex flex-col bg-paper text-ink">
+      <video ref={videoRef} autoPlay playsInline muted className="pointer-events-none absolute h-px w-px opacity-0" />
       <canvas ref={canvasRef} width="320" height="240" className="hidden" />
 
-      {/*
-        A report from the machine: the scale would not connect, the bake log
-        would not save. A bar under the head rather than an overlay, because
-        nothing here should have to be dismissed before baking can continue,
-        and it must be readable from across a counter.
-      */}
-      {bakeNotice ? (
-        <div
-          role="alert"
-          className="flex shrink-0 items-start gap-3 border-b border-fault bg-panel px-3 py-2 text-sm text-fault"
-        >
-          <span className="flex-1">{bakeNotice}</span>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setBakeNotice('')}
-            aria-label="Dismiss"
-            icon={<X className="h-4 w-4" />}
-          />
+      {notice ? (
+        <div role="alert" className="flex shrink-0 items-start gap-2 border-b border-fault px-4 py-2 text-sm text-fault pt-safe md:pt-2">
+          <span className="flex-1">{notice}</span>
+          <IconButton label="Dismiss" icon={<X className="h-4 w-4" aria-hidden="true" />} onClick={() => setNotice('')} className="-my-2" />
         </div>
       ) : null}
 
-      {/*
-        The machine's head: what is baking, the controls that change how it is
-        driven, and the row itself. It is `shrink-0` so the step below it gets
-        every remaining pixel — on a 390px phone in landscape that is the whole
-        difference between two lines of instruction and four.
-      */}
-      <header className="shrink-0 border-b border-rule bg-panel">
-        <div className="flex items-center gap-2 px-2 py-2 sm:px-3">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate(`/recipe/${id}`)}
-            aria-label="Leave baking mode"
-            icon={<X className="h-4 w-4" />}
-          />
-          <h1 className="ui-label min-w-0 flex-1 truncate text-ink">{recipe.title}</h1>
-
-          {/* Controls scroll rather than wrap: the head must stay one bar tall,
-            * and a second row of chrome is a second row stolen from the step. */}
-          <div className="no-scrollbar flex shrink-0 items-center gap-1 overflow-x-auto">
-            <Button
-              size="sm"
-              engaged={scaleConnected}
-              onClick={connectScale}
-              icon={<Bluetooth className="h-3.5 w-3.5" />}
-              title={scaleConnected ? 'Scale connected' : 'Connect a Bluetooth scale'}
-            >
-              <span className="hidden sm:inline">{scaleConnected ? 'Connected' : 'Scale'}</span>
-            </Button>
-
-            <Button
-              size="sm"
-              engaged={showIngredients}
-              onClick={() => setShowIngredients(!showIngredients)}
-              icon={<List className="h-3.5 w-3.5" />}
-            >
-              <span className="hidden sm:inline">Ingredients</span>
-            </Button>
-
-            {voiceCommandsSetting && browserSupportsSpeechRecognition && (
-              <Button
-                size="sm"
-                engaged={listening}
-                onClick={toggleMic}
-                title="Toggle Voice Commands (Next, Back, Finish)"
-                aria-label="Toggle voice commands"
-                icon={<Mic className="h-3.5 w-3.5" />}
-              />
+      <header className="shrink-0 px-1 pt-[env(safe-area-inset-top)]">
+        <div className="flex items-center gap-1">
+          <IconButton label="Leave baking mode" onClick={leave} icon={<X className="h-[22px] w-[22px]" strokeWidth={1.7} aria-hidden="true" />} />
+          <h1 className="font-title min-w-0 flex-1 truncate text-lg">{recipe.title}</h1>
+          <span className="px-1 text-sm tabular-nums text-ink-muted" aria-live="polite">
+            {step ? `${step.number} of ${steps.length}` : ''}
+          </span>
+          <Menu
+            label="Baking options"
+            align="right"
+            trigger={(props) => (
+              <button
+                type="button"
+                {...props}
+                aria-label="Ingredients, all steps, scale and voice"
+                className="pressable inline-flex h-11 w-11 items-center justify-center rounded-full hover:bg-paper-sunk"
+              >
+                <MoreHorizontal className="h-[22px] w-[22px]" aria-hidden="true" />
+              </button>
             )}
-
-            {waveToAdvanceSetting && (
-              <>
-                <Button
-                  size="sm"
-                  engaged={cameraActive}
-                  onClick={() => setCameraActive(!cameraActive)}
-                  title="Toggle Camera (Wave to Advance)"
-                  aria-label="Toggle wave to advance"
-                  icon={cameraActive ? <Video className="h-3.5 w-3.5" /> : <VideoOff className="h-3.5 w-3.5" />}
-                />
-
-                {cameraActive && (
-                  <Button
-                    size="sm"
-                    onClick={async () => {
-                      if (videoRef.current) {
-                        try {
-                          if (document.pictureInPictureElement) {
-                            await document.exitPictureInPicture();
-                          } else {
-                            await videoRef.current.requestPictureInPicture();
-                          }
-                        } catch (err) {
-                          console.error("PiP failed", err);
-                        }
-                      }
-                    }}
-                    title="View Camera (Picture-in-Picture)"
-                    aria-label="View camera picture in picture"
-                    icon={<PictureInPicture className="h-3.5 w-3.5" />}
-                  />
-                )}
-              </>
-            )}
-
-            <Button size="sm" onClick={() => setViewMode(prev => prev === 'focus' ? 'all' : 'focus')}>
-              {viewMode === 'focus' ? 'Show All' : 'Focus Mode'}
-            </Button>
-          </div>
+          >
+            <MenuItem onSelect={() => setSheet('ingredients')}>All ingredients</MenuItem>
+            <MenuItem onSelect={() => setView((v) => (v === 'focus' ? 'all' : 'focus'))}>
+              {view === 'focus' ? 'All steps' : 'One step at a time'}
+            </MenuItem>
+            <MenuItem onSelect={connectScale}>{scaleConnected ? 'Scale connected' : 'Connect a Bluetooth scale'}</MenuItem>
+            {voiceSetting && browserSupportsSpeechRecognition ? (
+              <MenuItem onSelect={toggleMic}>{listening ? 'Stop listening' : 'Listen for voice commands'}</MenuItem>
+            ) : null}
+            {voiceSetting && browserSupportsSpeechRecognition ? <MenuItem onSelect={() => setSheet('voice')}>Voice commands</MenuItem> : null}
+            {waveSetting ? (
+              <MenuItem onSelect={() => setCameraActive((v) => !v)}>{cameraActive ? 'Stop wave to advance' : 'Wave to advance'}</MenuItem>
+            ) : null}
+            <MenuItem onSelect={() => setSheet('log')}>Finish and log</MenuItem>
+            <MenuItem onSelect={stopBake}>Stop without logging</MenuItem>
+          </Menu>
         </div>
-
-        {/*
-          The row, live. Keys are controls here and nowhere else in the app:
-          the running phase is red, the phases behind it are bone, and tapping
-          one jumps to where that phase begins.
-        */}
-        <div className="border-t border-rule px-2 py-3 sm:px-3">
+        <div className="px-4 pb-2">
           <StepRow
             phases={phases}
-            activeStep={isFinished ? undefined : currentStep}
-            onSelect={handleSelectPhase}
-            label={`${recipe.title} phases — jump to a phase`}
+            activeStep={step?.index}
+            onSelect={(phase) => phase.stepIndices[0] !== undefined && goTo(phase.stepIndices[0])}
+            label={`${recipe.title}: jump to a part of the bake`}
           />
         </div>
-
-        {/*
-          Running timers, docked. A timer is an instrument value, so it reads on
-          segments; it turns signal red once it runs past its end, which is the
-          one moment a timer is the thing happening now.
-        */}
-        {timers.length > 0 && (
-          <div
-            className="no-scrollbar flex items-end gap-5 overflow-x-auto border-t border-rule px-3 py-2"
-            aria-label="Running timers"
-          >
-            {timers.map((timer) => (
-              <Readout
-                key={timer.id}
-                label={timer.running ? timer.name : `${timer.name} · paused`}
-                value={formatTimerClock(timer.remainingMs)}
-                size="sm"
-                tone={timer.remainingMs < 0 ? 'accent' : 'ink'}
-                className="shrink-0"
-              />
+        {timers.length ? (
+          <div className="no-scrollbar flex gap-2 overflow-x-auto px-4 pb-2" aria-label="Running timers">
+            {timers.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => window.dispatchEvent(new Event(OPEN_TIMERS_EVENT))}
+                className={cn(
+                  'pressable inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-full bg-butter px-3 text-sm tabular-nums text-on-butter',
+                  t.remainingMs < 0 && 'font-semibold',
+                )}
+              >
+                {t.name.replace(/^Step \d+ · /, '')} · {formatTimerClock(t.remainingMs).replace(/^-/, '−')}
+                {t.running ? '' : ' · paused'}
+              </button>
             ))}
           </div>
-        )}
+        ) : null}
       </header>
 
-      {/* Main Content */}
-      <div
-        ref={contentRef}
-        className="relative flex w-full flex-1 flex-col items-center overflow-y-auto px-5 pb-6 sm:px-8"
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-      >
-        <div className="flex w-full max-w-3xl flex-1 flex-col">
-          {viewMode === 'focus' ? (
-            <div className="flex w-full flex-1 flex-col justify-center gap-8 py-8">
-              {!isFinished && (
-                <div className="flex items-baseline gap-3">
-                  {/* Below `sm` the row prints its own "LEVAIN — NOW" caption,
-                    * because the keys have no room for labels there. Repeating
-                    * the phase here would say it twice on the narrowest screen. */}
-                  {currentPhase ? (
-                    <span className="ui-label hidden text-signal sm:inline">
-                      {currentPhase.label}
-                    </span>
-                  ) : null}
-                  {/* A step index is a count, not an instrument value, so it is
-                    * set in tabular mono rather than spent on segments. */}
-                  <span className="font-sans text-xs tabular-nums text-ink-muted">
-                    STEP {String(currentStep + 1).padStart(2, '0')} / {String(recipe.instructions.length).padStart(2, '0')}
-                  </span>
-                </div>
-              )}
-
-              <div className="text-2xl leading-snug text-ink sm:text-4xl sm:leading-tight">
-                {isFinished ? (
-                  <span className="font-title">Bake complete.</span>
-                ) : (
-                  renderWithTimers(stepText, `Step ${currentStep + 1}`)
-                )}
-              </div>
-
-              {!isFinished && recipe.instructionLinks && recipe.instructionLinks.find(l => l.stepIndex === currentStep) && (
+      <div className="flex min-h-0 flex-1">
+        <div
+          ref={contentRef}
+          onTouchStart={onTouchStart}
+          onTouchEnd={onTouchEnd}
+          className="min-w-0 flex-1 overflow-y-auto px-5 pb-6 sm:px-8"
+        >
+          {view === 'focus' && step ? (
+            <div className="mx-auto flex max-w-2xl flex-col gap-6 pt-6 sm:pt-10">
+              {position === 0 && lastBake?.nextTime ? (
+                <MarginNote lead="Next time, you said">{lastBake.nextTime}</MarginNote>
+              ) : null}
+              {step.heading ? <p className="font-title text-xl italic text-ink-2">{step.heading}</p> : null}
+              <p className="font-prose text-[1.75rem] leading-[1.3] sm:text-[2rem]">
+                <StepText text={step.text} name={`Step ${step.number}`} />
+              </p>
+              {links.length ? (
                 <div className="flex flex-wrap gap-2">
-                  {recipe.instructionLinks.filter(l => l.stepIndex === currentStep).map((link, idx) => (
-                    <Button
-                      key={idx}
-                      onClick={() => setOpenSubRecipeId(link.recipeId)}
-                      icon={<LinkIcon className="h-4 w-4" />}
-                    >
+                  {links.map((link) => (
+                    <Button key={link.recipeId} onClick={() => setSubRecipeId(link.recipeId)} icon={<LinkIcon className="h-4 w-4" aria-hidden="true" />}>
                       {link.recipeTitle}
                     </Button>
                   ))}
                 </div>
-              )}
-
-              {/* What this step calls for, and — only when a scale is actually
-                * connected — how close the bowl is to it. */}
-              {!isFinished && (smartIngredients.length > 0 || (scaleConnected && scaleTarget > 0)) && (
-                <Panel title="This step needs" className="w-full">
-                  <ul className="flex flex-col divide-y divide-rule">
-                    {smartIngredients.map((ing, idx) => (
-                      <li key={idx} className="flex items-baseline justify-between gap-4 py-2">
-                        <span className="min-w-0 truncate text-ink">{ing.name}</span>
-                        <span className="shrink-0 font-sans text-sm tabular-nums text-ink">
-                          {formatAmount(ing)}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-
-                  {scaleConnected && scaleTarget > 0 && (
-                    <div className="mt-4 flex items-end gap-6 border-t border-rule pt-4">
-                      <Readout
-                        label="On scale"
-                        value={scaleWeight ? scaleWeight.weight : '---'}
-                        unit={scaleWeight ? scaleWeight.unit : 'G'}
-                        size="lg"
-                        tone={
-                          scaleWeight && scaleWeight.weight >= scaleTarget * 0.95 ? 'accent' : 'ink'
-                        }
-                      />
-                      <Readout label="Target" value={scaleTarget} unit="G" size="md" tone="ink" />
-                    </div>
-                  )}
-                </Panel>
-              )}
-
-              {isFinished && (
-                <div className="flex flex-col items-start gap-4">
-                  <p className="max-w-prose text-ink-muted">
-                    Every phase is done. Log what happened while it is still fresh — notes now are
-                    what make the next one better.
-                  </p>
-                  <Button variant="primary" size="lg" onClick={() => setShowFinishModal(true)} icon={<Check className="h-5 w-5" />}>
-                    Finish Recipe
-                  </Button>
-                </div>
-              )}
+              ) : null}
+              {timerChip}
+              <div className="flex flex-col gap-6 lg:hidden">
+                {youNeed}
+                {lastTime}
+              </div>
+              {mineOnStep.map((n) => (
+                <MarginNote key={n.at} lead="Noted">
+                  {n.text}
+                </MarginNote>
+              ))}
             </div>
           ) : (
-            /*
-             * Show All: the whole method under the same phase headings the row
-             * draws, so the two readings of the recipe never disagree. Every
-             * step is a control — tapping one drops back into focus there.
-             */
-            <div className="flex w-full flex-col gap-8 py-8">
-              {phases.map((phase) => (
-                <div key={phase.id} className="flex flex-col gap-4">
-                  <div className="flex items-center gap-2 border-b border-rule pb-2">
-                    <span
-                      className={cn(
-                        'h-2.5 w-2.5 shrink-0 rounded-key',
-                        phase.stepIndices.includes(currentStep) ? 'bg-signal' : 'bg-key-unlit',
-                      )}
-                      aria-hidden="true"
-                    />
-                    <h2 className="ui-label">{phase.label}</h2>
-                  </div>
-
-                  {phase.stepIndices.map((stepIndex) => {
-                    const links = recipe.instructionLinks
-                      ? recipe.instructionLinks.filter(l => l.stepIndex === stepIndex)
-                      : [];
-                    return (
-                      <div key={stepIndex} className="flex flex-col gap-3">
-                        <button
-                          type="button"
-                          onClick={() => { setCurrentStep(stepIndex); setViewMode('focus'); }}
-                          className={cn(
-                            'flex w-full gap-4 rounded-key border border-transparent p-2 text-left transition-colors hover:border-rule',
-                            stepIndex === currentStep && 'border-signal',
-                          )}
-                        >
-                          <span className="shrink-0 font-sans text-sm tabular-nums text-ink-muted">
-                            {String(stepIndex + 1).padStart(2, '0')}
-                          </span>
-                          <span className="text-lg leading-relaxed text-ink sm:text-xl">
-                            {recipe.instructions[stepIndex]}
-                          </span>
-                        </button>
-
-                        {links.length > 0 && (
-                          <div className="flex flex-wrap gap-2 pl-10">
-                            {links.map((link, lidx) => (
-                              <Button
-                                key={lidx}
-                                size="sm"
-                                onClick={() => setOpenSubRecipeId(link.recipeId)}
-                                icon={<LinkIcon className="h-3.5 w-3.5" />}
-                              >
-                                {link.recipeTitle}
-                              </Button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
+            <ol className="mx-auto flex max-w-2xl flex-col py-6">
+              {steps.map((s, i) => (
+                <li key={s.index} className="flex flex-col">
+                  {s.heading && s.heading !== steps[i - 1]?.heading ? (
+                    <p className="font-title mt-4 text-lg italic text-ink-2">{s.heading}</p>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={() => goTo(s.index)}
+                    aria-current={i === position ? 'step' : undefined}
+                    className={cn(
+                      'pressable -mx-2 flex gap-3 rounded-key px-2 py-3 text-left hover:bg-paper-sunk',
+                      i === position && 'bg-butter text-on-butter',
+                    )}
+                  >
+                    <span className="font-title w-6 shrink-0 text-lg text-ink-muted">{s.number}</span>
+                    <span className="font-prose text-lg leading-relaxed">{s.text}</span>
+                  </button>
+                </li>
               ))}
-
-              <div className="flex justify-center border-t border-rule pt-8">
-                <Button variant="primary" size="lg" onClick={() => setShowFinishModal(true)} icon={<Check className="h-5 w-5" />}>
-                  Finish Recipe
-                </Button>
-              </div>
-            </div>
+            </ol>
           )}
         </div>
+
+        {/* On a wide screen: the step's ingredients, its last note and a quick note, beside it. */}
+        {view === 'focus' && step ? (
+          <aside aria-label="This step" className="hidden w-80 shrink-0 flex-col gap-6 overflow-y-auto border-l border-rule px-6 py-10 lg:flex">
+            {youNeed ?? <p className="text-sm text-ink-muted">Nothing to weigh out for this step.</p>}
+            {lastTime}
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (saveNote(quickNote)) setQuickNote('');
+              }}
+              className="flex flex-col gap-2"
+            >
+              <TextArea label="A note on this step" rows={3} value={quickNote} onChange={(e) => setQuickNote(e.target.value)} prose />
+              <Button type="submit" size="sm" className="self-start" disabled={!quickNote.trim()}>
+                Save the note
+              </Button>
+            </form>
+          </aside>
+        ) : null}
       </div>
 
-      {/*
-        The transport. One bar at every width rather than desktop arrows that
-        float beside the step and a separate mobile bar — the controls belong in
-        the same place whichever device is propped against the mixer, and a
-        floating arrow on a phone sat on top of the ingredient quantities.
-      */}
-      {!isFinished && (
-        <div className="shrink-0 border-t border-rule bg-panel px-3 py-3 pb-safe">
-          <div className="mx-auto flex max-w-3xl items-stretch gap-3">
-            <Button
-              size="lg"
-              className="flex-1"
-              onClick={handlePrevStep}
-              disabled={currentStep === 0}
-            >
-              Back
-            </Button>
-            <Button
-              size="lg"
-              engaged
-              className="flex-[2]"
-              onClick={handleNextStep}
-            >
-              Next
-            </Button>
-          </div>
+      {/* The transport: one bar at every width, in the thumb's reach. */}
+      <footer className="shrink-0 border-t border-rule px-3 py-3 pb-safe">
+        <div className="mx-auto flex max-w-2xl items-stretch gap-2.5">
+          <button
+            type="button"
+            onClick={() => {
+              setNoteDraft('');
+              setSheet('note');
+            }}
+            aria-label={step ? `Note on step ${step.number}` : 'Note'}
+            className="pressable flex min-h-16 w-[3.75rem] shrink-0 flex-col items-center justify-center gap-0.5 rounded-control border border-rule-strong text-xs text-ink hover:bg-paper-sunk lg:hidden"
+          >
+            <PencilLine className="h-5 w-5" strokeWidth={1.7} aria-hidden="true" />
+            Note
+          </button>
+          {/* On step one there is nowhere to go back to; the button keeps its place but goes. */}
+          <Button size="lg" className={cn('min-h-16 w-24 shrink-0 text-[1.0625rem]', position === 0 && 'invisible')} onClick={back} aria-hidden={position === 0 || undefined} tabIndex={position === 0 ? -1 : undefined}>
+            Back
+          </Button>
+          <Button size="lg" variant="primary" className="min-h-16 flex-1 text-[1.1875rem]" onClick={next}>
+            {last ? 'How did it go?' : 'Next →'}
+          </Button>
         </div>
-      )}
+      </footer>
 
-      {/* Ingredients sheet — the full list, over the step rather than beside it. */}
-      <Sheet
-        open={showIngredients}
-        onClose={() => setShowIngredients(false)}
-        title="All ingredients"
-        placement="bottom"
-        size="md"
-        flush
-      >
+      <Sheet open={sheet === 'ingredients'} onClose={() => setSheet(null)} title="All ingredients" placement="bottom" detents flush>
         <ul className="divide-y divide-rule px-4">
           {recipe.ingredients.map((ing, i) => (
             <li key={i}>
-              <label className="flex min-h-11 cursor-pointer items-center gap-3 py-2">
-                {/* Ink, not signal: a ticked ingredient is done, not happening now. */}
+              <label className="flex min-h-12 cursor-pointer items-center gap-3 py-2">
                 <input
                   type="checkbox"
-                  checked={!!checkedIngredients[i]}
-                  onChange={() => setCheckedIngredients(prev => ({...prev, [i]: !prev[i]}))}
+                  checked={!!checked[i]}
+                  onChange={() => setChecked((prev) => ({ ...prev, [i]: !prev[i] }))}
                   className="h-5 w-5 shrink-0 accent-ink"
                 />
-                <span className={cn('flex min-w-0 flex-1 items-baseline justify-between gap-3', checkedIngredients[i] && 'opacity-40 line-through')}>
-                  <span className="min-w-0 truncate text-ink">{ing.name}</span>
-                  <span className="shrink-0 font-sans text-sm tabular-nums text-ink-muted">
-                    {formatAmount(ing)}
-                  </span>
+                <span className={cn('flex min-w-0 flex-1 items-baseline gap-3', checked[i] && 'text-ink-muted line-through')}>
+                  <span className="w-20 shrink-0 font-sans text-sm font-semibold tabular-nums">{friendlyAmountText(ing.quantity, ing.unit)}</span>
+                  <span className="font-prose min-w-0">{ingredientParts(cleanText(ing.name)).name}</span>
                 </span>
               </label>
             </li>
@@ -928,151 +597,92 @@ export default function BakingMode() {
         </ul>
       </Sheet>
 
-      {/* Finish Modal */}
       <Sheet
-        open={confirmingFinish}
-        onClose={() => setConfirmingFinish(false)}
-        title="Finish the bake"
+        open={sheet === 'note'}
+        onClose={() => setSheet(null)}
+        title={step ? `A note on step ${step.number}` : 'A note'}
+        placement="bottom"
+        size="md"
+        initialFocus={noteRef}
+        footer={
+          <Button
+            variant="primary"
+            size="lg"
+            className="w-full"
+            disabled={!noteDraft.trim()}
+            onClick={() => {
+              if (saveNote(noteDraft)) setSheet(null);
+            }}
+          >
+            Save the note
+          </Button>
+        }
+      >
+        <TextArea
+          label="What you noticed"
+          hideLabel
+          rows={3}
+          prose
+          ref={noteRef}
+          value={noteDraft}
+          onChange={(e) => setNoteDraft(e.target.value)}
+          placeholder="Crust pale at 10 min. Give it 12."
+        />
+        <p className="pt-2 text-sm text-ink-muted">Filed with this bake, against this step. Next time it shows here.</p>
+      </Sheet>
+
+      <Sheet
+        open={sheet === 'finish'}
+        onClose={() => setSheet(null)}
+        title="Finish the bake?"
         size="sm"
         footer={
           <>
-            <Button variant="secondary" size="lg" onClick={() => setConfirmingFinish(false)}>
+            <Button variant="secondary" size="lg" onClick={() => setSheet(null)}>
               Keep baking
             </Button>
-            <Button
-              variant="primary"
-              size="lg"
-              onClick={() => {
-                setConfirmingFinish(false);
-                setShowFinishModal(true);
-              }}
-            >
+            <Button variant="primary" size="lg" onClick={() => setSheet('log')}>
               Finish
             </Button>
           </>
         }
       >
-        <p className="text-ink">Finish the recipe and log this bake?</p>
+        <p>Finish and log how this one went?</p>
       </Sheet>
 
-      <Sheet
-        open={showFinishModal}
-        onClose={() => setShowFinishModal(false)}
-        title="Log bake"
-        size="md"
-        layer={110}
-        footer={
-          <Button type="submit" form="bake-log-form" variant="primary" size="lg" busy={savingLog} className="w-full">
-            {savingLog ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Save log & finish'}
-          </Button>
-        }
-      >
-        <form id="bake-log-form" onSubmit={handleFinishSubmit} className="flex flex-col gap-6">
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between gap-3">
-              <label htmlFor="bake-notes" className="ui-label">Bake notes</label>
-              {browserSupportsSpeechRecognition && (
-                <Button
-                  size="sm"
-                  engaged={isDictating}
-                  onClick={toggleDictation}
-                  icon={isDictating ? <Mic className="h-3.5 w-3.5" /> : <MicOff className="h-3.5 w-3.5" />}
-                >
-                  {isDictating ? 'Listening' : 'Dictate'}
-                </Button>
-              )}
-            </div>
-            <textarea
-              id="bake-notes"
-              value={notes}
-              onChange={e => setNotes(e.target.value)}
-              rows={4}
-              className="w-full resize-none rounded-control border border-rule bg-panel-sunk p-3 text-ink focus:border-ink focus:outline-none"
-              placeholder="How did it turn out? What would you change next time?"
-            />
-          </div>
+      <LogBakeSheet
+        open={sheet === 'log'}
+        onClose={() => setSheet(null)}
+        recipe={recipe}
+        stepNotes={notesThisBake}
+        onSaved={(log) => {
+          clearActiveBake(id);
+          navigate(`/recipe/${id}?logged=${log._id}`);
+        }}
+      />
 
-          <div className="flex flex-col gap-3">
-            <span className="ui-label">Photos</span>
-            <div className="relative flex min-h-24 cursor-pointer flex-col items-center justify-center gap-2 rounded-control border border-dashed border-rule bg-panel-sunk p-6 transition-colors hover:border-ink-muted">
-              <input
-                type="file"
-                multiple
-                accept="image/*"
-                aria-label="Upload photos"
-                onChange={e => {
-                  const files = Array.from(e.target.files || []);
-                  setImageFiles(prev => [...prev, ...files.map(f => ({ file: f, label: '' }))]);
-                }}
-                className="absolute inset-0 cursor-pointer opacity-0"
-              />
-              <Upload className="h-6 w-6 text-ink-muted" />
-              <span className="ui-label">Add photos</span>
-            </div>
-
-            {imageFiles.length > 0 && (
-              <ul className="flex flex-col gap-2">
-                {imageFiles.map((img, idx) => (
-                  <li key={idx} className="flex items-center gap-3 rounded-control border border-rule bg-panel-sunk p-2">
-                    <div className="h-12 w-12 shrink-0 overflow-hidden rounded-key bg-key-unlit">
-                      <img src={URL.createObjectURL(img.file)} alt="" className="h-full w-full object-cover" />
-                    </div>
-                    <input
-                      type="text"
-                      value={img.label}
-                      onChange={e => {
-                        const newFiles = [...imageFiles];
-                        newFiles[idx].label = e.target.value;
-                        setImageFiles(newFiles);
-                      }}
-                      placeholder="Label (e.g. Before Bake)"
-                      aria-label={`Label for photo ${idx + 1}`}
-                      className="min-w-0 flex-1 border-none bg-transparent p-1 text-sm text-ink outline-none"
-                    />
-                    <Button
-                      variant="danger"
-                      size="sm"
-                      onClick={() => setImageFiles(prev => prev.filter((_, i) => i !== idx))}
-                      aria-label={`Remove photo ${idx + 1}`}
-                      icon={<X className="h-4 w-4" />}
-                    />
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </form>
-      </Sheet>
-
-      {/* Voice Help */}
-      <Sheet open={showVoiceHelp} onClose={() => setShowVoiceHelp(false)} title="Voice commands" size="sm" flush>
+      <Sheet open={sheet === 'voice'} onClose={() => setSheet(null)} title="Voice commands" size="sm" flush>
         <dl className="flex flex-col divide-y divide-rule px-4 py-2 text-sm">
           {[
-            ['"Next" / "Back"', 'Navigate steps'],
-            ['"Read"', 'Reads the current step aloud'],
-            ['"Ingredients"', 'Reads what this step needs'],
-            ['"Start timer"', 'Starts the first timer in the step'],
-            ['"Quiet"', 'Stops any ringing alarms'],
-            ['"Show all"', 'Toggles Focus Mode'],
-            ['"Up" / "Down"', 'Scrolls the page'],
-            ['"Finish"', 'Opens the bake log'],
-            ['"Close"', 'Closes open panels'],
+            ['“Next” / “Back”', 'Move between steps'],
+            ['“Read”', 'Reads the step aloud'],
+            ['“Ingredients”', 'Reads what this step needs'],
+            ['“Start timer”', "Starts the step's timer"],
+            ['“Quiet”', 'Stops a ringing timer'],
+            ['“Show all”', 'All steps, or one at a time'],
+            ['“Up” / “Down”', 'Scrolls the page'],
+            ['“Finish”', 'Logs the bake'],
+            ['“Close”', 'Closes what is open'],
           ].map(([command, effect]) => (
-            <div key={command} className="flex items-baseline justify-between gap-4 py-2">
-              <dt className="font-sans text-xs text-ink">{command}</dt>
-              <dd className="text-right text-ink-muted">{effect}</dd>
+            <div key={command} className="flex items-baseline justify-between gap-4 py-2.5">
+              <dt className="font-medium text-ink">{command}</dt>
+              <dd className="text-right text-ink-2">{effect}</dd>
             </div>
           ))}
         </dl>
       </Sheet>
 
-      {/* Recipe Drawer Overlay */}
-      <RecipeDrawer
-        isOpen={!!openSubRecipeId}
-        onClose={() => setOpenSubRecipeId(null)}
-        recipeId={openSubRecipeId || ''}
-      />
-
+      <RecipeDrawer isOpen={!!subRecipeId} onClose={() => setSubRecipeId(null)} recipeId={subRecipeId ?? ''} />
     </div>
   );
 }

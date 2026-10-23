@@ -2,7 +2,9 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import PublishSheet from './PublishSheet';
-import PublicationStrip from './PublicationStrip';
+import { useState } from 'react';
+import RecipeHeader from './RecipeHeader';
+import { usePublications } from '../lib/queries';
 import { api, ApiError } from '../lib/api';
 import { setAccount, type Account } from '../lib/session';
 import { creditFromUrl, publicationState, publishBody } from '../lib/publication';
@@ -142,30 +144,45 @@ describe('the publish sheet', () => {
   });
 });
 
-describe('the publication strip', () => {
+describe('the publish chip and the sheet it opens', () => {
   beforeEach(() => setAccount('tok', ADA));
 
-  it('reads live with edits, and offers to push them', async () => {
+  const renderChip = () => renderScreen(<Chip />);
+  function Chip() {
+    const [open, setOpen] = useState(false);
+    const { byLocalId } = usePublications();
+    return (
+      <>
+        <RecipeHeader recipe={RYE} ownRecipe={RYE} onPublish={() => setOpen(true)} />
+        <PublishSheet open={open} onClose={() => setOpen(false)} recipe={RYE} publication={byLocalId.get('r1')} />
+      </>
+    );
+  }
+
+  it('reads live with edits, and offers to push them from the sheet, with the public page', async () => {
+    const user = userEvent.setup();
     vi.mocked(api.getMyPublications).mockResolvedValue({ items: [publication({ sourceUpdatedAt: '2026-10-01T00:00:00.000Z' })] });
-    renderScreen(<PublicationStrip recipe={RYE} />);
-    expect(await screen.findByText('Public · edits not yet shared')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Push update' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Public page' })).toHaveAttribute('href', '/r/dark-rye');
+    renderChip();
+    await user.click(await screen.findByRole('button', { name: /Public · edits not shared/ }));
+    expect(screen.getAllByRole('button', { name: 'Push update' }).length).toBeGreaterThan(0);
+    expect(screen.getByRole('link', { name: 'Open the public page' })).toHaveAttribute('href', '/r/dark-rye');
   });
 
   it('says why a recipe was held back, and how to fix it, without red', async () => {
+    const user = userEvent.setup();
     vi.mocked(api.getMyPublications).mockResolvedValue({
       items: [publication({ moderation: { state: 'rejected', reason: 'Credit the source.' } })],
     });
-    renderScreen(<PublicationStrip recipe={RYE} />);
-    expect(await screen.findByText(/Held back: Credit the source. Edit the recipe, then publish again./)).toBeInTheDocument();
-    expect(screen.getByText('Private · only on this device')).toBeInTheDocument();
+    renderChip();
+    await user.click(await screen.findByRole('button', { name: /Held back/ }));
+    const status = await screen.findByText(/Held back: Credit the source. Edit the recipe, then publish again./);
+    expect(status).not.toHaveClass('text-fault');
   });
 
-  it('is simply local when signed out', () => {
+  it('is simply private when signed out', () => {
     setAccount(null);
-    renderScreen(<PublicationStrip recipe={RYE} />);
-    expect(screen.getByText('Private · only on this device')).toBeInTheDocument();
+    renderChip();
+    expect(screen.getByRole('button', { name: /Private · this device/ })).toBeInTheDocument();
     expect(api.getMyPublications).not.toHaveBeenCalled();
   });
 });

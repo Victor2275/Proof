@@ -11,30 +11,19 @@ This document exhaustively tracks every capability, component, and technical int
 - **Sub-recipe Instruction Links**: Any instruction step can link to another recipe, which opens inline in a drawer.
 
 ## 2. "The Kitchen Lab" (Active Baking Mode)
-- **Distraction-Free Focus Mode**: `BakingMode.tsx` provides an ultra-clean, step-by-step UI optimized for reading at a distance.
-- **The step row is the navigation** (Phase 4): the bake's phases run across the head of the screen as live keys — red for the phase running now, orange for due next, complete behind it — and pressing a key jumps to the first step of that phase. A baker returning to the kitchen mid-bulk navigates by phase rather than by hunting for instruction seventeen. The row is the same component the recipe page and the cookbook draw; this is the only place its keys are controls.
-- **Timers dock as readouts**: any running timer appears in Baking Mode's own head as a seven-segment countdown and turns signal red once it runs past its end. Previously the timer stack floated over the page, which in a full-screen overlay meant it sat on top of the instruction. `src/lib/timerBus.ts` publishes a read-only view of the timers `TimerManager` owns, so no second websocket is opened.
-- **Scale readout appears only when a scale is connected**: the live weight sits beside the step's target weight as a large readout, going signal red as it reaches target. With nothing connected there is no empty display pretending to measure.
-- **Show All reads under the same phase headings** the row draws, with the running step outlined; every step is a control that drops back into focus there.
-- **Context-Aware Smart Ingredients**: While in Focus Mode, the UI automatically highlights the exact quantities of ingredients mentioned in the current step (via `getSmartIngredients`).
-- **Hands-Free Navigation (Voice & Gesture)**:
-  - Voice Commands: Integrates `react-speech-recognition` for a full hands-free experience. Supported commands: "Next", "Back", "Read" (reads step aloud), "Ingredients" (reads required ingredients), "Start timer", "Quiet" (stops alarms), "Show all / Focus mode" (toggles view), "Up/Down" (scrolls), and "Help" (shows commands overlay).
-  - Wave-to-Advance: Lightweight motion detection using the device's front camera to advance to the next step when a hand wave is detected.
-  - Swipe Gestures: Touchscreen swipe support to advance or go back.
-- **Real-Time Timers**: `TimerManager.tsx` parses time text (e.g., "Bake for 45 mins") into clickable timers. They run on the device and survive a reload; signed in, they sync live between the account's own devices over Socket.io (see §12).
-- **Hardware Integration**:
-  - **Haptics**: Leverages `@capacitor/haptics` to deliver aggressive tactile feedback when timers finish or steps change.
-  - **Wake Lock**: Uses browser WakeLock API to keep the screen from turning off mid-bake.
-- **Audio & Notifications**: Uses `window.speechSynthesis` to audibly announce when specific timers finish, alongside native browser Notifications.
-- **Reverse Bake Scheduler**: `ReverseBakeScheduler.tsx` allows users to define a target "Eating Time" (e.g., 7:00 PM) and backward-calculates exactly when to start the prep and baking phases.
-- **Zero-Touch Bluetooth Scale Integration**: Connects to standard Web Bluetooth scales. Auto-advances the step when the target weight of the current ingredient is reached.
-- **Flour-Proof Voice Dictation**: A dictation microphone button in the Log Bake modal that transcribes speech into notes, auto-highlighting mentioned ingredients in bold.
+Rebuilt in the UI overhaul, Phase 3: see section 18. Kept from before, all of it:
+- **Hands-free navigation**: voice commands ("Next", "Back", "Read", "Ingredients", "Start timer", "Quiet", "Show all", "Up/Down", "Help", "Finish", "Close"), wave to advance through the front camera, and swipe.
+- **Real-time timers**: times in a step start timers that run on the device and survive a reload; signed in, they sync live between the account's own devices over Socket.io (see §12). Finished timers are spoken (`speechSynthesis`), notified and felt (haptics).
+- **Wake lock** keeps the screen on mid-bake.
+- **Zero-touch Bluetooth scale**: the live weight reads beside the step's target once a scale is connected, and the step advances when the target is reached.
+- **Reverse bake scheduler**: "Plan this bake" on the recipe page works back from when you want to eat to when to start each step.
+- **Dictation** in the bake log.
 
 ## 3. Bake Logs & Learning
-- **Bake logs grid**: past bakes as photo tiles; the date and notes slide over the photograph's lower half on hover and one click opens the make. Attempts are numbered from the oldest, so "Make 3" keeps meaning the same bake when a fourth is logged. A personal best is marked in text as well as an icon, and each tile offers a shareable card.
-- **Custom Image Tags**: Bake log images support custom labels, which are beautifully displayed across grids and photo comparison sliders.
-- **Interactive Before & After Photo Comparison**: A slider component to compare raw dough to baked bread.
-- **Personal Bests**: Ability to mark specific bake iterations as a "Personal Best" (indicated by a gold award badge).
+The bake log lives on its recipe since the UI overhaul, Phase 3 (section 18): "Last time" under the title, "Your bakes" along the foot, a sheet per bake.
+- **Labelled photographs**: a bake's photographs carry labels ("Dough", "Crumb"), shown under each picture.
+- **Before and after**: a bake with two photographs shows them side by side; "Then and now" wipes between a recipe's first and latest photographed bakes with a slider that works by keyboard.
+- **Personal best**: one per recipe, stamped.
 
 ## 4. Data Insights, AI, and Utilities
 - **AI Recipe Extraction**: Paste a URL from any recipe website and Gemini scrapes & structures it into the app format.
@@ -90,20 +79,7 @@ This document exhaustively tracks every capability, component, and technical int
 - **Step keys are capped as well as floored**: A recipe deriving only three phases used to stretch each key across a third of the row, where a 200px-wide rectangle stops reading as a key. Keys now have a maximum width, so the row shortens when there is less to play.
 
 ## 3a. Recipe Viewer (Phase 3)
-- **Title-led masthead**: The recipe's title leads at display scale with its folder and difficulty silkscreened above; the photograph is a framed plate beside the instruments rather than a full-bleed hero, at every width including the phone — a 390px-wide square would push the ingredients off the screen.
-- **Instrument values as segment readouts**: Total, prep, cook and servings all read as seven-segment displays. Total leads; a missing duration reads as `--` rather than being omitted. Servings light in the signal colour while the recipe is scaled, with the multiplier in the caption, so the number on screen is never mistaken for what the recipe was written at.
-- **The method as a step row**: The recipe's own phases appear as a full labelled step row in the masthead — the same row the dashboard draws in miniature and Baking Mode lights key by key.
-- **Instructions grouped by phase**: Steps are printed under silkscreened phase headings so a baker can see which instructions each key on the step row stands for. Numbering stays absolute across the whole recipe, so "step 7" means the same thing here as in Baking Mode.
-- **Ingredients as an instrument panel**: Quantities set in mono with tabular figures at a fixed column width, so the numbers line up down the list. The pantry indicator is a lamp — filled when the pantry has it, hollow when it does not — carrying state by shape as well as fill.
-- **Controls onto the primitives**: The scale bank (0.5x–3x), the Recipe/Previous makes tabs, favourite and the dropdown menus are all `Button`/`Panel` components. START RECIPE is the only solid signal-red control on the page. Lab notes sit in a `Panel`.
-- **Layout pass — reading order follows use**: The page reads title, then the transport strip, then the view. The scale bank no longer sits above the title; it is in the Ingredients section, under its heading, on the quantities it changes, and it is left out of an exported PDF. Folder and difficulty moved from a kicker above the title to sit beside the tags, which classify the recipe the same way. The **transport strip** sits between the masthead and the view it switches: Recipe / Previous makes on the left at full 44px, Start recipe on the right from `md` up. It no longer scrolls sideways, and at 375px the Previous makes key had started off-screen. The masthead stays when the view switches, because the history view used to open with no title. From a 48rem page width, the step row moves into the plate's column and sits on the plate's bottom edge, filling the space the readouts left empty. The lab notes travel with the ingredients, read before the method, and fill the ingredient column beside a long method. The Ingredients and Method heads are held to one height, so their rules draw a single line. On a wide screen the top bar shares the sidebar wordmark's centre line, and the dead band under it is gone. The loading skeleton draws this same structure.
-- **Polish pass — paths that went nowhere**:
-  - Schedule bake used to open nothing from the Previous makes view. It now switches to the recipe view and scrolls the schedule into sight, instantly under reduced motion. From far down a long method, the schedule had opened off-screen.
-  - A recipe that cannot be found shows the shared 404 panel, which names the problem and the way back. It was a bare "Recipe not found." with no way back.
-  - A long unit ("tablespoon heaped", "cm piece") wraps under its figure inside the fixed quantity column, where it used to run into the ingredient's name.
-  - The selected make is titled "Make 2", like its tile rather than "Make #2". Its bake date reads `Aug 09, 2026, 02:00 AM`, in the tile's date format, with no seconds.
-  - The scheduler's panel is titled "Reverse bake schedule", the product's own term, and no longer truncates on a phone.
-- **Fixed**: the export node painted itself panel-coloured, laying a lighter slab behind the whole recipe that lined up with nothing; and `SegmentReadout` announced its silkscreened caption and its value as two unrelated pieces of text, leaving a screen reader user to guess which display a number belonged to.
+Replaced by the printed-cookbook recipe page in the UI overhaul, Phase 3: see section 18. The fixes recorded here still hold: a missing recipe shows the 404 panel with the way back, a long unit stays inside its column, and a shared recipe that is unpublished is a page that no longer exists.
 
 ## 6a. Recipe Editor and Notes (Phase 6)
 - **Shared `Sheet` primitive**: One overlay component replaces eleven hand-rolled scrim-and-panel copies. It traps Tab inside itself, closes on Escape, returns focus to whatever opened it, and locks the page behind from scrolling — none of which any of the eleven copies did, so a modal was previously a keyboard trap. Escape is owned by the topmost sheet only, and the scroll lock is counted, so a sheet opened over another sheet behaves. Renders through a portal, so no transformed ancestor can clip it. `placement="bottom"` is the thumb-reachable sheet; `center` is the dialog.
@@ -119,11 +95,7 @@ This document exhaustively tracks every capability, component, and technical int
 - **Notes report their own save state**: The panel's head LED lights while there are unsaved edits, and the head shows a Save control only when there is something to save — otherwise it reads "Saved" rather than offering a disabled button. A failed save keeps the typed text and says so.
 
 ## 6b. The selected make, and the viewer's overlays
-- **The selected-make detail rebuilt**: Phase 5 rebuilt the grid of makes and left its detail view in the previous world — rounded cards, 4px left-border headings, shadowed photographs — reachable in two clicks from a page that had already moved. It is a `Sheet` composed of panels now: the bake and its controls, the notes, and the photographs with their before/after comparison.
-- **Its failures are reported, not alerted**: Six `alert()` calls and one `window.confirm` are gone. Errors appear in the panel as a named problem with its recovery; deleting a bake asks in a confirmation sheet.
-- **The viewer's last three hand-rolled overlays**: the phone's start sheet, its share sheet and the QR dialog are all `Sheet` now, so they trap focus and close on Escape like everything else. The QR code keeps a white quiet zone in both themes — a scanner reads contrast, not taste.
-- **Fixed — two open sheets shared one accessible name**: `Sheet` wrote a fixed `id` on its title, and `aria-labelledby` resolves to the first match in the document, so a confirmation opened over another sheet announced itself with the lower sheet's name. The id is generated per sheet.
-- **Fixed — latching controls were not announced as toggles**: `Button` emitted `aria-pressed` only when engaged, so a screen reader heard "personal best" as an ordinary button when it was off, and could not tell it was a switch at all. `engaged` is now undefined unless a control actually latches, and toggles report both states.
+Rebuilt as the bake sheet in the UI overhaul, Phase 3 (section 18). Still true: every overlay is a `Sheet`; each stacked sheet carries its own accessible name; a latching control (Personal best) is announced as a toggle in both states; the QR code keeps its white quiet zone in both themes; failures report in the panel or a toast, never through `alert()`.
 
 ## 7a. Analytics, Settings, Landing, 404 (Phase 7)
 - **Settings as latching keys**: Every preference was an iOS-style sliding pill — a control from a different machine, and the only widget in the app carrying state by a moving dot rather than by light. They are latching keys now, the same key the step row draws, held down. The key prints ON or OFF as well as lighting, so it survives a colour-vision difference, and it carries `aria-pressed` so a screen reader announces a switch rather than a button. Theme is a bank of three keys where exactly one is down.
@@ -287,6 +259,54 @@ Thirteen destinations spread over a sidebar and a More drawer become four, and t
 - **Disclosure**: a row with `aria-expanded` that opens a list in place — the height over 240 ms, the chevron over 180 ms — and keeps its closed body `inert`.
 - **PageHeader**: a screen's name in the title face with its controls at the right and an optional line of counts, no rule and no introduction.
 - **Component lab**: the page header, the disclosure, the toast and a sheet with detents are in `/lab`.
+
+## 18. UI overhaul — Phase 3: the recipe page and baking mode
+
+The recipe page reads like a page of a cookbook, the bake log moves onto it, and baking mode is rebuilt around one large step (AUDIT_REPORT changes 58–97).
+
+**The recipe page** (`RecipeViewer`, `RecipeHeader`, `IngredientList`, `InstructionList`, `RecipeBakes`)
+- **Reading order**: photograph → title → one-line headnote → facts → Last time → Start cooking and Log a bake → ingredients → method → Your bakes. On a phone the photograph runs edge to edge at 4:3 and loads at once; ingredients follow the Start button.
+- **Desktop spread**: from a 56rem page, the photograph, title, facts, Last time, buttons and ingredients sit on the left page and the method on the right; Your bakes runs under both.
+- **Nav bar**: a back button named after the recipe's chapter ("‹ Dessert", which returns to `/?chapter=Dessert`), and an icon toolbar: Favourite (a heart toggle), Share, Edit (desktop) and ⋯ — Edit, Plan this bake, Copy ingredients, Print, Save as PDF, Share as a card, Duplicate, Delete. A visually hidden breadcrumb gives a screen reader the trail.
+- **Facts as one line**: "Serves 12 · Prep 20 min · Cook 1 h 15 · Medium" (`factsLine`). The import placeholder times are left out, and the owner gets a quiet "Add times".
+- **Headnote**: entities decoded and the blog's own asides ("Be sure to check out my video…") taken out (`headnote`).
+- **Provenance in one line**: "Adapted from sugarspunrun.com ↗" opens the source in a new tab; "Adapted from @handle" opens the original; a shared recipe says "Shared by @handle". The publish meter is gone: a chip — "Private · this device", "Waiting for review", "Public", "Public · edits not shared", "Held back" — opens the publish sheet, which now also says why a recipe was held back and links to the public page.
+- **Last time**: the latest bake's date, stars, first line and its note to next time (pencilled), and how many bakes — one card, one target, opening this recipe's bakes.
+- **Start cooking** is the page's one paprika button. On a phone, once it scrolls off the top, a docked bar with the title and Start cooking rises above the tab bar (`DockedAction`).
+- **Plan this bake**: the reverse scheduler opens in place under the buttons.
+- **Ingredients**: one tick per row, the whole row the control; kitchen fractions and sensible units ("⅔ cup", "1 tbsp" for 0.51 fl oz, "⅛ tsp", "a pinch"); a weight written into the name moves to its own column; the note after a comma is set in italic. "Serves 12 [– +]" scales the list, with a way back to the written amount. Baker's % appears only for a recipe whose flour is weighed, as a column, and Settings → Baker's math turns it on by default. The pantry says "✓ have" in sage, only once there is a pantry. Substitutes sit behind a small icon per row.
+- **Add missing to Shop**: one tonal button, "Add 9 missing to Shop", previewing the first two; it adds them to the shopping list at once with Undo, and the rows then say "On list".
+- **Method**: printed whole, no "Read more". The recipe's own "--- Crust ---" lines (and short "For the crust:" lines) are serif subheads, not numbered steps; a bread whose wording proves its phases gets those as subheads; anything else is one run of numbers. Numbers count real steps only and match baking mode. HTML entities, doubled parentheses and orphan footnote marks are cleaned on display (`cleanText`).
+- **Inline timers**: a time in a step is a butter chip inside the sentence; a range ("50–60 min") is one timer at its shorter end.
+- **Margin notes**: the newest note any bake made about a step is pencilled under that step.
+- **See also**: a sub-recipe linked to a step opens in a sheet from the step.
+- **Your bakes**: oldest to newest along the foot; a bake with no photograph is a note card (its number and first line), never a blank; the date and stars under each; the personal best stamped; a "Log a bake" tile at the end. "Then and now" wipes between the first and latest photographed bakes once there are two.
+- **Share**: the system share sheet where there is one; otherwise Proof's own — copy link and QR for a recipe with an address, or the line "Private · only on this device, so it has no link" with Publish; then Copy as text, Save as PDF and Print.
+- **Delete and Duplicate**: Delete happens at once with Undo; Duplicate opens the copy.
+- **Shared recipe** (`/r/:slug`): the same page without the owner's controls; its one primary action, Save to my cookbook, sits under the facts (or Open my copy).
+
+**Logging a bake** (`LogBakeSheet`, `BakeDetailSheet`)
+- **"How did it go?"**: stars, when, photographs, what happened (with dictation), what I changed, next time, and Mark as my best. Reachable from the recipe page, from Your bakes, and as the last step of baking mode, where the notes made at each step arrive already filed.
+- **New bake-log fields**: `rating`, `changes`, `nextTime` and `stepNotes` (each `{ stepIndex, text, at }`). All local; no server work.
+- **One personal best per recipe**: marking a bake as the best unmarks the one before it.
+- **The bake sheet**: date, stars, stamp, photographs (labelled, side by side when there are two), what happened, what changed, next time and the step notes. Edit, Set as cover, Share card and Delete — at once, with Undo.
+
+**Baking mode** (`BakingMode`)
+- **The head**: ×, the recipe, "3 of 12", and ⋯ for all ingredients, all steps, the Bluetooth scale, voice commands and wave to advance, Finish and log, and Stop without logging. Under it, a thin line of the bake's named parts, each as long as its steps, pressable to jump; and any running timers as butter chips.
+- **The step**: set in the reading face at 28–32px in the top third, its section named above it; on the first step, the last bake's note to next time.
+- **This step**: what it needs ("You need", from `ingredientsForStep`), its timer as one big butter press that becomes the countdown, and "Last time on this step" with the last bake's note.
+- **Note**: a button beside Back files a note against the current step; notes wait on the running bake (`addActiveBakeNote`) until it is logged.
+- **The foot**: Note, Back (gone but holding its place on step 1) and a wide Next. The last Next reads "How did it go?" and opens the bake log; saving it ends the bake and opens the recipe with the new bake stamped if it is the best.
+- **Desktop side panel**: on a wide screen, this step's ingredients, its last note and a quick-note field sit in a column beside the step.
+- **Kept**: swipe, arrow keys, voice, wave to advance, the scale's auto-advance, wake lock, haptics, sub-recipes, resuming a bake at its step.
+
+**Underneath**
+- **New libraries**: `recipeText` (entities, cleaning, headnotes, method sections), `quantities` (kitchen fractions, unit changes, weights out of names), `method` (printed sections and baking-mode parts), `facts`, `stepTimers` (times in a step, ranges), `share` (system share, recipe as text).
+- **The shopping list is kept on the device**: IndexedDB version 3 adds a `shopping` record store (`ShoppingItem`), with `repo.getShopping`, `addShoppingItems`, `updateShoppingItem`, `deleteShoppingItems`, and Undo through `repo.restore`. It is in the export.
+- **New primitives**, in `/lab`: `Stars` and `StarRating` (a radio group; the chosen star again clears it), `Stamp` (the personal best, pressed on once when earned), `MarginNote` (pencil, reading italic) and `DockedAction`. `TextArea` grows with its text and takes a ref. `StepRow` draws each part as long as its steps.
+- **Restyled**: the before/after slider is a range input over the photographs, so it works by keyboard; side-by-side photographs are captioned under each picture and show photographs stored on the device.
+- **Removed**: the Recipe / Previous makes tabs, the transport strip, the publication strip, the bake-logs grid, "Read more" (`ExpandableInstruction`), the old timer parser, and the phone's floating Start key.
+- **Tests**: the frontend suite waits up to 5 s for an async result and 20 s per test, because a full parallel run is slower than one file alone.
 
 ## 7. UI/UX Foundation
 - **Stack**: React, Vite, Tailwind CSS (`@tailwindcss/postcss`), shadcn/ui, TanStack Query for server state management.

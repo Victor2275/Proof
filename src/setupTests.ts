@@ -1,5 +1,6 @@
 // src/setupTests.ts
 import '@testing-library/jest-dom';
+import { configure } from '@testing-library/react';
 import 'fake-indexeddb/auto';
 import { IDBFactory } from 'fake-indexeddb';
 import { afterEach, beforeEach, vi } from 'vitest';
@@ -28,6 +29,14 @@ beforeEach(async () => {
 afterEach(() => {
   vi.clearAllMocks();
 });
+
+/*
+ * `findBy…` and `waitFor` give up after one second by default. A screen read
+ * from IndexedDB answers in milliseconds alone, but the full suite runs fifty
+ * files in parallel and a busy worker can take longer, which failed tests that
+ * were not wrong. Five seconds is still well inside the test timeout.
+ */
+configure({ asyncUtilTimeout: 5000 });
 
 /*
  * jsdom ships no `matchMedia`, and the app asks for it in two places that are

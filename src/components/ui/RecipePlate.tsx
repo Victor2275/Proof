@@ -29,10 +29,12 @@ export interface RecipePlateProps {
   /** The recipe's title — the plate is named by what it shows. */
   alt: string;
   size?: PlateSize;
+  /** The photograph a page opens on: fetched at once rather than when scrolled to. */
+  eager?: boolean;
   className?: string;
 }
 
-export function RecipePlate({ src: ref, alt, size = 'row', className }: RecipePlateProps) {
+export function RecipePlate({ src: ref, alt, size = 'row', eager = false, className }: RecipePlateProps) {
   const src = usePhotoSrc(ref);
   const [failed, setFailed] = useState(false);
   // A new photograph deserves a fresh attempt, or one dead link would leave
@@ -49,7 +51,7 @@ export function RecipePlate({ src: ref, alt, size = 'row', className }: RecipePl
           // Two hundred photographs is two hundred requests a list does not
           // need up front; the browser's lazy loading keeps the first paint to
           // what is actually on screen.
-          loading="lazy"
+          loading={eager ? 'eager' : 'lazy'}
           decoding="async"
           onError={() => setFailed(true)}
           className="h-full w-full object-cover"

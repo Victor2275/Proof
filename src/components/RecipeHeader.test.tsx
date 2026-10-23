@@ -1,90 +1,40 @@
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import RecipeHeader from './RecipeHeader';
-import type { Recipe } from '../lib/types';
-import { makeRecipe } from '../test/utils';
+import { factsLine } from '../lib/facts';
+import { makeRecipe, renderScreen } from '../test/utils';
 
-const recipe: Recipe = makeRecipe({
-  _id: 'r1',
-  title: 'Country Sourdough',
-  description: 'A long-fermented loaf.',
-  imageUrls: ['https://example.com/sourdough.jpg'],
-  servings: 4,
-  difficulty: 'Hard',
-  prepTime: '30',
-  cookTime: '45',
-  tags: ['bread', 'sourdough'],
-  folder: 'Breads',
-  ingredients: [],
-  instructions: [
-    'Feed the levain and let it ripen for 6 hours.',
-    'Autolyse the flour and water for 1 hour.',
-    'Bulk ferment for 4 hours.',
-    'Shape the loaf and bench rest.',
-    'Proof overnight in the fridge.',
-    'Bake at 250C for 30 minutes.',
-  ],
-});
-
-describe('RecipeHeader', () => {
-  it('prints a description someone wrote', () => {
-    render(<RecipeHeader recipe={recipe} scaleMultiplier={1} />);
-    expect(screen.getByText('A long-fermented loaf.')).toBeInTheDocument();
+describe('the top of a recipe', () => {
+  it('prints the facts as one line, as a cookbook does', () => {
+    expect(factsLine({ servings: 12, prepTime: '20', cookTime: '75', difficulty: 'Medium' })).toBe(
+      'Serves 12 · Prep 20 min · Cook 1 h 15 · Medium',
+    );
   });
 
-  it("does not print the seed script's template description as if it described the recipe", () => {
-    render(<RecipeHeader recipe={{ ...recipe, description: 'A delicious Venezuela Beef dish.' }} scaleMultiplier={1} />);
+  it('leaves out times that are the import placeholder, rather than print them as measured', () => {
+    expect(factsLine({ servings: 4, prepTime: '20 mins', cookTime: '30 mins', difficulty: '' })).toBe('Serves 4');
+  });
+
+  it("does not print the seed script's template description", () => {
+    renderScreen(<RecipeHeader recipe={makeRecipe({ description: 'A delicious Venezuela Beef dish.' })} />);
     expect(screen.queryByText(/A delicious/)).not.toBeInTheDocument();
   });
 
-  it('leads with the title, not the photograph', () => {
-    render(<RecipeHeader recipe={recipe} scaleMultiplier={1} />);
-    expect(screen.getByRole('heading', { level: 1, name: 'Country Sourdough' })).toBeInTheDocument();
+  it('leads with the photograph, then the title; a recipe without one gets its drop cap', () => {
+    renderScreen(<RecipeHeader recipe={makeRecipe({ title: 'Rye', imageUrls: [] })} />);
+    expect(screen.getByRole('heading', { level: 1, name: 'Rye' })).toBeInTheDocument();
+    expect(screen.getByText('R')).toBeInTheDocument();
   });
 
-  it('frames the photograph as a plate', () => {
-    render(<RecipeHeader recipe={recipe} scaleMultiplier={1} />);
-    expect(screen.getByRole('img', { name: 'Country Sourdough' })).toHaveAttribute(
-      'src',
-      'https://example.com/sourdough.jpg',
-    );
+  it('offers "Add times" to the owner of a recipe with none', () => {
+    const recipe = makeRecipe({ _id: 'r9', prepTime: '', cookTime: '' });
+    renderScreen(<RecipeHeader recipe={recipe} ownRecipe={recipe} />);
+    expect(screen.getByRole('link', { name: /Add times/ })).toHaveAttribute('href', '/edit/r9');
   });
 
-  it('reads the total time, not just prep and cook separately', () => {
-    render(<RecipeHeader recipe={recipe} scaleMultiplier={1} />);
-    // 30 prep + 45 cook = 75 minutes, which reads as 1:15 on a display.
-    expect(screen.getByRole('img', { name: /Total 1:15/i })).toBeInTheDocument();
-  });
-
-  it('scales the serving count and lights it when the recipe is no longer as written', () => {
-    const { rerender } = render(<RecipeHeader recipe={recipe} scaleMultiplier={1} />);
-    expect(screen.getByRole('img', { name: 'Serves 4' })).toBeInTheDocument();
-
-    rerender(<RecipeHeader recipe={recipe} scaleMultiplier={2} />);
-    // The caption says the recipe is being scaled, so the number on screen is
-    // never mistaken for what the recipe was written at.
-    expect(screen.getByRole('img', { name: /Serves · 2× 8/ })).toBeInTheDocument();
-  });
-
-  it("shows the bake's shape as a step row", () => {
-    render(<RecipeHeader recipe={recipe} scaleMultiplier={1} />);
-    expect(screen.getByRole('img', { name: /Country Sourdough phases/i })).toBeInTheDocument();
-  });
-
-  it('reads a missing duration as an unlit display rather than omitting it', () => {
-    render(
-      <RecipeHeader recipe={{ ...recipe, prepTime: '', cookTime: '' }} scaleMultiplier={1} />,
-    );
-    expect(screen.getByRole('img', { name: /Prep -- MIN/i })).toBeInTheDocument();
-  });
-
-  it('refuses to report the import script placeholder as a real timing', () => {
-    render(
-      <RecipeHeader
-        recipe={{ ...recipe, prepTime: '20 mins', cookTime: '30 mins' }}
-        scaleMultiplier={1}
-      />,
-    );
-    expect(screen.getByRole('img', { name: /Total -- MIN/i })).toBeInTheDocument();
+  it('shows the publish chip only with somewhere to open it', () => {
+    const recipe = makeRecipe();
+    renderScreen(<RecipeHeader recipe={recipe} ownRecipe={recipe} onPublish={() => undefined} />);
+    expect(screen.getByRole('button', { name: /Private · this device/ })).toHaveAttribute('aria-haspopup', 'dialog');
   });
 });

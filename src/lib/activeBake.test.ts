@@ -5,6 +5,7 @@ import {
   updateActiveBakeStep,
   clearActiveBake,
   subscribeActiveBake,
+  addActiveBakeNote,
 } from './activeBake';
 
 describe('activeBake', () => {
@@ -91,5 +92,15 @@ describe('activeBake', () => {
     unsubscribe();
     updateActiveBakeStep('r1', 2);
     expect(onChange).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps notes written mid-bake, each on its step, until the bake is logged', () => {
+    startActiveBake('r1', 'Rye', 0);
+    addActiveBakeNote('r1', { stepIndex: 2, text: 'Dough slack.', at: '2026-10-22T08:00:00.000Z' });
+    addActiveBakeNote('other', { stepIndex: 0, text: 'Not this bake.', at: '2026-10-22T08:01:00.000Z' });
+    updateActiveBakeStep('r1', 3);
+    expect(getActiveBake()?.notes).toEqual([{ stepIndex: 2, text: 'Dough slack.', at: '2026-10-22T08:00:00.000Z' }]);
+    clearActiveBake('r1');
+    expect(getActiveBake()).toBeNull();
   });
 });

@@ -11,6 +11,8 @@
  * fully offline in a kitchen with no signal.
  */
 
+import type { StepNote } from './types';
+
 const STORAGE_KEY = 'activeBake';
 const CHANGE_EVENT = 'active-bake-changed';
 
@@ -21,6 +23,11 @@ export interface ActiveBake {
   stepIndex: number;
   /** ISO timestamp, set once when the bake starts and never touched again. */
   startedAt: string;
+  /**
+   * Notes jotted during the bake, each on its step. They wait here until the
+   * bake is logged, then travel into the bake log as its `stepNotes`.
+   */
+  notes?: StepNote[];
 }
 
 function read(): ActiveBake | null {
@@ -69,6 +76,13 @@ export function updateActiveBakeStep(recipeId: string, stepIndex: number): void 
   if (existing?.recipeId !== recipeId) return;
   if (existing.stepIndex === stepIndex) return;
   write({ ...existing, stepIndex });
+}
+
+/** Adds a mid-bake note to the running bake. No-op for any other recipe. */
+export function addActiveBakeNote(recipeId: string, note: StepNote): void {
+  const existing = read();
+  if (existing?.recipeId !== recipeId) return;
+  write({ ...existing, notes: [...(existing.notes ?? []), note] });
 }
 
 export function clearActiveBake(recipeId?: string): void {

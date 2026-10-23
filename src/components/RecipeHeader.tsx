@@ -1,175 +1,135 @@
-import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { ArrowUpRight, Clock, Globe, Lock, PencilLine } from 'lucide-react';
 import type { PublishedRecipe, Recipe } from '../lib/types';
-import { derivePhases } from '../lib/phases';
 import { meaningfulDescription } from '../lib/description';
-import {
-  parseDurationMinutes,
-  totalRecipeMinutes,
-  formatMinutesForSegments,
-  isPlaceholderTiming,
-} from '../lib/duration';
-import { RecipePlate, Readout, StepRow } from './ui';
+import { headnote } from '../lib/recipeText';
+import { isPlaceholderTiming, parseDurationMinutes } from '../lib/duration';
+import { factsLine } from '../lib/facts';
+import { creditFromUrl, publicationState } from '../lib/publication';
+import { usePublications } from '../lib/queries';
+import { RecipePlate } from './ui';
 
 /*
- * The recipe's masthead: title-led, with the photograph framed as a plate.
+ * The top of a recipe, read like the top of a cookbook page (changes 58–62,
+ * 66, 81, 82): the photograph, the title, a one-line headnote, and one line of
+ * facts — "Serves 12 · Prep 20 min · Cook 1 h 15 · Medium".
  *
- * The photograph is not the hero here and the choice is deliberate. A
- * full-bleed image at the top of a phone reads well in a screenshot and badly
- * in a kitchen — it pushes the ingredients, which are the reason the page was
- * opened, below the fold. The plate sits beside the instruments instead, at a
- * size that still shows what the thing looks like.
+ * Times print only when they are real. The import script's "20 mins / 30
+ * mins", which 199 recipes share, is not a measurement, so the line leaves
+ * times out and a quiet "Add times" stands in.
  *
- * Everything numeric is a segment readout, because every number here is an
- * instrument value: a duration, a count, a multiplier. The total goes first
- * and largest — it is the number that decides whether this bake happens today.
+ * Under it, one line of provenance — where the recipe came from, as a credit
+ * that opens the source — and, for a recipe of your own, where it stands with
+ * the shared cookbook, as a chip that opens the publish sheet. The meter of
+ * lit keys it replaces said the same thing in a language nobody spoke.
  */
 
 interface RecipeHeaderProps {
-  /** A recipe in this cookbook, or one being read from the shared cookbook. */
   recipe: Recipe | PublishedRecipe;
-  heroImage?: string;
-  scaleMultiplier: number;
+  /** A recipe of the owner's: draws the publish chip and "Add times". */
+  ownRecipe?: Recipe | null;
+  /** Opens the publish sheet, from the chip. */
+  onPublish?: () => void;
 }
 
-/** A duration as it should read on a display, or "--" for a recipe that never said. */
-function segments(raw: string | undefined) {
-  const minutes = parseDurationMinutes(raw);
-  return minutes === null ? { value: '--', unit: 'MIN' } : formatMinutesForSegments(minutes);
+const CHIP_WORDS = {
+  local: { words: 'Private · this device', Icon: Lock },
+  pending: { words: 'Waiting for review', Icon: Clock },
+  live: { words: 'Public', Icon: Globe },
+  edits: { words: 'Public · edits not shared', Icon: PencilLine },
+  rejected: { words: 'Held back', Icon: Lock },
+} as const;
+
+function PublishChip({ recipe, onOpen }: { recipe: Recipe; onOpen: () => void }) {
+  const { byLocalId } = usePublications();
+  const publication = byLocalId.get(recipe._id);
+  const state = publicationState(recipe, publication);
+  const { words, Icon } = CHIP_WORDS[state];
+  return (
+    <button
+        type="button"
+        aria-haspopup="dialog"
+        onClick={onOpen}
+        className="pressable inline-flex min-h-11 items-center"
+      >
+        <span className="inline-flex min-h-8 items-center gap-1.5 rounded-full border border-rule bg-paper-raised px-3 text-[0.8125rem] text-ink-2">
+          <Icon className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
+          {words}
+        </span>
+      </button>
+  );
 }
 
-export default function RecipeHeader({ recipe, heroImage, scaleMultiplier }: RecipeHeaderProps) {
-  const phases = useMemo(() => derivePhases(recipe.instructions ?? []), [recipe.instructions]);
+export default function RecipeHeader({ recipe, ownRecipe, onPublish }: RecipeHeaderProps) {
   const forkedFrom = 'forkedFrom' in recipe ? recipe.forkedFrom : null;
-  const sharedBy = 'authorHandle' in recipe ? recipe : null;
-
-  /*
-   * The same rule the cookbook uses: an import script's "20 mins" / "30 mins"
-   * default is not a measurement, and 199 recipes share it verbatim. An unlit
-   * display is honest about not knowing; a fabricated 50 MIN is not, and it is
-   * worse here than in the gallery, because this is the screen someone plans an
-   * afternoon from.
-   */
-  const placeholder = isPlaceholderTiming(recipe);
-  const total = placeholder ? null : totalRecipeMinutes(recipe);
-  const totalSeg = total === null ? { value: '--', unit: 'MIN' } : formatMinutesForSegments(total);
-  const prep = placeholder ? { value: '--', unit: 'MIN' } : segments(recipe.prepTime);
-  const cook = placeholder ? { value: '--', unit: 'MIN' } : segments(recipe.cookTime);
-  const servings = (recipe.servings || 4) * scaleMultiplier;
+  const shared = 'authorHandle' in recipe ? recipe : null;
+  const description = headnote(meaningfulDescription(recipe.description));
+  const facts = factsLine(recipe);
+  const source = 'sourceUrl' in recipe ? recipe.sourceUrl : undefined;
+  const sourceHost = creditFromUrl(source);
+  const placeholder = isPlaceholderTiming(recipe) || (!parseDurationMinutes(recipe.prepTime) && !parseDurationMinutes(recipe.cookTime));
 
   return (
-    <header className="flex flex-col gap-6">
-      {/* The title opens the page. Folder and difficulty used to sit above it
-        * as a kicker; they classify the recipe, so they moved down beside the
-        * tags, which do the same job. */}
-      <div className="flex flex-col gap-3">
-        <h1 className="font-title text-3xl leading-[1.05] text-ink sm:text-5xl">
-          {recipe.title}
-        </h1>
+    <header className="flex flex-col">
+      {/* Full width on a phone, edge to edge; a rounded plate on a wider page. */}
+      <RecipePlate
+        src={recipe.imageUrls?.[0]}
+        alt={recipe.title}
+        size="hero"
+        eager
+        className="-mx-4 w-[calc(100%+2rem)] rounded-none sm:mx-0 sm:w-full sm:rounded-panel"
+      />
 
-        {/* Attribution is a first-class line, not a footnote (B5/B8): who a
-          * saved copy came from, or who shared the recipe being read. */}
-        {sharedBy || forkedFrom ? (
-          <p className="ui-label text-ink-muted">
-            {sharedBy ? (
-              <>
-                Shared by{' '}
-                <Link to={`/@${sharedBy.authorHandle}`} className="text-ink underline decoration-1 underline-offset-4">
-                  @{sharedBy.authorHandle}
-                </Link>
-              </>
-            ) : null}
-            {sharedBy && forkedFrom ? ' · adapted from ' : forkedFrom ? 'Adapted from ' : null}
-            {forkedFrom ? (
-              // A copy on this device knows the original's address; a published
-              // copy knows its id, which the shared cookbook answers to as well.
+      <div className="flex flex-col gap-2.5 pt-5">
+        <h1 className="font-title text-[2.125rem] leading-[1.08] text-ink sm:text-[2.625rem]">{recipe.title}</h1>
+        {description ? <p className="font-prose text-lg italic leading-snug text-ink-2">{description}</p> : null}
+        {facts || (ownRecipe && placeholder) ? (
+          <p className="flex flex-wrap items-center gap-x-2 text-sm text-ink-muted">
+            {facts}
+            {ownRecipe && placeholder ? (
               <Link
-                to={`/r/${'slug' in forkedFrom ? forkedFrom.slug : forkedFrom.publishedId}`}
-                className="text-ink underline decoration-1 underline-offset-4"
+                to={`/edit/${ownRecipe._id}`}
+                className="pressable -my-2 inline-flex min-h-11 items-center rounded-full px-1 font-medium text-ink-2 hover:text-ink"
               >
-                @{forkedFrom.authorHandle}
+                {facts ? '· ' : ''}Add times
               </Link>
             ) : null}
-            {sharedBy?.sourceAttribution ? ` · from ${sharedBy.sourceAttribution}` : ''}
           </p>
         ) : null}
 
-        {/* The seed script's "A delicious {area} {category} dish." is not a
-          * description, so it is not printed as one. */}
-        {meaningfulDescription(recipe.description) ? (
-          <p className="max-w-prose text-ink-muted">{meaningfulDescription(recipe.description)}</p>
-        ) : null}
-      </div>
-
-      {/*
-       * The plate sits beside the instruments at every width, including the
-       * phone. Letting it go full-width on mobile turns it into the full-bleed
-       * hero this page deliberately is not: a 390px-wide square is 390px tall,
-       * and it pushes the ingredients — the reason the page was opened — clean
-       * off the screen.
-       *
-       * A grid rather than a row because the step row changes place with the
-       * page's width. In a narrow column it runs full width under the plate.
-       * Once the page reaches 48rem, it moves into the plate's own column and
-       * sits on the plate's bottom edge. There it fills the height the readouts
-       * left empty, and seven keys still fit on one unbroken line.
-       */}
-      <div className="grid grid-cols-[8rem_minmax(0,1fr)] gap-x-4 gap-y-6 sm:grid-cols-[14rem_minmax(0,1fr)] sm:gap-x-8">
-        {/* Sized by the grid track, never by the plate's own width class, so
-          * the two never fight over which one the cascade honours. */}
-        <div className="@3xl:row-span-2">
-          <RecipePlate src={heroImage || recipe.imageUrls?.[0]} alt={recipe.title} size="hero" />
+        <div className="-ml-2.5 flex flex-wrap items-center gap-x-2">
+          {shared ? (
+            <Link
+              to={`/@${shared.authorHandle}`}
+              className="pressable inline-flex min-h-11 items-center rounded-full px-2.5 text-[0.8125rem] text-ink-muted hover:bg-paper-sunk hover:text-ink"
+            >
+              Shared by @{shared.authorHandle}
+            </Link>
+          ) : null}
+          {forkedFrom ? (
+            <Link
+              to={`/r/${'slug' in forkedFrom ? forkedFrom.slug : forkedFrom.publishedId}`}
+              className="pressable inline-flex min-h-11 items-center rounded-full px-2.5 text-[0.8125rem] text-ink-muted hover:bg-paper-sunk hover:text-ink"
+            >
+              Adapted from @{forkedFrom.authorHandle}
+            </Link>
+          ) : null}
+          {sourceHost ? (
+            <a
+              href={source}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`Adapted from ${sourceHost}, opens in a new tab`}
+              className="pressable inline-flex min-h-11 items-center gap-1.5 rounded-full px-2.5 text-[0.8125rem] text-ink-muted hover:bg-paper-sunk hover:text-ink"
+            >
+              Adapted from {sourceHost}
+              <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
+            </a>
+          ) : shared?.sourceAttribution ? (
+            <span className="px-2.5 text-[0.8125rem] text-ink-muted">From {shared.sourceAttribution}</span>
+          ) : null}
+          {ownRecipe && onPublish ? <PublishChip recipe={ownRecipe} onOpen={onPublish} /> : null}
         </div>
-
-        <div className="flex min-w-0 flex-col gap-5">
-          <div className="flex flex-wrap items-end gap-x-6 gap-y-4">
-            <Readout label="Total" value={totalSeg.value} unit={totalSeg.unit} size="md" tone="ink" />
-            <Readout label="Prep" value={prep.value} unit={prep.unit} size="sm" tone="ink" />
-            <Readout label="Cook" value={cook.value} unit={cook.unit} size="sm" tone="ink" />
-            {/* A scaled recipe says so in its label: the number on screen is no
-              * longer the number the recipe was written at. It does not light
-              * up — scaling is a setting, not something happening now, and red
-              * here was a second "now" beside the Start key. */}
-            <Readout
-              label={scaleMultiplier === 1 ? 'Serves' : `Serves · ${scaleMultiplier}×`}
-              value={servings}
-              size="sm"
-              tone="ink"
-            />
-          </div>
-
-          {/* Classification stays beside the plate. Folder, difficulty and
-            * tags are captions on the recipe, not controls, and they read at
-            * any column width. */}
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-            {recipe.folder && recipe.folder !== 'Uncategorized' ? (
-              <span className="ui-label text-silkscreen">{recipe.folder}</span>
-            ) : null}
-            <span className="ui-label text-ink-muted">{recipe.difficulty || 'Medium'}</span>
-            {recipe.tags && recipe.tags.length > 0 ? (
-              <ul className="flex flex-wrap gap-1.5">
-                {recipe.tags.map((tag) => (
-                  <li
-                    key={tag}
-                    className="ui-label rounded-key border border-rule px-2 py-1 text-ink-muted"
-                  >
-                    {tag}
-                  </li>
-                ))}
-              </ul>
-            ) : null}
-          </div>
-        </div>
-
-        {/* The method, as the shape of the bake, and the one thing in the
-          * masthead that has to stay one unbroken line. The same row appears
-          * in the dashboard list and again in Baking Mode with a key lit; this
-          * is where a baker learns to read it. */}
-        <StepRow
-          phases={phases}
-          label={`${recipe.title} phases`}
-          className="col-span-2 @3xl:col-span-1 @3xl:self-end"
-        />
       </div>
     </header>
   );

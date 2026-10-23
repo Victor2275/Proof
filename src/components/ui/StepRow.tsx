@@ -80,8 +80,10 @@ export function StepRow({
           SEGMENT_TONE[state],
         );
 
+        // Each part of the bake is as long as it has steps, so the line reads as how far along it is.
+        const grow = { flexGrow: Math.max(1, phase.stepIndices.length), flexBasis: 0 };
         if (!interactive) {
-          return <span key={phase.id} className={cn(bar, 'flex-1')} title={phase.label} />;
+          return <span key={phase.id} className={bar} style={grow} title={phase.label} />;
         }
 
         return (
@@ -89,7 +91,8 @@ export function StepRow({
             key={phase.id}
             type="button"
             onClick={() => onSelect?.(phase)}
-            className="pressable flex h-11 min-w-6 flex-1 items-center rounded-control px-0.5 hover:bg-paper-sunk"
+            style={grow}
+            className="pressable flex h-11 min-w-6 items-center rounded-control px-0.5 hover:bg-paper-sunk"
             aria-current={state === 'now' ? 'step' : undefined}
           >
             <span className={bar} aria-hidden="true" />
@@ -123,7 +126,8 @@ export function StepRow({
         {phases.map((phase) => (
           <span
             key={phase.id}
-            className={cn('min-w-6 flex-1 truncate text-center text-xs', LABEL_TONE[phaseState(phase, activeStep)])}
+            style={{ flexGrow: Math.max(1, phase.stepIndices.length), flexBasis: 0 }}
+            className={cn('min-w-6 truncate text-center text-xs', LABEL_TONE[phaseState(phase, activeStep)])}
           >
             {phase.label}
           </span>

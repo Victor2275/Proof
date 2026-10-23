@@ -1,3 +1,10 @@
+import { Photo, cn } from './ui';
+
+/*
+ * Two photographs of one bake, side by side: the dough and the crumb, before
+ * and after. Each is captioned under the picture in plain words, and either
+ * may be a photograph stored on the device.
+ */
 export interface SideBySideCompareProps {
   doughUrl: string;
   bakedUrl: string;
@@ -9,39 +16,21 @@ export interface SideBySideCompareProps {
 export default function SideBySideCompare({
   doughUrl,
   bakedUrl,
-  doughLabel = 'Dough / Prep',
-  bakedLabel = 'Finished Bake',
-  className = ''
+  doughLabel = 'Before',
+  bakedLabel = 'After',
+  className,
 }: SideBySideCompareProps) {
   return (
-    <div className={`grid grid-cols-1 sm:grid-cols-2 gap-4 ${className}`}>
-      {/* Dough / Prep Container */}
-      <div className="relative aspect-square rounded-xl overflow-hidden bg-black/5 dark:bg-white/5 border border-rule shadow-sm group">
-        <img
-          src={doughUrl}
-          alt={doughLabel}
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-        />
-        <div className="absolute inset-x-0 bottom-0 p-3 bg-ground/85 flex items-center justify-between">
-          <span className="text-xs font-semibold text-white bg-black/50 px-2.5 py-1 rounded-full">
-            🧪 {doughLabel}
-          </span>
-        </div>
-      </div>
-
-      {/* Finished Bake Container */}
-      <div className="relative aspect-square rounded-xl overflow-hidden bg-black/5 dark:bg-white/5 border border-rule shadow-sm group">
-        <img
-          src={bakedUrl}
-          alt={bakedLabel}
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-        />
-        <div className="absolute inset-x-0 bottom-0 p-3 bg-ground/85 flex items-center justify-between">
-          <span className="text-xs font-semibold text-white bg-black/50 px-2.5 py-1 rounded-full">
-            🍞 {bakedLabel}
-          </span>
-        </div>
-      </div>
+    <div className={cn('grid grid-cols-2 gap-3', className)}>
+      {[
+        [doughUrl, doughLabel],
+        [bakedUrl, bakedLabel],
+      ].map(([url, label]) => (
+        <figure key={label} className="flex flex-col gap-1.5">
+          <Photo src={url} alt={label} className="aspect-square w-full rounded-key object-cover" />
+          <figcaption className="text-[0.8125rem] text-ink-muted">{label}</figcaption>
+        </figure>
+      ))}
     </div>
   );
 }

@@ -1,47 +1,31 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import PhotoSlider from './PhotoSlider';
+import SideBySideCompare from './SideBySideCompare';
 
-describe('PhotoSlider Component', () => {
-  const beforeUrl = 'http://example.com/dough.jpg';
-  const afterUrl = 'http://example.com/baked.jpg';
+const beforeUrl = 'http://example.com/first.jpg';
+const afterUrl = 'http://example.com/latest.jpg';
 
-  it('renders before and after image labels correctly', () => {
-    render(<PhotoSlider beforeUrl={beforeUrl} afterUrl={afterUrl} />);
-    expect(screen.getByText('Dough / Prep')).toBeDefined();
-    expect(screen.getByText('Baked Bread')).toBeDefined();
+describe('the before-and-after slider', () => {
+  it('captions both photographs in words', () => {
+    render(<PhotoSlider beforeUrl={beforeUrl} afterUrl={afterUrl} beforeLabel="First · Aug 30" afterLabel="Latest · Oct 17" />);
+    expect(screen.getByText('First · Aug 30')).toBeInTheDocument();
+    expect(screen.getByText('Latest · Oct 17')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Latest · Oct 17' })).toHaveAttribute('src', afterUrl);
   });
 
-  it('renders images with proper src attributes', () => {
-    render(<PhotoSlider beforeUrl={beforeUrl} afterUrl={afterUrl} />);
-    const images = screen.getAllByRole('img');
-    expect(images).toHaveLength(2);
-    expect(images[0].getAttribute('src')).toBe(afterUrl);
-    expect(images[1].getAttribute('src')).toBe(beforeUrl);
-  });
-
-  it('updates slider position on mouse interaction', () => {
+  it('is a slider a keyboard can move, wiping between the two', () => {
     const { container } = render(<PhotoSlider beforeUrl={beforeUrl} afterUrl={afterUrl} />);
-    const sliderContainer = container.firstElementChild as HTMLElement;
+    const slider = screen.getByRole('slider', { name: 'Compare Before and After' });
+    fireEvent.change(slider, { target: { value: '75' } });
+    expect((container.querySelector('[style*="clip-path"]') as HTMLElement).style.clipPath).toBe('inset(0 25% 0 0)');
+  });
+});
 
-    // Mock bounding box for mouse math
-    sliderContainer.getBoundingClientRect = () => ({
-      left: 0,
-      top: 0,
-      width: 400,
-      height: 400,
-      right: 400,
-      bottom: 400,
-      x: 0,
-      y: 0,
-      toJSON: () => {}
-    });
-
-    fireEvent.mouseDown(sliderContainer);
-    fireEvent.mouseMove(sliderContainer, { clientX: 300 }); // 75%
-
-    // Expect clipPath style to reflect updated slider position
-    const clippedOverlay = sliderContainer.querySelector('div[style*="clip-path"], div[style*="clipPath"]') as HTMLElement;
-    expect(clippedOverlay).toBeDefined();
+describe('two photographs side by side', () => {
+  it('captions each under the picture', () => {
+    render(<SideBySideCompare doughUrl={beforeUrl} bakedUrl={afterUrl} doughLabel="Dough" bakedLabel="Crumb" />);
+    expect(screen.getByRole('img', { name: 'Dough' })).toHaveAttribute('src', beforeUrl);
+    expect(screen.getByText('Crumb').tagName).toBe('FIGCAPTION');
   });
 });

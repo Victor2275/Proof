@@ -12,11 +12,13 @@
  */
 
 export const DB_NAME = 'CulinaryLabDB';
-export const DB_VERSION = 2;
+export const DB_VERSION = 3;
 
-export type StoreName = 'recipes' | 'bakeLogs' | 'photos' | 'pantry' | 'notes' | 'folders' | 'meta';
+export type StoreName = 'recipes' | 'bakeLogs' | 'photos' | 'pantry' | 'notes' | 'folders' | 'shopping' | 'meta';
 
-export const RECORD_STORES = ['recipes', 'bakeLogs', 'pantry', 'notes', 'folders'] as const;
+// Version 3 adds the shopping list, so Shop survives a reload. The upgrade
+// below creates any record store a database does not have yet.
+export const RECORD_STORES = ['recipes', 'bakeLogs', 'pantry', 'notes', 'folders', 'shopping'] as const;
 export type RecordStore = (typeof RECORD_STORES)[number];
 
 const LEGACY_STORE = 'localBakeLogs';

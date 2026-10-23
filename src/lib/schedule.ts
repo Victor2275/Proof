@@ -29,7 +29,7 @@ export interface StepDuration {
 
 export const ASSUMED_STEP_MINUTES = 15;
 
-// The timer chips' pattern (utils/timerParser.tsx), so a time the method shows
+// The units the timer chips read (lib/stepTimers.ts), so a time the method shows
 // as a chip is the time the schedule uses.
 const DURATION = /(\d+(?:\.\d+)?)\s*(hours?|hrs?|h|minutes?|mins?|m)\b/gi;
 

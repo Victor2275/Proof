@@ -1,6 +1,7 @@
 import { screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, beforeEach } from 'vitest';
 import GroceryList from './GroceryList';
+import { repo } from '../lib/repo';
 import { makePantryItem, makeRecipe, renderScreen, seed } from '../test/utils';
 
 const RECIPES = [
@@ -94,5 +95,17 @@ describe('GroceryList Component', () => {
     await waitFor(() => {
       expect(screen.getByText('1 remaining')).toBeInTheDocument();
     });
+  });
+
+  it('lists what a recipe page added, kept on the device, ticked and removed there', async () => {
+    const [cream] = await repo.addShoppingItems([{ name: 'sour cream', quantity: 0.5, unit: 'cup', recipeId: 'r1', recipeTitle: 'Cheesecake' }]);
+    renderScreen(<GroceryList />);
+    expect(await screen.findByText('sour cream')).toBeInTheDocument();
+    expect(screen.getByText('Cheesecake')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('checkbox', { name: /sour cream/ }));
+    await waitFor(async () => expect((await repo.getShopping())[0].checked).toBe(true));
+    fireEvent.click(screen.getByRole('button', { name: 'Remove sour cream from the list' }));
+    await waitFor(async () => expect(await repo.getShopping()).toEqual([]));
+    void cream;
   });
 });
