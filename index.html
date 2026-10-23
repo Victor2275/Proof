@@ -23,6 +23,8 @@
           var dark = theme === 'dark' ||
             (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
           document.documentElement.classList.toggle('dark', dark);
+          // Handwritten bake notes; keep in step with src/lib/settings.ts.
+          if (localStorage.getItem('handwritingNotes') === 'true') document.documentElement.dataset.hand = 'on';
         } catch (e) {}
       })();
     </script>

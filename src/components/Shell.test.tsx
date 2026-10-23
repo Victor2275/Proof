@@ -286,7 +286,7 @@ describe('Bakes and Shop', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Shop' })).toBeInTheDocument();
     await user.click(screen.getByRole('radio', { name: 'In the cupboard' }));
     expect(screen.getByTestId('where')).toHaveTextContent('/shop?view=cupboard');
-    expect(await screen.findByRole('textbox', { name: /ingredient/i })).toBeInTheDocument();
+    expect(await screen.findByRole('textbox', { name: 'Add to the cupboard' })).toBeInTheDocument();
   });
 });
 

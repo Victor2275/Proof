@@ -102,7 +102,8 @@ export default function Dashboard() {
 
   const chapter = params.get('chapter');
   const contentsView = params.get('view') === 'az' ? 'az' : 'chapters';
-  const [query, setQuery] = useState('');
+  // A search can arrive in the address (`/?q=rye`), from the 404 page's search field.
+  const [query, setQuery] = useState(() => params.get('q') ?? '');
   const [layout, setLayout] = useState<'grid' | 'list'>(() => readPref(VIEW_KEY, ['grid', 'list'] as const, 'grid'));
   const [sort, setSort] = useState<SortKey>(() => readPref(SORT_KEY, ['recent', 'az', 'baked', 'rating'] as const, 'recent'));
   const [filter, setFilter] = useState<CookbookFilter>(NO_FILTER);

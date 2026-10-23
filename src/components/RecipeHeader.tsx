@@ -8,6 +8,7 @@ import { factsLine } from '../lib/facts';
 import { creditFromUrl, publicationState } from '../lib/publication';
 import { usePublications } from '../lib/queries';
 import { RecipePlate } from './ui';
+import { photoName } from '../lib/sharedPhoto';
 
 /*
  * The top of a recipe, read like the top of a cookbook page (changes 58–62,
@@ -77,6 +78,7 @@ export default function RecipeHeader({ recipe, ownRecipe, onPublish }: RecipeHea
         alt={recipe.title}
         size="hero"
         eager
+        transitionName={ownRecipe ? photoName(ownRecipe._id) : undefined}
         className="-mx-4 w-[calc(100%+2rem)] rounded-none sm:mx-0 sm:w-full sm:rounded-panel"
       />
 

@@ -1,7 +1,9 @@
 import { screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { Route, Routes } from 'react-router-dom';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import RecipeEditor from './RecipeEditor';
+import { ToastProvider } from './ui';
 import { api } from '../lib/api';
 import { repo } from '../lib/repo';
 import { setOperatorToken } from '../lib/session';
@@ -74,45 +76,71 @@ describe('RecipeEditor', () => {
 
   it('reports what the recipe amounts to as it is built', async () => {
     await renderNew();
-    // Both counts start at nothing, and the bar says so in the plural.
-    expect(screen.getByText('ingredients')).toBeInTheDocument();
-    expect(screen.getByText('steps')).toBeInTheDocument();
-    expect(screen.getAllByText('0')).toHaveLength(2);
+    // Both counts start at nothing, and the header says so in the plural.
+    expect(screen.getByText('0 ingredients · 0 steps')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: /Add row/i }));
-    fireEvent.click(screen.getByRole('button', { name: /Add step/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'Add an ingredient' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Add a step' }));
 
-    // One of each, and the bar switches to the singular rather than "1 steps".
-    expect(screen.getByText('ingredient')).toBeInTheDocument();
-    expect(screen.getByText('step')).toBeInTheDocument();
-    expect(screen.getAllByText('1')).toHaveLength(2);
+    // One of each, and the header switches to the singular rather than "1 steps".
+    expect(screen.getByText('1 ingredient · 1 step')).toBeInTheDocument();
   });
 
   it('allows adding a new ingredient dynamically', async () => {
     await renderNew();
-    fireEvent.click(screen.getByRole('button', { name: /Add row/i }));
-    expect(screen.getAllByPlaceholderText(/Ingredient name/i)).toHaveLength(1);
+    fireEvent.click(screen.getByRole('button', { name: 'Add an ingredient' }));
+    expect(screen.getAllByRole('textbox', { name: 'Ingredient 1' })).toHaveLength(1);
+  });
+
+  it('splits a pasted list into rows, each read as amount, unit and name', async () => {
+    await renderNew();
+    fireEvent.click(screen.getByRole('button', { name: 'Add an ingredient' }));
+    fireEvent.paste(screen.getByRole('textbox', { name: 'Ingredient 1' }), {
+      clipboardData: { getData: () => '500 g bread flour\n1½ tsp salt\n3 eggs' },
+    });
+    expect(screen.getByRole('textbox', { name: 'Ingredient 3' })).toHaveValue('eggs');
+    expect(screen.getByRole('textbox', { name: 'Ingredient 1' })).toHaveValue('bread flour');
+    expect(screen.getByRole('textbox', { name: 'Unit 1' })).toHaveValue('g');
+    expect(screen.getByRole('textbox', { name: 'Amount 2' })).toHaveValue('1½');
+  });
+
+  it('reads an amount as a cook writes it and keeps it as a number', async () => {
+    const user = userEvent.setup();
+    await renderNew();
+    await user.type(screen.getByPlaceholderText(/72-Hour Sourdough/i), 'Scones');
+    await user.click(screen.getByRole('button', { name: 'Add an ingredient' }));
+    await user.type(screen.getByRole('textbox', { name: 'Amount 1' }), '2/3');
+    await user.type(screen.getByRole('textbox', { name: 'Ingredient 1' }), 'cup milk');
+    await user.click(screen.getByRole('button', { name: /Create recipe/i }));
+    await waitFor(async () => expect((await repo.getRecipes())[0]?.ingredients[0].quantity).toBeCloseTo(2 / 3));
   });
 
   it('allows adding an instruction dynamically', async () => {
     await renderNew();
-    fireEvent.click(screen.getByRole('button', { name: /Add step/i }));
-    expect(screen.getAllByPlaceholderText(/Describe step/i)).toHaveLength(1);
+    fireEvent.click(screen.getByRole('button', { name: 'Add a step' }));
+    expect(screen.getAllByRole('textbox', { name: 'Step 1 text' })).toHaveLength(1);
+  });
+
+  it('adds a heading that groups the steps after it', async () => {
+    await renderNew();
+    fireEvent.click(screen.getByRole('button', { name: 'Add a heading' }));
+    fireEvent.change(screen.getByRole('textbox', { name: 'Section heading, line 1' }), { target: { value: 'The dough' } });
+    expect(screen.getByRole('textbox', { name: 'Section heading, line 1' })).toHaveValue('The dough');
   });
 
   it('displays the URL extractor', async () => {
     await renderNew();
-    fireEvent.click(screen.getByRole('button', { name: /^Open$/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Start from a link, text or a photograph/ }));
     expect(screen.getByPlaceholderText(/allrecipes\.com/i)).toBeInTheDocument();
   });
 
   it('explains the AI import instead of calling it, for someone it is not open to', async () => {
     await renderNew();
-    fireEvent.click(screen.getByRole('button', { name: /^Open$/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Start from a link, text or a photograph/ }));
     fireEvent.change(screen.getByPlaceholderText(/allrecipes\.com/i), {
       target: { value: 'https://example.com/recipe' },
     });
-    fireEvent.click(screen.getByRole('button', { name: /Extract/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'Read the page' }));
 
     expect(await screen.findByRole('dialog', { name: 'Import from a URL' })).toBeInTheDocument();
     expect(api.extractRecipe).not.toHaveBeenCalled();
@@ -125,12 +153,12 @@ describe('RecipeEditor', () => {
     it('calls extractRecipe when a URL is pasted and the button clicked', async () => {
       vi.mocked(api.extractRecipe).mockResolvedValue({ title: 'Extracted Title' });
       await renderNew();
-      fireEvent.click(screen.getByRole('button', { name: /^Open$/i }));
+      fireEvent.click(screen.getByRole('button', { name: /Start from a link, text or a photograph/ }));
 
       fireEvent.change(screen.getByPlaceholderText(/allrecipes\.com/i), {
         target: { value: 'https://example.com/recipe' },
       });
-      fireEvent.click(screen.getByRole('button', { name: /Extract/i }));
+      fireEvent.click(screen.getByRole('button', { name: 'Read the page' }));
 
       await waitFor(() => {
         expect(api.extractRecipe).toHaveBeenCalledWith('https://example.com/recipe');
@@ -161,8 +189,9 @@ describe('RecipeEditor', () => {
     await seed('recipes', [makeRecipe({ _id: 'rec1', title: 'Frosting' }), makeRecipe({ _id: 'rec2', title: 'Ganache' })]);
     await renderNew();
 
-    fireEvent.click(screen.getByRole('button', { name: /Add step/i }));
-    await user.click(await screen.findByRole('button', { name: /Link recipe/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'Add a step' }));
+    await user.click(screen.getByRole('button', { name: /Step 1: move, link or remove/ }));
+    await user.click(await screen.findByRole('menuitem', { name: /Link a recipe to it/ }));
 
     expect(await screen.findByRole('dialog', { name: /Link a recipe to step 1/i })).toBeInTheDocument();
 
@@ -173,15 +202,37 @@ describe('RecipeEditor', () => {
     expect(await screen.findByText('Ganache')).toBeInTheDocument();
   });
 
-  it('asks before deleting a recipe', async () => {
+  it('deletes at once, with Undo, rather than asking first', async () => {
     const user = userEvent.setup();
     await seed('recipes', [STIR_FRY]);
-    renderExisting();
+    // The toast sits above the routes, as in the app, so it outlives the editor it came from.
+    renderScreen(
+      <ToastProvider>
+        <Routes>
+          <Route path="/edit/:id" element={<RecipeEditor />} />
+          <Route path="*" element={<div data-testid="elsewhere" />} />
+        </Routes>
+      </ToastProvider>,
+      { route: '/edit/r1' },
+    );
 
-    await user.click(await screen.findByRole('button', { name: /Delete/i }));
-    await screen.findByRole('dialog', { name: /Delete recipe/i });
-    await user.click(screen.getByRole('button', { name: 'Keep' }));
-    expect(await repo.getRecipe('r1')).not.toBeNull();
+    await user.click(await screen.findByRole('button', { name: 'More: delete' }));
+    await user.click(await screen.findByRole('menuitem', { name: /Delete this recipe/ }));
+    await waitFor(async () => expect(await repo.getRecipes()).toHaveLength(0));
+    await user.click(await screen.findByRole('button', { name: 'Undo' }));
+    await waitFor(async () => expect(await repo.getRecipes()).toHaveLength(1));
+  });
+
+  it('tidies pasted text into the form', async () => {
+    setOperatorToken('operator-token');
+    vi.mocked(api.restructureRecipe).mockResolvedValue({ title: 'Lemon drizzle', ingredients: [], instructions: ['Bake.'] });
+    renderScreen(<RecipeEditor />, { route: '/new?start=paste', path: '/new' });
+    fireEvent.change(await screen.findByRole('textbox', { name: "Or paste the recipe's text" }), {
+      target: { value: 'Lemon drizzle. Bake.' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Tidy it into a recipe' }));
+    await waitFor(() => expect(screen.getByPlaceholderText(/72-Hour Sourdough/i)).toHaveValue('Lemon drizzle'));
+    setOperatorToken(null);
   });
 
   /*
@@ -192,7 +243,7 @@ describe('RecipeEditor', () => {
   it('offers no form, and no Save or Delete, for a recipe that is not here', async () => {
     renderExisting('missing');
     expect(await screen.findByText(/This recipe is not in the cookbook/i)).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Save recipe/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Save$/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Delete/i })).not.toBeInTheDocument();
   });
 
@@ -201,7 +252,7 @@ describe('RecipeEditor', () => {
     const spy = vi.spyOn(repo, 'getRecipe').mockRejectedValue(new Error('blocked'));
     renderExisting();
     expect(await screen.findByText(/Couldn't open this recipe on this device/i)).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Save recipe/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Save$/ })).not.toBeInTheDocument();
     spy.mockRestore();
   });
 
@@ -226,7 +277,7 @@ describe('RecipeEditor', () => {
       renderExisting();
       await waitFor(() => expect(screen.getByLabelText('Prep time')).toHaveValue('20'));
 
-      await user.click(screen.getByRole('button', { name: /Save recipe/i }));
+      await user.click(screen.getByRole('button', { name: /^Save$/ }));
 
       await screen.findByTestId('elsewhere');
       const saved = await repo.getRecipe('r1');
@@ -242,7 +293,7 @@ describe('RecipeEditor', () => {
       const prep = screen.getByLabelText('Prep time');
       await user.clear(prep);
       await user.type(prep, '45');
-      await user.click(screen.getByRole('button', { name: /Save recipe/i }));
+      await user.click(screen.getByRole('button', { name: /^Save$/ }));
 
       await screen.findByTestId('elsewhere');
       expect((await repo.getRecipe('r1'))?.prepTime).toBe('45');

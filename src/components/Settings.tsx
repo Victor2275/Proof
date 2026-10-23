@@ -1,34 +1,28 @@
 import { useState, useEffect, useRef, type ReactNode } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useLocation } from 'react-router-dom';
-import { Download, ImageDown, Upload } from 'lucide-react';
+import { Download, ImageDown, LifeBuoy, Upload } from 'lucide-react';
 import { api } from '../lib/api';
 import { exportCookbook, importCookbook, backupFileName, type ImportResult } from '../lib/repo/backup';
 import { importServerLibrary } from '../lib/repo/legacy';
 import { STORED_ON_DEVICE, formatBytes, requestPersistentStorage, storageReport } from '../lib/storage';
 import { useSession } from '../lib/session';
 import AccountPanel from './AccountPanel';
-import { hapticsEnabled, ttsEnabled as readTtsEnabled } from '../lib/settings';
-import { Panel, PanelRow, Button, Meter, Segmented, buttonClassName } from './ui';
+import { SETTINGS_KEYS, applyHandwriting, handwritingEnabled, hapticsEnabled, ttsEnabled as readTtsEnabled } from '../lib/settings';
+import HelpSheet from './HelpSheet';
+import { Panel, PanelRow, Button, Meter, PageHeader, Segmented, Switch, buttonClassName } from './ui';
 import { applyTheme, readTheme, type ThemeChoice } from '../lib/theme';
 
 /*
- * Settings.
+ * Settings (change 131).
  *
- * Every preference here used to be an iOS-style sliding pill — a control from
- * a different machine, and the one widget in the app that carried state by a
- * moving dot rather than by light. They are latching keys now: the same key the
- * step row draws, held down. Lit means on, which is the one thing light is
- * allowed to mean in this world, and it is the same idiom the personal-best
- * mark and the grocery bank already use.
+ * Laid out by what a person comes here for: how the book looks, how it
+ * behaves while baking, the cookbook kept on this device, the account, and
+ * help. One plain line under each setting says what it does, and every on/off
+ * is the platform's own switch (`Switch`) rather than a latching key.
  *
- * The key reports its state in words as well as in light, so it survives a
- * colour-vision difference, and it carries `aria-pressed` so a screen reader
- * announces a switch rather than a button.
- *
- * The page splits by whose it is (decision B23): the account, how the app
- * behaves, the cookbook's data on this device, and the site operator's tools,
- * which do nothing without the operator PIN.
+ * The site operator's tools come last and do nothing without the operator PIN
+ * (decision B23).
  */
 
 /** Saves a Blob as a download. */
@@ -87,36 +81,6 @@ function ActionRow({
   );
 }
 
-/** A preference: what it does, and the key that holds it. */
-function SettingRow({
-  label,
-  description,
-  on,
-  onChange,
-}: {
-  label: string;
-  description: string;
-  on: boolean;
-  onChange: (next: boolean) => void;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-4 border-b border-rule py-3 last:border-b-0">
-      <div className="min-w-0">
-        <p className="ui-label text-ink">{label}</p>
-        <p className="mt-0.5 text-sm text-ink-muted">{description}</p>
-      </div>
-      <Button
-        engaged={on}
-        onClick={() => onChange(!on)}
-        aria-label={label}
-        className="w-16 shrink-0"
-      >
-        {on ? 'On' : 'Off'}
-      </Button>
-    </div>
-  );
-}
-
 export default function Settings() {
   const [theme, setTheme] = useState<ThemeChoice>(readTheme);
   const [haptics, setHaptics] = useState(hapticsEnabled);
@@ -133,6 +97,8 @@ export default function Settings() {
   const [voiceCommands, setVoiceCommands] = useState(
     () => localStorage.getItem('voiceCommands') === 'true',
   );
+  const [handwriting, setHandwriting] = useState(handwritingEnabled);
+  const [helpOpen, setHelpOpen] = useState(false);
 
   const { session, signOutOperator } = useSession();
   const { hash } = useLocation();
@@ -192,6 +158,11 @@ export default function Settings() {
   useEffect(() => {
     localStorage.setItem('voiceCommands', voiceCommands.toString());
   }, [voiceCommands]);
+
+  useEffect(() => {
+    localStorage.setItem(SETTINGS_KEYS.handwriting, handwriting.toString());
+    applyHandwriting(handwriting);
+  }, [handwriting]);
 
   const handleExport = async () => {
     setExporting(true);
@@ -254,16 +225,7 @@ export default function Settings() {
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-8 pb-20">
-      <header className="flex flex-wrap items-end justify-between gap-4 border-b border-rule pb-6">
-        <div className="flex flex-col gap-2">
-          <h1 className="font-title text-3xl leading-none text-ink sm:text-4xl">Settings</h1>
-          <p className="max-w-prose text-ink-muted">
-            How the machine behaves, and the cookbook it keeps on this device.
-          </p>
-        </div>
-      </header>
-
-      <AccountPanel />
+      <PageHeader title="Settings" subtitle="How Proof looks and behaves on this device, and the cookbook it keeps here." />
 
       <Panel title="Appearance">
         <div className="flex flex-col gap-3">
@@ -279,45 +241,53 @@ export default function Settings() {
             ]}
           />
           <p className="text-sm text-ink-muted">Dark is the same book at night. System follows the device.</p>
+          <div className="border-t border-rule">
+            <Switch
+              label="Handwritten notes"
+              description="Set your bake notes in a handwriting face instead of the book's italic."
+              checked={handwriting}
+              onChange={setHandwriting}
+            />
+          </div>
         </div>
       </Panel>
 
-      <Panel title="Preferences" flush>
-        <div className="px-4">
-          <SettingRow
+      <Panel title="While you bake" flush>
+        <div className="divide-y divide-rule px-4">
+          <Switch
             label="Baker's math"
             description="Show baker's percentages on every recipe without asking."
-            on={defaultBakersMath}
+            checked={defaultBakersMath}
             onChange={setDefaultBakersMath}
           />
-          <SettingRow
+          <Switch
             label="Haptics"
-            description="A tick through the case when a step advances or a timer ends."
-            on={haptics}
+            description="A small buzz when a step advances or a timer ends. Phones only."
+            checked={haptics}
             onChange={setHaptics}
           />
-          <SettingRow
+          <Switch
             label="Spoken timers"
-            description="Say a timer's name aloud when it finishes, for hands that are busy."
-            on={ttsEnabled}
+            description="Say a timer's name aloud when it ends, for hands that are busy."
+            checked={ttsEnabled}
             onChange={setTtsEnabled}
           />
-          <SettingRow
+          <Switch
             label="Wave to advance"
-            description="Move a hand over the camera to reach the next step without touching anything."
-            on={waveToAdvance}
+            description="Move a hand over the camera to reach the next step."
+            checked={waveToAdvance}
             onChange={setWaveToAdvance}
           />
-          <SettingRow
+          <Switch
             label="Voice commands"
-            description="Next, back, read, ingredients, start timer — spoken rather than tapped."
-            on={voiceCommands}
+            description="Say next, back, read, ingredients or start timer instead of tapping."
+            checked={voiceCommands}
             onChange={setVoiceCommands}
           />
         </div>
       </Panel>
 
-      <Panel title="Data on this device">
+      <Panel title="Your cookbook">
         <div id="cookbook" className="flex scroll-mt-24 flex-col gap-5">
           <div className="flex flex-col gap-3">
             <p className="text-sm text-ink">{STORED_ON_DEVICE}</p>
@@ -394,6 +364,18 @@ export default function Settings() {
           </ActionRow>
         </div>
       </Panel>
+
+      <AccountPanel />
+
+      <Panel title="Help">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="min-w-0 flex-1 text-sm text-ink-muted">What Proof is for, and the four things you do in it.</p>
+          <Button onClick={() => setHelpOpen(true)} icon={<LifeBuoy className="h-4 w-4" aria-hidden="true" />}>
+            How Proof works
+          </Button>
+        </div>
+      </Panel>
+      <HelpSheet open={helpOpen} onClose={() => setHelpOpen(false)} />
 
       <Panel title="Operator">
         {session.isOperator ? (

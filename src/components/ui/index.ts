@@ -42,4 +42,5 @@ export { Skeleton } from './Skeleton';
 export { PublishState, type PublishStateProps, type PublishStateValue } from './PublishState';
 export { Tag } from './Tag';
 export { Prose } from './Prose';
+export { Switch, type SwitchProps } from './Switch';
 export { cn } from '../../lib/cn';

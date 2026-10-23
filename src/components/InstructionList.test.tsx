@@ -89,6 +89,15 @@ describe('times in a step', () => {
     spy.mockRestore();
   });
 
+  it("carries the recipe and step, when it has them, for the timer's notification", () => {
+    const spy = vi.spyOn(window, 'dispatchEvent');
+    render(<StepText text="Bake for 10 minutes." name="Step 3" from={{ recipeId: 'r1', step: 3 }} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Start a 10 minutes timer' }));
+    const event = spy.mock.calls.map((c) => c[0]).find((e) => e.type === 'add-timer') as CustomEvent;
+    expect(event.detail.from).toEqual({ recipeId: 'r1', step: 3 });
+    spy.mockRestore();
+  });
+
   it('leaves a step with no time as plain words', () => {
     render(<StepText text="Mix the dough." name="Step 1" />);
     expect(screen.queryByRole('button')).not.toBeInTheDocument();

@@ -31,10 +31,12 @@ export interface RecipePlateProps {
   size?: PlateSize;
   /** The photograph a page opens on: fetched at once rather than when scrolled to. */
   eager?: boolean;
+  /** The `view-transition-name` a cookbook tile's photograph grows into (lib/sharedPhoto). */
+  transitionName?: string;
   className?: string;
 }
 
-export function RecipePlate({ src: ref, alt, size = 'row', eager = false, className }: RecipePlateProps) {
+export function RecipePlate({ src: ref, alt, size = 'row', eager = false, transitionName, className }: RecipePlateProps) {
   const src = usePhotoSrc(ref);
   const [failed, setFailed] = useState(false);
   // A new photograph deserves a fresh attempt, or one dead link would leave
@@ -43,7 +45,12 @@ export function RecipePlate({ src: ref, alt, size = 'row', eager = false, classN
   const usable = Boolean(src) && !failed;
 
   return (
-    <div className={cn('shrink-0 overflow-hidden rounded-key bg-paper-sunk', SIZE[size], className)}>
+    <div
+      data-plate=""
+      data-photo={transitionName}
+      style={transitionName ? { viewTransitionName: transitionName } : undefined}
+      className={cn('shrink-0 overflow-hidden rounded-key bg-paper-sunk', SIZE[size], className)}
+    >
       {usable ? (
         <img
           src={src}

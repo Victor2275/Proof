@@ -48,11 +48,11 @@ const RECIPE = makeRecipe({
   ],
 });
 
-const renderBaking = () =>
+const renderBaking = (entry = '/recipe/1/bake') =>
   render(
     <QueryClientProvider client={testQueryClient()}>
       <ToastProvider>
-        <MemoryRouter>
+        <MemoryRouter initialEntries={[entry]}>
           <BakingMode />
         </MemoryRouter>
       </ToastProvider>
@@ -116,7 +116,21 @@ describe('baking mode, one step at a time', () => {
     await user.click(screen.getByRole('button', { name: 'Start 10 minutes' }));
     const event = spy.mock.calls.map((c) => c[0]).find((e) => e.type === 'add-timer') as CustomEvent;
     expect(event.detail).toMatchObject({ durationSecs: 600, name: 'Step 2 · 10 minutes' });
+    // It remembers the recipe and step, so its notification can lead back.
+    expect(event.detail.from).toEqual({ recipeId: '1', step: 2 });
     spy.mockRestore();
+  });
+
+  it("opens at the step a timer's notification asks for, over a resumed one", async () => {
+    startActiveBake('1', 'Cheesecake', 1);
+    renderBaking('/recipe/1/bake?step=3');
+    expect(await screen.findByText('3 of 3')).toBeInTheDocument();
+    expect(screen.getByText('Cool on a rack.')).toBeInTheDocument();
+  });
+
+  it('ignores a step that is not in the recipe', async () => {
+    renderBaking('/recipe/1/bake?step=9');
+    expect(await screen.findByText('1 of 3')).toBeInTheDocument();
   });
 
   it('counts the running timer down on that same press, in butter', async () => {

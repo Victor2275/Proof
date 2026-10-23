@@ -130,7 +130,7 @@ function Comments({ recipe, isAuthor, onReport }: { recipe: PublishedRecipe; isA
                 </span>
                 {c.pending ? <span className="text-ink-muted">· waiting for a look, only you can see it</span> : null}
               </p>
-              <Prose className="font-prose border-l-2 border-rule pl-3 text-[1.0625rem] italic text-pencil">{c.body}</Prose>
+              <Prose className="font-prose hand border-l-2 border-rule pl-3 text-[1.0625rem] italic text-pencil">{c.body}</Prose>
               {c.mine || isAuthor ? (
                 <Button variant="ghost" size="sm" className="self-start text-ink-muted" onClick={() => remove.mutate(c._id)}>
                   Delete

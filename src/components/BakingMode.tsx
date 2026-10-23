@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Link as LinkIcon, MoreHorizontal, PencilLine, Timer as TimerIcon, X } from 'lucide-react';
 import 'regenerator-runtime/runtime';
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
@@ -47,6 +47,8 @@ const EMPTY_LOGS: BakeLog[] = [];
 
 export default function BakingMode() {
   const { id } = useParams<{ id: string }>();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const askedStep = Number(searchParams.get('step')) || 0;
   const navigate = useNavigate();
   const toast = useToast();
   const [recipe, setRecipe] = useState<Recipe | null>(null);
@@ -97,6 +99,19 @@ export default function BakingMode() {
       .catch(() => setLoadFailed(true))
       .finally(() => setLoading(false));
   }, [id]);
+
+  /*
+   * A timer's notification opens baking mode at its step (`?step=4`, the
+   * printed number). It wins over a resumed position, and works while baking
+   * mode is already open. The address is cleared once read, so the same
+   * step's next notification still moves the page.
+   */
+  useEffect(() => {
+    if (!askedStep || steps.length === 0) return;
+    const at = steps.findIndex((s) => s.number === askedStep);
+    if (at >= 0) setPosition(at);
+    setSearchParams({}, { replace: true });
+  }, [askedStep, steps, setSearchParams]);
 
   // The rest of the app (the pill, the cookbook) learns which step this is.
   useEffect(() => {
@@ -172,7 +187,7 @@ export default function BakingMode() {
         callback: () => {
           const t = step ? findTimers(step.text)[0] : undefined;
           if (t) {
-            startTimer(t.seconds, `Step ${step!.number} · ${t.label}`);
+            startTimer(t.seconds, `Step ${step!.number} · ${t.label}`, { from: { recipeId: id!, step: step!.number } });
             speak('Timer started.');
           } else {
             speak("I didn't find a time in this step.");
@@ -368,7 +383,7 @@ export default function BakingMode() {
         if (runningForStep) window.dispatchEvent(new Event(OPEN_TIMERS_EVENT));
         else {
           haptic('medium');
-          startTimer(stepTimer.seconds, `Step ${step!.number} · ${stepTimer.label}`);
+          startTimer(stepTimer.seconds, `Step ${step!.number} · ${stepTimer.label}`, { from: { recipeId: id!, step: step!.number } });
         }
       }}
       className="pressable inline-flex min-h-16 items-center gap-3 self-start rounded-full bg-butter pl-5 pr-6 font-sans text-on-butter"
@@ -388,7 +403,7 @@ export default function BakingMode() {
   const lastTime = lastOnStep ? (
     <div className="flex flex-col gap-1.5 rounded-key bg-paper-sunk px-4 py-3.5">
       <span className="text-xs font-semibold text-pencil">Last time on this step · {shortDate(lastOnStep.at)}</span>
-      <span className="font-prose text-[1.0625rem] italic leading-snug text-ink-2">“{lastOnStep.text}”</span>
+      <span className="font-prose hand text-[1.0625rem] italic leading-snug text-ink-2">“{lastOnStep.text}”</span>
     </div>
   ) : null;
 
@@ -483,7 +498,7 @@ export default function BakingMode() {
               ) : null}
               {step.heading ? <p className="font-title text-xl italic text-ink-2">{step.heading}</p> : null}
               <p className="font-prose text-[1.75rem] leading-[1.3] sm:text-[2rem]">
-                <StepText text={step.text} name={`Step ${step.number}`} />
+                <StepText text={step.text} name={`Step ${step.number}`} from={id ? { recipeId: id, step: step.number } : undefined} />
               </p>
               {links.length ? (
                 <div className="flex flex-wrap gap-2">

@@ -68,13 +68,26 @@ describe('Discover', () => {
     renderScreen(<Discover />);
     await screen.findByText('Babka');
 
-    await user.click(screen.getByRole('button', { name: 'Most baked' }));
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Sort' }), 'Most baked');
     expect(titles()).toEqual(['Focaccia', 'Babka', 'Chili']);
-    await user.click(screen.getByRole('button', { name: 'Top rated' }));
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Sort' }), 'Top rated');
     expect(titles()[0]).toBe('Babka');
 
-    await user.click(within(screen.getByRole('group', { name: 'Tags' })).getByRole('button', { name: 'sweet' }));
+    await user.click(screen.getByRole('button', { name: 'Tags' }));
+    await user.click(within(await screen.findByRole('dialog', { name: 'Tags' })).getByRole('button', { name: /sweet/ }));
     expect(titles().sort()).toEqual(['Babka', 'Chili']);
+    // The tag in force is a chip that takes itself off.
+    await user.click(screen.getByRole('button', { name: 'Showing sweet; show every tag' }));
+    expect(titles()).toHaveLength(3);
+  });
+
+  it('leads with one recipe across the page, then two to a row, with who made it and how often', async () => {
+    renderScreen(<Discover />);
+    await screen.findByText('Babka');
+    const lead = screen.getByRole('link', { name: /Babka/ });
+    expect(within(lead).getByRole('heading', { level: 3 })).toHaveClass('text-3xl');
+    expect(screen.getByText('@proof · baked 9 times')).toBeInTheDocument();
+    expect(screen.getByText('@proof · baked once')).toBeInTheDocument();
   });
 
   it('searches on the device, by baker as well as title', async () => {
@@ -129,7 +142,7 @@ describe('a baker\'s page', () => {
 
   it('is a 404 for an address without @, and for nobody', async () => {
     renderScreen(<Profile />, { route: '/nonsense', path: '/:at' });
-    expect(screen.getByText(/Nothing at this address/)).toBeInTheDocument();
+    expect(screen.getByText(/That page isn't in this book/)).toBeInTheDocument();
     expect(api.getProfile).not.toHaveBeenCalled();
   });
 });
@@ -216,7 +229,7 @@ describe('a shared recipe\'s conversation', () => {
 describe('the moderation queue', () => {
   it('is nothing at all to anyone but the operator', () => {
     renderScreen(<Moderation />);
-    expect(screen.getByText(/Nothing at this address/)).toBeInTheDocument();
+    expect(screen.getByText(/That page isn't in this book/)).toBeInTheDocument();
     expect(api.getModerationQueue).not.toHaveBeenCalled();
   });
 

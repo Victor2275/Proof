@@ -108,6 +108,17 @@ describe('the recipe page, in reading order', () => {
     }
   });
 
+  it('edits here: the page turns into its own fields, and Cancel turns it back', async () => {
+    const user = userEvent.setup();
+    renderViewer();
+    await user.click(await screen.findByRole('button', { name: 'More actions' }));
+    await user.click(await screen.findByRole('menuitem', { name: 'Edit here' }));
+    expect(await screen.findByRole('region', { name: 'Editing the recipe here' })).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: /Title/ })).toHaveValue('Cheesecake');
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByRole('region', { name: 'Editing the recipe here' })).toBeNull();
+  });
+
   it("drops the blog's aside from the headnote", async () => {
     renderViewer();
     expect(await screen.findByText('The creamiest one.')).toBeInTheDocument();
@@ -292,7 +303,7 @@ describe('a recipe from the shared cookbook', () => {
   it('treats an unpublished recipe as a page that no longer exists', async () => {
     vi.mocked(api.getPublishedRecipe).mockRejectedValue(new ApiError('Not in the shared cookbook.', 404));
     renderShared();
-    expect(await screen.findByRole('heading', { name: 'Nothing at this address' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: "That page isn't in this book." })).toBeInTheDocument();
   });
 
   it('names an unreachable server as such, with a retry', async () => {

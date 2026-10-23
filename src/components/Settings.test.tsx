@@ -28,40 +28,54 @@ beforeEach(() => {
 });
 
 describe('Settings', () => {
-  it('draws every preference as a latching key that reports its state in words', () => {
+  it('draws every preference as a switch, with one plain line saying what it does', () => {
     renderScreen(<Settings />);
-    // Haptics is on by default in this build, so the key is down and says so.
-    const haptics = screen.getByRole('button', { name: 'Haptics' });
-    expect(haptics).toHaveTextContent('On');
-    expect(haptics).toHaveAttribute('aria-pressed', 'true');
+    // Haptics is on by default in this build.
+    const haptics = screen.getByRole('switch', { name: 'Haptics' });
+    expect(haptics).toHaveAttribute('aria-checked', 'true');
+    expect(haptics).toHaveAccessibleDescription(/A small buzz/);
 
-    const wave = screen.getByRole('button', { name: 'Wave to advance' });
-    expect(wave).toHaveTextContent('Off');
-    expect(wave).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByRole('switch', { name: 'Wave to advance' })).toHaveAttribute('aria-checked', 'false');
   });
 
-  it('latches a key and writes the preference through', async () => {
+  it('turns a switch on and writes the preference through', async () => {
     const user = userEvent.setup();
     renderScreen(<Settings />);
-
-    const wave = screen.getByRole('button', { name: 'Wave to advance' });
+    const wave = screen.getByRole('switch', { name: 'Wave to advance' });
     await user.click(wave);
-
-    expect(wave).toHaveTextContent('On');
-    expect(wave).toHaveAttribute('aria-pressed', 'true');
+    expect(wave).toHaveAttribute('aria-checked', 'true');
     expect(localStorage.getItem('waveToAdvance')).toBe('true');
   });
 
-  it('carries its state by more than colour', async () => {
+  it('sets bake notes in a handwriting face when asked, and back again', async () => {
     const user = userEvent.setup();
     renderScreen(<Settings />);
-    const voice = screen.getByRole('button', { name: 'Voice commands' });
+    const hand = screen.getByRole('switch', { name: 'Handwritten notes' });
+    expect(hand).toHaveAttribute('aria-checked', 'false');
+    await user.click(hand);
+    expect(document.documentElement.dataset.hand).toBe('on');
+    expect(localStorage.getItem('handwritingNotes')).toBe('true');
+    await user.click(hand);
+    expect(document.documentElement.dataset.hand).toBeUndefined();
+  });
 
-    // The word changes as well as the fill, so the control survives a colour
-    // vision difference and a screen reader both.
-    expect(voice).toHaveTextContent('Off');
-    await user.click(voice);
-    expect(voice).toHaveTextContent('On');
+  it('is laid out as Appearance, While you bake, Your cookbook, Account, Help', () => {
+    renderScreen(<Settings />);
+    expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)).toEqual([
+      'Appearance',
+      'While you bake',
+      'Your cookbook',
+      'Account',
+      'Help',
+      'Operator',
+    ]);
+  });
+
+  it('opens help in a sheet', async () => {
+    const user = userEvent.setup();
+    renderScreen(<Settings />);
+    await user.click(screen.getByRole('button', { name: 'How Proof works' }));
+    expect(await screen.findByRole('dialog', { name: 'Help' })).toBeInTheDocument();
   });
 
   it('opens on paper when no theme has been chosen', () => {

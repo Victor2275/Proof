@@ -1,18 +1,15 @@
-import { ArrowLeft, Sparkles, Trash2, Save } from 'lucide-react';
-import { Button } from './ui';
+import { MoreHorizontal, Sparkles } from 'lucide-react';
+import { BackButton, Button, Menu, MenuItem } from './ui';
 
 /*
- * The editor's instrument bar.
+ * The editor's bar (changes 109–111).
  *
- * It rides the top of the form and reports what the recipe currently amounts
- * to — its name, how many ingredients, how many steps — beside the controls
- * that act on it. Authoring is the one place in Proof where the thing being
- * operated is not yet finished, so the bar answers "what have I got so far?"
- * without a scroll to the bottom.
- *
- * Counts are set in tabular mono rather than seven-segment: the readout is
- * reserved for instrument values, and spending it on every number would spend
- * the effect.
+ * Back on the left, named for where it goes; on the right the one primary
+ * action, Save, in paprika, and beside it "Tidy up with AI" in words rather
+ * than as an unlabelled sparkle. Delete is not here: it lives in ⋯, away from
+ * Save, and happens at once with Undo rather than asking first. The recipe's
+ * name and what it amounts to so far ride along in the middle, so "what have
+ * I got?" never needs a scroll to the bottom.
  */
 
 interface EditorHeaderProps {
@@ -24,16 +21,8 @@ interface EditorHeaderProps {
   saving: boolean;
   handleAIRestructure: () => void;
   handleDelete: () => void;
-  onBack: () => void;
-}
-
-function Count({ label, value }: { label: string; value: number }) {
-  return (
-    <span className="flex items-baseline gap-1.5">
-      <span className="text-sm text-ink">{value}</span>
-      <span className="ui-label">{label}</span>
-    </span>
-  );
+  backTo: string;
+  backLabel: string;
 }
 
 export default function EditorHeader({
@@ -45,72 +34,57 @@ export default function EditorHeader({
   saving,
   handleAIRestructure,
   handleDelete,
-  onBack,
+  backTo,
+  backLabel,
 }: EditorHeaderProps) {
   return (
-    <div className="sticky top-0 z-30 -mx-4 mb-8 border-b border-rule bg-ground px-4 py-3 md:mx-0 md:px-0">
-      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
-        <div className="flex min-w-0 items-center gap-3">
-          <Button
-            variant="ghost"
-            onClick={onBack}
-            icon={<ArrowLeft className="h-4 w-4" />}
-            aria-label="Go back without saving"
-          >
-            <span className="hidden sm:inline">Back</span>
-          </Button>
-          <div className="min-w-0">
-            <p className="truncate font-title text-base leading-tight text-ink">
-              {title.trim() || (id ? 'Untitled recipe' : 'New recipe')}
+    <div className="sticky top-0 z-30 -mx-4 mb-6 border-b border-rule bg-paper px-4 py-2 md:mx-0 md:px-0">
+      <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-2 sm:gap-x-4">
+        <div className="flex min-w-0 items-center gap-2">
+          <BackButton to={backTo} label={backLabel} />
+          <div className="hidden min-w-0 sm:block">
+            <p className="font-title truncate text-base leading-tight text-ink">{title.trim() || (id ? 'Untitled recipe' : 'New recipe')}</p>
+            <p className="text-xs text-ink-muted">
+              {ingredientCount} {ingredientCount === 1 ? 'ingredient' : 'ingredients'} · {stepCount} {stepCount === 1 ? 'step' : 'steps'}
             </p>
-            <div className="flex items-center gap-3">
-              <Count label={ingredientCount === 1 ? 'ingredient' : 'ingredients'} value={ingredientCount} />
-              <Count label={stepCount === 1 ? 'step' : 'steps'} value={stepCount} />
-            </div>
           </div>
         </div>
 
-        {/*
-          * Full-height controls: 44px is the floor for anything a thumb has to
-          * hit, and these are the page's only controls on a phone. Their labels
-          * drop below `sm` so the row stays one row rather than wrapping into
-          * three and eating a sixth of the screen — the icon keeps the meaning,
-          * and the accessible name is carried either way.
-          */}
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="ml-auto flex items-center gap-1.5">
+          {/* "Tidy up", without its sparkle, on a phone, so the bar stays one line at 375px; the name stays whole. */}
           <Button
-            variant="secondary"
+            variant="ghost"
             onClick={handleAIRestructure}
             busy={isRestructuring}
-            icon={<Sparkles className="h-4 w-4" />}
-            aria-label={isRestructuring ? 'Reading the recipe' : 'Restructure with AI'}
+            aria-label={isRestructuring ? 'Tidying' : 'Tidy up with AI'}
+            icon={<Sparkles className="hidden h-4 w-4 sm:block" aria-hidden="true" />}
           >
-            <span className="hidden sm:inline">
-              {isRestructuring ? 'Reading' : 'Restructure'}
-            </span>
+            {isRestructuring ? 'Tidying' : (
+              <span>
+                Tidy up<span className="hidden sm:inline"> with AI</span>
+              </span>
+            )}
           </Button>
           {id ? (
-            <Button
-              variant="danger"
-              onClick={handleDelete}
-              icon={<Trash2 className="h-4 w-4" />}
-              aria-label="Delete recipe"
+            <Menu
+              label="More"
+              align="right"
+              trigger={(props) => (
+                <button
+                  type="button"
+                  {...props}
+                  aria-label="More: delete"
+                  className="pressable inline-flex h-11 w-11 items-center justify-center rounded-full text-ink hover:bg-paper-sunk"
+                >
+                  <MoreHorizontal className="h-5 w-5" aria-hidden="true" />
+                </button>
+              )}
             >
-              <span className="hidden sm:inline">Delete</span>
-            </Button>
+              <MenuItem onSelect={handleDelete}>Delete this recipe</MenuItem>
+            </Menu>
           ) : null}
-          {/*
-            * Outlined, not filled. Signal red means a thing is running now, and
-            * nothing on this page is: the editor writes a pattern, it does not
-            * play one. The Pantry's own Add control makes the same choice.
-            */}
-          <Button
-            type="submit"
-            variant="secondary"
-            busy={saving}
-            icon={<Save className="h-4 w-4" />}
-          >
-            {id ? 'Save recipe' : 'Create recipe'}
+          <Button type="submit" variant="primary" busy={saving}>
+            {saving ? 'Saving' : id ? 'Save' : 'Create recipe'}
           </Button>
         </div>
       </div>

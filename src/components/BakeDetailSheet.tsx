@@ -202,7 +202,7 @@ export default function BakeDetailSheet({ log, number, recipe, onClose, onEdit, 
           {log.notes ? (
             <section className="flex flex-col gap-1">
               <h3 className="ui-label">What happened</h3>
-              <p className="font-prose whitespace-pre-wrap text-[1.0625rem] text-ink">{log.notes}</p>
+              <p className="font-prose hand whitespace-pre-wrap text-[1.0625rem] text-ink">{log.notes}</p>
             </section>
           ) : null}
           {log.changes ? (

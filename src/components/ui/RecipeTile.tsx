@@ -1,10 +1,11 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { cn } from '../../lib/cn';
 import type { Component, Recipe } from '../../lib/types';
 import { totalRecipeMinutes, formatMinutes, isPlaceholderTiming } from '../../lib/duration';
 import { RecipePlate } from './RecipePlate';
 import { Stamp } from './Stamp';
 import { Tag } from './Tag';
+import { canMorph, openWithPhoto } from '../../lib/sharedPhoto';
 
 /*
  * A tile in the cookbook: the photograph, the name, and one quiet line.
@@ -21,7 +22,8 @@ import { Tag } from './Tag';
  * been baked: when, and how it went (change 51).
  *
  * The whole tile is one link and one press. It never scales on hover, so a
- * grid cannot shift under a cursor while someone reads it.
+ * grid cannot shift under a cursor while someone reads it. A recipe in the
+ * cookbook opens with its photograph growing into the page's (lib/sharedPhoto).
  */
 
 /** Enough of a recipe to draw a tile: a local recipe, or a shared one's summary. */
@@ -52,12 +54,19 @@ export function RecipeTile({ recipe, to, active = false, tag, caption: given, be
   // One string rather than several nodes, so it reads, and tests, as the
   // single line it looks like.
   const caption = given ?? (minutes !== null ? `${folder} · ${formatMinutes(minutes)}` : folder);
+  const navigate = useNavigate();
+  const href = to ?? `/recipe/${recipe._id}`;
+
+  // Only a recipe's own page has the hero to grow into; a shared page fades.
+  const onClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (to !== undefined || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    if (!canMorph()) return;
+    e.preventDefault();
+    openWithPhoto(e.currentTarget.querySelector<HTMLElement>('[data-plate]'), recipe._id, () => navigate(href));
+  };
 
   return (
-    <Link
-      to={to ?? `/recipe/${recipe._id}`}
-      className={cn('pressable group flex flex-col gap-2 rounded-key', className)}
-    >
+    <Link to={href} onClick={onClick} className={cn('pressable group flex flex-col gap-2 rounded-key', className)}>
       <div className="relative">
         <RecipePlate
           src={recipe.imageUrls?.[0]}

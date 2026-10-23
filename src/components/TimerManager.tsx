@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Play, Pause, X } from 'lucide-react';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { io, type Socket } from 'socket.io-client';
@@ -7,6 +8,7 @@ import { userToken, useSession } from '../lib/session';
 import { ulid } from '../lib/ulid';
 import { hapticsEnabled, ttsEnabled } from '../lib/settings';
 import { publishRunningTimers, formatTimerClock, OPEN_TIMERS_EVENT } from '../lib/timerBus';
+import { timerHref, type TimerOrigin } from '../lib/stepTimers';
 import { Button, IconButton, Readout, Sheet } from './ui';
 
 export interface Timer {
@@ -15,6 +17,8 @@ export interface Timer {
   endTime: number | null;
   remainingMs: number;
   hasRung: boolean;
+  /** The recipe and step it was started from. Kept on this device only. */
+  from?: TimerOrigin;
 }
 
 const socketUrl = API_URL.replace('/api', '');
@@ -29,6 +33,20 @@ const socketUrl = API_URL.replace('/api', '');
  * room of their own (server/routes/timers.ts). Signed out, nothing is sent.
  */
 const TIMERS_KEY = 'proof.timers';
+
+/*
+ * The server keeps a timer's name and clock, not where it came from: the
+ * recipe may not exist on the account's other devices. A sync from the server
+ * keeps the origin this device already knew.
+ */
+const keepOrigins = (incoming: Timer[], known: Timer[]): Timer[] =>
+  incoming.map((t) => {
+    const from = known.find((k) => k.id === t.id)?.from;
+    return from ? { ...t, from } : t;
+  });
+
+// A private recipe has no server-side representation, so its id is not sent.
+const forServer = ({ from: _from, ...t }: Timer) => t;
 
 function loadTimers(): Timer[] {
   try {
@@ -57,10 +75,13 @@ export default function TimerManager() {
       saveTimers(value);
       return value;
     });
+  const navigate = useNavigate();
+  const navigateRef = useRef(navigate);
+  navigateRef.current = navigate;
   const { session } = useSession();
   const accountId = session.user?.id ?? null;
   const [now, setNow] = useState(Date.now());
-  const [pendingTimer, setPendingTimer] = useState<{ durationSecs: number, name: string } | null>(null);
+  const [pendingTimer, setPendingTimer] = useState<{ durationSecs: number, name: string, from?: TimerOrigin } | null>(null);
   const [isFlashing, setIsFlashing] = useState(false);
   // The timers' own sheet, opened from the pill when no bake is open.
   const [listOpen, setListOpen] = useState(false);
@@ -74,8 +95,8 @@ export default function TimerManager() {
     const socket = io(socketUrl, { auth: { token } });
     socketRef.current = socket;
     // Timers started on this device before it connected join the account's list.
-    socket.on('connect', () => socket.emit('timers:merge', timersRef.current));
-    socket.on('timers:sync', (serverTimers: Timer[]) => setTimers(serverTimers));
+    socket.on('connect', () => socket.emit('timers:merge', timersRef.current.map(forServer)));
+    socket.on('timers:sync', (serverTimers: Timer[]) => setTimers((prev) => keepOrigins(serverTimers, prev)));
     return () => {
       socket.off('connect');
       socket.off('timers:sync');
@@ -102,8 +123,19 @@ export default function TimerManager() {
             window.speechSynthesis.speak(msg);
           }
 
+          // The notification says what is done and, pressed, opens the step (change 31).
           if ('Notification' in window && Notification.permission === 'granted') {
-            new Notification(`Timer Finished!`, { body: `${t.name} has finished.` });
+            const note = new Notification(`${t.name} is up`, {
+              body: t.from ? `Tap to go back to step ${t.from.step}.` : 'Back to the kitchen.',
+            });
+            const from = t.from;
+            if (from) {
+              note.onclick = () => {
+                window.focus();
+                navigateRef.current(timerHref(from));
+                note.close();
+              };
+            }
           }
 
           try {
@@ -119,7 +151,7 @@ export default function TimerManager() {
           setTimeout(() => setIsFlashing(false), 1500);
 
           const updatedTimer = { ...t, hasRung: true };
-          socketRef.current?.emit('timer:update', updatedTimer);
+          socketRef.current?.emit('timer:update', forServer(updatedTimer));
           return updatedTimer;
         }
         return t;
@@ -134,11 +166,11 @@ export default function TimerManager() {
     }
 
     const handleAddTimer = (e: any) => {
-      const { durationSecs, name, forceStart } = e.detail;
+      const { durationSecs, name, forceStart, from } = e.detail;
       if (forceStart) {
-        confirmAddTimer(durationSecs, name);
+        confirmAddTimer(durationSecs, name, from);
       } else {
-        setPendingTimer({ durationSecs, name });
+        setPendingTimer({ durationSecs, name, from });
       }
     };
 
@@ -180,16 +212,17 @@ export default function TimerManager() {
     );
   }, [timers, now]);
 
-  const confirmAddTimer = (durationSecs: number, name: string) => {
+  const confirmAddTimer = (durationSecs: number, name: string, from?: TimerOrigin) => {
     const newTimer: Timer = {
       id: ulid(),
       name,
       endTime: Date.now() + durationSecs * 1000,
       remainingMs: durationSecs * 1000,
-      hasRung: false
+      hasRung: false,
+      ...(from ? { from } : {}),
     };
     setTimers((prev) => [...prev, newTimer]);
-    socketRef.current?.emit('timer:add', newTimer);
+    socketRef.current?.emit('timer:add', forServer(newTimer));
     setPendingTimer(null);
   };
 
@@ -205,7 +238,7 @@ export default function TimerManager() {
       updatedTimer = { ...t, endTime: Date.now() + t.remainingMs };
     }
     setTimers((prev) => prev.map((x) => (x.id === id ? updatedTimer : x)));
-    socketRef.current?.emit('timer:update', updatedTimer);
+    socketRef.current?.emit('timer:update', forServer(updatedTimer));
   };
 
   const removeTimer = (id: string) => {
@@ -277,7 +310,7 @@ export default function TimerManager() {
               variant="primary"
               size="lg"
               className="min-w-32"
-              onClick={() => pendingTimer && confirmAddTimer(pendingTimer.durationSecs, pendingTimer.name)}
+              onClick={() => pendingTimer && confirmAddTimer(pendingTimer.durationSecs, pendingTimer.name, pendingTimer.from)}
             >
               Start
             </Button>

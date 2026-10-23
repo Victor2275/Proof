@@ -1,10 +1,16 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { api } from '../lib/api';
 import type { Component, Draft, Recipe } from '../lib/types';
 import { repo } from '../lib/repo';
 import { savePhoto } from '../lib/repo/photos';
-import { useCreateRecipe, useDeleteRecipe, useRecipe, useRecipes, useUpdateRecipe } from '../lib/queries';
+import { useCreateRecipe, useDeleteRecipe, useRecipe, useRecipes, useRestoreRecord, useUpdateRecipe } from '../lib/queries';
+import { useUndoableAction } from '../lib/useUndoableAction';
+import { amountForField, parseAmount, parseIngredientBlock } from '../lib/parseIngredient';
+import { cleanText, headnote, sectionHeading } from '../lib/recipeText';
+import { printedSections } from '../lib/method';
+import { factsLine } from '../lib/facts';
+import { friendlyAmountText } from '../lib/quantities';
 import { usePlan } from '../lib/session';
 import {
   Trash2,
@@ -17,6 +23,9 @@ import {
   ArrowDown,
   Link as LinkIcon,
   ScanText,
+  Sparkles,
+  Heading,
+  MoreVertical,
 } from 'lucide-react';
 import { blobToDataUrl, compressImage } from '../lib/image';
 import ReactCrop, { type Crop, type PixelCrop } from 'react-image-crop';
@@ -28,7 +37,7 @@ import BasicInfoForm from './BasicInfoForm';
 import AIReviewSheet from './AIReviewSheet';
 import AiGateSheet, { AiAllowance } from './AiGateSheet';
 import { refreshAccount } from '../lib/useAccount';
-import { Panel, Button, Field, Photo, TextArea, Sheet, buttonClassName, cn } from './ui';
+import { Panel, Button, Disclosure, Field, Menu, MenuItem, Photo, TextArea, Sheet, buttonClassName, cn } from './ui';
 
 /*
  * The recipe editor.
@@ -106,7 +115,9 @@ export default function RecipeEditor() {
   const [aiError, setAiError] = useState('');
   const [saveError, setSaveError] = useState('');
   const [saving, setSaving] = useState(false);
-  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [pastedText, setPastedText] = useState('');
+  const undoable = useUndoableAction();
+  const restore = useRestoreRecord();
 
   const [recipe, setRecipe] = useState<Draft<Recipe>>(() => location.state?.recipe ?? BLANK);
   // The stored recipe is copied into the form once, when it arrives; after
@@ -180,14 +191,44 @@ export default function RecipeEditor() {
     }
   };
 
-  const handleDelete = async () => {
+  // Delete happens at once, with Undo (change 110): no question asked first.
+  // Every line that is not a heading is a step, counted even while it is still blank.
+  const stepNumbers = useMemo(() => {
+    let n = 0;
+    return recipe.instructions.map((line) => (sectionHeading(line) === null ? ++n : null));
+  }, [recipe.instructions]);
+
+  const handleDelete = () => {
     if (!id) return;
-    setConfirmingDelete(false);
+    void undoable({
+      message: `${recipe.title || 'Recipe'} deleted`,
+      run: async () => {
+        await deleteRecipe.mutateAsync(id);
+        navigate('/', { replace: true });
+      },
+      undo: () => restore.mutateAsync({ store: 'recipes', id }),
+      failure: "Couldn't delete the recipe on this device. Try again.",
+    });
+  };
+
+  /* "Paste a link or text": a block of text, tidied into the form by the AI. */
+  const handlePastedText = async () => {
+    if (!pastedText.trim()) return;
+    if (!can('ai')) {
+      setAiGate('Tidy pasted text');
+      return;
+    }
+    setIsRestructuring(true);
+    setAiError('');
     try {
-      await deleteRecipe.mutateAsync(id);
-      navigate('/');
-    } catch {
-      setSaveError("Couldn't delete the recipe on this device. Try again.");
+      const data = await api.restructureRecipe(pastedText);
+      setRecipe((prev) => ({ ...prev, ...data }));
+      setPastedText('');
+      void refreshAccount();
+    } catch (err) {
+      setAiError(err instanceof Error ? err.message : 'The text could not be read into a recipe.');
+    } finally {
+      setIsRestructuring(false);
     }
   };
 
@@ -473,93 +514,92 @@ export default function RecipeEditor() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="relative mx-auto max-w-4xl pb-20">
+    <form onSubmit={handleSubmit} className="relative mx-auto w-full max-w-[75rem] pb-20">
       <EditorHeader
         id={id}
         title={recipe.title}
         ingredientCount={recipe.ingredients.length}
-        stepCount={recipe.instructions.length}
+        stepCount={stepNumbers.filter((n) => n !== null).length}
         isRestructuring={isRestructuring}
         saving={saving}
         handleAIRestructure={handleAIRestructure}
-        handleDelete={() => setConfirmingDelete(true)}
-        onBack={() => navigate(-1)}
+        handleDelete={handleDelete}
+        backTo={id ? `/recipe/${id}` : '/'}
+        backLabel={id ? 'Recipe' : 'Cookbook'}
       />
 
-      <div className="flex flex-col gap-6">
+      {/* On a wide screen the form and the page it makes sit side by side (change 120). */}
+      <div className="grid grid-cols-1 gap-x-12 xl:grid-cols-[minmax(0,1fr)_26rem]">
+      <div className="mx-auto flex w-full max-w-3xl flex-col gap-8">
         {saveError ? (
-          <p className="border border-fault bg-panel p-3 text-sm text-fault" role="alert">
+          <p className="rounded-control border border-fault p-3 text-sm text-fault" role="alert">
             {saveError}
           </p>
         ) : null}
 
         {aiError ? (
-          <p className="border border-fault bg-panel p-3 text-sm text-fault" role="alert">
+          <p className="rounded-control border border-fault p-3 text-sm text-fault" role="alert">
             {aiError}
           </p>
         ) : null}
 
+        {/* A new recipe can start from somewhere else (change 117). */}
         {!id ? (
-          <Panel
-            title="Import from a URL"
-            actions={
-              <Button variant="ghost" onClick={() => setShowExtract(!showExtract)}>
-                {showExtract ? 'Close' : 'Open'}
-              </Button>
-            }
+          <Disclosure
+            open={showExtract}
+            onOpenChange={setShowExtract}
+            summary={<span className="font-title text-xl text-ink">Start from a link, text or a photograph</span>}
           >
-            {showExtract ? (
-              <div className="flex flex-col gap-3">
-                <p className="text-sm text-ink-muted">
-                  Paste a link from a food blog or recipe site and the fields below are filled in.
-                </p>
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-                  <Field
-                    label="Recipe URL"
-                    type="url"
-                    className="flex-1"
-                    placeholder="https://www.allrecipes.com/..."
-                    value={extractUrl}
-                    onChange={(e) => setExtractUrl(e.target.value)}
-                    disabled={extracting}
-                    error={extractError || undefined}
-                  />
-                  <Button
-                    onClick={handleExtract}
-                    busy={extracting}
-                    disabled={!extractUrl}
-                    icon={<Download className="h-4 w-4" />}
-                    className="sm:mb-0"
-                  >
-                    {extracting ? 'Reading' : 'Extract'}
-                  </Button>
-                </div>
-                <div className="flex flex-wrap items-center gap-3 border-t border-rule pt-3">
-                  <label className={buttonClassName({ className: 'cursor-pointer' })} aria-busy={readingPhoto || undefined}>
-                    <ScanText className="h-4 w-4" aria-hidden="true" />
-                    {readingPhoto ? 'Reading the page' : 'Photograph a page'}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      capture="environment"
-                      className="sr-only"
-                      disabled={readingPhoto}
-                      onChange={(e) => {
-                        void handlePhoto(e.target.files?.[0]);
-                        e.target.value = '';
-                      }}
-                    />
-                  </label>
-                  <span className="text-sm text-ink-muted">A cookbook page or a recipe card, read into the form.</span>
-                </div>
-                <AiAllowance />
+            <div className="flex flex-col gap-4 pt-3">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                <Field
+                  label="Recipe URL"
+                  type="url"
+                  className="flex-1"
+                  placeholder="https://www.allrecipes.com/..."
+                  value={extractUrl}
+                  onChange={(e) => setExtractUrl(e.target.value)}
+                  disabled={extracting}
+                  error={extractError || undefined}
+                />
+                <Button onClick={handleExtract} busy={extracting} disabled={!extractUrl} icon={<Download className="h-4 w-4" aria-hidden="true" />}>
+                  {extracting ? 'Reading' : 'Read the page'}
+                </Button>
               </div>
-            ) : (
-              <p className="text-sm text-ink-muted">
-                Start from a page on the web instead of a blank form.
-              </p>
-            )}
-          </Panel>
+              <div className="flex flex-col gap-2">
+                <TextArea
+                  label="Or paste the recipe's text"
+                  prose
+                  rows={3}
+                  value={pastedText}
+                  onChange={(e) => setPastedText(e.target.value)}
+                  placeholder="Copied from an email, a note, a message…"
+                />
+                <Button className="self-start" onClick={handlePastedText} busy={isRestructuring} disabled={!pastedText.trim()} icon={<Sparkles className="h-4 w-4" aria-hidden="true" />}>
+                  Tidy it into a recipe
+                </Button>
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <label className={buttonClassName({ className: 'cursor-pointer' })} aria-busy={readingPhoto || undefined}>
+                  <ScanText className="h-4 w-4" aria-hidden="true" />
+                  {readingPhoto ? 'Reading the page' : 'Photograph a page'}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    className="sr-only"
+                    disabled={readingPhoto}
+                    onChange={(e) => {
+                      void handlePhoto(e.target.files?.[0]);
+                      e.target.value = '';
+                    }}
+                  />
+                </label>
+                <span className="text-sm text-ink-muted">A cookbook page or a recipe card, read into the form.</span>
+              </div>
+              <AiAllowance />
+            </div>
+          </Disclosure>
         ) : null}
 
         <BasicInfoForm
@@ -572,29 +612,17 @@ export default function RecipeEditor() {
           id={id}
         />
 
-        <Panel
-          title={`Ingredients · ${recipe.ingredients.length}`}
-          flush
-          actions={
-            <Button
-              icon={<Plus className="h-4 w-4" />}
-              onClick={() =>
-                setRecipe({
-                  ...recipe,
-                  ingredients: [...recipe.ingredients, { name: '', quantity: null, unit: '' }],
-                })
-              }
-            >
-              Add row
-            </Button>
-          }
-        >
+        <section aria-labelledby="edit-ingredients" className="flex flex-col gap-2">
+          <div className="flex items-baseline justify-between gap-3 border-b border-rule pb-2">
+            <h2 id="edit-ingredients" className="font-title text-xl text-ink">
+              Ingredients
+            </h2>
+            <span className="text-sm text-ink-muted">Paste a whole list into a name and it splits into rows.</span>
+          </div>
           {recipe.ingredients.length === 0 ? (
-            <p className="p-4 text-sm text-ink-muted">
-              Nothing yet. Add a row, or paste the recipe into Lab notes and let Restructure read it.
-            </p>
+            <p className="py-2 text-sm text-ink-muted">Nothing yet. Add one, or paste a list.</p>
           ) : (
-            <ul className="divide-y divide-rule">
+            <ul className="flex flex-col">
               {recipe.ingredients.map((ing, i) => (
                 <li
                   key={i}
@@ -603,218 +631,181 @@ export default function RecipeEditor() {
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={(e) => handleIngredientDrop(e, i)}
                   onDragEnd={() => setDraggedIngredientIdx(null)}
-                  className={cn(
-                    'flex flex-col gap-2 p-3 md:flex-row md:items-end',
-                    draggedIngredientIdx === i && 'opacity-50',
-                  )}
+                  className={cn('flex items-end gap-2 border-b border-rule py-2', draggedIngredientIdx === i && 'opacity-50')}
                 >
-                  {/*
-                    * On a phone the quantity, the unit and the row's controls
-                    * share one line and the ingredient name takes the next, so
-                    * a row is two lines rather than five. Stacking every field
-                    * turned a sixteen-ingredient recipe into a 3,800px scroll.
-                    * `md:contents` dissolves the wrapper at desktop width, where
-                    * the whole row fits on one line.
-                    */}
-                  <div className="flex items-end gap-2 md:contents">
-                    <GripVertical
-                      className="hidden h-4 w-4 shrink-0 cursor-move text-ink-muted md:mb-3.5 md:block"
-                      aria-hidden="true"
-                    />
-                    {/* Both optional: "Salt, to taste" has no amount, and
-                      * "2 eggs" has no unit. Neither is invented. */}
-                    <Field
-                      label={`Quantity ${i + 1}`}
-                      hideLabel
-                      type="number"
-                      inputMode="decimal"
-                      step="any"
-                      className="w-20 shrink-0 md:w-24"
-                      value={ing.quantity ?? ''}
-                      onChange={(e) =>
-                        updateIngredient(i, 'quantity', e.target.value === '' ? null : parseFloat(e.target.value))
-                      }
-                      placeholder="Qty"
-                    />
-                    <Field
-                      label={`Unit ${i + 1}`}
-                      hideLabel
-                      // Real units are words, not symbols: the library has
-                      // "juice of", "cm piece" and "to serve" in this column.
-                      className="min-w-0 flex-1 md:w-32 md:flex-none"
-                      value={ing.unit}
-                      onChange={(e) => updateIngredient(i, 'unit', e.target.value)}
-                      placeholder="Unit"
-                    />
-                  </div>
-
-                  {/*
-                    * The controls ride with the name rather than with the unit:
-                    * three 44px targets beside a unit field left it about 60px
-                    * wide, and this column holds words — "juice of", "cm piece",
-                    * "clove crushed".
-                    */}
-                  <div className="flex items-end gap-2 md:contents">
-                    <Field
-                      label={`Ingredient ${i + 1}`}
-                      hideLabel
-                      required
-                      className="min-w-0 flex-1"
-                      value={ing.name}
-                      onChange={(e) => updateIngredient(i, 'name', e.target.value)}
-                      placeholder="Ingredient name"
-                    />
-                    <div className="flex shrink-0 items-center md:hidden">
-                      <Button
-                        variant="ghost"
-                        onClick={() => moveIngredient(i, -1)}
-                        aria-label={`Move ingredient ${i + 1} up`}
-                      >
-                        <ArrowUp className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        onClick={() => moveIngredient(i, 1)}
-                        aria-label={`Move ingredient ${i + 1} down`}
-                      >
-                        <ArrowDown className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        onClick={() => removeIngredient(i)}
-                        aria-label={`Remove ingredient ${i + 1}`}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    onClick={() => removeIngredient(i)}
-                    aria-label={`Remove ingredient ${i + 1}`}
-                    className="hidden md:inline-flex"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Panel>
-
-        <Panel
-          title={`Method · ${recipe.instructions.length}`}
-          flush
-          actions={
-            <Button
-              icon={<Plus className="h-4 w-4" />}
-              onClick={() => setRecipe({ ...recipe, instructions: [...recipe.instructions, ''] })}
-            >
-              Add step
-            </Button>
-          }
-        >
-          {recipe.instructions.length === 0 ? (
-            <p className="p-4 text-sm text-ink-muted">
-              No steps yet. The step row on the cookbook tile reads these, so the phases a recipe
-              proves come from the words used here.
-            </p>
-          ) : (
-            <ul className="divide-y divide-rule">
-              {recipe.instructions.map((step, i) => (
-                <li
-                  key={i}
-                  draggable
-                  onDragStart={() => setDraggedInstructionIdx(i)}
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={(e) => handleInstructionDrop(e, i)}
-                  onDragEnd={() => setDraggedInstructionIdx(null)}
-                  className={cn('flex flex-col gap-2 p-3', draggedInstructionIdx === i && 'opacity-50')}
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <GripVertical
-                        className="hidden h-4 w-4 shrink-0 cursor-move text-ink-muted md:block"
-                        aria-hidden="true"
-                      />
-                      <span className="ui-label text-ink">Step {i + 1}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        onClick={() => moveInstruction(i, -1)}
-                        aria-label={`Move step ${i + 1} up`}
-                      >
-                        <ArrowUp className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        onClick={() => moveInstruction(i, 1)}
-                        aria-label={`Move step ${i + 1} down`}
-                      >
-                        <ArrowDown className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        onClick={() => removeInstruction(i)}
-                        aria-label={`Remove step ${i + 1}`}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-
-                  <TextArea
-                    label={`Step ${i + 1} text`}
-                    hideLabel
-                    prose
-                    required
-                    rows={3}
-                    value={step}
-                    onChange={(e) => updateInstruction(i, e.target.value)}
-                    placeholder="Describe step..."
+                  <GripVertical className="mb-3.5 hidden h-4 w-4 shrink-0 cursor-move text-ink-muted md:block" aria-hidden="true" />
+                  {/* Both optional: "Salt, to taste" has no amount, and "2 eggs" has no unit. */}
+                  <AmountField
+                    label={`Amount ${i + 1}`}
+                    value={ing.quantity}
+                    onChange={(q) => updateIngredient(i, 'quantity', q)}
                   />
-
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    {(recipe.instructionLinks || [])
-                      .filter((l) => l.stepIndex === i)
-                      .map((link, lidx) => (
-                        <span
-                          key={lidx}
-                          className="ui-label flex items-center gap-1.5 rounded-control border border-rule px-2 py-1 text-ink"
-                        >
-                          <LinkIcon className="h-3 w-3" aria-hidden="true" /> {link.recipeTitle}
-                          <button
-                            type="button"
-                            onClick={() => removeSubRecipe(i, link.recipeId)}
-                            aria-label={`Unlink ${link.recipeTitle} from step ${i + 1}`}
-                            className="text-ink-muted transition-colors hover:text-ink"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                        </span>
-                      ))}
-                    <Button variant="ghost" onClick={() => setLinkingStepIdx(i)}>
-                      <Plus className="h-3 w-3" /> Link recipe
-                    </Button>
-                  </div>
+                  <Field
+                    label={`Unit ${i + 1}`}
+                    hideLabel
+                    className="w-20 shrink-0 sm:w-28"
+                    value={ing.unit}
+                    onChange={(e) => updateIngredient(i, 'unit', e.target.value)}
+                    placeholder="Unit"
+                  />
+                  <Field
+                    label={`Ingredient ${i + 1}`}
+                    hideLabel
+                    required
+                    className="min-w-0 flex-1"
+                    value={ing.name}
+                    onChange={(e) => updateIngredient(i, 'name', e.target.value)}
+                    onPaste={(e) => {
+                      const rows = parseIngredientBlock(e.clipboardData.getData('text'));
+                      if (!rows) return;
+                      e.preventDefault();
+                      const next = [...recipe.ingredients];
+                      next.splice(i, 1, ...rows);
+                      setRecipe({ ...recipe, ingredients: next });
+                    }}
+                    placeholder="Ingredient"
+                  />
+                  <RowMenu
+                    label={`Ingredient ${i + 1}`}
+                    onUp={() => moveIngredient(i, -1)}
+                    onDown={() => moveIngredient(i, 1)}
+                    onRemove={() => removeIngredient(i)}
+                  />
                 </li>
               ))}
             </ul>
           )}
-        </Panel>
+          <Button
+            variant="ghost"
+            className="self-start"
+            icon={<Plus className="h-4 w-4" aria-hidden="true" />}
+            onClick={() => setRecipe({ ...recipe, ingredients: [...recipe.ingredients, { name: '', quantity: null, unit: '' }] })}
+          >
+            Add an ingredient
+          </Button>
+        </section>
 
-        <Panel title="Lab notes">
+        <section aria-labelledby="edit-method" className="flex flex-col gap-2">
+          <div className="flex items-baseline justify-between gap-3 border-b border-rule pb-2">
+            <h2 id="edit-method" className="font-title text-xl text-ink">
+              Method
+            </h2>
+          </div>
+          {recipe.instructions.length === 0 ? (
+            <p className="py-2 text-sm text-ink-muted">No steps yet.</p>
+          ) : (
+            <ul className="flex flex-col">
+              {recipe.instructions.map((step, i) => {
+                const heading = sectionHeading(step);
+                const number = stepNumbers[i] ?? i + 1;
+                return (
+                  <li
+                    key={i}
+                    draggable
+                    onDragStart={() => setDraggedInstructionIdx(i)}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={(e) => handleInstructionDrop(e, i)}
+                    onDragEnd={() => setDraggedInstructionIdx(null)}
+                    className={cn('flex flex-col gap-2 border-b border-rule py-3', draggedInstructionIdx === i && 'opacity-50')}
+                  >
+                    <div className="flex items-start gap-2">
+                      <GripVertical className="mt-3 hidden h-4 w-4 shrink-0 cursor-move text-ink-muted md:block" aria-hidden="true" />
+                      {heading !== null ? (
+                        <Field
+                          label={`Section heading, line ${i + 1}`}
+                          className="min-w-0 flex-1"
+                          value={heading}
+                          onChange={(e) => updateInstruction(i, `--- ${e.target.value} ---`)}
+                          hint="A heading for the steps that follow."
+                        />
+                      ) : (
+                        <>
+                          <span aria-hidden="true" className="font-title mt-2 w-6 shrink-0 text-lg text-ink-muted">
+                            {number}
+                          </span>
+                          <TextArea
+                            label={`Step ${number ?? i + 1} text`}
+                            hideLabel
+                            prose
+                            required
+                            rows={2}
+                            className="min-w-0 flex-1"
+                            value={step}
+                            onChange={(e) => updateInstruction(i, e.target.value)}
+                            placeholder="What to do"
+                          />
+                        </>
+                      )}
+                      <RowMenu
+                        label={heading !== null ? `Heading “${heading}”` : `Step ${number}`}
+                        onUp={() => moveInstruction(i, -1)}
+                        onDown={() => moveInstruction(i, 1)}
+                        onRemove={() => removeInstruction(i)}
+                        onLink={heading !== null ? undefined : () => setLinkingStepIdx(i)}
+                      />
+                    </div>
+                    {(recipe.instructionLinks || []).some((l) => l.stepIndex === i) ? (
+                      <div className="ml-8 flex flex-wrap items-center gap-1.5">
+                        {(recipe.instructionLinks || [])
+                          .filter((l) => l.stepIndex === i)
+                          .map((link, lidx) => (
+                            <span key={lidx} className="flex items-center gap-1 rounded-full bg-paper-tonal py-0.5 pl-3 text-sm text-ink">
+                              <LinkIcon className="h-3.5 w-3.5" aria-hidden="true" />
+                              See also: {link.recipeTitle}
+                              <button
+                                type="button"
+                                onClick={() => removeSubRecipe(i, link.recipeId)}
+                                aria-label={`Unlink ${link.recipeTitle} from step ${number}`}
+                                className="pressable flex h-8 w-8 items-center justify-center rounded-full text-ink-muted hover:text-ink"
+                              >
+                                <X className="h-3.5 w-3.5" aria-hidden="true" />
+                              </button>
+                            </span>
+                          ))}
+                      </div>
+                    ) : null}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+          <div className="flex flex-wrap gap-1">
+            <Button variant="ghost" icon={<Plus className="h-4 w-4" aria-hidden="true" />} onClick={() => setRecipe({ ...recipe, instructions: [...recipe.instructions, ''] })}>
+              Add a step
+            </Button>
+            <Button
+              variant="ghost"
+              icon={<Heading className="h-4 w-4" aria-hidden="true" />}
+              onClick={() => setRecipe({ ...recipe, instructions: [...recipe.instructions, '--- New section ---'] })}
+            >
+              Add a heading
+            </Button>
+          </div>
+        </section>
+
+        <section aria-labelledby="edit-notes" className="flex flex-col gap-2">
+          <h2 id="edit-notes" className="font-title border-b border-rule pb-2 text-xl text-ink">
+            Notes to yourself
+          </h2>
           <TextArea
-            label="Lab notes and iterations"
+            label="Notes to yourself"
             hideLabel
-            rows={6}
+            prose
+            rows={3}
             value={recipe.labNotes || ''}
             onChange={(e) => setRecipe({ ...recipe, labNotes: e.target.value })}
             placeholder="Used rosemary instead of thyme. Next time: half the salt."
-            hint="Not shown while baking. Notes to yourself, and the raw text Restructure reads."
+            hint="Not shown while cooking. Also the raw text that Tidy up with AI reads."
           />
-        </Panel>
+        </section>
+      </div>
+
+      <aside aria-label="Preview" className="hidden xl:block">
+        <div className="sticky top-20 flex max-h-[calc(100vh-7rem)] flex-col gap-3 overflow-y-auto rounded-sheet border border-rule bg-paper-raised p-5">
+          <p className="ui-label">As it will read</p>
+          <RecipePreview recipe={recipe} />
+        </div>
+      </aside>
       </div>
 
       <AiGateSheet open={aiGate !== null} feature={aiGate ?? ''} onClose={() => setAiGate(null)} />
@@ -958,27 +949,120 @@ export default function RecipeEditor() {
         )}
       </Sheet>
 
-      <Sheet
-        open={confirmingDelete}
-        onClose={() => setConfirmingDelete(false)}
-        title="Delete recipe"
-        size="sm"
-        footer={
-          <>
-            <Button variant="secondary" onClick={() => setConfirmingDelete(false)}>
-              Keep
-            </Button>
-            <Button variant="danger" onClick={handleDelete}>
-              Delete
-            </Button>
-          </>
-        }
-      >
-        <p className="text-sm text-ink">
-          Delete “{recipe.title || 'this recipe'}”? Its bake logs stay, but the recipe itself cannot
-          be recovered.
-        </p>
-      </Sheet>
     </form>
+  );
+}
+/** An amount typed as a cook writes it ("1½", "2/3") and kept as a number. */
+function AmountField({ label, value, onChange }: { label: string; value: number | null; onChange: (q: number | null) => void }) {
+  const [text, setText] = useState(() => amountForField(value));
+  const [focused, setFocused] = useState(false);
+  // Follow the stored value when it changes from elsewhere (an import, Tidy up), not while typing.
+  useEffect(() => {
+    if (!focused) setText(amountForField(value));
+  }, [value, focused]);
+  return (
+    <Field
+      label={label}
+      hideLabel
+      inputMode="text"
+      className="w-16 shrink-0 sm:w-20"
+      value={text}
+      onFocus={() => setFocused(true)}
+      onChange={(e) => {
+        setText(e.target.value);
+        onChange(parseAmount(e.target.value));
+      }}
+      onBlur={() => {
+        setFocused(false);
+        setText(amountForField(parseAmount(text)));
+      }}
+      placeholder="Amt"
+    />
+  );
+}
+
+/** A row's controls in one ⋯: move, link a sub-recipe, remove. Keeps the row to its fields. */
+function RowMenu({
+  label,
+  onUp,
+  onDown,
+  onRemove,
+  onLink,
+}: {
+  label: string;
+  onUp: () => void;
+  onDown: () => void;
+  onRemove: () => void;
+  onLink?: () => void;
+}) {
+  return (
+    <Menu
+      label={`${label} options`}
+      align="right"
+      trigger={(props) => (
+        <button
+          type="button"
+          {...props}
+          aria-label={`${label}: move, link or remove`}
+          className="pressable inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-ink-muted hover:bg-paper-sunk hover:text-ink"
+        >
+          <MoreVertical className="h-5 w-5" aria-hidden="true" />
+        </button>
+      )}
+    >
+      <MenuItem onSelect={onUp}>
+        <ArrowUp className="h-4 w-4" aria-hidden="true" /> Move up
+      </MenuItem>
+      <MenuItem onSelect={onDown}>
+        <ArrowDown className="h-4 w-4" aria-hidden="true" /> Move down
+      </MenuItem>
+      {onLink ? (
+        <MenuItem onSelect={onLink}>
+          <LinkIcon className="h-4 w-4" aria-hidden="true" /> Link a recipe to it
+        </MenuItem>
+      ) : null}
+      <MenuItem onSelect={onRemove}>
+        <Trash2 className="h-4 w-4" aria-hidden="true" /> Remove
+      </MenuItem>
+    </Menu>
+  );
+}
+
+/** The live preview beside the form on a desktop: the recipe as the page will print it. */
+function RecipePreview({ recipe }: { recipe: Draft<Recipe> }) {
+  const sections = printedSections(recipe.instructions);
+  return (
+    <div className="flex flex-col gap-4">
+      <p className="font-title text-2xl leading-tight text-ink">{recipe.title || 'Untitled recipe'}</p>
+      {recipe.description ? <p className="font-prose italic text-ink-2">{headnote(recipe.description)}</p> : null}
+      <p className="text-sm text-ink-muted">{factsLine(recipe)}</p>
+      <div>
+        <p className="font-title border-b border-rule pb-1 text-lg text-ink">Ingredients</p>
+        <ul>
+          {recipe.ingredients.map((ing, i) => (
+            <li key={i} className="flex gap-3 border-b border-rule py-1.5 text-[0.9375rem]">
+              <span className="w-16 shrink-0 font-semibold tabular-nums">{friendlyAmountText(ing.quantity, ing.unit)}</span>
+              <span className="font-prose">{cleanText(ing.name)}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+      <div>
+        <p className="font-title border-b border-rule pb-1 text-lg text-ink">Method</p>
+        {sections.map((s, si) => (
+          <div key={si}>
+            {s.heading ? <p className="font-title mt-2 italic text-ink-2">{s.heading}</p> : null}
+            <ol>
+              {s.steps.map((st) => (
+                <li key={st.index} className="flex gap-2 py-1.5 text-[0.9375rem]">
+                  <span className="font-title w-5 shrink-0 text-ink-muted">{st.number}</span>
+                  <span className="font-prose">{st.text}</span>
+                </li>
+              ))}
+            </ol>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }

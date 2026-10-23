@@ -14,6 +14,7 @@ export const SETTINGS_KEYS = {
   waveToAdvance: 'waveToAdvance',
   defaultBakersMath: 'defaultBakersMath',
   theme: 'theme',
+  handwriting: 'handwritingNotes',
 } as const;
 
 /** Preferences that stay on until explicitly switched off. */
@@ -26,3 +27,10 @@ export const hapticsEnabled = () => readEnabledByDefault(SETTINGS_KEYS.haptics);
 export const ttsEnabled = () => readEnabledByDefault(SETTINGS_KEYS.tts);
 export const voiceCommandsEnabled = () => readDisabledByDefault(SETTINGS_KEYS.voiceCommands);
 export const waveToAdvanceEnabled = () => readDisabledByDefault(SETTINGS_KEYS.waveToAdvance);
+export const handwritingEnabled = () => readDisabledByDefault(SETTINGS_KEYS.handwriting);
+
+/** Sets bake notes in the handwriting face, or back in the reading face (change 18). */
+export function applyHandwriting(on: boolean) {
+  if (on) document.documentElement.dataset.hand = 'on';
+  else delete document.documentElement.dataset.hand;
+}

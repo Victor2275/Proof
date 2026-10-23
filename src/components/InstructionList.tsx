@@ -24,11 +24,13 @@ export interface InstructionListProps {
   /** The most recent note for each step, keyed by its index in `instructions`. */
   marginNotes?: Map<number, StepNote>;
   onOpenSubRecipe?: (recipeId: string) => void;
+  /** The cookbook's own recipe: its step timers then lead back to baking mode. */
+  recipeId?: string;
 }
 
 const shortDate = (iso: string) => new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 
-export default function InstructionList({ recipe, marginNotes, onOpenSubRecipe }: InstructionListProps) {
+export default function InstructionList({ recipe, marginNotes, onOpenSubRecipe, recipeId }: InstructionListProps) {
   const sections = useMemo(() => printedSections(recipe.instructions), [recipe.instructions]);
 
   return (
@@ -56,7 +58,11 @@ export default function InstructionList({ recipe, marginNotes, onOpenSubRecipe }
                     </span>
                     <p className="font-prose min-w-0 flex-1 text-[1.0625rem] leading-relaxed text-ink">
                       <span className="sr-only">Step {step.number}. </span>
-                      <StepText text={step.text} name={`Step ${step.number}`} />
+                      <StepText
+                        text={step.text}
+                        name={`Step ${step.number}`}
+                        from={recipeId ? { recipeId, step: step.number } : undefined}
+                      />
                     </p>
                   </div>
                   {note ? (

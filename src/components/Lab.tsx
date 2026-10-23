@@ -32,6 +32,7 @@ import {
   Ribbon,
   LetterRail,
   Sparkline,
+  Switch,
 } from './ui';
 import { derivePhases } from '../lib/phases';
 import AIReviewSheet from './AIReviewSheet';
@@ -88,6 +89,7 @@ export default function Lab() {
   const [activeStep, setActiveStep] = useState(3);
   const [engaged, setEngaged] = useState(false);
   const [favourite, setFavourite] = useState(false);
+  const [switchOn, setSwitchOn] = useState(true);
   const [view, setView] = useState<'chapters' | 'az'>('chapters');
   const [sheet, setSheet] = useState<'center' | 'bottom' | 'detents' | null>(null);
   const toast = useToast();
@@ -228,6 +230,13 @@ export default function Lab() {
           </Select>
           <TextArea label="Notes" rows={3} placeholder="Half the salt next time." />
           <TextArea label="Step" prose rows={3} defaultValue="Shape into a boule and rest." />
+        </div>
+      </Section>
+
+      <Section name="Switch">
+        <div className="max-w-md divide-y divide-rule">
+          <Switch label="Spoken timers" description="Say a timer's name aloud when it ends." checked={switchOn} onChange={setSwitchOn} />
+          <Switch label="Handwritten notes" checked={!switchOn} onChange={(on) => setSwitchOn(!on)} />
         </div>
       </Section>
 

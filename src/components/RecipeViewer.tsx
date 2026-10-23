@@ -22,6 +22,7 @@ import { bakePhotoUrls } from '../lib/bakePhotos';
 import { baseServings } from '../lib/facts';
 import { ingredientsAsText, recipeAsText, systemShare } from '../lib/share';
 import RecipeHeader from './RecipeHeader';
+import EditInPlace from './EditInPlace';
 import IngredientList from './IngredientList';
 import InstructionList from './InstructionList';
 import { LastTimeCard, YourBakes } from './RecipeBakes';
@@ -100,6 +101,7 @@ export default function RecipeViewer() {
   const [publishOpen, setPublishOpen] = useState(false);
   const [planOpen, setPlanOpen] = useState(false);
   const [subRecipeId, setSubRecipeId] = useState<string | null>(null);
+  const [editingHere, setEditingHere] = useState(false);
   const [substitute, setSubstitute] = useState<string | null>(null);
   const [cardFor, setCardFor] = useState<BakeLog | null | undefined>(undefined);
   const startRef = useRef<HTMLAnchorElement>(null);
@@ -326,7 +328,8 @@ export default function RecipeViewer() {
               </button>
             )}
           >
-            {own ? <MenuItem to={`/edit/${own._id}`}>Edit</MenuItem> : null}
+            {own ? <MenuItem onSelect={() => setEditingHere(true)}>Edit here</MenuItem> : null}
+            {own ? <MenuItem to={`/edit/${own._id}`}>Full editor</MenuItem> : null}
             {own ? <MenuItem onSelect={() => setPlanOpen(true)}>Plan this bake</MenuItem> : null}
             <MenuItem onSelect={copyIngredients}>Copy ingredients</MenuItem>
             <MenuItem onSelect={() => window.print()}>Print</MenuItem>
@@ -338,7 +341,9 @@ export default function RecipeViewer() {
         </div>
       </div>
 
-      <div id="recipe-export-node" className="bg-paper">
+      {own && editingHere ? <EditInPlace recipe={own} onDone={() => setEditingHere(false)} /> : null}
+
+      <div id="recipe-export-node" className={editingHere ? 'hidden' : 'bg-paper'}>
         <div className="grid grid-cols-1 gap-x-16 gap-y-8 @4xl:grid-cols-[minmax(0,27rem)_minmax(0,1fr)] print:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)] print:gap-x-8">
           {/* The left page. */}
           <div className="flex min-w-0 flex-col gap-6">
@@ -427,7 +432,7 @@ export default function RecipeViewer() {
 
           {/* The right page. */}
           <div className="min-w-0">
-            <InstructionList recipe={recipe} marginNotes={marginNotes} onOpenSubRecipe={setSubRecipeId} />
+            <InstructionList recipe={recipe} marginNotes={marginNotes} onOpenSubRecipe={setSubRecipeId} recipeId={own?._id} />
           </div>
         </div>
 

@@ -17,8 +17,8 @@ import { pinEnvironment, useTheme } from './fixtures';
 const SURFACES = [
   { name: 'dashboard', path: '/', settle: 'text=72-Hour Sourdough' },
   { name: 'recipe-viewer', path: '/recipe/r-sourdough', settle: 'text=Ingredients' },
-  { name: 'editor', path: '/edit/r-sourdough', settle: 'text=Identity' },
-  { name: 'editor-new', path: '/new', settle: 'text=Import from a URL' },
+  { name: 'editor', path: '/edit/r-sourdough', settle: 'h2#edit-method' },
+  { name: 'editor-new', path: '/new', settle: 'text=Start from a link, text or a photograph' },
   { name: 'notes', path: '/notes', settle: 'text=The bench notebook' },
   { name: 'settings', path: '/settings', settle: 'text=Appearance' },
   { name: 'bakes', path: '/bakes', settle: 'body' },
@@ -26,10 +26,10 @@ const SURFACES = [
   { name: 'cookbook-index', path: '/?view=az', settle: 'nav[aria-label="Jump to a letter"]' },
   { name: 'cookbook-chapter', path: '/?chapter=Breads', settle: 'h1:has-text("Breads")' },
   { name: 'shop', path: '/shop', settle: 'text=To buy' },
-  { name: 'shop-cupboard', path: '/shop?view=cupboard', settle: 'text=Add to stock' },
-  { name: 'not-found', path: '/no-such-page', settle: 'text=Nothing at this address' },
+  { name: 'shop-cupboard', path: '/shop?view=cupboard', settle: 'text=Add to the cupboard' },
+  { name: 'not-found', path: '/no-such-page', settle: "text=That page isn't in this book." },
   { name: 'shared-recipe', path: '/r/prawn-stir-fry', settle: 'text=Save to my cookbook' },
-  { name: 'discover', path: '/discover', settle: 'text=2 recipes' },
+  { name: 'discover', path: '/discover', settle: 'text=Prawn Stir-Fry' },
   { name: 'profile', path: '/@proof', settle: 'text=The library this cookbook started from.' },
 ] as const;
 
@@ -131,9 +131,10 @@ test.describe('overlays', () => {
       await useTheme(page, 'dark');
       await pinEnvironment(page);
       await page.goto('/edit/r-sourdough');
-      await settle(page, 'text=Identity');
+      await settle(page, 'h2#edit-method');
 
-      await page.getByRole('button', { name: /Link recipe/i }).first().click();
+      await page.getByRole('button', { name: 'Step 1: move, link or remove' }).click();
+      await page.getByRole('menuitem', { name: 'Link a recipe to it' }).click();
       await expect(page.getByRole('dialog')).toBeVisible();
 
       await expect(page).toHaveScreenshot('sheet-link-dark.png');

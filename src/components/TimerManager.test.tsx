@@ -1,6 +1,6 @@
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import TimerManager from './TimerManager';
 import { setAccount, type Account } from '../lib/session';
 import { OPEN_TIMERS_EVENT } from '../lib/timerBus';
@@ -8,6 +8,8 @@ import { OPEN_TIMERS_EVENT } from '../lib/timerBus';
 const socket = vi.hoisted(() => ({ on: vi.fn(), off: vi.fn(), emit: vi.fn(), disconnect: vi.fn() }));
 vi.mock('socket.io-client', () => ({ io: () => socket }));
 vi.mock('@capacitor/haptics', () => ({ Haptics: { impact: vi.fn() }, ImpactStyle: { Heavy: 'HEAVY' } }));
+const navigate = vi.hoisted(() => vi.fn());
+vi.mock('react-router-dom', async () => ({ ...(await vi.importActual('react-router-dom')), useNavigate: () => navigate }));
 
 const askForTimer = () =>
   act(() => {
@@ -96,5 +98,81 @@ describe('TimerManager start prompt', () => {
     await user.keyboard('{Escape}');
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     expect(socket.emit).not.toHaveBeenCalledWith('timer:add', expect.anything());
+  });
+});
+
+describe('a timer that leads back to its step (change 31)', () => {
+  const notes: { title: string; body?: string; onclick: (() => void) | null; close: () => void }[] = [];
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    localStorage.clear();
+    setAccount(null);
+    notes.length = 0;
+    class FakeNotification {
+      static permission = 'granted';
+      static requestPermission = vi.fn();
+      onclick: (() => void) | null = null;
+      close = vi.fn();
+      constructor(title: string, options?: { body?: string }) {
+        notes.push(Object.assign(this, { title, body: options?.body }));
+      }
+    }
+    vi.stubGlobal('Notification', FakeNotification);
+    vi.stubGlobal('Audio', class { play = () => Promise.resolve(); });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  const ring = (timer: Record<string, unknown>) => {
+    vi.useFakeTimers();
+    localStorage.setItem(
+      'proof.timers',
+      JSON.stringify([{ id: 't1', endTime: Date.now() - 1, remainingMs: 0, hasRung: false, ...timer }]),
+    );
+    render(<TimerManager />);
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+  };
+
+  it('says what is up and, pressed, opens baking mode at that step', () => {
+    ring({ name: 'Step 4 · 12 min', from: { recipeId: 'r1', step: 4 } });
+    expect(notes).toHaveLength(1);
+    expect(notes[0]).toMatchObject({ title: 'Step 4 · 12 min is up', body: 'Tap to go back to step 4.' });
+    const focus = vi.spyOn(window, 'focus').mockImplementation(() => {});
+    notes[0].onclick!();
+    expect(focus).toHaveBeenCalled();
+    expect(navigate).toHaveBeenCalledWith('/recipe/r1/bake?step=4');
+    expect(notes[0].close).toHaveBeenCalled();
+  });
+
+  it('has nowhere to lead for a timer with no step', () => {
+    ring({ name: 'Proof' });
+    expect(notes[0]).toMatchObject({ title: 'Proof is up', onclick: null });
+  });
+
+  it("keeps where a timer came from across a server sync, and never sends it", async () => {
+    setAccount('token', ACCOUNT);
+    render(<TimerManager />);
+    act(() => {
+      window.dispatchEvent(
+        new CustomEvent('add-timer', {
+          detail: { durationSecs: 60, name: 'Step 2 · 1 min', forceStart: true, from: { recipeId: 'r1', step: 2 } },
+        }),
+      );
+    });
+    const sent = socket.emit.mock.calls.find((c) => c[0] === 'timer:add')![1];
+    expect(sent).not.toHaveProperty('from');
+
+    const sync = socket.on.mock.calls.find((c) => c[0] === 'timers:sync')![1];
+    act(() => sync([sent]));
+    await waitFor(() =>
+      expect(JSON.parse(localStorage.getItem('proof.timers')!)[0].from).toEqual({ recipeId: 'r1', step: 2 }),
+    );
+    setAccount(null);
   });
 });

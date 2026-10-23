@@ -18,6 +18,11 @@ describe('ulid', () => {
     expect(isUlid('01ARZ3NDEKTSV4RRFFQ69G5FAI')).toBe(false); // I is not Crockford
   });
 
+  it('sorts in the order made, even within one millisecond', () => {
+    const ids = Array.from({ length: 50 }, () => ulid(1_700_000_000_123));
+    expect([...ids].sort()).toEqual(ids);
+  });
+
   it('does not repeat itself within a millisecond', () => {
     const ids = new Set(Array.from({ length: 1000 }, () => ulid(1_700_000_000_000)));
     expect(ids.size).toBe(1000);

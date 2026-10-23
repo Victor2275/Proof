@@ -1,6 +1,6 @@
 import { Fragment } from 'react';
 import { Timer } from 'lucide-react';
-import { findTimers, startTimer } from '../lib/stepTimers';
+import { findTimers, startTimer, type TimerOrigin } from '../lib/stepTimers';
 import { haptic } from '../lib/haptics';
 
 /*
@@ -10,9 +10,9 @@ import { haptic } from '../lib/haptics';
  * wash with a small clock — rather than a box that breaks the line. Butter is
  * the timer's colour everywhere. Pressing it starts the timer at once, named
  * for the step and the phrase, and the pill at the top of the screen takes it
- * from there.
+ * from there. Given `from`, its notification opens baking mode at this step.
  */
-export default function StepText({ text, name }: { text: string; name: string }) {
+export default function StepText({ text, name, from }: { text: string; name: string; from?: TimerOrigin }) {
   const timers = findTimers(text);
   if (timers.length === 0) return <>{text}</>;
 
@@ -26,7 +26,7 @@ export default function StepText({ text, name }: { text: string; name: string })
         type="button"
         onClick={() => {
           haptic('light');
-          startTimer(t.seconds, `${name} · ${t.label}`);
+          startTimer(t.seconds, `${name} · ${t.label}`, { from });
         }}
         aria-label={`Start a ${t.label} timer`}
         className="pressable mx-0.5 inline-flex items-baseline gap-1 rounded-full bg-butter px-2 align-baseline text-on-butter hover:brightness-95 print:bg-transparent print:px-0"

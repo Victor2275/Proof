@@ -9,6 +9,34 @@
  */
 const ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ'; // Crockford base32
 
+/*
+ * Monotonic within a millisecond: two records made in the same millisecond
+ * (a recipe's missing ingredients added to Shop at once) get ids that sort in
+ * the order they were made, by incrementing the last random part rather than
+ * drawing a fresh one. Lists that tie on `createdAt` break the tie by `_id`.
+ */
+let lastTime = -1;
+let lastRandom: number[] = [];
+
+function freshRandom(): number[] {
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (b) => b % 32);
+}
+
+/** The next value of a base32 digit string; null on the (80-bit) overflow. */
+function increment(digits: number[]): number[] | null {
+  const next = [...digits];
+  for (let i = next.length - 1; i >= 0; i--) {
+    if (next[i] < 31) {
+      next[i]++;
+      return next;
+    }
+    next[i] = 0;
+  }
+  return null;
+}
+
 export function ulid(now: number = Date.now()): string {
   let time = '';
   let t = now;
@@ -16,11 +44,10 @@ export function ulid(now: number = Date.now()): string {
     time = ALPHABET[t % 32] + time;
     t = Math.floor(t / 32);
   }
-  const bytes = new Uint8Array(16);
-  crypto.getRandomValues(bytes);
-  let random = '';
-  for (let i = 0; i < 16; i++) random += ALPHABET[bytes[i] % 32];
-  return time + random;
+  const random = (now === lastTime && increment(lastRandom)) || freshRandom();
+  lastTime = now;
+  lastRandom = random;
+  return time + random.map((d) => ALPHABET[d]).join('');
 }
 
 export const isUlid = (value: unknown): value is string =>

@@ -33,12 +33,10 @@ The bake log lives on its recipe: see section 18.
 - [ ] **AI Recipe Extraction**: URL → structured recipe via Gemini.
 - [ ] **AI Recipe Restructuring**: Raw text → structured recipe with diff preview.
 - [ ] **AI Ingredient Substitutions**: Gemini-powered swap suggestions.
-- [ ] **Smart Pantry**: Inventory tracking with pantry-matching on recipes; stock panel with a lit lamp per item, a count in the head, and a named remove control per row.
-- [ ] **Barcode Scanning**: UPC scan to add pantry items.
-- [ ] **Grocery List Generator**: Missing ingredients → shopping list.
-- [ ] **Recipe bank**: a dozen latching keys with a search field; engaged recipes stay visible whatever the search says.
-- [ ] **Checklist**: real checkboxes, strike-through, and a count that decrements as items are ticked.
-- [ ] **Baking Analytics**: Charts for baking habits and history.
+- [ ] **The cupboard**: a thing in the cupboard marks the recipe's ingredient "have it"; see section 21 for the page.
+- [ ] **Barcode Scanning**: UPC scan to add a thing to the cupboard.
+- [ ] **The shopping list**: a recipe's missing ingredients go onto Shop → To buy; see section 21.
+- [ ] **Baking Analytics**: gone; Bakes opens on its summary line instead (section 19).
 - [ ] **Nightly DB Backup (cron)**: JSON backup of MongoDB data.
 - [ ] **Orphaned Image Cleanup**: Cloudinary cleanup via Admin API.
 - [ ] **Offline PWA Engine**: app shell and fonts cached; with the network off the cookbook still opens, edits and saves.
@@ -87,24 +85,20 @@ Replaced by the printed-cookbook recipe page: see section 18.
 - [ ] **Long units**: a unit like "tablespoon heaped" stays inside the quantity column at 375px and does not overlap the name.
 
 ## 6a. Recipe Editor and Notes (Phase 6)
+The editor was rebuilt in the UI overhaul, Phase 6: see section 21.
 - [ ] **Shared `Sheet` primitive**: Tab stays inside an open sheet, Escape closes it, focus returns to the control that opened it, and the page behind does not scroll.
 - [ ] **Sheet stacking**: a sheet opened over another sheet — Escape closes only the top one, and the page stays locked until both are shut.
 - [ ] **`TextArea` and `Select`**: multi-line fields and the difficulty picker match `Field`'s outline, focus signal and error wiring.
-- [ ] **Editor instrument bar**: reports the recipe's name, ingredient count and step count live as they are typed; singular/plural is correct at one.
-- [ ] **Editor controls on a phone**: 44px targets, labels collapse to icons below `sm`, and the bar stays usable at 375px.
 - [ ] **Field-by-field AI review**: only changed fields are drawn; each can be kept or rejected alone; applying takes exactly what was kept.
 - [ ] **AI review with nothing to say**: a model that proposes no change says so rather than showing an empty diff.
 - [ ] **Prep and cook times survive a save**: open a recipe storing `"20 mins"`, confirm the field reads 20, save without touching it, and confirm the value is still there.
 - [ ] **Retyped times normalise**: typing 45 into prep time and saving stores `"45"`, not `"45 mins"`.
-- [ ] **Photographs panel**: Add photographs opens the file dialog from a real button; the empty state names the unlit plate.
 - [ ] **Sub-recipe link search**: the sheet searches rather than listing all 203 recipes, and caps the list.
 - [ ] **Step reordering carries its links**: move a step with a linked sub-recipe and confirm the link moved with it.
-- [ ] **Editor overlays**: AI review, link, crop, past bakes and delete confirmation all behave as sheets.
-- [ ] **Delete asks first**: no `window.confirm`; the sheet's Keep leaves the recipe alone.
 - [ ] **Notes without the markdown editor**: a note is a title field and a textarea, with no toolbar or split pane.
 - [ ] **Notes on a phone**: All notes opens the list as a bottom sheet, and switching notes works at 390px.
-- [ ] **Notes save state**: the head LED lights on an unsaved edit; the Save control appears only when there is something to save, and reads "Saved" otherwise.
-- [ ] **Notes save failure**: with the server unreachable, the typed text stays on screen and the error names the recovery.
+- [ ] **Notes save state**: the Save control appears only when there is something to save, and reads "Saved" otherwise.
+- [ ] **Notes save failure**: with storage blocked, the typed text stays on screen and the error names the recovery.
 
 ## 6b. The selected make, and the viewer's overlays
 Rebuilt as the bake sheet: see section 18.
@@ -112,16 +106,14 @@ Rebuilt as the bake sheet: see section 18.
 - [ ] **Stacked sheets announce separately**: with the log sheet open over a bake, each dialog carries its own name.
 
 ## 7a. Analytics, Settings, Landing, 404 (Phase 7)
-- [ ] **Settings keys latch**: each preference reads ON or OFF, lights when on, and persists across a reload.
-- [ ] **Theme bank**: exactly one of Light/Dark/System is down; picking System forgets the stored preference and follows the device.
-- [ ] **Settings on a phone**: every key is a 44px target at 375px.
+- [ ] **Settings**: see section 21.
+- [ ] **Theme**: exactly one of Light/Dark/System is chosen; picking System forgets the stored preference and follows the device.
 - [ ] **Backup without a PIN**: names the admin PIN as the recovery rather than failing silently.
 - [ ] **Library meter**: 3 of 203 lights one cell, not zero, and shows no orange at the top.
-- [ ] **Analytics load**: a skeleton, not the word "loading", and no long pause from reading the offline store repeatedly.
 - [ ] **Landing**: see section 20.
 - [ ] **Landing has no app chrome**: no top bar, no tab bar, at every width.
 - [ ] **Landing CTA**: "Open my cookbook" enters the app and the landing page does not reappear on the next visit.
-- [ ] **404**: an unlit panel with the seven-segment 404, readable in both themes, linking back to the cookbook.
+- [ ] **404**: see section 21.
 
 ## 7b. Mobile targets and the last alerts
 - [ ] **375px sweep**: no horizontal scroll on the editor, notes, analytics, settings, landing or 404.
@@ -193,7 +185,7 @@ Rebuilt as the bake sheet: see section 18.
 - [ ] **Copy the server library** (operator): brings the server's recipes, bakes, notes and pantry onto the device; a second run adds nothing.
 - [ ] **No offline bar**: going offline adds no strip across the screen.
 - [ ] **Editor never offers a blank form**: `/edit/<unknown id>` says the recipe is not in the cookbook, with no Save or Delete.
-- [ ] **Failed reads named**: a blocked database shows a named failure and Try again in Gallery, Analytics, Grocery and the cookbook, never an empty or zeroed panel.
+- [ ] **Failed reads named**: a blocked database shows a named failure and Try again in Bakes, Shop and the cookbook, never an empty or zeroed panel.
 - [ ] **Photo-less bake**: a bake with no photograph shows in the gallery as an unlit plate and is counted.
 - [ ] **Server library retired**: `POST /api/recipes`, `/api/bakelogs`, `/api/notes`, `/api/pantry` and `/api/upload` answer 404; `GET /api/library` asks for the operator PIN.
 - [ ] **String-id migration**: a dry run against a copy of the database reports the counts and writes nothing; `--apply` backs up first, then every record and reference is a string; a second run reports nothing to do.
@@ -250,7 +242,7 @@ Rebuilt as the bake sheet: see section 18.
 - [ ] **Unpublish**: needs a second press; the page then 404s.
 - [ ] **Rejected**: an operator rejection shows "Held back: <reason>" under the recipe's header.
 - [ ] **LIVE tag**: published recipes, and only those, carry LIVE on the cookbook's tiles.
-- [ ] **Discover**: searches by title and baker, filters by tag, sorts four ways; offline it says it needs a connection.
+- [ ] **Discover**: searches by title and baker, filters by tag, sorts four ways; offline it says it needs a connection (layout: section 21).
 - [ ] **Navigation**: Discover is one of the four destinations; the operator sees Moderation in the avatar menu.
 - [ ] **Profile**: `/@proof` shows the seeded library; `/@nobody` is the 404.
 - [ ] **Ratings**: signed in, rating and "I baked this" update the counts; the author can't rate their own.
@@ -409,3 +401,37 @@ Rebuilt as the bake sheet: see section 18.
 - [ ] **Bake card**: from a bake's sheet, Share card shows the bake's own card first (photo, stars, note, next time); "All 4" adds the recipe page, ingredients and method; Download saves 1080×1350 JPEGs.
 - [ ] **Card paper**: Paper and Night both read; a recipe without a photo gets its drop cap.
 - [ ] **Print**: print a recipe — paper is white, no top bar, tab bar, buttons or bakes; ingredients sit beside the method; "My notes" lines and (for a published recipe) a QR code at the foot.
+
+## 21. UI overhaul — Phase 6: the remaining screens
+- [ ] **Editor form**: `/new` is an open paper form with no panels; the bar shows Back, the name with "N ingredients · N steps" as you type, "Tidy up with AI", Save and ⋯.
+- [ ] **Delete with Undo**: ⋯ → Delete removes the recipe at once and leaves the editor; Undo in the toast brings it back with its photographs.
+- [ ] **More details**: servings, difficulty and times sit behind "More details"; typing 75 into a time shows "1 h 15".
+- [ ] **Chapter**: the folder field reads Chapter; a recipe saved into a new chapter appears under it in the cookbook's Contents.
+- [ ] **Amounts**: typing "1½", "1 1/2" or "2/3" into an amount saves a number and reads back as a fraction; "a pinch" stays in the name.
+- [ ] **Pasted list**: pasting three ingredient lines into one name makes three rows with amount, unit and name split.
+- [ ] **Row menu**: each ingredient and step row's ⋯ moves it up or down, links a recipe to it, or removes it; a `--- Crust ---` line shows as a heading.
+- [ ] **Start from a link, text or a photograph**: the disclosure imports a URL, tidies pasted text with the AI, and opens Photograph a page.
+- [ ] **Two panes**: at 1280px and wider the editor shows "As it will read" beside the form, following each keystroke.
+- [ ] **Edit here**: on your own recipe, ⋯ → Edit here makes the title, headnote, ingredients and steps editable in place; Save keeps the changes, Cancel drops them.
+- [ ] **To buy by aisle**: add flour, milk and frozen peas; they appear under Flour, grains and bread, Dairy and eggs, and Frozen; "zzz" goes under Everything else.
+- [ ] **To buy survives**: leave Shop and come back, and reload; the list is still there.
+- [ ] **Add from a recipe**: pick a recipe; only what is missing from the cupboard and not already listed is added; Undo takes them off.
+- [ ] **Basket**: ticking moves a thing to the basket; Clear ticked empties it; Undo brings it back.
+- [ ] **Share list**: shown only when the list has something on it; shares the list as text (or copies it).
+- [ ] **Cupboard**: In the cupboard shows chips; add one by typing or by barcode, remove one and Undo it.
+- [ ] **Old addresses**: `/grocery` and `/pantry` still open the matching Shop view.
+- [ ] **Discover layout**: one search and Sort; Tags opens a sheet; the chosen tag shows as a chip that removes itself; the first recipe spans the page with its headnote, the rest two to a row.
+- [ ] **Bylines**: a shared recipe that has been baked reads "@handle · baked N times"; one never baked shows only the handle.
+- [ ] **Settings order**: Appearance, While you bake, Your cookbook, Account, Help, then Operator (for the operator).
+- [ ] **Switches**: every on/off is a switch; pressing the words toggles it; a screen reader announces "switch, on/off" with the label alone; each persists across a reload.
+- [ ] **Handwritten notes**: switching it on sets margin notes, bake-sheet notes, baking mode's last-time note and community notes in a handwriting face, with no flash of the old face on reload; off returns them.
+- [ ] **404**: `/nowhere` reads "That page isn't in this book."; searching "rye" opens the cookbook searching rye; "Back to the cookbook" goes home.
+- [ ] **Timer notification copy**: with notifications allowed, a step timer that ends shows "Step N · 12 min is up" and "Tap to go back to step N."
+- [ ] **Timer deep-link**: start a step's timer in baking mode, move to another step or another page, and press the notification when it rings; baking mode opens at the timer's step.
+- [ ] **Deep-link from the recipe page**: a time in a step on your own recipe's page starts a timer whose notification opens baking mode at that step; a shared recipe's timer notification opens nothing.
+- [ ] **Timer origin stays local**: signed in, the timer synced to another device carries no recipe id (check the socket frames); the timer still deep-links on the device that started it.
+- [ ] **Shared photograph**: in Chrome, pressing a tile in your cookbook grows its photo into the recipe page's; Back has no morph; a Discover tile fades.
+- [ ] **Shared photograph, reduced motion**: with reduced motion on, the same press opens the recipe with no morph.
+- [ ] **Shared photograph on Android**: on a mid-range Android phone, the morph runs without visible stutter.
+- [ ] **Same-millisecond records**: "Add missing to Shop" on a recipe with several missing things lists them in the recipe's order every time.
+- [ ] **Component lab**: `/lab` shows the switch, on and off.

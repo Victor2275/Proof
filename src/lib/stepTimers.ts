@@ -39,7 +39,20 @@ export function findTimers(text: string): StepTimer[] {
   return found;
 }
 
-/** Asks TimerManager to start a timer. `ask` puts up its confirmation first. */
-export function startTimer(seconds: number, name: string, { ask = false } = {}): void {
-  window.dispatchEvent(new CustomEvent('add-timer', { detail: { durationSecs: seconds, name, forceStart: !ask } }));
+/** Where a timer was started from, so its notification can lead back there. */
+export interface TimerOrigin {
+  recipeId: string;
+  /** The step's number as printed: 1-based, real steps only. */
+  step: number;
 }
+
+/**
+ * Asks TimerManager to start a timer. `ask` puts up its confirmation first.
+ * `from` is the recipe and step it belongs to (change 31).
+ */
+export function startTimer(seconds: number, name: string, { ask = false, from }: { ask?: boolean; from?: TimerOrigin } = {}): void {
+  window.dispatchEvent(new CustomEvent('add-timer', { detail: { durationSecs: seconds, name, forceStart: !ask, from } }));
+}
+
+/** The address that opens baking mode at a timer's step. */
+export const timerHref = ({ recipeId, step }: TimerOrigin) => `/recipe/${recipeId}/bake?step=${step}`;
