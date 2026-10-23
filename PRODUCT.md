@@ -32,30 +32,28 @@ Recipe apps store recipes. Proof runs the bake and records what happened. The co
 
 - **Kitchen conditions are the default.** Wet or floury hands, device out of reach, screen read at a distance, ambient noise.
 - **Bakes span hours.** Bulk ferment and cold proof cross device sleep, app backgrounding, and sessions. Timers must survive all three (wake lock, native local notifications, speech announcements).
-- **Connectivity is unreliable.** The kitchen may be offline; the PWA service worker caches recipes and images for offline reading, and guest writes fall back to IndexedDB.
+- **Connectivity is unreliable.** The kitchen may be offline. The cookbook lives on the device (IndexedDB) and reads and writes the same with no network; the service worker caches the app shell and fonts.
 - **Multiple devices, one bake.** A timer started on the kitchen tablet is expected to appear on the phone elsewhere in the house.
 - **Two delivery surfaces.** Browser PWA and a Capacitor Android APK sharing one web design language. The wrapper adds hardware access (haptics, camera, local notifications), not a separate native look.
-- **Output leaves the app.** Printable PDFs, 1080x1080 Instagram cards and carousels, grocery lists to clipboard or external list apps, and QR deep links for moving a recipe to a phone.
+- **Output leaves the app.** A printed recipe page, 4:5 (1080×1350) cards for a bake or a recipe, the shopping list shared as text, and QR codes back to a published recipe.
 
 ## Capabilities and Constraints
 
-**Confirmed functionality** (authoritative detail lives in CURRENT_FEATURES.md): recipe CRUD with structured ingredients and folders; fuzzy search; sub-recipe drawers linked from instruction steps; Baking Mode with voice, gesture, and scale control; parsed multi-timer manager with live sync; reverse bake scheduler; bake logs with photos, notes, tags, and Personal Best; smart pantry with barcode scanning; grocery list generation; baking analytics; AI recipe extraction, restructuring, substitutions, photo tagging, and natural-language search; PDF/image/QR export; offline PWA.
+**Confirmed functionality** (authoritative detail lives in CURRENT_FEATURES.md): recipe CRUD with structured ingredients and folders; fuzzy search; sub-recipe drawers linked from instruction steps; Baking Mode with voice, gesture, and scale control; parsed multi-timer manager with live sync; reverse bake scheduler; bake logs with photos, notes, tags, and Personal Best; the cupboard with barcode scanning and a shopping list grouped by aisle (Shop); the Bakes journal with comparison; AI recipe import from a link, pasted text or a photographed page, restructuring and substitutions; print, cards and QR codes; accounts for publishing to a shared cookbook (Discover); offline by design.
 
 **Technical and product constraints:**
 
-- Read operations are public; every write and delete is PIN-gated. Sessions are crypto-random tokens with a 24-hour server-side TTL. No hardcoded secrets.
-- AI endpoints are admin-only and rate-limited, deliberately, to prevent paid-quota abuse.
-- Two operating modes: guest/local (IndexedDB, zero setup, fully offline) and admin cloud (MongoDB + Gemini + Cloudinary).
+- A user's own cookbook lives on the device and needs no account and no PIN. Accounts (email and password, argon2id) are for publishing; `ADMIN_PIN` means the site operator only. Sessions are crypto-random tokens, stored hashed with a TTL. No hardcoded secrets.
+- AI endpoints serve the operator and confirmed accounts as a monthly allowance, and are rate-limited, deliberately, to prevent paid-quota abuse.
+- Local-first: the free tier stores nothing server-side. The server holds only recipes deliberately published to the shared cookbook and, later, paid cloud sync (LAUNCH_PLAN.md).
 - Image storage runs on a free Cloudinary tier; an orphan-cleanup job and nightly JSON DB backup exist because that ceiling is real.
 - Every new feature requires a unit test; E2E is Playwright.
 
-**Terminology to preserve:** Proof - The Kitchen Lab (Baking Mode) - Bake Log - Iteration - Personal Best - Levain - Bulk ferment - Cold proof - Baker's % - Hydration - Pantry - Reverse Bake Schedule.
+**Terminology to preserve:** Proof - The Kitchen Lab (Baking Mode) - Bake Log - Iteration - Personal Best - Levain - Bulk ferment - Cold proof - Baker's % - Hydration - Cupboard - Shop - Chapter - Reverse Bake Schedule.
 
 **Open and conflicting facts — do not resolve silently:**
 
-- **Multi-user is the confirmed destination.** Future work should move toward accounts, per-user data, and onboarding for strangers. This directly conflicts with the standing rule in CLAUDE.md ("Do not implement or suggest multi-tenant architecture... federated invitation flows") and with the single-user framing in that file's Scope section. CLAUDE.md has not been updated to match. Until it is, treat multi-user as the direction of travel, not a licence to add tenancy inside an unrelated task.
 - **No recipe versioning.** CLAUDE.md's Key Decisions removed Git-style iteration/branch/commit version control. VISION.md still describes "Living Recipes" with version control as a key principle. The removal is the newer decision and stands; VISION.md is stale on this point.
-- **Theme count is drifted.** CLAUDE.md states two themes (Light + Dark, OLED consolidated). README.md still documents a third "OLED Black" theme, and an `.oled` token block still exists in `src/index.css`. Unresolved — the code and the docs disagree.
 
 ## Brand Commitments
 
@@ -64,13 +62,13 @@ Recipe apps store recipes. Proof runs the bake and records what happened. The co
 - **Committed reference:** the feel of a high-end physical lab manual crossed with a culinary magazine. Precision and restraint over decoration.
 - **Paper (light) is the default theme**; dark is the same book at night (warm charcoal, never true black).
 - **Mobile-first is a commitment, not a breakpoint:** layouts must work at 375px with real touch targets.
-- Token values, type scale, and component conventions are not product truth; the shipped CSS and components are the current visual authority until a DESIGN.md records them.
+- DESIGN.md records the shipped tokens, faces, components and motion. Where it and the shipped CSS ever disagree, the shipped CSS is the authority and DESIGN.md is the bug.
 
 ## Evidence on Hand
 
 - **Real recipes and real bake photography.** Confirmed: the seeded MongoDB recipes and the Cloudinary-hosted bake log images are Victor's own bakes. Future work may present them as genuine and may design around the assumption that real content exists.
 - Real bake logs carry real notes, dates, image tags, and Personal Best marks.
-- A live Render deployment exists, dark mode default, pre-seeded from MongoDB.
+- A live Render deployment exists, pre-seeded from MongoDB.
 - **Absences that must never be fabricated:** there are no users besides Victor, no testimonials, no case studies, no press, no pricing or licensing, no customer count, no uptime or scale figures, and no benchmark results. Do not invent any of these, in copy or in placeholder content.
 
 ## Product Principles

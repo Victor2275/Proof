@@ -56,9 +56,8 @@ Designed like a physical high-end culinary lab notebook, **Proof** focuses on pr
 ---
 
 ### 7. 🌗 Themes
-- **Paper Light**: Classic, clean typography reminiscent of lab manuals.
-- **Lab Dark**: Low-eyestrain dark mode.
-- **OLED Black**: Pitch-black (`#000000`) background mode designed for maximum battery savings on mobile OLED screens.
+- **Paper** (the default): a printed cookbook — warm paper, ink, one paprika accent.
+- **Dark**: the same book at night, in warm charcoal rather than true black.
 
 ---
 

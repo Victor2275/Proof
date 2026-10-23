@@ -276,20 +276,16 @@ Rebuilt as the bake sheet: see section 18.
 - [ ] **Component lab**: `/lab` in development shows buttons, icon buttons, back, segmented, tiles and plates, phases, figures, panels, fields, sheets, menu, pantry chips, meters, publish states and tags.
 
 ## 7. UI/UX Foundation
-- [ ] **"Step Row" Visual World (Phase 0 foundation)**: Rhythm-machine design language — matte panels, silkscreen labels, lit step keys, segment readouts; colour is temporal, not decorative.
-- [ ] **One enforced ban, two defined materials**: no glow except a lit key or segment; `--faceplate` and `.scrim` are the only gradient and blur, enforced by `src/designSystem.test.ts`.
-- [ ] **Two Themes**: Light and Dark only; dark is default and true `#000000`, OLED consolidated in.
-- [ ] **Self-hosted typography**: Archivo Variable + JetBrains Mono Variable, latin subsets, precached for offline use.
-- [ ] **Component layer (Phase 1)**: Panel, Button, Field, SegmentReadout, StepRow, InstrumentRow, Meter in `src/components/ui`.
-- [ ] **Seven-segment readouts**: Ghost segments visible, fixed width, reserved for instrument values, announced as one value.
-- [ ] **Step row**: One key per phase, temporal colour, labels below the keys, collapses to a named running phase at 390px.
-- [ ] **Phase derivation**: Bread vocabulary with a generic fallback; monotonic; never invents a levain for a non-bread recipe.
-- [ ] **Component lab** (`/lab`): Dev-only primitives gallery, absent from production builds.
-- [ ] **Themed browser surfaces**: Selection, caret, scrollbars and focus rings themed from the palette.
-- [ ] **Global reduced-motion support**: `prefers-reduced-motion` collapses all animation.
-- [ ] **Retired: global font switcher**: sans/serif/mono preference removed.
+- [ ] **The printed cookbook**: every screen is paper and ink, with paprika only on the one primary action and the stars; no gold, glass, lit keys or segment readouts anywhere.
+- [ ] **Paper is flat**: `npm test` fails if a gradient, blur, glow, uppercase tracked label, stock palette colour or an old token name (`bg-panel`, `text-ground`, …) is added to any component.
+- [ ] **Two themes**: Paper is the default on a fresh browser; Dark is warm charcoal, not black; reloading never flashes the other theme.
+- [ ] **Self-hosted typography**: with the network off after one visit, titles, method and controls keep their faces.
+- [ ] **Phase derivation**: a bread recipe shows Levain · Mix · Bulk · Shape · Bake; a soup never shows a levain.
+- [ ] **Component lab** (`/lab`): present in development, absent from a production build.
+- [ ] **Themed browser surfaces**: selection is butter, the caret paprika, the focus ring paprika with a gap.
+- [ ] **Reduced motion**: with reduced motion on, presses don't scale, sheets and pages don't slide, and the stamp doesn't thump.
 - [ ] **Landing**: first-time visitors see the landing page; there is no onboarding tour.
-- [ ] **Skeletons & Empty States**: Polished animated skeleton loaders for data fetching, custom illustrated 404 pages, and a tailored empty state for the gallery.
+- [ ] **Skeletons and empty states**: Discover shows a skeleton while it loads; an empty Shop list and an empty cookbook each say so in one line.
 - [ ] **Error Boundary**: Catches unhandled render errors gracefully.
 - [ ] **Server Architecture**: Modular Express server architecture with separated routes and services.
 
@@ -435,3 +431,8 @@ Rebuilt as the bake sheet: see section 18.
 - [ ] **Shared photograph on Android**: on a mid-range Android phone, the morph runs without visible stutter.
 - [ ] **Same-millisecond records**: "Add missing to Shop" on a recipe with several missing things lists them in the recipe's order every time.
 - [ ] **Component lab**: `/lab` shows the switch, on and off.
+
+## 22. UI overhaul — Phase 7: documentation and clean-up
+- [ ] **DESIGN.md**: describes the printed cookbook as built — tokens for both themes, the faces, the primitives including `Switch`, the motion table — and nothing of the Step Row.
+- [ ] **Old token names gone**: searching `src/` for `bg-panel`, `bg-ground`, `text-ground`, `silkscreen` or `signal` classes finds nothing; `index.css` has no mapping for them.
+- [ ] **Screens unchanged by the retirement**: the visual suite passes with no baseline regenerated for the token change.

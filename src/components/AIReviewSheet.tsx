@@ -169,7 +169,7 @@ export default function AIReviewSheet({
               <section
                 key={key}
                 className={cn(
-                  'rounded-panel border bg-panel-sunk',
+                  'rounded-panel border bg-paper-sunk',
                   keep ? 'border-rule' : 'border-rule opacity-50',
                 )}
               >

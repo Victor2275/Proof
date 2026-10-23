@@ -1,348 +1,257 @@
-# Proof — the Step Row design system
+# Proof — the cookbook design system
 
-Written from the built artifact at the close of Phase 8, not from the plan.
-Where the code and the [direction contract](.impeccable/surfaces/src-components-dashboard-tsx.md)
-disagree, this document records what shipped and why — those cases are listed
-under [Deviations](#deviations-from-the-direction-contract).
+Written from the built app at the close of the UI overhaul (branch
+`feat/ui-overhaul`, Phases 1–7), not from the plan. The plan, its decisions and
+its 134 numbered changes are in [docs/ui-overhaul/](docs/ui-overhaul/); where
+the build departs from them, [Deviations](#deviations-from-the-plan) says how and
+why. The working rules an agent needs are in [CLAUDE.md](CLAUDE.md). This is the
+reference for what the interface is.
 
-The plan of record is [REWORK_PLAN.md](REWORK_PLAN.md). The working rules an
-agent needs are in [CLAUDE.md](CLAUDE.md). This is the reference.
+It replaces two earlier systems, both removed on purpose: **Black & Gold**
+(pitch black, gold, glass, glows) and the **Step Row** drum machine (true
+black, silkscreened capitals, lit keys, seven-segment readouts). Neither comes
+back.
 
 ---
 
 ## The thesis
 
-**A recipe is a pattern. A bake is that pattern running. The interface is the
-machine that runs it, with a chase light that always says where *now* is.**
+**A printed cookbook you write yourself.** Warm paper, ink, one paprika accent,
+a serif for the recipe and a quiet sans for the controls. The book is the
+interface: a recipe reads like a page, the bake log reads like the notes in its
+margin, and the controls are an app's controls — pressed, not clicked.
 
-Everything below follows from that sentence. The reference world is an early-80s
-rhythm machine: matte panels, silkscreened labels, lit step keys, seven-segment
-readouts.
-
-It refuses two things on purpose — the photo-card grid every cookbook app
-ships, and the dark glassmorphic dashboard with a gold glow, which is what Proof
-itself looked like before this rework.
-
-**Who it is for:** one baker, phone propped at arm's length, hands floured,
-hours into a ferment. Every judgement call is settled by that person, not by a
-screenshot.
+**Who it is for:** a baker with floury hands and the phone propped at arm's
+length, hours into a ferment, and the same baker later, looking back at why one
+loaf beat another. The bake log is the main character; nothing in the design
+may demote it.
 
 ---
 
-## Colour is temporal, never decorative
+## Colour means one thing each
 
-Colour carries *when*, not *what kind*. It is never spent on branding, on
-categories, or on a control that merely wants attention.
+Colour is never decoration, branding, or a way for a control to ask for
+attention. Each colour has one meaning, everywhere.
 
 | Token | Light | Dark | Means |
 |---|---|---|---|
-| `--key-now` | `#e02a20` | `#ff3b30` | Happening **now**. One per screen. |
-| `--key-due` | `#e07d00` | `#ff9a00` | Due next. |
-| `--key-queued` | `#cbbc84` | `#7a6000` | Queued, not yet reached. |
-| `--key-done` | `#b0aba1` | `#57564f` | Complete. |
-| `--key-unlit` | `#d2cdc2` | `#2a2a2a` | Not reached — a designed absence. |
-| `--signal` | `#c81e14` | `#ff3b30` | The one solid control on a screen: the action that starts or commits. |
-| `--on-signal` | `#ffffff` | `#000000` | The legend on a lit key. |
-| `--spoiled` | `#6d2018` | `#5a1a12` | Destructive. A rule around the control, never its legend. |
-| `--fault` | `#8f4c00` | `#ff9a00` | The caution lamp: an error, an outage, a refused save. Needs attention, is not *now*. |
+| `--paper` | `#FBF7F0` | `#16120F` | The page. Dark is warm charcoal, never true black. |
+| `--paper-raised` | `#FFFDF9` | `#2A231D` | A sheet lifted off the page: a panel, a sheet, a menu. |
+| `--paper-sunk` | `#F4ECDD` | `#221C17` | A well in the page: a plate without a photograph, a skeleton. |
+| `--paper-tonal` | `#EFE7D9` | `#1D1814` | A tonal track: a segmented control, a tag. |
+| `--rule` / `--rule-strong` | `#E4DCCF` / `#CDBFA9` | `#2E2620` / `#4A3F35` | Hairlines; field outlines. |
+| `--ink` / `--ink-2` / `--ink-muted` | `#1F1A17` / `#4A423C` / `#6B6159` | `#F1E9DC` / `#D8CDBE` / `#A99E91` | Text, in three weights of importance. Links and controls are ink. |
+| `--accent` (paprika) | `#B5391F` | `#E26A4A` | **The one primary action on a screen** (Start cooking, Save) and a rating's stars. Never how a link announces itself. |
+| `--sage` | `#4E6A3C` | `#9DB887` | Have it; done. |
+| `--butter` | `#F6E9BF` | `#4A3F1E` | A timer, or the current step. A highlighter, not an alarm. |
+| `--pencil` | `#6B5A2E` | `#D9C78E` | A margin note: what you wrote last time. |
+| `--fault` (ochre) | `#8A4B0F` | `#E8A25A` | Something went wrong. Never the accent. |
+| `--spoiled` | `#8C2F39` | `#E07A86` | The outline of a destructive control. Never a fill. |
 
-### The ground
+`--on-accent` flips with the theme (white on light, charcoal on dark), because
+the dark paprika is bright enough that cream on it fails contrast.
 
-| Token | Light | Dark |
-|---|---|---|
-| `--ground` | `#e8e4dc` | `#000000` |
-| `--panel` | `#f2efe9` | `#1a1a1a` |
-| `--panel-sunk` | `#dcd7cc` | `#0d0d0d` |
-| `--rule` | `#c9c4b8` | `#2e2e2e` |
-| `--ink` | `#171614` | `#f2f2f2` |
-| `--ink-muted` | `#63605a` | `#8a8a8a` |
-| `--silkscreen` | `#4a4640` | `#bdbdbd` |
+**A bake's phases** (`--key-now`, `--key-due`, `--key-queued`, `--key-done`,
+`--key-unlit`) are the only time-named tokens, and only `StepRow` may use them:
+the part running now is paprika, the next butter, the finished ink, the rest a
+pale rule.
 
-**Dark is the default and it is true black.** Not because black is fashionable
-but because of the scene: a kitchen before dawn, the only lit object a propped
-phone. **Light is the faceplate inverted** — classic machines wore cream
-plastic — and it is first class, not a courtesy. Both themes are shot in the
-visual baselines; neither is allowed to rot.
-
-### What red costs
-
-Red is spent on two things only: **what is happening now** (a lit step key and
-its label, the running bake wherever it appears, a timer counting past zero, the
-scale reaching its target, the focused field) and **the one solid primary control
-on a screen** (Launch Plan decision B3). A screen whose *now* is already lit
-should not add a red control beside it. In practice:
-
-- The editor's **Save** is outlined, not filled. Nothing in the editor is
-  running; it writes a pattern, it does not play one.
-- The landing page's **call to action** is outlined, because the chase light
-  above it is that page's one *now* — and the chase light is the whole argument
-  being made.
-- The Recipe Viewer's **START RECIPE** *is* solid red. It starts the machine.
-- Inside a `Sheet`, the confirming action may be primary: a modal is its own
-  screen.
-- The **New Recipe** key is lit only on the cookbook with nothing baking. On any
-  other screen it is an unlit key, and the phone's **Start** key takes that
-  corner on the Recipe Viewer.
-- A **timer written into the method** is a queued key — outlined, ink — until it
-  is started. Lighting every one put sixteen red regions on a recipe where
-  nothing had begun.
-- The **Now Baking** panel is lit by its border, its lamp and its running key.
-  Its total and its Resume control stay ink; the sidebar shows only the lamp.
-- **Errors are faults, not now.** They take `--fault`, the same caution lamp as
-  the offline bar. Destructive controls carry the `--spoiled` rule with an ink
-  legend. A scaled serving count says so in its label rather than lighting up.
+**Contrast:** every text pairing listed in `src/designSystem.test.ts` holds
+4.5:1 in both themes, computed from `index.css`.
 
 ---
 
-## One ban, two materials
+## Paper is flat
 
-**No glow, except a lit key or a lit segment.** Light means a thing is on. A
-halo around a control that is doing nothing is the previous world's habit.
+No glow, no gradient, no blur. Depth is a hairline, a soft corner, and a small
+lift under a raised sheet:
 
-Gradient and backdrop blur were banned with it, and were re-permitted on
-2026-09-15 as **materials with one defined use each**:
+- `--lift` — `0 1px 2px` at 14% ink (50% black in dark): a panel, a tile's plate.
+- `--lift-sheet` — `0 -2px 16px`: a sheet rising from the bottom edge.
+- `.scrim` — a flat dim (38% ink light, 55% black dark) behind a sheet, a
+  dialog, or a phone's menu. Nothing else.
 
-| Material | Where it belongs |
-|---|---|
-| `--faceplate` / `.faceplate` | A panel's own surface. A ~3% ramp of tone, top to bottom, so a panel reads as a moulded object rather than a rectangle. **The only gradient in the chrome.** |
-| `.scrim` | A layer that genuinely sits *over* the interface — modal, sheet, drawer. The blur says the panel beneath is still there and is not what you are operating. |
-
-**Neither ever touches a photograph.** No scrim over a recipe's own plate.
-
-`src/designSystem.test.ts` fails the build on any ad-hoc `bg-gradient-to-*` or
-`backdrop-blur-*` utility in a component. That guard is the reason the system
-has not drifted into forty button styles the way its predecessor did.
+Photographs are never scrimmed, tinted or overlaid with text.
 
 ---
 
 ## Typography
 
-Two self-hosted variable faces, latin subset, served from `/fonts` and precached
-by the service worker so they survive a kitchen with no signal. **No web font
-CDN, in the stylesheet or the document** — both are guarded.
+Self-hosted variable fonts, latin subset, served from `/fonts` and precached by
+the service worker so they work offline. All are SIL Open Font License.
 
-| Voice | Class | Face | Setting |
-|---|---|---|---|
-| Faceplate display | `.font-faceplate` | Archivo Variable | stretch 118%, weight 800, `-0.01em`, uppercase |
-| Instruction prose | `.font-prose` | Archivo Variable | stretch 100%, weight 400, line-height 1.6 |
-| Silkscreen label | `.label-silkscreen` | JetBrains Mono Variable | 11px, weight 600, `0.14em`, uppercase |
-| UI and data | *(default)* | JetBrains Mono Variable | 16px, tabular figures globally |
+| Face | Class | Used for |
+|---|---|---|
+| **Fraunces** (soft axis 60, weight 560) | `.font-title` | Titles and headings, in sentence case. Italic for section names and the 404's "p. 404". |
+| **Source Serif 4** | `.font-prose` | The reading face: method, headnotes, notes, people's own words. Line height 1.55, proportional figures. |
+| **Inter Tight** | `font-sans` (the default) | Controls, labels and figures. Tabular figures on the body, so quantities and times align. |
+| **Caveat** (optional) | `.hand` | Bake notes in a handwriting face when Settings → Handwritten notes is on (`html[data-hand=on]`). Unlayered CSS, so it beats the notes' own italic and size. |
 
-**Seven-segment readouts are reserved for instrument values** — weights,
-temperatures, percentages, timers, totals. Counts, servings and dates use
-tabular mono. Spending segments on every number spends the effect and costs
-legibility in dense lists.
-
-Every digit renders all seven segments and dims the unlit ones, so a value has a
-fixed width and **absence is drawn as deliberately as light**. A readout is
-announced to a screen reader as one value, not a row of glyphs.
+- Labels are `.ui-label`: 13px, medium weight, `--ink-muted`, sentence case.
+  Uppercase tracked labels fail the build.
+- Times print as a cookbook prints them: "45 min", "1 h 15" (`formatMinutes`).
+  Amounts print as kitchen fractions: "⅔ cup", "1½".
 
 ---
 
 ## Geometry
 
-Controls are squared. Three radii, and nothing else:
-
-| Token | Value | Used by |
+| Token | Value | For |
 |---|---|---|
-| `--radius-key` | `2px` | Step keys, meter cells |
-| `--radius-control` | `3px` | Buttons, fields, chips |
-| `--radius-panel` | `4px` | Panels, sheets |
+| `--radius-key` | 4px | Plates, tiles, small chips' inner shapes. |
+| `--radius-control` | 6px | Fields, buttons, selects. |
+| `--radius-panel` | 8px | Panels, the hero plate on a wide page. |
+| `--radius-sheet` | 16px | A sheet's top corners; the editor's preview. |
 
-Depth comes from a hairline rule, the ground behind it, and the faceplate sheen
-— **never from a drop shadow**.
+- **Mobile first.** Every layout works at 375px with no sideways scroll
+  (asserted on every route by the visual suite). Anything a thumb reaches
+  repeatedly is a 44px target; `size="sm"` is for dense desktop chrome and the
+  × inside a chip.
+- **The shell.** Four destinations — Cookbook, Bakes, Shop, Discover — as a
+  bottom tab bar on a phone and a slim top bar on a desktop, with search (⌘K),
+  New and the avatar (Settings, account) at its right. Content sits in a
+  `75rem` column with a 16px phone gutter (32px from `md`). Shared pages
+  (`/r/:slug`, `/@handle`), baking mode and the landing page have no app chrome.
+- **Two panes** where a desktop has room: the recipe's ingredients beside its
+  method, the editor beside "As it will read", baking mode's step beside its
+  side panel.
 
 ---
 
 ## The component layer
 
-`src/components/ui` is the whole vocabulary. Surfaces compose it; they do not
-hand-roll inline Tailwind for a panel, a control, a readout or an overlay.
+`src/components/ui` is the whole vocabulary. Screens compose it; they do not
+hand-roll a section, a control, a figure or an overlay in inline Tailwind.
+Every primitive is shown in its real states at `/lab` (development only).
 
-| Primitive | What it is |
-|---|---|
-| `Panel` / `PanelRow` | A matte panel with a silkscreened head and a status lamp. Panels do not nest — content inside a panel gets a rule, not another panel. |
-| `Button` | `primary` / `secondary` / `ghost` / `danger`; `sm` 36px, `md` 44px, `lg` 56px. Real press travel. `engaged` declares a toggle and is undefined otherwise, so ordinary buttons are not announced as switches. |
-| `Field` / `TextArea` / `Select` | Outlined at rest; rule and unit turn signal on focus. Errors wired via `aria-describedby`. `Select` keeps the platform's own popup. |
-| `Sheet` | Every overlay in the app. `center` is a dialog, `bottom` is a thumb-reachable sheet (centred on a wide screen when sized). `initialFocus` names the control that takes focus on open — the PIN field, not the close control above it. |
-| `Menu` / `MenuItem` | A dropdown hung from its trigger — not an overlay, so not a `Sheet`. Escape closes it and returns focus to the trigger, a press outside closes it, the arrow keys walk it. Items are ruled, not floated. On a phone, prefer a bottom `Sheet` of full-width buttons. |
-| `SegmentReadout` | Seven-segment digits with ghost segments. `sm`/`md`/`lg`/`xl`, tone `signal` or `ink`. |
-| `StepRow` | The signature. One key per **phase**, not per instruction. `mini` for a dashboard signature, `full` for a labelled, operable row. |
-| `RecipePlate` / `RecipeTile` | A square image plate mounted in the panel's own border, and the gallery tile built from it. |
-| `InstrumentRow` | A bank of lamps — presence and absence readable in one sweep. |
-| `Meter` | Discrete cells that fill left to right. A machine's meter counts in cells. |
-| `Skeleton` | The shape of the content, never the word "Loading". |
+**Structure** — `Panel` / `PanelRow` (a raised sheet with a hairline, a heading
+not a header bar; panels never nest), `PageHeader` (the screen's name in the
+title face and its controls at the right; no rule, no introduction),
+`Disclosure` (a real button with `aria-expanded`; closed bodies are `inert`).
 
-`/lab` (development only) is a live gallery of every primitive in its real
-states. New primitives go in it.
+**Controls** — `Button` (primary in paprika, secondary outlined, tonal, ghost,
+and `danger`, outlined in `--spoiled`), `IconButton` (label required by
+its type; a 44px round target; a tooltip on a pointer device), `BackButton`
+(named for where it goes, a real link, history-aware), `Segmented` (a radio
+group on a tonal track), `Switch` (`role="switch"`, named by
+`aria-labelledby`, the whole row the target), `Menu` / `MenuItem`,
+`Field` / `TextArea` / `Select` (one outline, one focus signal, errors wired by
+`aria-describedby`; `Select` keeps the platform's popup).
 
-### Sheet is not optional
+**Overlays** — `Sheet` (bottom sheet or centred dialog, with detents, the focus
+trap, Escape owned by the topmost sheet, focus returned to its opener, and a
+counted scroll lock), `Toast` with `useToast` (one line, Undo, six seconds,
+paused on hover or focus, announced politely), `DockedAction` (the primary
+action kept above the phone's tab bar once its original scrolls away).
 
-`Sheet` replaced **eleven** hand-rolled scrim-and-panel overlays, and later
-the eleven that had been missed — onboarding, the PIN prompt, AI substitutions,
-the sub-recipe drawer, the barcode scanner, the timer prompt, the bottom nav's
-More sheet, three in Baking Mode and the exporter's fallback. Not one of
-them trapped focus, closed on Escape, returned focus to whatever opened it, or
-stopped the page behind from scrolling. A modal you cannot leave by keyboard is
-a trap. It also handles the cases that only appear in a real app: Escape belongs
-to the **topmost** sheet, the scroll lock is **counted** so a sheet over a sheet
-behaves, the title id is **generated** so two open sheets do not share one
-accessible name, and it renders through a portal so no transformed ancestor can
-clip it.
+**The book** — `RecipePlate` (a photograph at a fixed footprint, or the
+recipe's initial as an italic drop cap; never a broken image; takes a
+`transitionName` for the shared photograph), `Photo` (a device photograph by
+reference), `RecipeTile` (the picture, a two-line serif title and one line of
+facts the recipe can prove), `MarginNote` (pencil, the reading italic),
+`Stamp` (the personal best; one 160 ms press when earned), `Ribbon` (the
+bookmark on "pick up where you left off"), `LetterRail` (the A–Z thumb index),
+`Prose` (people's own words, line breaks kept), `Tag` (a tonal fact, never
+pressable), `PublishState` (where a recipe stands with the shared cookbook, in
+words).
+
+**Figures** — `Readout` (a value in tabular figures with its unit and caption,
+read as one value), `Meter` (one track with an ink fill), `Sparkline` (ratings
+over bakes, drawn from three rated bakes), `Stars` / `StarRating` (a radio
+group; the chosen star again clears it), `StepRow` (a bake's phases as one thin
+line in 44px targets), `InstrumentRow` (present or absent chips, never colour
+alone), `Skeleton` (the shape of network content on its way).
+
+### It is an app, not a website
+
+No web-style text links. Navigation is a `BackButton`, a whole-card link, a
+row, a tab or a segmented control; an action is a `Button` or `IconButton`.
+Every pressable thing carries `.pressable`. Haptics go through `haptic(kind)` —
+selection, light, medium, success, warning — off on the web and when switched
+off in Settings. Errors are reported in the panel, never through `alert()`,
+`confirm()` or `prompt()`, and name the problem and the recovery. A reversible
+action happens at once and offers Undo.
 
 ---
 
 ## Motion
 
-All motion derives from one clock: the chase light sweeping and a key flashing
-on press. There is no decorative animation.
+Short and physical. CSS transitions are preferred because the global
+`prefers-reduced-motion` rule collapses them; framer-motion runs under
+`MotionConfig reducedMotion="user"`; a JS timer checks the preference itself.
 
-Reduced motion is handled in **three** places, because one is not enough:
-
-1. **CSS** — a global `prefers-reduced-motion: reduce` rule collapses every
-   animation and transition.
-2. **framer-motion** — `<MotionConfig reducedMotion="user">` wraps the app.
-   framer-motion writes inline styles from its own loop and never touches CSS,
-   so the rule above cannot reach it.
-3. **JS timers** — outside both. Anything animating on `setInterval` checks
-   `prefers-reduced-motion` itself. The landing page's chase light is the one
-   that does; the guard test fails any future one that does not.
-
----
-
-## Floors
-
-These are not preferences. The direction contract calls arm's-length legibility
-"the product working", and each of these is enforced in CI.
-
-- **Contrast**: every text node was measured against its real computed
-  background across eleven surfaces in both themes. Body text and Baking Mode
-  are clean. The signal control's legend is guarded at **≥ 4.5:1** by computing
-  the ratio from the tokens — it is 5.92:1 dark, 5.75:1 light.
-- **Touch targets**: **44px** for anything a thumb reaches repeatedly. `sm`
-  (36px) is for dense desktop chrome and for inline affordances inside a chip.
-- **Width**: every surface works at **375px** with no horizontal scroll,
-  asserted on all ten routes. The tablet band is a width of its own, not a
-  stretched phone or a squeezed desktop: from 768 to 1023px the sidebar is a
-  64px icon rail, and the full sidebar returns at 1024. A two-column panel
-  decides by **its own width** (a container query), not the viewport's — the
-  Recipe Viewer's ingredients sit beside the method only when its column is
-  48rem or wider. The audit matrix checks 375, 768, 1024 and 1280.
-- **Hover is an enhancement**: anything revealed on hover is gated on
-  `(hover: hover)`, never on a width. A tablet is wide and cannot hover.
-- **Safe areas**: the bottom nav reserves the device inset, and the `.above-nav`
-  utility adds it for everything floating above the nav rather than guessing a
-  fixed offset. `pt-safe` is the top inset **plus 1.5rem**, declared with
-  `@utility` so a breakpoint beside it can override it — browsers report the
-  inset as 0, so a fallback inside `env()` never applies.
-- **No browser dialogs**: no `alert`, `confirm` or `prompt`. Every surface
-  reports in its own panel, and errors name the problem **and** the recovery.
+| Moment | Timing |
+|---|---|
+| Press (`.pressable`) | Sinks to 0.97 in 80 ms, back over 140 ms. Reduced motion: no scale. |
+| Tab switch | 140 ms cross-fade, no slide. |
+| Push / pop | 24px slide and fade, 220 ms in / 180 ms back, `cubic-bezier(.2,.8,.2,1)`. A first load, a refresh, a deep link and a redirect do not animate. |
+| Sheet | Rises over 280 ms, `cubic-bezier(.32,.72,0,1)`. |
+| Disclosure | Height over 240 ms; chevron turns over 180 ms. |
+| Stamp | One 160 ms press. |
+| Toast | Six seconds. |
+| Shared photograph | A cookbook tile's photograph grows into the recipe's hero over 340 ms on the sheet's curve; the rest of the page fades across in 200 ms. The View Transitions API, started by the tile. Waits at most 250 ms for the hero, then fades instead. Never under reduced motion, from a shared recipe, or without the API. |
 
 ---
 
 ## Honesty
 
-A rule that turned out to matter more than expected, and which is now a
-standing instruction:
-
-**Draw only what the data can support.** A panel with nothing to report says so.
-It does not invent a reading, pad a chart with zeroes, or rank a tie.
-
-Worked examples in the build:
-
-- **Analytics** draws only months that contain a bake, and states outright when
-  there are too few to read a trend. "Baked more than once" stays empty until
-  something has actually been baked twice, because ranking a three-way tie of
-  one bake each invents an order.
-- **Cookbook tiles** show bake type and ingredient count — always true — unless
-  the recipe can prove more. `derivePhasesWithReading` reports whether phases
-  were *proved* or merely generic; `isPlaceholderTiming` recognises the seed
-  script's `"20 mins"` / `"30 mins"` pair that 199 of 203 recipes carry.
-- **The Instagram export** claims nothing the recipe cannot prove.
-- **The landing page** derives its demonstration from `derivePhases`, the app's
-  own vocabulary, so it cannot claim a levain the parser would not find.
-- **A bread is a leavened dough that rises.** `derivePhasesWithReading` reads a
-  recipe as bread only when its method names a leavening agent and a rise, and
-  its steps resolve to more than one phase. The looser rule filed eighteen of
-  the live recipes as bread — a beef arepa opened baking mode on LEVAIN — NOW —
-  while the Danish rye read generic. Opening steps that name nothing join the
-  phase the bread actually starts in, not Levain.
-- **The seed's descriptions are not descriptions.** `isPlaceholderDescription`
-  recognises `A delicious {area} {category} dish.`, which 200 of 203 recipes
-  carry, and neither the recipe header nor the Instagram card prints it.
-- **Baker's percentages are by weight or not at all** (`lib/bakersMath.ts`).
-  Flour measured in cups gives no percentages and a sentence saying why, where
-  the old sum printed 6153.8%.
-- **"This step needs" names only what the step names** (`lib/stepIngredients.ts`):
-  every distinguishing word, whole words only. The Bluetooth scale gets a target
-  only when every ingredient in the step is weighed.
-- **The reverse schedule labels its guesses** (`lib/schedule.ts`): a step's own
-  time when it names one, a share of the recorded total otherwise, and a flat
-  15 minutes marked *assumed* — with a sentence saying how many — when there is
-  no real total. The placeholder pair is never spread as if it were measured.
+- **Draw only what the data supports.** The import script's placeholder
+  timing (`"20 mins"` / `"30 mins"` on 199 of 203 recipes) is never printed as
+  measured (`isPlaceholderTiming`). A summary names a best only between two or
+  more recipes and never on a tie. Discover features a recipe only when there
+  are more than two, and offers tags only when one is used twice.
+- **Loading is a skeleton, never the word.** A read from the device draws
+  nothing for its few milliseconds rather than flashing one.
+- **Absence is said, not padded.** An empty cookbook, an empty list, a recipe
+  with no bakes each say so in one plain line and offer the way on.
 
 ---
 
 ## What enforces this
 
-| Guard | Covers |
-|---|---|
-| `src/designSystem.test.ts` — *red is temporal* | Red drawn only by the files that report something happening now; no error in red; a destructive control on the spoiled rule; no stock Tailwind palette colour and no legacy `accent` alias; `--fault` readable on a panel in both themes. |
-| `src/designSystem.test.ts` | The ban, both material tokens, self-hosted faces in CSS *and* HTML, reduced motion in all three layers, no browser dialogs, the contrast floor, safe-area reservation, every promised icon shipping. |
-| `e2e/visual.spec.ts` | 47 baselines: ten surfaces × two themes × desktop and phone, plus the sheet as dialog and as bottom sheet. Budget is **150 absolute pixels** — a ratio scales with the page and hid a whole button's legend changing colour. |
-| `scripts/generate-icons.mjs` | Every shipping raster, drawn from the tokens. Re-running reproduces them exactly. |
-
-Fixtures never touch the live database or the image CDN. A baseline that depends
-on live data fails the first time someone logs a bake.
+- `src/designSystem.test.ts` fails the build on any gradient, blur or
+  zero-offset glow; on uppercase tracked labels; on a stock Tailwind palette
+  colour; on the previous worlds' token names anywhere in a component; on the
+  phase tokens outside `StepRow`; on the accent styling links; and on contrast
+  below 4.5:1 for every listed pairing in both themes. It also checks that
+  every pressable primitive uses `.pressable` and that `IconButton` requires a
+  label.
+- `npm run test:visual` (Playwright) compares 75 baselines — eighteen
+  surfaces in both themes at desktop and phone widths, plus three overlays —
+  and asserts the 375px floor on every route.
+- `npm run audit:overhaul` writes the review screenshot set (25 screen states
+  at 375 and 1280, both themes) into `audit-shots/overhaul/<label>/`.
 
 ---
 
-## Deviations from the direction contract
+## Deviations from the plan
 
-Recorded because the artifact is the authority, not the intention.
-
-**1. The cookbook is a gallery, not a list of patterns.**
-The contract specified a list where each row is a name, a segment readout and a
-miniature step row, with "no photograph required for any row to read". Checked
-against the real library that reasoning collapsed: every one of the 203 recipes
-has exactly one photograph, and the pattern beside each would have been 203
-identical rows of `PREP COOK FINISH · 50 MIN`. The list was spending its density
-on placeholder text. Amended 2026-09-15 and recorded in REWORK_PLAN.md.
-
-**2. `--key-queued` and `--key-done` are dimmer than specified.**
-The contract names `#FFE100` yellow and `#F2F2F2` white. The dark theme ships
-`#7a6000` and `#57564f`. A seven-phase row with five complete keys at pure white
-is a white slab, not five keys — the Instagram exporter hit exactly that and had
-to be reworked around it — and a bright yellow queued key competes with the red
-*now*, which breaks the rule that red is spent once. The dimmer values keep the
-chase light the brightest thing in the row. This was undocumented until now.
-
-**3. Two faces, not three.**
-The contract asked for a display grotesque, a mono, and "a humanist companion
-for instruction prose only". Prose is set in Archivo at normal width and weight
-instead. One family carrying two voices is one fewer file to precache for an
-offline kitchen, and it keeps the type a single system.
-
-**4. The step row's home on the cookbook moved.**
-It reports in the Now Baking panel rather than on every row, where its keys are
-lit and therefore reporting rather than decorating.
+- **Chapter, not Category** (change 26). The editor's field and the cookbook's
+  Contents say Chapter, to match the mock-up's Contents and Chapters.
+- **Analytics was not rebuilt.** The totals page is gone; Bakes opens on one
+  summary line ("17 bakes · 6 recipes · best: Cheesecake") instead.
+- **The shared photograph is started by hand.** React Router's
+  `viewTransition` needs a data router and the app uses `<BrowserRouter>`, so
+  the tile calls `document.startViewTransition` itself and `PageTransition`
+  stands aside for that one change of page. It shipped after a throttled
+  measurement (4× CPU, Pixel 7 emulation, production build): 2–7 of about 20
+  frames over 20 ms, fewer than the push slide it replaces. It has not yet been
+  checked on a real Android phone.
+- **The handwriting face is optional and off by default** (change 18): the
+  reading italic is the default margin note.
+- **`Readout`, `Meter` and `InstrumentRow` survive** from the Step Row system,
+  redrawn as plain figures, an ink track, and sage-edged chips. There are no
+  seven-segment digits anywhere.
 
 ---
 
 ## Known gaps
 
-Honest about what is not done:
-
-- **The selected-make detail's layout is rebuilt but untested by reality** — the
-  library holds three bake logs across three recipes, so the iteration reading
-  renders as rows of one.
-- **Placeholder timings** — 199 of 203 recipes share `"20 mins"` / `"30 mins"`.
-  A data problem, not a UI one. The editor no longer makes it worse.
-- **All recipe photography is one external CDN** — no local copy, no resizing,
-  and a tile downloads a full-size photograph to display it at 280px.
-- **The library is paginated, not virtualised** — 48 tiles a page, but four
-  presses of *Show more* still leaves 200 tiles mounted.
-- **No CI** — the guards above exist and pass, but nothing runs them
-  automatically. This is the largest remaining gap.
-- **Android safe areas were measured in a browser with the inset simulated**,
-  not on a physical device.
+- **No functional end-to-end specs.** The Playwright suites record and compare
+  pictures; flows are asserted only in the unit suite.
+- **Notes still confirm a delete** in a sheet rather than deleting at once with
+  Undo.
+- **Imported text is shown as stored** in the editor: the live library carries
+  artefacts such as "graham cracker crumbs ((170g))" that the reading view
+  cleans and the editor does not.
+- **The shared photograph on Android** is unverified on hardware (above).

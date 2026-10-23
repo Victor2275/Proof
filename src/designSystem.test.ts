@@ -201,16 +201,15 @@ describe('the accent', () => {
 });
 
 describe('the component layer', () => {
-  const primitives = components.filter(([path]) => path.startsWith('./components/ui/'));
-
-  it('speaks only the cookbook’s token names in the primitives', () => {
-    // The previous world's names are mapped onto paper so the screens keep
-    // working while they are rebuilt. The primitives are already rebuilt, so
-    // they must not lean on the transitional names. StepRow's phase states
-    // keep their own names because they mean time, not colour.
-    const legacy = /\b(?:bg|text|border|ring|fill)-(?:ground|panel|panel-sunk|silkscreen|signal|on-signal)\b/;
-    expect(codeOffenders(legacy, primitives)).toEqual([]);
-    const phaseTokens = codeOffenders(/\bkey-(?:now|due|queued|done|unlit)\b/, primitives).map((hit) => hit.split(':')[0]);
+  it('speaks only the cookbook’s token names', () => {
+    // The previous world's names (ground, panel, silkscreen, signal) were
+    // mapped onto paper while the screens were rebuilt, then retired with the
+    // mapping. StepRow's phase states keep their own names because they mean
+    // time, not colour, and nothing else may borrow them.
+    const legacy = /\b(?:bg|text|border|ring|fill|stroke|outline|divide|decoration|caret)-(?:ground|panel|panel-sunk|silkscreen|signal|on-signal)\b/;
+    expect(codeOffenders(legacy)).toEqual([]);
+    expect(indexCss).not.toMatch(/--color-(?:ground|panel|panel-sunk|silkscreen|signal|on-signal):/);
+    const phaseTokens = codeOffenders(/\bkey-(?:now|due|queued|done|unlit)\b/).map((hit) => hit.split(':')[0]);
     expect([...new Set(phaseTokens)]).toEqual(['components/ui/StepRow.tsx']);
   });
 

@@ -850,7 +850,7 @@ export default function RecipeEditor() {
                   <button
                     type="button"
                     onClick={() => attachSubRecipe(r._id!, r.title)}
-                    className="w-full px-4 py-3 text-left text-sm text-ink transition-colors hover:bg-panel-sunk"
+                    className="w-full px-4 py-3 text-left text-sm text-ink transition-colors hover:bg-paper-sunk"
                   >
                     {r.title}
                   </button>
@@ -882,7 +882,7 @@ export default function RecipeEditor() {
           </>
         }
       >
-        <div className="flex max-h-[55vh] justify-center overflow-hidden bg-panel-sunk">
+        <div className="flex max-h-[55vh] justify-center overflow-hidden bg-paper-sunk">
           <ReactCrop
             crop={crop}
             onChange={(_, percentCrop) => setCrop(percentCrop)}
@@ -937,7 +937,7 @@ export default function RecipeEditor() {
                       className="h-full w-full object-cover"
                     />
                     {isSelected ? (
-                      <span className="absolute inset-0 flex items-center justify-center bg-ground/70">
+                      <span className="absolute inset-0 flex items-center justify-center bg-paper/70">
                         <Check className="h-6 w-6 text-ink" aria-hidden="true" />
                       </span>
                     ) : null}

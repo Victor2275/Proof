@@ -40,17 +40,11 @@
   --color-fault: var(--fault);
   --color-spoiled: var(--spoiled);
 
-  /* --- Transitional names ------------------------------------------------
-   * The screens still speak the previous world's token names. They are mapped
-   * onto the cookbook so every screen takes the new look at once, and are
-   * retired screen by screen as each is rebuilt. Do not add new uses.
+  /* --- A bake's phases ---------------------------------------------------
+   * StepRow's states, named for time rather than colour: the part running
+   * now, the one due, those queued, those done, and those not reached.
+   * Nothing else uses them (designSystem.test.ts).
    */
-  --color-ground: var(--paper);
-  --color-panel: var(--paper-raised);
-  --color-panel-sunk: var(--paper-sunk);
-  --color-silkscreen: var(--ink-2);
-  --color-signal: var(--accent);
-  --color-on-signal: var(--on-accent);
   --color-key-now: var(--accent);
   --color-key-due: var(--butter-strong);
   --color-key-queued: var(--rule-strong);

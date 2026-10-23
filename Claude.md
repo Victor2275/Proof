@@ -14,8 +14,9 @@ order below decides — later entries are newer decisions.
 |---|---|---|
 | [.agents/VISION.md](.agents/VISION.md) | Original concept | **Stale on two counts.** Its "Black & Gold" design section is dead — see *The visual world* below. Its "private instance / single-user" framing is superseded by LAUNCH_PLAN.md. Read it for the product's intent, not for its design or its scope. |
 | [ROADMAP.md](ROADMAP.md) / [ImprovementPlan.md](ImprovementPlan.md) | The resume-ready sprint | Largely delivered. Its UI sections describe the Black & Gold design that was replaced. Phases 4–5 (CI, E2E, LICENSE) were never finished and are still open. |
-| [REWORK_PLAN.md](REWORK_PLAN.md) / [DESIGN.md](DESIGN.md) | The Step Row ("drum machine") design | **Superseded 2026-10-21** by the UI overhaul below. They describe the look being replaced; DESIGN.md is rewritten from the built result at the overhaul's end. Do not draw from them. |
-| [docs/ui-overhaul/](docs/ui-overhaul/) | **The visual design and interaction model** | Live, decided 2026-10-21. `AUDIT_REPORT.md` (the printed-cookbook direction, the build plan, decisions) and `APP_FEEL_DEBATE.md` (how links became app controls). The reference for anything you draw until DESIGN.md is rewritten. |
+| [REWORK_PLAN.md](REWORK_PLAN.md) | The Step Row ("drum machine") design | **Replaced** by the UI overhaul (decided 2026-10-21, built 2026-10-23). It describes a removed look. Do not draw from it. |
+| [docs/ui-overhaul/](docs/ui-overhaul/) | **Why the design is what it is** | Decided 2026-10-21, built through Phase 7. `AUDIT_REPORT.md` (the printed-cookbook direction, the 134 changes, decisions), `APP_FEEL_DEBATE.md` (how links became app controls) and `HANDOFF.md` (how the build went). |
+| [DESIGN.md](DESIGN.md) | **The visual design system as built** | Rewritten from the shipped app at the overhaul's close (2026-10-23): tokens, faces, primitives, motion, what enforces them, and the deviations from the plan. The reference for anything you draw. |
 | [LAUNCH_PLAN.md](LAUNCH_PLAN.md) | **Distribution, the local/global split, accounts, money** | Live, decided 2026-09-18. The authority on the public multi-user direction and its phasing. Where an older document disagrees on multi-user scope, this one wins. |
 
 `CURRENT_FEATURES.md` describes what exists. `TESTED_FEATURES.md` mirrors it as
@@ -43,16 +44,14 @@ a manual-testing checklist.
 
 **The design language is a printed cookbook you write yourself** — warm paper,
 ink, one paprika accent, a serif for the recipe and a quiet sans for the
-controls. It is being built screen by screen on `feat/ui-overhaul`; the plan,
-the decisions and the per-screen change list are in
-[docs/ui-overhaul/](docs/ui-overhaul/). The foundation (fonts, tokens, themes,
-the component layer) is done; screens still showing keys, segment readouts or
-silkscreen labels are waiting for their phase.
+controls. It was built screen by screen on `feat/ui-overhaul` from the plan in
+[docs/ui-overhaul/](docs/ui-overhaul/), and [DESIGN.md](DESIGN.md) records it as
+built.
 
 **Two previous designs were deliberately removed: "Black & Gold" (pitch black,
 gold, glass, glows) and the "Step Row" drum machine (true black, silkscreened
-caps, lit keys, seven-segment readouts).** VISION.md, ImprovementPlan.md,
-REWORK_PLAN.md and DESIGN.md still describe them. Do not restore either.
+caps, lit keys, seven-segment readouts).** VISION.md, ImprovementPlan.md and
+REWORK_PLAN.md still describe them. Do not restore either.
 
 ### Colour means one thing each
 
@@ -77,7 +76,9 @@ every text pairing it lists.
 Self-hosted variable fonts, latin subset, precached for offline: **Fraunces**
 (titles, `.font-title`, sentence case), **Source Serif 4** (the reading face —
 method, headnotes, notes; `.font-prose`) and **Inter Tight** (controls, labels
-and figures; `font-sans`, tabular numerals). Labels are `.ui-label`: small,
+and figures; `font-sans`, tabular numerals). **Caveat** is an optional
+handwriting face for bake notes only (Settings → Handwritten notes, `.hand`),
+off by default. Labels are `.ui-label`: small,
 medium weight, sentence case. Times print as a cookbook does: "45 min",
 "1 h 15" (`formatMinutes`).
 
@@ -89,7 +90,7 @@ medium weight, sentence case. Times print as a cookbook does: "45 min",
 `IconButton`, `BackButton`, `Segmented`, `Field`/`TextArea`/`Select`, `Sheet`
 (with detents), `Menu`, `Disclosure`, `Toast` (`useToast`), `PageHeader`, `Stars`/`StarRating`,
 `Stamp`, `MarginNote`, `DockedAction`, `Ribbon`, `LetterRail`, `Sparkline`, `Readout`, `StepRow`, `RecipePlate`, `Photo`, `RecipeTile`,
-`InstrumentRow`, `Meter`, `Skeleton`, `PublishState`, `Tag`, `Prose`.
+`InstrumentRow`, `Meter`, `Skeleton`, `PublishState`, `Tag`, `Prose`, `Switch`.
 
 - **Compose these rather than hand-rolling inline Tailwind** for a section, a
   control, a figure or an overlay. Hand-rolling is how a previous system drifted

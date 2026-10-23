@@ -405,21 +405,24 @@ The editor, Shop, Discover, Settings and the 404 in the cookbook's own words, wi
 **New primitive**, in `/lab`: `Switch`. `RecipePlate` takes a `transitionName`.
 
 ## 7. UI/UX Foundation
-- **Stack**: React, Vite, Tailwind CSS (`@tailwindcss/postcss`), shadcn/ui, TanStack Query for server state management.
-- **"Step Row" Visual World (Phase 0 foundation)**: The Black & Gold glassmorphic world has been replaced by an early-80s rhythm-machine design language: matte panels, silkscreened labels, lit step keys, and seven-segment readouts. Colour is temporal, never decorative — red marks *now*, orange *due*, yellow *queued*, white *complete*, and an unlit key is drawn as deliberately as a lit one.
-- **One enforced ban, two defined materials**: No glow except a lit key or segment. Gradient and backdrop blur were banned alongside it and are now permitted as materials with one use each: `--faceplate`, the few-percent sheen of a moulded panel lit from above (the only gradient in the chrome), and `.scrim`, the blurred layer behind a modal or sheet that sits over the interface. Neither touches a photograph. `src/designSystem.test.ts` requires both tokens to exist and fails the build on any ad-hoc `bg-gradient-to-*` or `backdrop-blur-*` utility in a component.
-- **Two Themes**: Light and Dark only. Dark is the default and is now true `#000000`; the former separate OLED theme is consolidated into it and the orphaned `.oled` token block has been deleted.
-- **Self-hosted typography**: Archivo Variable (weight + width axes) for the faceplate display voice and instruction prose, JetBrains Mono Variable for UI, labels and data. Latin subsets only, served from `/fonts`, precached by the service worker so they survive an offline kitchen. Tabular figures are on globally.
-- **Component layer (Phase 1)**: A bespoke primitive set replaces hand-rolled inline Tailwind: `Panel`/`PanelRow` (flat bordered surfaces with a silkscreen head and status lamp), `Button` (primary/secondary/ghost/danger, 44px touch target, real press travel), `Field` (unit slot, focus signal, errors wired via `aria-describedby`), `SegmentReadout`, `StepRow`, `InstrumentRow` and `Meter`. Exported from `src/components/ui`.
-- **Seven-segment readouts**: SVG digits that render all seven segments and dim the unlit ones, so a value has a fixed width and absence is drawn as deliberately as light. Reserved for instrument values — timers, temperatures, weights, hydration — with tabular mono for counts and dates. Announced to screen readers as one value.
-- **Step row**: The signature component. One key per phase of a bake, coloured temporally — red is now, orange due, dim amber queued, grey complete, unlit not yet reached. Labels print beneath the keys; below `sm` they drop and the running phase is named above the row so it stays legible at 390px. A recipe with no phases renders as dark keys rather than as an error.
-- **Phase derivation** (`src/lib/phases.ts`): Derives a bake's phases from instruction text with a bread vocabulary (levain, autolyse, mix, bulk, shape, proof, bake, rest), assigned monotonically so a recipe never jumps backwards. Falls back to a generic prep/cook/finish vocabulary unless the text names something a bread bake actually has, so a soup is never given a levain.
-- **Component lab** (`/lab`, development only): A gallery of every primitive in its real states, registered behind `import.meta.env.DEV` so it never reaches a production bundle.
-- **Themed browser surfaces**: Text selection, caret, scrollbars and focus rings are themed from the palette rather than left at browser defaults.
-- **Global reduced-motion support**: `prefers-reduced-motion: reduce` collapses every animation and transition app-wide.
-- **Retired: global font switcher**: The sans/serif/mono `data-font` preference has been removed so the design owns its own typography.
+The design system as built is recorded in [DESIGN.md](DESIGN.md), rewritten at the close of the UI overhaul (section 22).
+- **Stack**: React, Vite, Tailwind CSS v4 (`@tailwindcss/postcss`) with a bespoke primitive layer in `src/components/ui` — no shadcn/ui and no component library — and TanStack Query for reads.
+- **The printed cookbook**: warm paper, ink, one paprika accent for the primary action and the stars, sage for have/done, butter for a timer or the current step, pencil for a margin note, ochre for an error, and the spoiled rule around a destructive control. The Black & Gold and Step Row worlds are removed.
+- **Paper is flat**: no glow, gradient or blur; depth is a hairline, a soft corner and a small lift. `.scrim` is a flat dim behind a sheet. `src/designSystem.test.ts` fails the build on any gradient, blur or zero-offset glow, on tracked uppercase labels, on stock palette colours, on the previous worlds' token names, and on contrast below 4.5:1.
+- **Two themes**: Paper (light) is the default; Dark is warm charcoal `#16120F`, never true black. The choice is applied before first paint by the inline script in `index.html`.
+- **Self-hosted typography**: Fraunces (titles), Source Serif 4 (reading) and Inter Tight (controls and figures, tabular), latin subsets, precached for offline; Caveat optionally for bake notes.
+- **Component layer**: the primitives in `src/components/ui`, each in `/lab` in its real states (section 16 onward).
+- **Phase derivation** (`src/lib/phases.ts`): a bake's phases from its instruction text with a bread vocabulary (levain, autolyse, mix, bulk, shape, proof, bake, rest), assigned monotonically, falling back to prep/cook/finish unless the text names something a bread bake has — a soup is never given a levain. `StepRow` draws them as one thin line.
+- **Component lab** (`/lab`, development only): registered behind `import.meta.env.DEV`, so it never reaches a production bundle.
+- **Themed browser surfaces**: text selection (butter), caret (paprika), scrollbars and the focus ring are drawn from the palette.
+- **Reduced motion** in all three layers: the global CSS rule, `MotionConfig reducedMotion="user"` for framer-motion, and an explicit check before any JS-timed animation.
 - **Landing**: a dedicated landing page for first-time visitors (section 20); there is no onboarding tour — the empty cookbook is the welcome.
-- **Skeletons & Empty States**: Polished animated skeleton loaders for data fetching, custom illustrated 404 pages, and a tailored empty state for the gallery.
-- **Icons**: Standardized clean iconography via `lucide-react`.
-- **Fault Resilience & Crash Protection**: `ErrorBoundary.tsx` wraps the routing tree to catch unhandled rendering exceptions, preventing white-screen crashes.
-- **Server Architecture**: Modular Express server architecture with separated `routes/`, `services/`, and `middleware/`.
+- **Skeletons and empty states**: network content arrives behind a skeleton, never the word "Loading"; an empty list says so in one plain line with the way on.
+- **Icons**: `lucide-react`.
+- **Fault resilience**: `ErrorBoundary.tsx` wraps the routes, so an unhandled render error is a page with the way back, not a white screen.
+- **Server architecture**: a modular Express server with separate `routes/`, `services/`, `middleware/` and `models/`.
+
+## 22. UI overhaul — Phase 7: documentation and clean-up
+- **DESIGN.md rewritten** from the built app: the colour-meaning table with both themes' values, the faces, geometry, every primitive, the motion timings, what enforces them, the deviations from the plan and the known gaps.
+- **Transitional token names retired**: `ground`, `panel`, `panel-sunk`, `silkscreen`, `signal` and `on-signal` are gone from the code and from `index.css`; the phase tokens (`key-*`) remain for `StepRow` alone. `designSystem.test.ts` now forbids the old names in every component, not only the primitives, and forbids their mappings in `index.css`.
+- **CLAUDE.md, PRODUCT.md and README** brought up to date: DESIGN.md is the reference for the visual design, `Switch` is in the component list, the multi-user and theme-count conflicts are recorded as resolved, and README lists the two themes.
