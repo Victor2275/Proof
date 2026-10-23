@@ -34,6 +34,9 @@ export { Stars, StarRating, type StarsProps, type StarRatingProps } from './Star
 export { Stamp, type StampProps } from './Stamp';
 export { MarginNote, type MarginNoteProps } from './MarginNote';
 export { DockedAction, type DockedActionProps } from './DockedAction';
+export { Ribbon } from './Ribbon';
+export { LetterRail, type LetterRailProps } from './LetterRail';
+export { Sparkline, type SparklineProps } from './Sparkline';
 export { Menu, MenuItem, type MenuProps, type MenuItemProps } from './Menu';
 export { Skeleton } from './Skeleton';
 export { PublishState, type PublishStateProps, type PublishStateValue } from './PublishState';

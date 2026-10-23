@@ -3,6 +3,7 @@ import { cn } from '../../lib/cn';
 import type { Component, Recipe } from '../../lib/types';
 import { totalRecipeMinutes, formatMinutes, isPlaceholderTiming } from '../../lib/duration';
 import { RecipePlate } from './RecipePlate';
+import { Stamp } from './Stamp';
 import { Tag } from './Tag';
 
 /*
@@ -16,7 +17,8 @@ import { Tag } from './Tag';
  * The line says only what the recipe can prove: its chapter, and its time
  * when the time is real. The import script's placeholder "50 minutes" on 199
  * recipes is not printed — a library telling the same lie 199 times is worse
- * than one saying nothing — and the ingredient count stands in.
+ * than one saying nothing. The cookbook passes its own line once a recipe has
+ * been baked: when, and how it went (change 51).
  *
  * The whole tile is one link and one press. It never scales on hover, so a
  * grid cannot shift under a cursor while someone reads it.
@@ -36,34 +38,35 @@ export interface RecipeTileProps {
   active?: boolean;
   /** A short fact beside the title: Public for a recipe in the shared cookbook. */
   tag?: string;
+  /** The line under the title, in place of chapter and time: "Baked 3 days ago · ★4". */
+  caption?: string;
+  /** Marks the recipe's best bake on the tile. */
+  best?: boolean;
   className?: string;
 }
 
-export function RecipeTile({ recipe, to, active = false, tag, className }: RecipeTileProps) {
+export function RecipeTile({ recipe, to, active = false, tag, caption: given, best = false, className }: RecipeTileProps) {
   const minutes = isPlaceholderTiming(recipe) ? null : totalRecipeMinutes(recipe);
-  const ingredientCount = recipe.ingredients?.length ?? 0;
   const folder = recipe.folder && recipe.folder !== 'Uncategorized' ? recipe.folder : 'Recipe';
 
   // One string rather than several nodes, so it reads, and tests, as the
   // single line it looks like.
-  const caption =
-    minutes !== null
-      ? `${folder} · ${formatMinutes(minutes)}`
-      : ingredientCount > 0
-        ? `${folder} · ${ingredientCount} ingredients`
-        : folder;
+  const caption = given ?? (minutes !== null ? `${folder} · ${formatMinutes(minutes)}` : folder);
 
   return (
     <Link
       to={to ?? `/recipe/${recipe._id}`}
       className={cn('pressable group flex flex-col gap-2 rounded-key', className)}
     >
-      <RecipePlate
-        src={recipe.imageUrls?.[0]}
-        alt={recipe.title}
-        size="hero"
-        className={cn(active && 'ring-2 ring-accent ring-offset-2 ring-offset-paper')}
-      />
+      <div className="relative">
+        <RecipePlate
+          src={recipe.imageUrls?.[0]}
+          alt={recipe.title}
+          size="hero"
+          className={cn(active && 'ring-2 ring-accent ring-offset-2 ring-offset-paper')}
+        />
+        {best ? <Stamp className="absolute -right-1.5 -top-1.5 scale-90" /> : null}
+      </div>
       <div className="flex flex-col gap-0.5">
         <h3 className="font-title line-clamp-2 text-[1.0625rem] leading-snug text-ink group-hover:underline group-hover:decoration-rule-strong group-hover:underline-offset-4">
           {recipe.title}

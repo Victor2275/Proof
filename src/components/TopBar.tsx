@@ -1,4 +1,7 @@
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Search } from 'lucide-react';
+import { isMac } from '../lib/platform';
+import CommandPalette from './CommandPalette';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '../lib/cn';
 import { haptic } from '../lib/haptics';
@@ -24,6 +27,19 @@ export default function TopBar() {
   const [thumb, setThumb] = useState<{ left: number; width: number } | null>(null);
   // The thumb appears in place on first paint and slides only after that.
   const [settled, setSettled] = useState(false);
+  const [palette, setPalette] = useState(false);
+
+  // ⌘K / Ctrl+K opens the palette from anywhere the app's chrome is shown.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setPalette(true);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   useLayoutEffect(() => {
     const nav = navRef.current;
@@ -97,10 +113,22 @@ export default function TopBar() {
 
         <div className="ml-auto flex items-center gap-2.5">
           <TimerPill />
+          <button
+            type="button"
+            onClick={() => setPalette(true)}
+            aria-haspopup="dialog"
+            aria-keyshortcuts="Meta+K Control+K"
+            className="pressable hidden min-h-11 w-56 items-center gap-2 rounded-full border border-rule bg-paper-raised pl-3 pr-2 text-left text-sm text-ink-muted hover:border-rule-strong lg:flex xl:w-72"
+          >
+            <Search className="h-4 w-4 shrink-0" aria-hidden="true" />
+            <span className="flex-1">Search or jump to…</span>
+            <kbd className="rounded-key border border-rule px-1.5 font-sans text-xs text-ink-2">{isMac() ? '⌘K' : 'Ctrl K'}</kbd>
+          </button>
           <NewRecipeButton />
           <AccountMenu />
         </div>
       </div>
+      <CommandPalette open={palette} onClose={() => setPalette(false)} />
     </header>
   );
 }

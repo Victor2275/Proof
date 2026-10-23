@@ -1,263 +1,246 @@
-import { screen, fireEvent, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { useLocation } from 'react-router-dom';
 import Dashboard from './Dashboard';
 import { api } from '../lib/api';
 import { repo } from '../lib/repo';
 import { startActiveBake } from '../lib/activeBake';
-import { makeRecipe, renderScreen, seed } from '../test/utils';
+import { makeBakeLog, makeNote, makePantryItem, makeRecipe, renderScreen, seed } from '../test/utils';
 
 vi.mock('../lib/api', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../lib/api')>()),
-  api: { getPublished: vi.fn(), getPublishedRecipe: vi.fn() },
+  api: { getPublished: vi.fn(), getPublishedRecipe: vi.fn(), getMyPublications: vi.fn() },
 }));
 
-const renderWithProviders = (ui: React.ReactElement) => renderScreen(ui);
+function Where() {
+  const { pathname, search } = useLocation();
+  return <output data-testid="where">{pathname + search}</output>;
+}
 
-const mockRecipes = [
+const render = (route = '/') =>
+  renderScreen(
+    <>
+      <Dashboard />
+      <Where />
+    </>,
+    { route },
+  );
+
+const RECIPES = [
   makeRecipe({
     _id: '1',
     title: 'Sourdough Bread',
-    description: 'Classic',
-    tags: ['sourdough', 'bread'],
+    tags: ['bread'],
     folder: 'Breads',
     imageUrls: ['https://example.com/sourdough.jpg'],
-    prepTime: '30',
-    cookTime: '45',
-    instructions: [
-      'Feed the levain and let it ripen for 6 hours.',
-      'Bulk ferment for 4 hours.',
-      'Bake at 250C for 30 minutes.',
-    ],
-    updatedAt: '2026-08-03T00:00:00.000Z',
+    difficulty: 'Hard',
+    ingredients: [{ name: 'Flour', quantity: 500, unit: 'g' }, { name: 'Water', quantity: 350, unit: 'g' }],
+    createdAt: '2026-08-03T00:00:00.000Z',
   }),
   makeRecipe({
     _id: '2',
     title: 'Chocolate Chip Cookies',
-    description: 'Sweet',
-    tags: ['cookies', 'dessert'],
+    tags: ['dessert'],
     folder: 'Desserts',
-    prepTime: '15',
-    cookTime: '12',
-    instructions: ['Mix the dough.', 'Bake at 180C for 12 minutes.'],
-    updatedAt: '2026-08-02T00:00:00.000Z',
+    difficulty: 'Easy',
+    ingredients: [{ name: 'Butter', quantity: 100, unit: 'g' }, { name: 'Chocolate chips', quantity: 200, unit: 'g' }],
+    createdAt: '2026-08-02T00:00:00.000Z',
   }),
   makeRecipe({
     _id: '3',
-    title: 'Pizza Dough',
-    description: 'Neapolitan',
-    tags: ['pizza', 'sourdough'],
-    folder: 'Breads',
-    prepTime: '20',
-    cookTime: '10',
-    instructions: ['Mix the dough.', 'Bulk ferment for 2 hours.', 'Bake for 10 minutes.'],
-    updatedAt: '2026-08-01T00:00:00.000Z',
+    title: 'Apple Pie',
+    folder: 'Desserts',
+    difficulty: 'Medium',
+    ingredients: [{ name: 'Bramley apples', quantity: 6, unit: '' }],
+    createdAt: '2026-08-01T00:00:00.000Z',
   }),
 ];
 
-const emptyTheCookbook = async () => {
-  await repo.deleteRecipe('1');
-  await repo.deleteRecipe('2');
-  await repo.deleteRecipe('3');
-};
+const titles = (within_: HTMLElement) => within_.querySelectorAll('h3');
+const allRecipes = () => screen.getByRole('heading', { name: /^(All recipes|Recipes)$/ }).closest('section')!;
 
-describe('Dashboard Component', () => {
-  beforeEach(async () => {
-    localStorage.clear();
-    await seed('recipes', mockRecipes);
-    vi.mocked(api.getPublished).mockResolvedValue({ items: [], total: 0, offset: 0, limit: 8 });
+beforeEach(async () => {
+  localStorage.clear();
+  await seed('recipes', RECIPES);
+  vi.mocked(api.getPublished).mockResolvedValue({ items: [], total: 0, offset: 0, limit: 8 });
+});
+
+describe('the cookbook home', () => {
+  it('puts search first, full width, with no unlabelled shuffle beside it', async () => {
+    render();
+    const search = await screen.findByRole('searchbox', { name: 'Search the cookbook' });
+    await waitFor(() => expect(search).toHaveAttribute('placeholder', 'Search 3 recipes, ingredients, notes'));
+    expect(screen.queryByRole('button', { name: 'Inspire me' })).not.toBeInTheDocument();
   });
 
-  it('renders the cookbook as a gallery of photographs, each named underneath', async () => {
-    renderWithProviders(<Dashboard />);
-    await waitFor(() => {
-      expect(screen.getByText('Sourdough Bread')).toBeDefined();
-    });
-    expect(screen.getByRole('img', { name: 'Sourdough Bread' })).toHaveAttribute(
-      'src',
-      'https://example.com/sourdough.jpg',
+  it('opens on the last bake, with its note to next time, and shows each recipe once above the grid', async () => {
+    await seed('bakeLogs', [
+      makeBakeLog({ _id: 'b1', recipeId: '1', date: '2026-10-20T00:00:00.000Z', rating: 4, nextTime: 'Cooler water.' }),
+      makeBakeLog({ _id: 'b2', recipeId: '2', date: '2026-10-10T00:00:00.000Z' }),
+      makeBakeLog({ _id: 'b3', recipeId: '1', date: '2026-10-01T00:00:00.000Z' }),
+    ]);
+    render();
+    const resume = await screen.findByRole('link', { name: /^Pick up where you left off: Sourdough Bread/ });
+    expect(resume).toHaveAttribute('href', '/recipe/1');
+    expect(resume).toHaveAccessibleName(/Next time: Cooler water\./);
+    const recent = screen.getByRole('heading', { name: 'Recently baked' }).closest('section')!;
+    expect([...titles(recent)].map((h) => h.textContent)).toEqual(['Chocolate Chip Cookies']);
+    expect(within(recent).getByRole('link', { name: /All bakes/ })).toHaveAttribute('href', '/bakes');
+  });
+
+  it('resumes a bake that is running instead', async () => {
+    startActiveBake('2', 'Chocolate Chip Cookies', 1);
+    render();
+    expect(await screen.findByRole('link', { name: /^Resume baking: Chocolate Chip Cookies/ })).toHaveAttribute('href', '/recipe/2/bake');
+  });
+
+  it('says when a tile was baked and how it went, never an ingredient count', async () => {
+    await seed('bakeLogs', [makeBakeLog({ recipeId: '3', date: new Date(Date.now() - 3 * 86_400_000).toISOString(), rating: 5, isPersonalBest: true })]);
+    render();
+    const pie = await within(await waitFor(allRecipes)).findByRole('link', { name: /Apple Pie/ });
+    await waitFor(() => expect(pie).toHaveTextContent('Baked 3 days ago · ★5'));
+    expect(within(pie).getByRole('img', { name: 'Personal best' })).toBeInTheDocument();
+    expect(screen.queryByText(/ingredients$/)).not.toBeInTheDocument();
+  });
+
+  it('prints its contents as chapters with their counts, each opening the chapter', async () => {
+    const user = userEvent.setup();
+    render();
+    const contents = (await screen.findByRole('heading', { name: 'Contents' })).closest('section')!;
+    await user.click(within(contents).getByRole('link', { name: 'Desserts, 2 recipes' }));
+    expect(screen.getByTestId('where')).toHaveTextContent('/?chapter=Desserts');
+  });
+
+  it('keeps small chapters and loose notes behind "Show more"', async () => {
+    const user = userEvent.setup();
+    await seed('notes', [makeNote()]);
+    const many = Array.from({ length: 9 }, (_, i) => makeRecipe({ _id: `c${i}`, title: `R${i}`, folder: `Chapter ${i}` }));
+    await seed('recipes', many);
+    render();
+    const more = await screen.findByRole('button', { name: /more chapters and loose notes/ });
+    expect(more).toHaveAttribute('aria-expanded', 'false');
+    await user.click(more);
+    expect(screen.getByRole('link', { name: 'Loose notes, 1 note' })).toHaveAttribute('href', '/notes');
+  });
+
+  it('switches the contents to an index A–Z, kept in the address, with a letter rail', async () => {
+    const user = userEvent.setup();
+    render();
+    await user.click(await screen.findByRole('radio', { name: 'A–Z' }));
+    expect(screen.getByTestId('where')).toHaveTextContent('/?view=az');
+    expect(document.getElementById('index-A')).toHaveTextContent('A1 recipe');
+    const rail = screen.getByRole('navigation', { name: 'Jump to a letter' });
+    expect(within(rail).getByRole('link', { name: 'S' })).toHaveAttribute('href', '#index-S');
+    expect(within(rail).queryByRole('link', { name: 'Q' })).not.toBeInTheDocument();
+  });
+});
+
+describe('a chapter', () => {
+  it('opens as its own page, with back to the cookbook', async () => {
+    render('/?chapter=Desserts');
+    expect(await screen.findByRole('heading', { level: 1, name: 'Desserts' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Back to Cookbook' })).toHaveAttribute('href', '/');
+    await waitFor(() => expect([...titles(allRecipes())].map((h) => h.textContent)).toEqual(['Chocolate Chip Cookies', 'Apple Pie']));
+  });
+});
+
+describe('sorting and filtering', () => {
+  it('sorts A–Z, and remembers it', async () => {
+    const user = userEvent.setup();
+    render();
+    await user.selectOptions(await screen.findByRole('combobox', { name: 'Sort' }), 'az');
+    expect([...titles(allRecipes())].map((h) => h.textContent)).toEqual(['Apple Pie', 'Chocolate Chip Cookies', 'Sourdough Bread']);
+    expect(localStorage.getItem('proof.cookbookSort')).toBe('az');
+  });
+
+  it('puts unrated recipes after rated ones when sorting by rating', async () => {
+    const user = userEvent.setup();
+    await seed('bakeLogs', [makeBakeLog({ _id: 'x', recipeId: '3', rating: 3 }), makeBakeLog({ _id: 'y', recipeId: '2', rating: 5 })]);
+    render();
+    await user.selectOptions(await screen.findByRole('combobox', { name: 'Sort' }), 'rating');
+    await waitFor(() =>
+      expect([...titles(allRecipes())].map((h) => h.textContent)).toEqual(['Chocolate Chip Cookies', 'Apple Pie', 'Sourdough Bread']),
     );
-    expect(screen.getByRole('heading', { name: 'Sourdough Bread' })).toBeInTheDocument();
   });
 
-  it('leaves phases to the recipe page rather than drawing them on every tile', async () => {
-    renderWithProviders(<Dashboard />);
-    await waitFor(() => expect(screen.getByText('Sourdough Bread')).toBeDefined());
-    // A cookbook tile is a picture, a name and one line; the shape of a bake
-    // is read on the recipe itself.
-    expect(screen.queryByRole('img', { name: /Sourdough Bread phases/i })).not.toBeInTheDocument();
+  it('filters by difficulty and by what has been baked, and says how many are shown', async () => {
+    const user = userEvent.setup();
+    await seed('bakeLogs', [makeBakeLog({ recipeId: '2' })]);
+    render();
+    await user.click(await screen.findByRole('button', { name: 'Filter' }));
+    const sheet = await screen.findByRole('dialog', { name: 'Filter' });
+    await user.click(within(sheet).getByRole('radio', { name: 'Not yet' }));
+    await user.click(within(sheet).getByRole('button', { name: 'Done' }));
+    expect(screen.getByText(/2 of 3 shown/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Filter · 1' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Clear filters' }));
+    expect(screen.getByRole('button', { name: 'Filter' })).toBeInTheDocument();
   });
 
-  it('prints a real total time the way a cookbook does, not raw prepTime/cookTime text', async () => {
-    renderWithProviders(<Dashboard />);
-    await waitFor(() => expect(screen.getByText('Sourdough Bread')).toBeDefined());
-    // 30 (prep) + 45 (cook) = 75 minutes.
-    expect(screen.getByText(/· 1 h 15$/)).toBeInTheDocument();
+  it('offers "Can make now" only once there is a cupboard, and keeps what it covers', async () => {
+    const user = userEvent.setup();
+    await seed('pantry', [makePantryItem({ name: 'Flour' }), makePantryItem({ _id: 'p2', name: 'Water' })]);
+    render();
+    await user.click(await screen.findByRole('button', { name: 'Filter' }));
+    await user.click(screen.getByRole('switch', { name: /Can make now/ }));
+    await user.click(screen.getByRole('button', { name: 'Done' }));
+    // The bread has everything; the cookies are two short; the pie is one short.
+    await waitFor(() => expect(screen.getByText(/3 of 3 shown/)).toBeInTheDocument());
   });
 
-  it('names the failure, and offers a retry, when the device database will not open', async () => {
-    const spy = vi.spyOn(repo, 'getRecipes').mockRejectedValue(new Error('Storage is blocked.'));
-    renderWithProviders(<Dashboard />);
-    expect(await screen.findByText(/Couldn't open the cookbook on this device/i)).toBeInTheDocument();
-    expect(screen.getByText(/Storage is blocked\./)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /try again/i })).toBeInTheDocument();
-    // No count is printed over a cookbook that could not be read.
-    expect(screen.queryByText(/^\d+ recipes?$/)).not.toBeInTheDocument();
-    spy.mockRestore();
+  it('switches to a list of thumbnails with full titles', async () => {
+    const user = userEvent.setup();
+    render();
+    await user.click(await screen.findByRole('radio', { name: 'List' }));
+    expect(within(allRecipes()).getByRole('link', { name: /Chocolate Chip Cookies/ })).toBeInTheDocument();
+    expect(localStorage.getItem('proof.cookbookLayout')).toBe('list');
+  });
+});
+
+describe('search', () => {
+  it('finds recipes by an ingredient, and bakes by what their notes say', async () => {
+    const user = userEvent.setup();
+    await seed('bakeLogs', [makeBakeLog({ _id: 'n1', recipeId: '1', notes: 'Crumb too tight, more butter next time.' })]);
+    render();
+    await user.type(await screen.findByRole('searchbox', { name: 'Search the cookbook' }), 'butter');
+    expect(await screen.findByText(/1 recipe · 1 in your bake notes/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Chocolate Chip Cookies/ })).toBeInTheDocument();
+    const notes = screen.getByRole('heading', { name: 'In your bake notes' }).closest('section')!;
+    expect(within(notes).getByRole('link', { name: /Sourdough Bread/ })).toHaveAttribute('href', '/recipe/1?makeId=n1');
   });
 
   it('says what the search missed, and offers to clear it', async () => {
-    renderWithProviders(<Dashboard />);
-    await screen.findByText('Sourdough Bread');
-    fireEvent.change(screen.getByPlaceholderText(/Search recipes or tags/i), { target: { value: 'zzzzqqq' } });
+    const user = userEvent.setup();
+    render();
+    await user.type(await screen.findByRole('searchbox', { name: 'Search the cookbook' }), 'zzzz');
+    expect(await screen.findByText(/Nothing in the cookbook matches “zzzz”/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Clear the search' }));
+    expect(screen.getByRole('searchbox', { name: 'Search the cookbook' })).toHaveValue('');
+  });
 
-    expect(await screen.findByText(/Nothing in the cookbook matches/i)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /Clear the search/i }));
-    expect(await screen.findByText('Sourdough Bread')).toBeInTheDocument();
+  it('offers a labelled "Surprise me" among the results', async () => {
+    const user = userEvent.setup();
+    render();
+    await user.type(await screen.findByRole('searchbox', { name: 'Search the cookbook' }), 'e');
+    await user.click(await screen.findByRole('button', { name: 'Surprise me from these' }));
+    expect(screen.getByTestId('where').textContent).toMatch(/^\/recipe\//);
+  });
+});
+
+describe('when the device will not cooperate', () => {
+  it('names the failure, and offers a retry', async () => {
+    vi.spyOn(repo, 'getRecipes').mockRejectedValueOnce(new Error('The database is blocked.'));
+    render();
+    expect(await screen.findByRole('alert')).toHaveTextContent('The database is blocked.');
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
   });
 
   it("offers an empty cookbook the shared cookbook's starter shelf instead of an empty list", async () => {
-    await emptyTheCookbook();
-    vi.mocked(api.getPublished).mockResolvedValue({
-      items: [
-        {
-          _id: 'p1', slug: 'focaccia', title: 'Focaccia', description: '', imageUrls: [], servings: 8,
-          difficulty: 'Easy', prepTime: '', cookTime: '', tags: [], folder: 'Breads',
-          authorHandle: 'proof', sourceAttribution: '', publishedAt: '2026-08-01T00:00:00.000Z',
-        },
-      ],
-      total: 1, offset: 0, limit: 8,
-    });
-    renderWithProviders(<Dashboard />);
-
+    for (const r of RECIPES) await repo.deleteRecipe(r._id);
+    render();
     expect(await screen.findByRole('heading', { name: /Start from one of these/i })).toBeInTheDocument();
-    expect(await screen.findByRole('button', { name: 'Save Focaccia to my cookbook' })).toBeInTheDocument();
-    // No search box and no "0 recipes" over a cookbook that is simply new.
-    expect(screen.queryByPlaceholderText(/Search recipes or tags/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
     expect(screen.queryByText('0 recipes')).not.toBeInTheDocument();
   });
-
-  it('keeps the way to start from scratch when the shared cookbook is out of reach', async () => {
-    await emptyTheCookbook();
-    vi.mocked(api.getPublished).mockRejectedValue(new Error('offline'));
-    renderWithProviders(<Dashboard />);
-
-    // The shared cookbook retries once before it gives up.
-    expect(await screen.findByText(/needs a connection/i, {}, { timeout: 4000 })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Write a recipe/i })).toHaveAttribute('href', '/new');
-  }, 8000);
-
-  it('filters recipes by search query (fuse.js)', async () => {
-    renderWithProviders(<Dashboard />);
-    await waitFor(() => expect(screen.getByText('Sourdough Bread')).toBeDefined());
-
-    const searchInput = screen.getByPlaceholderText(/Search recipes or tags/i);
-    fireEvent.change(searchInput, { target: { value: 'Chocolate' } });
-
-    await waitFor(() => {
-      expect(screen.getByText('Chocolate Chip Cookies')).toBeDefined();
-      expect(screen.queryByText('Pizza Dough')).not.toBeInTheDocument();
-    });
-  });
-
-  it('filters recipes by bank (folder)', async () => {
-    renderWithProviders(<Dashboard />);
-    await waitFor(() => expect(screen.getByText('Sourdough Bread')).toBeDefined());
-
-    fireEvent.click(screen.getByRole('button', { name: /^Desserts/ }));
-
-    await waitFor(() => {
-      expect(screen.getByText('Chocolate Chip Cookies')).toBeDefined();
-      expect(screen.queryByText('Sourdough Bread')).not.toBeInTheDocument();
-      expect(screen.queryByText('Pizza Dough')).not.toBeInTheDocument();
-    });
-  });
-
-  it('returns to the full list from "All"', async () => {
-    renderWithProviders(<Dashboard />);
-    await waitFor(() => expect(screen.getByText('Sourdough Bread')).toBeDefined());
-
-    fireEvent.click(screen.getByRole('button', { name: /^Desserts/ }));
-    await waitFor(() => expect(screen.queryByText('Sourdough Bread')).not.toBeInTheDocument());
-
-    fireEvent.click(screen.getByRole('button', { name: /^All/ }));
-    await waitFor(() => expect(screen.getByText('Sourdough Bread')).toBeDefined());
-  });
-
-  it('lights the running recipe\'s row and offers Resume, not another row', async () => {
-    startActiveBake('1', 'Sourdough Bread', 1);
-    renderWithProviders(<Dashboard />);
-
-    await waitFor(() => expect(screen.getByText(/Now baking/i)).toBeInTheDocument());
-    expect(screen.getByRole('link', { name: /resume/i })).toHaveAttribute('href', '/recipe/1/bake');
-
-    // The active recipe appears once — in the "Now baking" panel — not a
-    // second time in the plain list below it.
-    expect(screen.getAllByText('Sourdough Bread')).toHaveLength(1);
-  });
-
-  it("does not print the seed's placeholder total on the running bake", async () => {
-    // 199 of the live recipes carry "20 mins" / "30 mins" verbatim; the running
-    // bake read 50 MIN while the tiles already drew the time as unknown.
-    await seed('recipes', [{ ...mockRecipes[0], prepTime: '20 mins', cookTime: '30 mins' }]);
-    startActiveBake('1', 'Sourdough Bread', 1);
-    renderWithProviders(<Dashboard />);
-
-    await waitFor(() => expect(screen.getByText(/Now baking/i)).toBeInTheDocument());
-    expect(screen.queryByRole('img', { name: /50 MIN/ })).not.toBeInTheDocument();
-    expect(screen.getByRole('img', { name: /-- MIN|--/ })).toBeInTheDocument();
-  });
-
-  it('does not show a Now Baking panel or Resume control when nothing is running', async () => {
-    renderWithProviders(<Dashboard />);
-    await waitFor(() => expect(screen.getByText('Sourdough Bread')).toBeDefined());
-    expect(screen.queryByText(/Now baking/i)).not.toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: /resume/i })).not.toBeInTheDocument();
-  });
-
-  it("Inspire Me navigates to a recipe from the current filtered set", async () => {
-    renderWithProviders(<Dashboard />);
-    await waitFor(() => expect(screen.getByText('Sourdough Bread')).toBeDefined());
-    // Just confirm the control renders and is clickable without throwing —
-    // the destination is random, so we don't assert which recipe it lands on.
-    const inspireButton = screen.getByRole('button', { name: /inspire me/i });
-    fireEvent.click(inspireButton);
-    expect(inspireButton).toBeInTheDocument();
-  });
-  it("shows each recipe's photograph on a plate, and a drop cap where there is none", async () => {
-    renderWithProviders(<Dashboard />);
-    await waitFor(() => expect(screen.getByText('Sourdough Bread')).toBeDefined());
-
-    expect(screen.getByRole('img', { name: 'Sourdough Bread' })).toHaveAttribute(
-      'src',
-      'https://example.com/sourdough.jpg',
-    );
-    // Cookies has no image; its row still reads, with no broken image in it.
-    expect(screen.getByText('Chocolate Chip Cookies')).toBeInTheDocument();
-    expect(screen.queryByRole('img', { name: 'Chocolate Chip Cookies' })).not.toBeInTheDocument();
-  });
-  it('draws a page of tiles at a time rather than the whole library at once', async () => {
-    // 203 tiles meant 200+ image requests in flight behind a six-connection
-    // limit, where they stall and compete with the app's own API calls.
-    // Newest first, so Bulk Recipe 0 leads.
-    const many = Array.from({ length: 60 }, (_, i) => ({
-      ...mockRecipes[0],
-      _id: `bulk-${String(i).padStart(2, '0')}`,
-      title: `Bulk Recipe ${i}`,
-      updatedAt: new Date(Date.UTC(2026, 8, 1) - i * 60_000).toISOString(),
-    }));
-    await emptyTheCookbook();
-    await seed('recipes', many);
-
-    renderWithProviders(<Dashboard />);
-    await waitFor(() => expect(screen.getByText('Bulk Recipe 0')).toBeDefined());
-
-    expect(screen.getByText('Bulk Recipe 47')).toBeInTheDocument();
-    expect(screen.queryByText('Bulk Recipe 48')).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('button', { name: /show 12 more/i }));
-    expect(screen.getByText('Bulk Recipe 48')).toBeInTheDocument();
-    // A full page of tiles is a few seconds to mount under jsdom, which is
-    // slower at layout-free DOM construction than any real browser; the budget
-    // is raised rather than the page size lowered to fit a test runner.
-  }, 20000);
 });

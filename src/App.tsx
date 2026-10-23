@@ -174,7 +174,7 @@ function AnimatedRoutes() {
         <Route path="/shop" element={<ShopPage />} />
         <Route path="/published" element={<PublishedPage />} />
         <Route path="/gallery" element={<Navigate to="/bakes" replace />} />
-        <Route path="/analytics" element={<Navigate to="/bakes?view=totals" replace />} />
+        <Route path="/analytics" element={<Navigate to="/bakes" replace />} />
         <Route path="/grocery" element={<Navigate to="/shop" replace />} />
         <Route path="/pantry" element={<Navigate to="/shop?view=cupboard" replace />} />
         <Route path="/settings" element={<Settings />} />

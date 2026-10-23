@@ -29,6 +29,9 @@ import {
   StarRating,
   Stamp,
   MarginNote,
+  Ribbon,
+  LetterRail,
+  Sparkline,
 } from './ui';
 import { derivePhases } from '../lib/phases';
 import AIReviewSheet from './AIReviewSheet';
@@ -298,6 +301,21 @@ export default function Lab() {
           <p className="text-sm text-ink-muted">
             The docked action bar lives on the recipe page: scroll its Start cooking off the top of a phone screen.
           </p>
+        </div>
+      </Section>
+
+      <Section name="Ribbon, letter rail and sparkline">
+        <div className="flex flex-wrap items-start gap-8">
+          <div className="relative h-28 w-64 rounded-panel bg-paper-sunk p-4">
+            <Ribbon />
+            <span className="text-xs font-semibold text-pencil">Pick up where you left off</span>
+          </div>
+          <LetterRail letters={['A', 'B', 'C', 'F', 'P', 'S']} idFor={(l) => `lab-${l}`} onJump={() => undefined} className="h-80" />
+          <div className="flex flex-col gap-2">
+            <Sparkline values={[2, 3, 3, 4, 5]} label="Cheesecake" />
+            <Sparkline values={[4, 4, 3]} label="Country loaf" />
+            <p className="text-sm text-ink-muted">Two bakes draw nothing: a pair is not a trend.</p>
+          </div>
         </div>
       </Section>
 

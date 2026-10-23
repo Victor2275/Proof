@@ -56,16 +56,10 @@ The bake log lives on its recipe since the UI overhaul, Phase 3 (section 18): "L
 - **Rate Limiting**: The PIN (5/min), sign-up, sign-in, password and deletion routes (10 per 15 min) and each AI route (10/min) are rate-limited per caller; the server trusts Render's one proxy hop so the limit is per person, not global.
 
 ## 2a. Dashboard (Phase 2 — hero surface)
-- **Bake history as iterations** (`Gallery.tsx`, Phase 5): the default reading groups a recipe's bakes into one row running oldest to newest, so the row itself is the progress — this loaf against the same loaf three attempts ago. A second reading sorts every bake newest-first, cut into months. One tile is one bake, not one photograph: a bake with three photos is still one attempt, and the extras are marked rather than counted. An attempt number is only printed where there is a sequence to count.
-- **Gallery cookbook**: The dashboard is a grid of photographs, two up on a phone and three or four on a desktop, each named underneath. Browsing a cookbook starts with "what do I feel like making," and a photograph answers that faster than any metadata.
-- **Hover reveals what a recipe can prove**: a flat panel slides up over the photograph's lower half carrying bake type, real total time, and real phases; the tile's border lights at the same moment. Nothing scales — a grid whose tiles grow under the cursor shifts while you read it. The panel is not `aria-hidden`: hover is unavailable to keyboard and screen reader users, so hiding it would make them the only people who can never reach those facts.
-- **Provenance gates the data**: `derivePhasesWithReading` reports whether a recipe's phases were *proved* (it named a levain, an autolyse, a bulk) or are merely the generic prep/cook/finish shape that fits anything; `isPlaceholderTiming` recognises the import script's `"20 mins"` / `"30 mins"` pair, which 199 of the 203 live recipes carry verbatim. Neither a step row nor a time is drawn unless it is real — otherwise the tile falls back to bake type and ingredient count, which are always true. The Recipe Viewer applies the same rule and shows an unlit `--` rather than a fabricated 50 MIN.
-- **Paged rendering**: the grid draws 48 tiles at a time with a "Show more" control. Rendering the whole library put 203 `<img>` elements on the page and 170+ requests in flight at once, which stall behind the browser's six-connections-per-host limit and compete with the app's own API calls.
-- **Bank rail**: Recipes are organised by folder ("bake type") as a vertical rail on desktop (internally scrolling past 70vh, since the real cookbook already has 18 distinct folders) and a horizontal scroller on mobile. Search (`fuse.js`) and bank filtering compose together.
-- **Smart shelves**: "Personal Bests" and "Recently Baked" — derived from real bake logs, deduplicated to one entry per recipe, hidden automatically while searching or a bank filter is active so they don't compete with a deliberate query.
-- **Now Baking / chase light**: A currently running bake (tracked in `src/lib/activeBake.ts`, `localStorage`-backed, live across tabs) surfaces as a dedicated panel at the top of the dashboard with a RESUME control into Baking Mode, as the timer pill at the top of every screen (section 17), and as the one lit key in that recipe's own row elsewhere in the list.
-- **Duration parsing**: `src/lib/duration.ts` reads both the schema's bare-minutes convention ("30") and AI-import's unit-annotated or bracket-wrapped text ("[50 mins]", "1 hr 30 mins") into a single total, formatted for the segment readout.
-- **Phase derivation reused for real recipes**: The Phase 1 `derivePhases` bread/generic vocabulary now drives every dashboard row, not just the component lab.
+Rebuilt as the cookbook home in the UI overhaul, Phase 4: see section 19. Still true from here:
+- **Provenance gates the data**: `isPlaceholderTiming` recognises the import script's `"20 mins"` / `"30 mins"` pair, which 199 of the 203 live recipes carry verbatim; no time is printed unless it is real.
+- **Duration parsing**: `src/lib/duration.ts` reads both the bare-minutes convention ("30") and unit-annotated or bracket-wrapped text ("[50 mins]", "1 hr 30 mins") into one total, printed as a cookbook does ("1 h 15").
+- **The running bake** (`src/lib/activeBake.ts`, `localStorage`-backed, live across tabs) surfaces on the cookbook's resume card and as the timer pill (section 17).
 
 ## 2b. Application shell (Phase 2)
 - **Sidebar, bottom nav, More and the floating New**: replaced in the UI overhaul by four destinations, a phone tab bar, a desktop top bar and an avatar menu — see section 17.
@@ -99,8 +93,6 @@ Rebuilt as the bake sheet in the UI overhaul, Phase 3 (section 18). Still true: 
 
 ## 7a. Analytics, Settings, Landing, 404 (Phase 7)
 - **Settings as latching keys**: Every preference was an iOS-style sliding pill — a control from a different machine, and the only widget in the app carrying state by a moving dot rather than by light. They are latching keys now, the same key the step row draws, held down. The key prints ON or OFF as well as lighting, so it survives a colour-vision difference, and it carries `aria-pressed` so a screen reader announces a switch rather than a button. Theme is a bank of three keys where exactly one is down.
-- **Analytics reports only what it can prove**: The live library holds three bake logs. A twelve-month bar chart over that is eleven empty bars beside one, which reads as nothing. Only months that actually contain a bake are drawn; below three of them the panel says outright that there is not enough to read a trend. "Baked more than once" refuses to rank recipes that have all been baked exactly once, because printing the first three of a three-way tie invents an order. Totals set the bake count against the size of the library, with a meter for how much of it has ever been baked.
-- **Fixed — analytics read the whole offline store once per recipe**: The page gathered local bake logs by asking for each recipe's logs in turn, and that helper reads the entire IndexedDB store and then filters it — so the page opened 203 transactions and read the whole store 203 times on load. `getAllLocalBakeLogs` reads it once.
 - **Fixed — every meter grew an orange tip near full**: `Meter`'s `hotAt` defaults to 1, meaning the scale has no dangerous end, but the warm band 15% below it fired regardless. Any meter running near full showed orange cells it was never asked for. A meter with no hot end now has no warm band either.
 - **Fixed — a real but tiny value read as empty**: 3 of 203 recipes rounds to zero lit cells, so a meter captioned "3 of 203" sat entirely dark. A non-zero value now lights at least one cell: some is not none, and that difference is the reading.
 - **The landing page demonstrates rather than asserts**: The one Persuade surface in an Operate product, and the only screen a stranger sees. It led with three feature cards claiming hands-free control, synced timers and bake logs, over a blurred stock photograph that could have fronted any cookbook app. The hero is now the machine running — a step row chasing through a real sourdough's phases, with the phase counted off on a segment readout. The phases come from `derivePhases`, the app's own vocabulary, so the page cannot claim a levain the parser would not find.
@@ -246,9 +238,9 @@ Thirteen destinations spread over a sidebar and a More drawer become four, and t
 - **Avatar** (`AccountMenu`): a menu dropped from the top bar on a desktop, a bottom sheet on a phone. Settings, Sign in (or Account, signed in), My published recipes, Export or import (Settings → Data on this device), Help, and Moderation for the operator. Signed in, it shows the baker's initials and @handle.
 - **Help** (`HelpSheet`): the cookbook, cooking, bakes, shop and "it stays on this device", each in a sentence or two.
 - **My published recipes** (`/published`, change 132): the signed-in baker's recipes in the shared cookbook with where each stands; each row opens the recipe on this device. Signed out, it says publishing needs an account and why.
-- **Bakes merges Gallery and Analytics** (`BakesPage`): a History | Totals segmented control switches in place and keeps `?view=totals` in the address. Phase 4 rebuilds both views.
+- **Bakes merges Gallery and Analytics** (`BakesPage`): rebuilt in Phase 4 as a journal and a By recipe view with a summary line (section 19).
 - **Shop merges Grocery and Pantry** (`ShopPage`): To buy | In the cupboard, `?view=cupboard`. Phase 6 rebuilds both views.
-- **Old addresses redirect**: `/gallery`, `/analytics`, `/grocery` and `/pantry` replace themselves with the matching Bakes or Shop view, so bookmarks and notifications still land.
+- **Old addresses redirect**: `/gallery` and `/analytics` go to Bakes, `/grocery` and `/pantry` to the matching Shop view, so bookmarks and notifications still land.
 - **Loose notes** (change 24): General Notes is renamed and reached from a row at the end of the Cookbook's chapter list, with Back to the Cookbook.
 - **The timer pill** (`TimerPill`, change 27): while a bake is open or a timer runs, a butter pill reads "Oven · 12:04" — the timer nearest its end, running before paused, with "+1" for each other — sticky at the top of a phone screen and in the desktop top bar. It returns to baking mode, or with no bake open, opens the timers sheet. A timer past its end gains a minus sign and weight, never an alarm colour. Baking mode shows its own timers, so the pill stays out of it. The floating timer stack is gone; `TimerManager` keeps the timers and their sheet.
 - **Chrome-free public pages** (change 28): a shared recipe (`/r/:slug`), a baker's profile (`/@handle`) and baking mode render with no tab bar and no top bar.
@@ -307,6 +299,36 @@ The recipe page reads like a page of a cookbook, the bake log moves onto it, and
 - **Restyled**: the before/after slider is a range input over the photographs, so it works by keyboard; side-by-side photographs are captioned under each picture and show photographs stored on the device.
 - **Removed**: the Recipe / Previous makes tabs, the transport strip, the publication strip, the bake-logs grid, "Read more" (`ExpandableInstruction`), the old timer parser, and the phone's floating Start key.
 - **Tests**: the frontend suite waits up to 5 s for an async result and 20 s per test, because a full parallel run is slower than one file alone.
+
+## 19. UI overhaul — Phase 4: the cookbook and Bakes
+
+The cookbook reads like the front of a book — contents, an index, the last bake — and the bake log becomes a journal (AUDIT_REPORT changes 43–57, 98–108).
+
+**The cookbook** (`Dashboard`, `src/lib/cookbook.ts`)
+- **Search first**, full width, under the title: "Search 203 recipes, ingredients, notes". The unlabelled shuffle beside it is gone.
+- **Pick up where you left off**: one card with a paprika ribbon (`Ribbon`) — the bake running now ("Resume baking", into baking mode), or the last bake, with its stars, how many bakes, and its note to next time pencilled.
+- **Recently baked**: one strip in place of Personal Bests and Recently Baked; a recipe already on the card above is not repeated. Its header row and its last tile, "All bakes", open Bakes. A recipe with a best bake carries the stamp.
+- **Contents**: chapters as a printed table of contents — the name, dotted leaders, the count — each a 52px row opening the chapter. The eight largest show; the rest and Loose notes sit behind "N more chapters and loose notes" (`Disclosure`).
+- **Index A–Z**: Chapters | A–Z switches the contents in place and keeps `?view=az`. Recipes are filed under their first real letter ("The", "A" and accents ignored), with a thumb-index rail down the right (`LetterRail`): a press or a sliding thumb jumps, with a selection tick; empty letters are pale.
+- **A chapter is a page** (`/?chapter=Dessert`): its name, Back to the cookbook, and its recipes with the same sort and filter. A recipe's back button returns here.
+- **All recipes**: a grid of tiles or a list of thumbnails with full titles (Grid | List, remembered on the device), sorted by Recently added, A–Z, Recently baked or Rating (remembered; unrated after rated, never-baked after baked), and filtered in a sheet (`CookbookFilterSheet`) by chapter, difficulty, baked or not yet, favourites, published (signed in) and "Can make now" (with a cupboard: at most two things short). The filter button counts what is on; "N of M shown" and Clear filters say so.
+- **Tiles say when they were baked**: "Baked 3 days ago · ★4" once a recipe has been baked, its chapter until then; never an ingredient count (change 51). Titles wrap to two lines.
+- **The next page arrives as the end comes into view** (36 at a time); a "Show more" button stays for a keyboard.
+- **Search** reads titles, tags, ingredients and descriptions, and, as a second group, "In your bake notes": bakes whose notes, changes, note to next time or step notes say the words, with a line of context, each opening that bake. "Surprise me from these" picks one of the results; "Surprise me" under All recipes picks from the list.
+
+**Search or jump to** (`CommandPalette`, change L11)
+- ⌘K or Ctrl+K anywhere, or the top bar's search button on a desktop, opens one field that reaches a recipe (by name or ingredient), a chapter, a place in the app, or an action: write a new recipe, paste one from a link, resume the bake running. A combobox: the arrow keys move, Enter opens, Escape closes. It reads the device, so it works offline.
+
+**Bakes** (`BakesPage`)
+- **The summary line**: "17 bakes · 6 recipes · best: Cheesecake" (`summaryLine`). A best is named only between two or more recipes, from recipes rated more than once, and not on a tie at the top. The totals page and its "6 of 203 baked" meter are gone (`Analytics` and `Gallery` are removed; `/analytics` and `/gallery` redirect here).
+- **Journal**: by month, newest first; each bake its own photograph or a note card with the recipe's initial, the recipe, "Oct 17 · Bake 5", its stars, the first line of what happened (or its note to next time), and the stamp on a best. A bake opens in its sheet.
+- **By recipe** (`?view=recipe`): each recipe baked more than once as a strip, oldest to newest, a photo-less bake a note card with its number; its stars as a sparkline once three bakes are rated (`Sparkline`); recipes baked once gathered in one short list.
+- **One recipe** (`?recipe=…`, from a recipe's Last time card): the page narrows to it, titled with it, with Open the recipe and Every recipe.
+- **Compare**: ticks two bakes in either view; a bar offers "Compare (2)", opening them side by side (`CompareBakesSheet`) — photographs (with a wipe between them when both have one), stars, what happened, what changed, next time.
+- **Log bake**: choose the recipe from a searchable list (`RecipePickerSheet`, recently baked first), which opens its log sheet.
+- **Nothing logged**: one sentence about what the log is for, and Log a bake.
+
+**New primitives**, in `/lab`: `Ribbon`, `LetterRail`, `Sparkline`. `RecipeTile` takes its line (`caption`) and a best-bake stamp (`best`).
 
 ## 7. UI/UX Foundation
 - **Stack**: React, Vite, Tailwind CSS (`@tailwindcss/postcss`), shadcn/ui, TanStack Query for server state management.

@@ -60,12 +60,9 @@ The bake log lives on its recipe: see section 18.
 - [ ] **Rate Limiting**: PIN, sign-in and AI routes throttle repeated attempts from one caller, not from everyone at once.
 
 ## 2a. Dashboard (Phase 2 — hero surface)
-- [ ] **Pattern-list cookbook**: rows read without a photograph; title, segment-readout time, mini step row.
-- [ ] **Bank rail**: folder filtering, vertical + capped-scroll on desktop, horizontal scroller on mobile.
-- [ ] **Smart shelves**: Personal Bests and Recently Baked, hidden while searching/filtering.
-- [ ] **Now Baking / chase light**: dashboard panel, the timer pill at the top of the screen, and lit row all reflect the same running bake; resumes at the correct step after closing the tab.
+Rebuilt as the cookbook home: see section 19.
 - [ ] **Duration parsing**: bare-minutes and unit-annotated/bracketed prepTime+cookTime sum correctly.
-- [ ] **Phase derivation on real data**: dashboard step rows match each recipe's actual instructions.
+- [ ] **Running bake**: the resume card and the timer pill reflect the same running bake; it resumes at the correct step after closing the tab.
 
 ## 2b. Application shell (Phase 2)
 - [ ] **Shell**: replaced in the UI overhaul — see section 17.
@@ -119,9 +116,6 @@ Rebuilt as the bake sheet: see section 18.
 - [ ] **Theme bank**: exactly one of Light/Dark/System is down; picking System forgets the stored preference and follows the device.
 - [ ] **Settings on a phone**: every key is a 44px target at 375px.
 - [ ] **Backup without a PIN**: names the admin PIN as the recovery rather than failing silently.
-- [ ] **Analytics with three bakes**: only months containing a bake are drawn, and the panel says there is not enough to read a trend.
-- [ ] **Analytics with nothing logged**: says so rather than drawing an empty chart.
-- [ ] **Baked more than once**: stays empty until a recipe has actually been baked twice, then ranks it.
 - [ ] **Library meter**: 3 of 203 lights one cell, not zero, and shows no orange at the top.
 - [ ] **Analytics load**: a skeleton, not the word "loading", and no long pause from reading the offline store repeatedly.
 - [ ] **Landing hero**: the step row chases through the phases and the readout counts them off.
@@ -319,9 +313,9 @@ Rebuilt as the bake sheet: see section 18.
 - [ ] **Export or import**: lands on Settings → Data on this device, scrolled to it.
 - [ ] **Help**: opens a sheet explaining the cookbook, cooking, bakes, shop and that it stays on this device.
 - [ ] **My published recipes** (`/published`): signed out, it asks you to sign in and says why; signed in, it lists each published recipe with where it stands, each opening the recipe.
-- [ ] **Bakes** (`/bakes`): History | Totals switch in place; Totals puts `?view=totals` in the address and survives a reload and Back.
+- [ ] **Bakes** (`/bakes`): see section 19.
 - [ ] **Shop** (`/shop`): To buy | In the cupboard switch in place; In the cupboard is `?view=cupboard`.
-- [ ] **Old addresses still work**: `/gallery`, `/analytics`, `/grocery` and `/pantry` land on Bakes or Shop in the matching view.
+- [ ] **Old addresses still work**: `/gallery` and `/analytics` land on Bakes; `/grocery` and `/pantry` on Shop in the matching view.
 - [ ] **Loose notes**: General Notes is now "Loose notes", reached from a row in the Cookbook's chapter list, with Back to Cookbook.
 - [ ] **Timer pill**: start a timer in baking mode, leave to Bakes: a butter pill reads "Oven · 12:04" at the top (phone) or in the top bar (desktop), with "+1" for a second timer; pressing it returns to baking mode. It is not shown inside baking mode.
 - [ ] **Timer pill without a bake**: with a timer running and no bake open, pressing the pill opens the timers sheet, where each timer can be paused, resumed and removed.
@@ -376,3 +370,27 @@ Rebuilt as the bake sheet: see section 18.
 - [ ] **Hands-free kept**: swipe, arrows, voice commands, wave to advance, the scale's auto-advance, wake lock.
 - [ ] **Export includes the shopping list**: Settings → Export, then Import on a fresh device, brings the list back.
 - [ ] **Component lab**: `/lab` shows stars, the star rating, the stamp (one pressed on) and margin notes.
+
+## 19. UI overhaul — Phase 4: the cookbook and Bakes
+- [ ] **Search first**: the cookbook opens with a full-width search and no unlabelled shuffle; while it loads the field does not say "0 recipes".
+- [ ] **Resume card**: with a bake logged, the card shows the last bake's recipe, stars, bake count and its note to next time, with a ribbon; with a bake running, it reads "Resume baking" and opens baking mode.
+- [ ] **Each recipe once**: the recipe on the resume card is not repeated in Recently baked.
+- [ ] **Recently baked**: the header row and the "All bakes" tile open Bakes.
+- [ ] **Contents**: chapters with dotted leaders and counts; pressing one opens `/?chapter=<name>` with Back to Cookbook; "N more chapters and loose notes" opens the rest and Loose notes.
+- [ ] **Index A–Z**: A–Z swaps the contents for the index and puts `?view=az` in the address; the letter rail jumps on a press and while sliding a thumb, ticking at each letter on Android; empty letters are pale.
+- [ ] **Tile line**: a baked recipe reads "Baked 3 days ago · ★4" (or "Baked on Sep 16"); an unbaked one shows its chapter; no tile shows an ingredient count.
+- [ ] **Sort**: A–Z, Recently baked, Rating and Recently added reorder the list and survive a reload.
+- [ ] **Filter**: the sheet's chapter, difficulty, baked, favourites, published (signed in) and Can make now (with a cupboard) narrow the list at once; the button counts them; Clear filters resets.
+- [ ] **Grid and list**: List shows thumbnails with full titles; the choice survives a reload.
+- [ ] **Paging**: scrolling down the 203 recipes loads more without a button press.
+- [ ] **Search**: "butter" finds recipes with butter in them, and bakes whose notes mention it under "In your bake notes", each opening that bake.
+- [ ] **Surprise me**: labelled, among search results and under All recipes.
+- [ ] **⌘K**: on a desktop, ⌘K/Ctrl+K or the top bar's search opens the palette; typing finds recipes, chapters and places; arrows and Enter open one; it works offline.
+- [ ] **Bakes summary**: "N bakes · N recipes", with "best: X" only between two or more recipes with no tie.
+- [ ] **Journal**: bakes by month, newest first, each with photo or note card, recipe, date and bake number, stars and first line; the best stamped.
+- [ ] **By recipe**: recipes baked more than once as oldest-to-newest strips, with a sparkline from three rated bakes; the rest under "Baked once".
+- [ ] **One recipe's bakes**: a recipe's Last time card opens Bakes narrowed to it; "Every recipe" widens it again.
+- [ ] **Compare**: Compare → tick two → Compare (2) shows them side by side, with a wipe when both have photographs.
+- [ ] **Log bake from Bakes**: pick a recipe, and its log sheet opens.
+- [ ] **Old addresses**: `/analytics` and `/gallery` open Bakes.
+- [ ] **Component lab**: `/lab` shows the ribbon, the letter rail and the sparkline.

@@ -38,10 +38,12 @@ function Where() {
 
 const at = (path: string, ui: React.ReactNode) =>
   render(
-    <MemoryRouter initialEntries={[path]}>
-      {ui}
-      <Where />
-    </MemoryRouter>,
+    <QueryClientProvider client={testQueryClient()}>
+      <MemoryRouter initialEntries={[path]}>
+        {ui}
+        <Where />
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
 
 beforeEach(() => {
@@ -266,20 +268,10 @@ describe('the running-timer pill', () => {
 });
 
 describe('Bakes and Shop', () => {
-  it('Bakes switches between the history and its totals in place, keeping the view in the address', async () => {
-    const user = userEvent.setup();
-    renderScreen(
-      <>
-        <BakesPage />
-        <Where />
-      </>,
-      { route: '/bakes' },
-    );
+  it('Bakes is the bake log, named once', async () => {
+    renderScreen(<BakesPage />, { route: '/bakes' });
     expect(screen.getByRole('heading', { level: 1, name: 'Bakes' })).toBeInTheDocument();
-    expect(screen.getByRole('radio', { name: 'History' })).toBeChecked();
-    await user.click(screen.getByRole('radio', { name: 'Totals' }));
-    expect(screen.getByTestId('where')).toHaveTextContent('/bakes?view=totals');
-    expect(await screen.findByText('Bakes logged')).toBeInTheDocument();
+    expect(await screen.findByText(/No bakes yet/)).toBeInTheDocument();
   });
 
   it('Shop holds what to buy and what is in the cupboard', async () => {

@@ -67,9 +67,10 @@ describe('RecipeTile', () => {
     expect(screen.getAllByRole('img')).toHaveLength(1);
   });
 
-  it('falls back to facts the recipe can actually prove', () => {
+  it('falls back to its chapter alone, never an ingredient count', () => {
     renderTile(base);
-    expect(screen.getByText(/Pork · 2 ingredients/)).toBeInTheDocument();
+    expect(screen.getByText('Pork')).toBeInTheDocument();
+    expect(screen.queryByText(/ingredients/)).not.toBeInTheDocument();
   });
 
   it('suppresses the seed placeholder time but prints a real one as a cookbook does', () => {

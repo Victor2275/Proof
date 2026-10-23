@@ -1,482 +1,630 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import Fuse from 'fuse.js';
-import { Search, Shuffle } from 'lucide-react';
-import type { Recipe, BakeLog } from '../lib/types';
-import { useRecipes, useBakeLogs, usePublications } from '../lib/queries';
+import { ChevronRight, LayoutGrid, List as ListIcon, Search, Shuffle, SlidersHorizontal, X } from 'lucide-react';
+import type { BakeLog, PantryItem, Recipe } from '../lib/types';
+import { useBakeLogs, useNotes, usePantry, usePublications, useRecipes } from '../lib/queries';
 import { useActiveBake } from '../lib/useActiveBake';
-import { derivePhases } from '../lib/phases';
-import { totalRecipeMinutes, formatMinutesForSegments, isPlaceholderTiming } from '../lib/duration';
-import { Button, Field, PageHeader, StepRow, Readout, RecipePlate, RecipeTile, buttonClassName } from './ui';
+import { useSession } from '../lib/session';
+import { haptic } from '../lib/haptics';
+import {
+  NO_FILTER,
+  SORTS,
+  activeFilters,
+  chapters as readChapters,
+  filterRecipes,
+  indexByLetter,
+  readBakes,
+  readingOf,
+  bakedPhrase,
+  searchBakeNotes,
+  searchRecipes,
+  sortRecipes,
+  tileCaption,
+  whenBaked,
+  type CookbookFilter,
+  type SortKey,
+} from '../lib/cookbook';
+import { firstLine } from '../lib/recipeText';
 import { NewRecipeButton } from './NewRecipeSheet';
 import { AccountSheetButton } from './AccountMenu';
 import OnboardingModal from './OnboardingModal';
 import StarterShelf from './StarterShelf';
+import CookbookFilterSheet from './CookbookFilterSheet';
+import {
+  BackButton,
+  Button,
+  Disclosure,
+  Field,
+  LetterRail,
+  MarginNote,
+  PageHeader,
+  RecipePlate,
+  RecipeTile,
+  Ribbon,
+  Segmented,
+  Select,
+  Stars,
+  cn,
+} from './ui';
 
 /*
- * The hero surface: a gallery of what you could make.
+ * The cookbook (UI overhaul Phase 4, changes 43–57).
  *
- * This was a pattern list, on the reasoning that a photograph was unreliable
- * and a step row was not. Both halves turned out to be wrong for this library.
- * Every recipe has a photograph, and almost none has real phases or a real
- * time — so the list was suppressing the one honest thing each recipe owns in
- * favour of 203 rows of "PREP COOK FINISH · 50 MIN", which looks like data and
- * is placeholder text.
+ * Search first, full width. Then one card to pick up where you left off — the
+ * bake running now, or the last one baked with its note to next time — then
+ * one strip of what has been baked lately, then the book's contents: chapters
+ * with dotted leaders, or a back-of-book index from A to Z, and every recipe
+ * under them. A recipe appears once above the grid, never three times.
  *
- * So: tiles, photograph first, name underneath. What a recipe can actually
- * prove — a real bake time, a real set of phases — waits on the tile's hover
- * panel. The bake running now is the one tile lit in the signal colour.
+ * A chapter opens as its own page (`?chapter=`), which is where a recipe's
+ * back button returns. A search reads the titles, the tags, the ingredients
+ * and the baker's own bake notes, and says which is which.
  */
 
 const EMPTY_RECIPES: Recipe[] = [];
 const EMPTY_LOGS: BakeLog[] = [];
-const ALL_BANK = '__all__';
-const SHELF_LIMIT = 8;
+const EMPTY_PANTRY: PantryItem[] = [];
+/** Chapters shown before "Show more": the rest are small. */
+const CHAPTERS_SHOWN = 8;
+/** Tiles drawn before the next page is fetched as the end comes into view. */
+const PAGE_SIZE = 36;
+const VIEW_KEY = 'proof.cookbookLayout';
+const SORT_KEY = 'proof.cookbookSort';
 
-/*
- * How many tiles the gallery draws before asking.
- *
- * Rendering the whole library at once put 203 <img> elements on the page and
- * over 170 requests in flight simultaneously. `loading="lazy"` does not save it
- * — the browser's lazy threshold is generous enough to start nearly all of
- * them, and they then queue behind a six-connection-per-host limit where they
- * stall indefinitely and compete with the app's own API calls. A page of tiles
- * keeps the in-flight count near what the connection pool can actually serve.
- */
-const PAGE_SIZE = 48;
-
-function bakeLogDate(log: BakeLog): number {
-  return log.date ? new Date(log.date).getTime() : 0;
+function readPref<T extends string>(key: string, allowed: readonly T[], fallback: T): T {
+  try {
+    const v = localStorage.getItem(key) as T | null;
+    return v && allowed.includes(v) ? v : fallback;
+  } catch {
+    return fallback;
+  }
 }
 
-function relativeDate(iso: string): string {
-  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
-  if (days <= 0) return 'Today';
-  if (days === 1) return 'Yesterday';
-  if (days < 7) return `${days}d ago`;
-  if (days < 30) return `${Math.floor(days / 7)}w ago`;
-  return `${Math.floor(days / 30)}mo ago`;
-}
-
-/** A shelf entry: the same tile as the grid, plus why it is on the shelf. */
-function ShelfItem({ recipe, caption }: { recipe: Recipe; caption: string }) {
-  return (
-    <div className="w-40 shrink-0 sm:w-48">
-      <RecipeTile recipe={recipe} />
-      {caption ? <span className="ui-label mt-1 block text-ink-muted">{caption}</span> : null}
-    </div>
-  );
-}
-
-function Shelf({
-  title,
-  items,
-  caption,
-}: {
-  title: string;
-  items: { recipe: Recipe; caption: string }[];
-  caption: string;
-}) {
-  if (items.length === 0) return null;
-  return (
-    <section className="flex flex-col gap-3">
-      <h2 className="ui-label border-b border-rule pb-2">{title}</h2>
-      <div className="no-scrollbar flex gap-5 overflow-x-auto pb-1">
-        {items.map(({ recipe, caption: itemCaption }) => (
-          <ShelfItem key={recipe._id} recipe={recipe} caption={itemCaption ?? caption} />
-        ))}
-      </div>
-    </section>
-  );
-}
-
-/** One row of the main list — the pattern itself. */
-function PatternRow({
-  recipe,
-  isActive,
-  activeStep,
-}: {
-  recipe: Recipe;
-  isActive: boolean;
-  activeStep?: number;
-}) {
-  const phases = useMemo(() => derivePhases(recipe.instructions), [recipe.instructions]);
-  // The seed's placeholder pair is not a measurement: the running bake's total
-  // reads as unknown, the way the cookbook tiles already do.
-  const totalMinutes = isPlaceholderTiming(recipe) ? null : totalRecipeMinutes(recipe);
-  const segment = totalMinutes !== null ? formatMinutesForSegments(totalMinutes) : null;
-
-  return (
-    <div className="flex flex-col gap-2.5 border-b border-rule py-4">
-      {/*
-       * One link for the whole pattern rather than two. An earlier version
-       * split this into a title link plus a second, aria-hidden link around
-       * the step row meant only to widen the click target for a mouse — but
-       * aria-hidden removes its entire subtree from the accessibility tree,
-       * which silently deleted the step row's own accessible description
-       * (its phase list) for anyone using a screen reader, not merely the
-       * redundant second link. A single link whose content is the title, the
-       * time, and the step row together gives one coherent announcement
-       * ("Sourdough Bread, Bake phases: Levain, Bulk, Bake, link") and still
-       * makes the entire row clickable.
-       */}
-      <Link to={`/recipe/${recipe._id}`} className="flex gap-3 sm:gap-4">
-        <RecipePlate src={recipe.imageUrls?.[0]} alt={recipe.title} size="row" />
-        <div className="flex min-w-0 flex-1 flex-col gap-2.5">
-          <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0 flex-1">
-              {/* Wraps to a second line rather than truncating: at 390px beside
-                * a plate, "Mini Bundt Cakes" would lose half its name, and a
-                * recipe a baker cannot identify is not a row worth listing. */}
-              <h3 className="font-title line-clamp-2 text-xl text-ink sm:text-2xl">{recipe.title}</h3>
-              {recipe.folder && recipe.folder !== 'Uncategorized' ? (
-                <span className="ui-label text-ink-muted">{recipe.folder}</span>
-              ) : null}
-            </div>
-            <Readout
-              value={segment?.value ?? '--'}
-              unit={segment?.unit}
-              size="sm"
-              tone="ink"
-            />
-          </div>
-          <StepRow phases={phases} activeStep={activeStep} />
-        </div>
-      </Link>
-
-      {isActive ? (
-        <Link
-          to={`/recipe/${recipe._id}/bake`}
-          className={buttonClassName({ variant: 'secondary', size: 'sm', className: 'self-start' })}
-        >
-          Resume
-        </Link>
-      ) : null}
-    </div>
-  );
+function writePref(key: string, value: string) {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    // A preference that cannot be kept is still the choice for this visit.
+  }
 }
 
 export default function Dashboard() {
   const { data: allRecipes = EMPTY_RECIPES, isPending, error, refetch } = useRecipes();
-  // Best-effort: the smart shelves are a secondary enhancement, not the
-  // dashboard's primary function, so a failed read here quietly hides the
-  // shelves rather than breaking the recipe list.
   const { data: bakeLogs = EMPTY_LOGS } = useBakeLogs();
-  // Which recipes are in the shared cookbook: a LIVE tag, and nothing for the
-  // private default, so publishing adds chrome only where it is true (B6).
+  const { data: pantry = EMPTY_PANTRY } = usePantry();
+  const { data: notes } = useNotes();
   const { byLocalId: published } = usePublications();
+  const { session } = useSession();
   const activeBake = useActiveBake();
   const navigate = useNavigate();
+  const [params, setParams] = useSearchParams();
 
-  const [search, setSearch] = useState('');
-  // A recipe's back button names its chapter and returns to it: /?chapter=Dessert.
-  const [params] = useSearchParams();
-  const [bank, setBank] = useState<string>(() => params.get('chapter') ?? ALL_BANK);
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const chapter = params.get('chapter');
+  const contentsView = params.get('view') === 'az' ? 'az' : 'chapters';
+  const [query, setQuery] = useState('');
+  const [layout, setLayout] = useState<'grid' | 'list'>(() => readPref(VIEW_KEY, ['grid', 'list'] as const, 'grid'));
+  const [sort, setSort] = useState<SortKey>(() => readPref(SORT_KEY, ['recent', 'az', 'baked', 'rating'] as const, 'recent'));
+  const [filter, setFilter] = useState<CookbookFilter>(NO_FILTER);
+  const [filterOpen, setFilterOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
 
   const loadError = error instanceof Error ? error.message : null;
-  // Counts are a reading of the cookbook, so they wait until there is one:
-  // "0 recipes" over a cookbook still being read, or one that failed to open,
-  // is a figure the data cannot support (audit #9).
   const settled = !isPending && !loadError;
   const emptyCookbook = settled && allRecipes.length === 0;
 
+  // Onboarding goes in Phase 5; until then it opens once, as before.
   useEffect(() => {
-    if (localStorage.getItem('hasVisited') === 'true' && !localStorage.getItem('hasSeenOnboarding')) {
-      setShowOnboarding(true);
-    }
+    if (localStorage.getItem('hasVisited') === 'true' && !localStorage.getItem('hasSeenOnboarding')) setShowOnboarding(true);
   }, []);
 
-  const handleCloseOnboarding = () => {
-    localStorage.setItem('hasSeenOnboarding', 'true');
-    setShowOnboarding(false);
-  };
-
-  const banks = useMemo(() => {
-    const counts = new Map<string, number>();
-    allRecipes.forEach((r: Recipe) => {
-      const name = r.folder || 'Uncategorized';
-      counts.set(name, (counts.get(name) ?? 0) + 1);
-    });
-    return Array.from(counts.entries()).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
-  }, [allRecipes]);
-
-  const bankFiltered = useMemo(
-    () => (bank === ALL_BANK ? allRecipes : allRecipes.filter((r: Recipe) => (r.folder || 'Uncategorized') === bank)),
-    [allRecipes, bank],
+  const readings = useMemo(() => readBakes(bakeLogs), [bakeLogs]);
+  const byId = useMemo(() => new Map(allRecipes.map((r) => [r._id, r])), [allRecipes]);
+  const publishedIds = useMemo(
+    () => new Set([...published.entries()].filter(([, p]) => p.moderation.state === 'approved').map(([id]) => id)),
+    [published],
   );
 
-  const recipes = useMemo(() => {
-    if (!search.trim()) return bankFiltered;
-    const fuse = new Fuse(bankFiltered, { keys: ['title', 'description', 'tags'], threshold: 0.3, ignoreLocation: true });
-    return fuse.search(search).map((r) => r.item as Recipe);
-  }, [search, bankFiltered]);
-
-  /** The gallery's own list: everything matching, minus the bake already shown
-   * in its own panel above. */
-  const listed = useMemo(
-    () => recipes.filter((r: Recipe) => !activeBake || r._id !== activeBake.recipeId),
-    [recipes, activeBake],
-  );
-  const remaining = listed.length - visibleCount;
-
-  // A new search or bank is a new list; keeping a scrolled-open page count from
-  // the previous one would render hundreds of tiles for a two-recipe filter.
-  useEffect(() => {
-    setVisibleCount(PAGE_SIZE);
-  }, [search, bank]);
-
-  const recipesById = useMemo(() => {
-    const map = new Map<string, Recipe>();
-    allRecipes.forEach((r: Recipe) => { if (r._id) map.set(r._id, r); });
-    return map;
-  }, [allRecipes]);
-
-  const showShelves = !search.trim() && bank === ALL_BANK;
-
-  const personalBests = useMemo(() => {
-    if (!showShelves) return [];
-    const seen = new Set<string>();
-    const result: { recipe: Recipe; caption: string }[] = [];
-    [...bakeLogs]
-      .filter((l) => l.isPersonalBest)
-      .sort((a, b) => bakeLogDate(b) - bakeLogDate(a))
-      .forEach((log) => {
-        const id = log.recipeId;
-        const recipe = recipesById.get(id);
-        if (recipe && !seen.has(id)) {
-          seen.add(id);
-          result.push({ recipe, caption: 'Personal best' });
-        }
-      });
-    return result.slice(0, SHELF_LIMIT);
-  }, [showShelves, bakeLogs, recipesById]);
+  /* ── Pick up where you left off, and Recently baked (changes 44–46) ─── */
+  const resume = useMemo(() => {
+    if (activeBake && byId.has(activeBake.recipeId)) return { recipe: byId.get(activeBake.recipeId)!, running: true as const };
+    const last = bakeLogs[0];
+    if (last && byId.has(last.recipeId)) return { recipe: byId.get(last.recipeId)!, running: false as const, log: last };
+    return null;
+  }, [activeBake, bakeLogs, byId]);
 
   const recentlyBaked = useMemo(() => {
-    if (!showShelves) return [];
-    const seen = new Set<string>();
-    const result: { recipe: Recipe; caption: string }[] = [];
-    [...bakeLogs]
-      .sort((a, b) => bakeLogDate(b) - bakeLogDate(a))
-      .forEach((log) => {
-        const id = log.recipeId;
-        const recipe = recipesById.get(id);
-        if (recipe && !seen.has(id)) {
-          seen.add(id);
-          result.push({ recipe, caption: log.date ? relativeDate(log.date) : '' });
-        }
-      });
-    return result.slice(0, SHELF_LIMIT);
-  }, [showShelves, bakeLogs, recipesById]);
+    const seen = new Set<string>(resume ? [resume.recipe._id] : []);
+    const out: Recipe[] = [];
+    for (const log of bakeLogs) {
+      const recipe = byId.get(log.recipeId);
+      if (recipe && !seen.has(recipe._id)) {
+        seen.add(recipe._id);
+        out.push(recipe);
+      }
+      if (out.length === 8) break;
+    }
+    return out;
+  }, [bakeLogs, byId, resume]);
 
-  const activeRecipe = activeBake ? recipesById.get(activeBake.recipeId) : undefined;
+  /* ── The list ─────────────────────────────────────────────────────── */
+  const scoped = useMemo(() => (chapter ? allRecipes.filter((r) => (r.folder || 'Uncategorized') === chapter) : allRecipes), [allRecipes, chapter]);
+  const listed = useMemo(
+    () => sortRecipes(filterRecipes(scoped, filter, { readings, publishedIds, pantry }), sort, readings),
+    [scoped, filter, readings, publishedIds, pantry, sort],
+  );
 
-  const handleInspireMe = () => {
-    if (recipes.length === 0) return;
-    const random = recipes[Math.floor(Math.random() * recipes.length)];
-    navigate(`/recipe/${random._id}`);
+  const searching = query.trim().length > 0;
+  const recipeHits = useMemo(() => (searching ? searchRecipes(scoped, query) : []), [searching, scoped, query]);
+  const noteHits = useMemo(() => (searching ? searchBakeNotes(bakeLogs, byId, query) : []), [searching, bakeLogs, byId, query]);
+
+  const surprise = (from: Recipe[]) => {
+    if (!from.length) return;
+    haptic('light');
+    navigate(`/recipe/${from[Math.floor(Math.random() * from.length)]._id}`);
   };
 
-  return (
-    <div className="space-y-8">
-      <OnboardingModal open={showOnboarding} onClose={handleCloseOnboarding} />
+  const filtersOn = activeFilters(filter);
+  const tileFor = (r: Recipe) => {
+    const reading = readingOf(readings, r._id);
+    return (
+      <RecipeTile
+        key={r._id}
+        recipe={r}
+        caption={tileCaption(r, reading)}
+        best={reading.hasBest}
+        tag={publishedIds.has(r._id) ? 'Public' : undefined}
+      />
+    );
+  };
 
-      {/* The title and the search share a row only from `xl`. Below it the
-        * search takes the full width under the title: the row needs the
-        * title, a 288px field and Inspire Me side by side, which ran 245px off
-        * the page at 768 and still pushed Inspire Me past the edge at 1024. */}
-      <div className="flex flex-col gap-4 border-b border-rule pb-6 xl:flex-row xl:items-end xl:justify-between">
-        {/* New sits in the header on a phone; a desktop has it in the top bar. */}
-        <PageHeader
-          className="min-w-0 flex-1"
-          title={bank !== ALL_BANK ? bank : 'Cookbook'}
-          subtitle={
-            settled && !emptyCookbook ? `${recipes.length} ${recipes.length === 1 ? 'recipe' : 'recipes'}` : undefined
-          }
-          actions={
-            <>
-              <NewRecipeButton className="md:hidden" />
-              <AccountSheetButton className="md:hidden" />
-            </>
-          }
-        />
+  const header = chapter ? (
+    <PageHeader
+      back={<BackButton to="/" label="Cookbook" />}
+      title={chapter}
+      subtitle={`${scoped.length} ${scoped.length === 1 ? 'recipe' : 'recipes'}`}
+      actions={<AccountSheetButton className="md:hidden" />}
+    />
+  ) : (
+    <PageHeader
+      title="Cookbook"
+      subtitle={settled && !emptyCookbook ? `${allRecipes.length} ${allRecipes.length === 1 ? 'recipe' : 'recipes'}` : undefined}
+      actions={
+        <>
+          <NewRecipeButton className="md:hidden" />
+          <AccountSheetButton className="md:hidden" />
+        </>
+      }
+    />
+  );
+
+  return (
+    <div className="mx-auto flex max-w-5xl flex-col gap-8 pb-8">
+      <OnboardingModal
+        open={showOnboarding}
+        onClose={() => {
+          localStorage.setItem('hasSeenOnboarding', 'true');
+          setShowOnboarding(false);
+        }}
+      />
+
+      <div className="flex flex-col gap-4">
+        {header}
         {emptyCookbook ? null : (
-        <div className="flex w-full gap-3 xl:w-auto">
           <Field
-            label="Search"
+            label="Search the cookbook"
             hideLabel
-            leading={<Search className="h-4 w-4" />}
-            placeholder="Search recipes or tags…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="flex-1 xl:w-72"
+            type="search"
+            leading={<Search className="h-[18px] w-[18px]" aria-hidden="true" />}
+            placeholder={
+              chapter
+                ? `Search ${chapter}, ingredients, notes`
+                : settled
+                  ? `Search ${allRecipes.length} recipes, ingredients, notes`
+                  : 'Search recipes, ingredients, notes'
+            }
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
           />
-          {allRecipes.length > 0 && (
-            <Button
-              variant="secondary"
-              onClick={handleInspireMe}
-              icon={<Shuffle className="h-4 w-4" />}
-              // Below `sm` the key is an icon alone and needs its name spoken.
-              aria-label="Inspire me"
-            >
-              <span className="hidden sm:inline">Inspire Me</span>
-            </Button>
-          )}
-        </div>
         )}
       </div>
 
-      {emptyCookbook ? <StarterShelf /> : null}
-
-      {/* Bank rail: vertical on desktop, a horizontal scroller on a phone
-        * screen too narrow for a second sidebar. The row never wraps — it
-        * scales, the same rule the step row itself follows.
-        *
-        * This whole layout renders unconditionally — including while loading
-        * or errored, when `banks` (derived from the still-empty recipe list)
-        * has nothing in it yet. Gating it on `banks.length` would have hidden
-        * the loading skeleton, the error state, and the empty state along
-        * with the rail, which is the one state where a baker most needs to
-        * see *something* on screen. */}
-      {/*
-       * `items-start` matters, not just style: a plain flex row defaults to
-       * `align-items: stretch`, which was silently forcing the rail to match
-       * the content column's full height — invisible on desktop only because
-       * the rail has no background to show it, but at 203 unvirtualized rows
-       * that meant a ~30,000px-tall nav element sitting in the page. Below
-       * `lg` the direction flips to column so the rail becomes a horizontal
-       * scroller sitting above the content instead of squeezed beside it —
-       * the "vertical on desktop, horizontal on mobile" comment above never
-       * actually flipped this outer container, only the nav's own internals,
-       * so on a phone it tried to lay out at its full unwrapped content width
-       * (native flex `min-width: auto` beats a plain `overflow-x-auto`) next
-       * to the content column instead of above it.
-       *
-       * `items-start` is `lg:`-only, not universal: stacked on mobile (a
-       * column), the default stretch is exactly right — it is what makes the
-       * rail and the content column both span the full width. Applying
-       * `items-start` there instead flips the cross axis to shrink-to-fit,
-       * and the content column's intrinsic width is its *desktop* row shape
-       * (title + segment readout side by side, ~1190px) — so the column
-       * would size itself to that and silently overflow the viewport
-       * sideways, invisible in a screenshot because `main`'s `overflow-y-
-       * auto` also makes its `overflow-x` computed value `auto` per the CSS
-       * overflow spec, so the clipped width just scrolls inside `main`
-       * instead of widening the document.
-       */}
-      {emptyCookbook ? null : (
-      <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
-        {settled ? (
-        <nav
-          aria-label="Bake types"
-          // The real cookbook this ships for already has 18 distinct folders;
-          // an uncapped vertical list at that count would push the content
-          // column down the page behind it. Past `lg` the rail scrolls
-          // internally instead of growing without bound.
-          className="no-scrollbar flex w-full shrink-0 gap-1 overflow-x-auto lg:w-40 lg:max-h-[70vh] lg:flex-col lg:overflow-y-auto"
-        >
-          <button
-            type="button"
-            onClick={() => setBank(ALL_BANK)}
-            className={`ui-label flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-control px-3 py-2 text-left lg:min-h-0 ${
-              bank === ALL_BANK ? 'bg-panel-sunk text-ink' : 'text-ink-muted hover:text-ink'
-            }`}
-          >
-            All ({allRecipes.length})
-          </button>
-          {banks.map(([name, count]) => (
-            <button
-              key={name}
-              type="button"
-              onClick={() => setBank(name)}
-              className={`ui-label flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-control px-3 py-2 text-left lg:min-h-0 ${
-                bank === name ? 'bg-panel-sunk text-ink' : 'text-ink-muted hover:text-ink'
-              }`}
-            >
-              {name} ({count})
-            </button>
-          ))}
-          {/* Loose notes: a page of the cookbook that is not a recipe (change 24). */}
-          <Link
-            to="/notes"
-            className="ui-label flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-control px-3 py-2 text-left text-ink-muted hover:text-ink lg:mt-2 lg:min-h-0 lg:border-t lg:border-rule lg:pt-3"
-          >
-            Loose notes
-          </Link>
-        </nav>
-        ) : null}
-
-        <div className="min-w-0 flex-1 space-y-8">
-          {activeRecipe && (
-            <section className="border border-signal rounded-panel p-4">
-              <div className="mb-3 flex items-center gap-2">
-                <span className="h-2 w-2 bg-signal" aria-hidden="true" />
-                <span className="ui-label">Now baking</span>
-              </div>
-              {/* The running bake is the one place a full step row belongs on
-                * this page: its keys are lit, so they are reporting rather
-                * than decorating. */}
-              <PatternRow recipe={activeRecipe} isActive activeStep={activeBake!.stepIndex} />
-            </section>
-          )}
-
-          {showShelves && (
-            <>
-              <Shelf title="Personal Bests" items={personalBests} caption="Personal best" />
-              <Shelf title="Recently Baked" items={recentlyBaked} caption="" />
-            </>
-          )}
-
-          <section>
-            {/* A read from the device takes a few milliseconds: nothing is
-              * drawn for it, rather than a skeleton that flashes (B30). */}
-            {isPending ? null : loadError ? (
-              <div className="border border-fault rounded-panel px-6 py-16 text-center" role="alert">
-                <p className="font-title text-lg text-ink">Couldn't open the cookbook on this device</p>
-                <p className="mx-auto mt-2 max-w-prose text-sm text-ink-muted">
-                  {loadError} Try again; if it keeps happening, the browser may be blocking storage for
-                  this site, which private browsing does.
-                </p>
-                <Button variant="secondary" className="mt-6" onClick={() => refetch()}>
-                  Try again
-                </Button>
-              </div>
-            ) : recipes.length === 0 ? (
-              <div className="rounded-panel border border-dashed border-rule px-6 py-16 text-center text-ink-muted">
-                <p>Nothing in {bank === ALL_BANK ? 'the cookbook' : bank} matches “{search.trim()}”.</p>
-                <Button variant="ghost" className="mt-4" onClick={() => setSearch('')}>
-                  Clear the search
-                </Button>
-              </div>
-            ) : (
-              <>
-                <div className="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 2xl:grid-cols-4">
-                  {listed.slice(0, visibleCount).map((recipe: Recipe) => (
-                    <RecipeTile
-                      key={recipe._id}
-                      recipe={recipe}
-                      tag={published.get(recipe._id)?.moderation.state === 'approved' ? 'Live' : undefined}
-                    />
-                  ))}
-                </div>
-
-                {remaining > 0 && (
-                  <div className="mt-8 flex items-center justify-center gap-4">
-                    <span className="ui-label text-ink-muted">
-                      {visibleCount} of {listed.length}
-                    </span>
-                    <Button variant="secondary" onClick={() => setVisibleCount((n) => n + PAGE_SIZE)}>
-                      Show {Math.min(remaining, PAGE_SIZE)} more
-                    </Button>
-                  </div>
-                )}
-              </>
-            )}
-          </section>
+      {loadError ? (
+        <div className="flex flex-col items-start gap-3" role="alert">
+          <p className="font-title text-xl text-ink">Couldn't open the cookbook on this device</p>
+          <p className="max-w-prose text-ink-2">
+            {loadError} Try again; if it keeps happening, the browser may be blocking storage for this site, which private browsing does.
+          </p>
+          <Button onClick={() => refetch()}>Try again</Button>
         </div>
-      </div>
+      ) : emptyCookbook ? (
+        <StarterShelf />
+      ) : !settled ? null : searching ? (
+        /* ── Search results, grouped (change 54) ───────────────────────── */
+        <section aria-label="Search results" className="flex flex-col gap-8">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-rule pb-2.5">
+            <p className="text-sm text-ink-2" aria-live="polite">
+              {recipeHits.length} {recipeHits.length === 1 ? 'recipe' : 'recipes'}
+              {noteHits.length ? ` · ${noteHits.length} in your bake notes` : ''}
+            </p>
+            {recipeHits.length > 1 ? (
+              <Button size="sm" variant="ghost" icon={<Shuffle className="h-4 w-4" aria-hidden="true" />} onClick={() => surprise(recipeHits)}>
+                Surprise me from these
+              </Button>
+            ) : null}
+          </div>
+          {recipeHits.length === 0 && noteHits.length === 0 ? (
+            <div className="flex flex-col items-start gap-3">
+              <p className="text-ink-2">
+                Nothing in {chapter ?? 'the cookbook'} matches “{query.trim()}”, in a title, an ingredient or a bake note.
+              </p>
+              <Button variant="ghost" onClick={() => setQuery('')}>
+                Clear the search
+              </Button>
+            </div>
+          ) : null}
+          {recipeHits.length ? (
+            <div className="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 lg:grid-cols-4">{recipeHits.map(tileFor)}</div>
+          ) : null}
+          {noteHits.length ? (
+            <section aria-labelledby="note-hits" className="flex flex-col">
+              <h2 id="note-hits" className="font-title border-b border-rule pb-2.5 text-xl text-ink">
+                In your bake notes
+              </h2>
+              <ul>
+                {noteHits.map(({ log, recipe, snippet }) => (
+                  <li key={log._id} className="border-b border-rule">
+                    <Link
+                      to={`/recipe/${recipe._id}?makeId=${log._id}`}
+                      className="pressable -mx-2 flex flex-col gap-0.5 rounded-key px-2 py-3 hover:bg-paper-sunk"
+                    >
+                      <span className="font-title text-lg text-ink">{recipe.title}</span>
+                      <span className="text-sm text-ink-muted">{whenBaked(log.date)}</span>
+                      <span className="font-prose italic text-ink-2">{snippet}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+        </section>
+      ) : (
+        <>
+          {!chapter && resume ? <ResumeCard {...resume} rating={resume.running ? null : readingOf(readings, resume.recipe._id).rating} bakes={readingOf(readings, resume.recipe._id).bakes} /> : null}
+
+          {!chapter && recentlyBaked.length ? (
+            <section aria-labelledby="recently-baked" className="flex flex-col gap-2">
+              <Link
+                to="/bakes"
+                className="pressable -mx-1.5 flex min-h-12 items-center justify-between rounded-key px-1.5 hover:bg-paper-sunk"
+              >
+                <h2 id="recently-baked" className="font-title text-xl italic text-ink-2">
+                  Recently baked
+                </h2>
+                <ChevronRight className="h-5 w-5 text-ink-muted" aria-hidden="true" />
+              </Link>
+              <ul className="no-scrollbar -mx-4 flex gap-3 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
+                {recentlyBaked.map((r) => {
+                  const reading = readingOf(readings, r._id);
+                  return (
+                    <li key={r._id} className="w-36 shrink-0">
+                      <RecipeTile recipe={r} caption={tileCaption(r, reading)} best={reading.hasBest} />
+                    </li>
+                  );
+                })}
+                <li className="w-28 shrink-0">
+                  <Link
+                    to="/bakes"
+                    className="pressable flex aspect-[4/3] w-full flex-col items-center justify-center gap-1 rounded-key border border-dashed border-rule-strong text-sm font-semibold text-ink hover:bg-paper-sunk"
+                  >
+                    All bakes
+                    <ChevronRight className="h-4 w-4" aria-hidden="true" />
+                  </Link>
+                </li>
+              </ul>
+            </section>
+          ) : null}
+
+          {!chapter ? (
+            <Contents
+              view={contentsView}
+              onView={(v) => setParams(v === 'az' ? { view: 'az' } : {}, { replace: true })}
+              recipes={allRecipes}
+              notesCount={notes?.length ?? 0}
+            />
+          ) : null}
+
+          <section aria-labelledby="all-recipes" className="flex flex-col gap-4">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-rule pb-2.5">
+              <h2 id="all-recipes" className="font-title text-2xl text-ink">
+                {chapter ? 'Recipes' : 'All recipes'}
+              </h2>
+              <div className="flex flex-wrap items-center gap-2">
+                <Select
+                  label="Sort"
+                  hideLabel
+                  value={sort}
+                  onChange={(e) => {
+                    const next = e.target.value as SortKey;
+                    setSort(next);
+                    writePref(SORT_KEY, next);
+                  }}
+                  className="w-44"
+                >
+                  {SORTS.map((s) => (
+                    <option key={s.value} value={s.value}>
+                      {s.label}
+                    </option>
+                  ))}
+                </Select>
+                <Button
+                  variant="secondary"
+                  icon={<SlidersHorizontal className="h-4 w-4" aria-hidden="true" />}
+                  onClick={() => setFilterOpen(true)}
+                  aria-haspopup="dialog"
+                >
+                  {filtersOn ? `Filter · ${filtersOn}` : 'Filter'}
+                </Button>
+                <Segmented
+                  label="Layout"
+                  value={layout}
+                  onChange={(next) => {
+                    setLayout(next);
+                    writePref(VIEW_KEY, next);
+                  }}
+                  options={[
+                    { value: 'grid', label: 'Grid', icon: <LayoutGrid className="h-4 w-4" aria-hidden="true" /> },
+                    { value: 'list', label: 'List', icon: <ListIcon className="h-4 w-4" aria-hidden="true" /> },
+                  ]}
+                />
+              </div>
+            </div>
+
+            {filtersOn ? (
+              <div className="flex flex-wrap items-center gap-2 text-sm text-ink-2">
+                {listed.length} of {scoped.length} shown
+                <Button size="sm" variant="ghost" icon={<X className="h-4 w-4" aria-hidden="true" />} onClick={() => setFilter(NO_FILTER)}>
+                  Clear filters
+                </Button>
+              </div>
+            ) : null}
+
+            {listed.length === 0 ? (
+              <p className="text-ink-2">No recipe here fits those filters.</p>
+            ) : (
+              <Paged key={`${chapter}-${sort}-${JSON.stringify(filter)}-${layout}`} items={listed} layout={layout} tile={tileFor} readings={readings} />
+            )}
+            {listed.length > 1 ? (
+              <Button variant="ghost" className="self-center" icon={<Shuffle className="h-4 w-4" aria-hidden="true" />} onClick={() => surprise(listed)}>
+                Surprise me
+              </Button>
+            ) : null}
+          </section>
+        </>
       )}
+
+      <CookbookFilterSheet
+        open={filterOpen}
+        onClose={() => setFilterOpen(false)}
+        value={filter}
+        onChange={setFilter}
+        chapters={chapter ? [] : readChapters(allRecipes).map((c) => c.name)}
+        hasPantry={pantry.length > 0}
+        signedIn={!!session.user}
+      />
     </div>
+  );
+}
+
+/* ── Pick up where you left off ──────────────────────────────────────── */
+
+function ResumeCard({
+  recipe,
+  running,
+  log,
+  rating,
+  bakes,
+}: {
+  recipe: Recipe;
+  running: boolean;
+  log?: BakeLog;
+  rating: number | null;
+  bakes: number;
+}) {
+  const to = running ? `/recipe/${recipe._id}/bake` : `/recipe/${recipe._id}`;
+  const lead = running ? 'Resume baking' : 'Pick up where you left off';
+  const label = [
+    `${lead}: ${recipe.title}`,
+    !running && log ? bakedPhrase(log.date) : '',
+    rating ? `${Math.round(rating)} of 5 stars` : '',
+    log?.nextTime ? `Next time: ${log.nextTime}` : '',
+  ]
+    .filter(Boolean)
+    .join('. ');
+  return (
+    <Link to={to} aria-label={label} className="pressable relative flex gap-3.5 rounded-panel bg-paper-sunk p-3.5 hover:bg-paper-tonal">
+      <Ribbon />
+      <RecipePlate src={recipe.imageUrls?.[0]} alt="" size="row" className="h-24 w-24 sm:h-24 sm:w-24" />
+      <span className="flex min-w-0 flex-col gap-1 pr-7">
+        <span className="text-xs font-semibold text-pencil">{lead}</span>
+        <span className="font-title text-xl leading-tight text-ink">{recipe.title}</span>
+        {!running && log ? (
+          <span className="flex flex-wrap items-center gap-1.5 text-[0.8125rem] text-ink-muted">
+            {whenBaked(log.date)}
+            {log.rating ? <Stars value={log.rating} /> : null}
+            {bakes > 1 ? `· ${bakes} bakes` : ''}
+          </span>
+        ) : null}
+        {!running && log?.nextTime ? <MarginNote className="line-clamp-2">{log.nextTime}</MarginNote> : null}
+        {!running && log && !log.nextTime && firstLine(log.notes) ? (
+          <span className="font-prose line-clamp-2 italic text-ink-2">“{firstLine(log.notes)}”</span>
+        ) : null}
+      </span>
+    </Link>
+  );
+}
+
+/* ── Contents: chapters, or the index A–Z (changes 47, 48) ───────────── */
+
+function Contents({
+  view,
+  onView,
+  recipes,
+  notesCount,
+}: {
+  view: 'chapters' | 'az';
+  onView: (v: 'chapters' | 'az') => void;
+  recipes: Recipe[];
+  notesCount: number;
+}) {
+  const list = useMemo(() => readChapters(recipes), [recipes]);
+  const index = useMemo(() => (view === 'az' ? indexByLetter(recipes) : []), [recipes, view]);
+  const first = list.slice(0, CHAPTERS_SHOWN);
+  const rest = list.slice(CHAPTERS_SHOWN);
+  const indexRef = useRef<HTMLDivElement>(null);
+
+  const row = (to: string, name: string, count: number | null, unit = 'recipes') => (
+    <li key={name}>
+      <Link
+        to={to}
+        aria-label={count === null ? name : `${name}, ${count} ${count === 1 ? unit.replace(/s$/, '') : unit}`}
+        className="pressable -mx-1.5 flex min-h-[3.25rem] items-center gap-2 rounded-key px-1.5 transition-[padding] hover:bg-paper-sunk active:pl-2.5"
+      >
+        <span className="font-prose text-lg text-ink">{name}</span>
+        <span aria-hidden="true" className="flex-1 translate-y-1.5 border-b-[1.5px] border-dotted border-rule-strong" />
+        {count !== null ? <span className="text-[0.9375rem] tabular-nums text-ink-muted">{count}</span> : null}
+      </Link>
+    </li>
+  );
+
+  return (
+    <section aria-labelledby="contents-heading" className="flex flex-col">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-rule pb-2.5">
+        <h2 id="contents-heading" className="font-title text-2xl text-ink">
+          Contents
+        </h2>
+        <Segmented
+          label="Contents view"
+          value={view}
+          onChange={onView}
+          options={[
+            { value: 'chapters', label: 'Chapters' },
+            { value: 'az', label: 'A–Z' },
+          ]}
+        />
+      </div>
+
+      {view === 'chapters' ? (
+        <>
+          <ul>{first.map((c) => row(`/?chapter=${encodeURIComponent(c.name)}`, c.name, c.count))}</ul>
+          {rest.length || notesCount ? (
+            <Disclosure
+              summary={rest.length ? `${rest.length} more ${rest.length === 1 ? 'chapter' : 'chapters'} and loose notes` : 'Loose notes'}
+              openSummary="Show fewer"
+              className="mt-1"
+            >
+              <ul>
+                {rest.map((c) => row(`/?chapter=${encodeURIComponent(c.name)}`, c.name, c.count))}
+                {row('/notes', 'Loose notes', notesCount, 'notes')}
+              </ul>
+            </Disclosure>
+          ) : null}
+        </>
+      ) : (
+        <div ref={indexRef} className="relative flex gap-2">
+          <div className="min-w-0 flex-1">
+            {index.map(({ letter, recipes: group }) => (
+              <section key={letter} aria-labelledby={`index-${letter}`} className="scroll-mt-20">
+                <h3 id={`index-${letter}`} className="font-title mt-4 flex items-baseline gap-2 text-2xl text-ink">
+                  {letter}
+                  <span className="font-sans text-sm font-normal text-ink-muted">
+                    {group.length} {group.length === 1 ? 'recipe' : 'recipes'}
+                  </span>
+                </h3>
+                <ul>
+                  {group.map((r) => (
+                    <li key={r._id}>
+                      <Link
+                        to={`/recipe/${r._id}`}
+                        className="pressable -mx-1.5 flex min-h-11 items-center border-b border-rule px-1.5 font-prose text-[1.0625rem] text-ink hover:bg-paper-sunk"
+                      >
+                        {r.title}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ))}
+          </div>
+          <LetterRail
+            letters={index.map((g) => g.letter)}
+            idFor={(l) => `index-${l}`}
+            onJump={(l) => document.getElementById(`index-${l}`)?.scrollIntoView({ block: 'start' })}
+            className="sticky top-4 h-[min(36rem,calc(100dvh-10rem))] self-start"
+          />
+        </div>
+      )}
+    </section>
+  );
+}
+
+/* ── The grid or the list, a page at a time (changes 49, 56) ─────────── */
+
+function Paged({
+  items,
+  layout,
+  tile,
+  readings,
+}: {
+  items: Recipe[];
+  layout: 'grid' | 'list';
+  tile: (r: Recipe) => React.ReactNode;
+  readings: ReturnType<typeof readBakes>;
+}) {
+  const [shown, setShown] = useState(PAGE_SIZE);
+  const end = useRef<HTMLDivElement>(null);
+  const more = items.length - shown;
+
+  // The next page arrives as the end of this one comes into view: no button
+  // to press, and never two hundred photographs requested at once.
+  useEffect(() => {
+    const el = end.current;
+    if (!el || more <= 0 || typeof IntersectionObserver === 'undefined') return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) setShown((n) => n + PAGE_SIZE);
+    }, { rootMargin: '600px 0px' });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [more]);
+
+  const page = items.slice(0, shown);
+  return (
+    <>
+      {layout === 'grid' ? (
+        <div className="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 lg:grid-cols-4">{page.map(tile)}</div>
+      ) : (
+        <ul className="flex flex-col">
+          {page.map((r) => {
+            const reading = readingOf(readings, r._id);
+            return (
+              <li key={r._id} className="border-b border-rule">
+                <Link to={`/recipe/${r._id}`} className="pressable -mx-1.5 flex items-center gap-3 rounded-key px-1.5 py-2 hover:bg-paper-sunk">
+                  <RecipePlate src={r.imageUrls?.[0]} alt={r.title} size="row" />
+                  <span className="flex min-w-0 flex-col gap-0.5">
+                    <span className="font-title text-lg leading-snug text-ink">{r.title}</span>
+                    <span className="text-[0.8125rem] text-ink-muted">{tileCaption(r, reading)}</span>
+                  </span>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      <div ref={end} aria-hidden="true" />
+      {more > 0 ? (
+        <Button variant="ghost" className={cn('self-center')} onClick={() => setShown((n) => n + PAGE_SIZE)}>
+          Show {Math.min(more, PAGE_SIZE)} more of {items.length}
+        </Button>
+      ) : null}
+    </>
   );
 }
