@@ -126,25 +126,31 @@ async function shoot(page: Page, name: string, width: string) {
 const slug = shared[0].slug;
 
 type Shot = { name: string; who: 'stranger' | 'regular'; path: string; themes: ('dark' | 'light')[]; visited?: boolean };
+/*
+ * Light (paper) is the default theme since Phase 1, so every screen is shot in
+ * both. The paths are the four destinations' own since Phase 2; the names keep
+ * their numbers so sets from different phases line up.
+ */
+const BOTH: ('dark' | 'light')[] = ['light', 'dark'];
 const SHOTS: Shot[] = [
-  { name: 'stranger-01-landing', who: 'stranger', path: '/welcome', themes: ['dark', 'light'] },
-  { name: 'stranger-03-empty-cookbook', who: 'stranger', path: '/', themes: ['dark'], visited: true },
-  { name: 'stranger-04-discover', who: 'stranger', path: '/discover', themes: ['dark'], visited: true },
-  { name: 'stranger-05-shared-recipe-link', who: 'stranger', path: `/r/${slug}`, themes: ['dark', 'light'] },
-  { name: 'stranger-06-profile', who: 'stranger', path: '/@proof', themes: ['dark'] },
-  { name: 'regular-01-dashboard', who: 'regular', path: '/', themes: ['dark', 'light'] },
-  { name: 'regular-02-recipe', who: 'regular', path: `/recipe/${regularRecipeId}`, themes: ['dark', 'light'] },
-  { name: 'regular-03-baking-mode', who: 'regular', path: `/recipe/${regularRecipeId}/bake`, themes: ['dark', 'light'] },
-  { name: 'regular-04-editor', who: 'regular', path: `/edit/${regularRecipeId}`, themes: ['dark'] },
-  { name: 'regular-05-new-recipe', who: 'regular', path: '/new', themes: ['dark'] },
-  { name: 'regular-06-gallery', who: 'regular', path: '/gallery', themes: ['dark'] },
-  { name: 'regular-07-analytics', who: 'regular', path: '/analytics', themes: ['dark'] },
-  { name: 'regular-08-pantry', who: 'regular', path: '/pantry', themes: ['dark'] },
-  { name: 'regular-09-grocery', who: 'regular', path: '/grocery', themes: ['dark'] },
-  { name: 'regular-10-notes', who: 'regular', path: '/notes', themes: ['dark'] },
-  { name: 'regular-11-settings', who: 'regular', path: '/settings', themes: ['dark'] },
-  { name: 'regular-12-discover', who: 'regular', path: '/discover', themes: ['dark'] },
-  { name: 'regular-13-not-found', who: 'regular', path: '/no-such-page', themes: ['dark'] },
+  { name: 'stranger-01-landing', who: 'stranger', path: '/welcome', themes: BOTH },
+  { name: 'stranger-03-empty-cookbook', who: 'stranger', path: '/', themes: BOTH, visited: true },
+  { name: 'stranger-04-discover', who: 'stranger', path: '/discover', themes: BOTH, visited: true },
+  { name: 'stranger-05-shared-recipe-link', who: 'stranger', path: `/r/${slug}`, themes: BOTH },
+  { name: 'stranger-06-profile', who: 'stranger', path: '/@proof', themes: BOTH },
+  { name: 'regular-01-dashboard', who: 'regular', path: '/', themes: BOTH },
+  { name: 'regular-02-recipe', who: 'regular', path: `/recipe/${regularRecipeId}`, themes: BOTH },
+  { name: 'regular-03-baking-mode', who: 'regular', path: `/recipe/${regularRecipeId}/bake`, themes: BOTH },
+  { name: 'regular-04-editor', who: 'regular', path: `/edit/${regularRecipeId}`, themes: BOTH },
+  { name: 'regular-05-new-recipe', who: 'regular', path: '/new', themes: BOTH },
+  { name: 'regular-06-gallery', who: 'regular', path: '/bakes', themes: BOTH },
+  { name: 'regular-07-analytics', who: 'regular', path: '/bakes?view=totals', themes: BOTH },
+  { name: 'regular-08-pantry', who: 'regular', path: '/shop?view=cupboard', themes: BOTH },
+  { name: 'regular-09-grocery', who: 'regular', path: '/shop', themes: BOTH },
+  { name: 'regular-10-notes', who: 'regular', path: '/notes', themes: BOTH },
+  { name: 'regular-11-settings', who: 'regular', path: '/settings', themes: BOTH },
+  { name: 'regular-12-discover', who: 'regular', path: '/discover', themes: BOTH },
+  { name: 'regular-13-not-found', who: 'regular', path: '/no-such-page', themes: BOTH },
 ];
 
 for (const shot of SHOTS) {
@@ -169,15 +175,40 @@ test('stranger-02-onboarding dark', async ({ page }, info) => {
   await shoot(page, 'stranger-02-onboarding__dark', info.project.name);
 });
 
-test('regular-14-mobile-menu dark', async ({ page }, info) => {
-  test.skip(info.project.name !== 'w375', 'the menu is a phone surface');
-  await serve(page, 'regular', 'dark');
-  await page.goto('/');
-  await settle(page);
-  const opener = page.getByRole('navigation').last().getByText(/^more$/i).first();
-  if (await opener.count()) {
-    await opener.click();
+/* The shell's own states: the avatar's entries, New's ways in, and a bake left running. */
+for (const theme of BOTH) {
+  test(`regular-14-avatar ${theme}`, async ({ page }, info) => {
+    await serve(page, 'regular', theme);
+    await page.goto('/');
+    await settle(page);
+    await page.getByRole('button', { name: 'Your account and settings' }).filter({ visible: true }).first().click();
     await page.waitForTimeout(600);
-  }
-  await shoot(page, 'regular-14-mobile-menu__dark', info.project.name);
-});
+    await shoot(page, `regular-14-avatar__${theme}`, info.project.name);
+  });
+
+  test(`regular-15-new-sheet ${theme}`, async ({ page }, info) => {
+    await serve(page, 'regular', theme);
+    await page.goto('/');
+    await settle(page);
+    await page.getByRole('button', { name: 'New', exact: true }).filter({ visible: true }).first().click();
+    await page.waitForTimeout(600);
+    await shoot(page, `regular-15-new-sheet__${theme}`, info.project.name);
+  });
+
+  test(`regular-16-timer-pill ${theme}`, async ({ page }, info) => {
+    await serve(page, 'regular', theme);
+    await page.addInitScript(
+      ({ id, title }) => {
+        localStorage.setItem('activeBake', JSON.stringify({ recipeId: id, recipeTitle: title, stepIndex: 2, startedAt: new Date().toISOString() }));
+        localStorage.setItem(
+          'proof.timers',
+          JSON.stringify([{ id: 't1', name: 'Oven', endTime: Date.now() + 12 * 60_000 + 4000, remainingMs: 0, hasRung: false }]),
+        );
+      },
+      { id: regularRecipeId, title: String(featured[0].title) },
+    );
+    await page.goto('/bakes');
+    await settle(page);
+    await shoot(page, `regular-16-timer-pill__${theme}`, info.project.name);
+  });
+}

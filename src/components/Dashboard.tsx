@@ -7,7 +7,9 @@ import { useRecipes, useBakeLogs, usePublications } from '../lib/queries';
 import { useActiveBake } from '../lib/useActiveBake';
 import { derivePhases } from '../lib/phases';
 import { totalRecipeMinutes, formatMinutesForSegments, isPlaceholderTiming } from '../lib/duration';
-import { Button, Field, StepRow, Readout, RecipePlate, RecipeTile, buttonClassName } from './ui';
+import { Button, Field, PageHeader, StepRow, Readout, RecipePlate, RecipeTile, buttonClassName } from './ui';
+import { NewRecipeButton } from './NewRecipeSheet';
+import { AccountSheetButton } from './AccountMenu';
 import OnboardingModal from './OnboardingModal';
 import StarterShelf from './StarterShelf';
 
@@ -275,24 +277,28 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="space-y-8 md:pt-6">
+    <div className="space-y-8">
       <OnboardingModal open={showOnboarding} onClose={handleCloseOnboarding} />
 
       {/* The title and the search share a row only from `xl`. Below it the
         * search takes the full width under the title: the row needs the
         * title, a 288px field and Inspire Me side by side, which ran 245px off
         * the page at 768 and still pushed Inspire Me past the edge at 1024. */}
-      <div className="flex flex-col gap-4 border-b border-rule pb-6 xl:flex-row xl:items-center xl:justify-between">
-        <div>
-          <h1 className="font-title text-3xl text-ink md:text-4xl">
-            {bank !== ALL_BANK ? bank : 'My Cookbook'}
-          </h1>
-          {settled && !emptyCookbook ? (
-            <p className="ui-label text-ink-muted">
-              {recipes.length} {recipes.length === 1 ? 'recipe' : 'recipes'}
-            </p>
-          ) : null}
-        </div>
+      <div className="flex flex-col gap-4 border-b border-rule pb-6 xl:flex-row xl:items-end xl:justify-between">
+        {/* New sits in the header on a phone; a desktop has it in the top bar. */}
+        <PageHeader
+          className="min-w-0 flex-1"
+          title={bank !== ALL_BANK ? bank : 'Cookbook'}
+          subtitle={
+            settled && !emptyCookbook ? `${recipes.length} ${recipes.length === 1 ? 'recipe' : 'recipes'}` : undefined
+          }
+          actions={
+            <>
+              <NewRecipeButton className="md:hidden" />
+              <AccountSheetButton className="md:hidden" />
+            </>
+          }
+        />
         {emptyCookbook ? null : (
         <div className="flex w-full gap-3 xl:w-auto">
           <Field
@@ -389,6 +395,13 @@ export default function Dashboard() {
               {name} ({count})
             </button>
           ))}
+          {/* Loose notes: a page of the cookbook that is not a recipe (change 24). */}
+          <Link
+            to="/notes"
+            className="ui-label flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-control px-3 py-2 text-left text-ink-muted hover:text-ink lg:mt-2 lg:min-h-0 lg:border-t lg:border-rule lg:pt-3"
+          >
+            Loose notes
+          </Link>
         </nav>
         ) : null}
 

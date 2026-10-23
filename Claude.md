@@ -86,8 +86,8 @@ medium weight, sentence case. Times print as a cookbook does: "45 min",
 # The component layer
 
 `src/components/ui` is the whole vocabulary: `Panel`/`PanelRow`, `Button`,
-`IconButton`, `BackButton`, `Segmented`, `Field`/`TextArea`/`Select`, `Sheet`,
-`Menu`, `Readout`, `StepRow`, `RecipePlate`, `Photo`, `RecipeTile`,
+`IconButton`, `BackButton`, `Segmented`, `Field`/`TextArea`/`Select`, `Sheet`
+(with detents), `Menu`, `Disclosure`, `Toast` (`useToast`), `PageHeader`, `Readout`, `StepRow`, `RecipePlate`, `Photo`, `RecipeTile`,
 `InstrumentRow`, `Meter`, `Skeleton`, `PublishState`, `Tag`, `Prose`.
 
 - **Compose these rather than hand-rolling inline Tailwind** for a section, a
@@ -124,6 +124,9 @@ medium weight, sentence case. Times print as a cookbook does: "45 min",
 - **Loading skeletons**, never the word "Loading".
 - **Report in the panel, not through the browser.** No `alert()`, no
   `confirm()`, no `prompt()`. Errors name the problem *and* the recovery.
+- **Undo, not "Are you sure?"** A reversible action (a delete, an add) happens
+  at once and offers Undo in a toast (`useUndoableAction`); Undo of a delete is
+  `repo.restore`, which clears the tombstone.
 - **Draw only what the data can support.** A panel with nothing to report says
   so; it does not invent a reading, pad a chart with zeroes, or rank a tie.
 - **No orphan or debug code**: no `console.log`, no debug blocks, no unreferenced
@@ -177,7 +180,7 @@ Whenever any changes are made to the codebase, you MUST:
 
 ### Interface
 - **Two themes only**: Light (paper, the default) + Dark (warm charcoal). OLED Black was consolidated into Dark.
-- **Four destinations, a slim top bar on desktop** (decided 2026-10-21, built in overhaul Phase 2): Cookbook, Bakes, Shop, Discover — a bottom tab bar on the phone and a slim top bar on desktop, replacing the sidebar. Settings and account sit behind an avatar. Until Phase 2 lands, the sidebar is still always visible on desktop and never auto-hides.
+- **Four destinations, a slim top bar on desktop** (decided 2026-10-21, built in overhaul Phase 2): Cookbook, Bakes, Shop, Discover — a bottom tab bar on the phone and a slim top bar on desktop, replacing the sidebar. Settings and account sit behind an avatar. There is no sidebar, no More drawer and no floating + button: "New" is a labelled header button. Shared pages (`/r/:slug`, `/@handle`) and baking mode render with no app chrome (`isChromeFree` in `src/lib/destinations.ts`). Old addresses (`/gallery`, `/analytics`, `/grocery`, `/pantry`) redirect to Bakes and Shop.
 - **No markdown editor**: Notes are a panel and a textarea. The markdown widget brought its own toolbar, split pane and colour system, and was removed along with its dependencies.
 
 ---

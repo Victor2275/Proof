@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { api } from '../lib/api';
 import type { Component, Draft, Recipe } from '../lib/types';
 import { repo } from '../lib/repo';
@@ -78,7 +78,9 @@ export default function RecipeEditor() {
   const [extractUrl, setExtractUrl] = useState('');
   const [extracting, setExtracting] = useState(false);
   const [extractError, setExtractError] = useState('');
-  const [showExtract, setShowExtract] = useState(false);
+  const [searchParams] = useSearchParams();
+  // New → "Paste a link or text" opens the editor with the import already open.
+  const [showExtract, setShowExtract] = useState(() => searchParams.get('start') === 'paste');
   const [cropImageSrc, setCropImageSrc] = useState<string>('');
   const [crop, setCrop] = useState<Crop>();
   const [completedCrop, setCompletedCrop] = useState<PixelCrop>();

@@ -68,13 +68,12 @@ This is a 1-to-1 mirror of CURRENT_FEATURES.md. Use checkboxes to track manual t
 - [ ] **Pattern-list cookbook**: rows read without a photograph; title, segment-readout time, mini step row.
 - [ ] **Bank rail**: folder filtering, vertical + capped-scroll on desktop, horizontal scroller on mobile.
 - [ ] **Smart shelves**: Personal Bests and Recently Baked, hidden while searching/filtering.
-- [ ] **Now Baking / chase light**: dashboard panel, sidebar strip, and lit row all reflect the same running bake; resumes at the correct step after closing the tab.
+- [ ] **Now Baking / chase light**: dashboard panel, the timer pill at the top of the screen, and lit row all reflect the same running bake; resumes at the correct step after closing the tab.
 - [ ] **Duration parsing**: bare-minutes and unit-annotated/bracketed prepTime+cookTime sum correctly.
 - [ ] **Phase derivation on real data**: dashboard step rows match each recipe's actual instructions.
 
 ## 2b. Application shell (Phase 2)
-- [ ] **Sidebar redesign**: active state readable without colour alone; chase-light strip appears only when a bake is running.
-- [ ] **Bottom nav restructure**: four dock slots + working More sheet (inert while closed) + FAB New Recipe.
+- [ ] **Shell**: replaced in the UI overhaul — see section 17.
 - [ ] **Onboarding/PIN/status bars retheme**: PIN keypad still works exactly as before; banners read in the amber "due" tone.
 
 ## 2c. Photo plates (Phase 2a)
@@ -153,7 +152,7 @@ This is a 1-to-1 mirror of CURRENT_FEATURES.md. Use checkboxes to track manual t
 - [ ] **Analytics load**: a skeleton, not the word "loading", and no long pause from reading the offline store repeatedly.
 - [ ] **Landing hero**: the step row chases through the phases and the readout counts them off.
 - [ ] **Landing under reduced motion**: with the OS setting on, the row holds on one phase and nothing moves.
-- [ ] **Landing has no app chrome**: no sidebar, no bottom nav, at every width.
+- [ ] **Landing has no app chrome**: no top bar, no tab bar, at every width.
 - [ ] **Landing CTA**: "Open the cookbook" enters the app and the landing page does not reappear on the next visit.
 - [ ] **404**: an unlit panel with the seven-segment 404, readable in both themes, linking back to the cookbook.
 
@@ -169,7 +168,7 @@ This is a 1-to-1 mirror of CURRENT_FEATURES.md. Use checkboxes to track manual t
 - [ ] **Reduced motion**: with the OS setting on, the landing chase holds still, the recipe drawer does not spring, and the onboarding modal does not slide.
 - [ ] **Visual baselines**: `npm run test:visual` passes on a clean checkout; `npm run test:visual:update` regenerates.
 - [ ] **375px floor**: no horizontal scroll on any of the ten routes.
-- [ ] **Safe areas on a real Android device**: the floating action button and the notice bars clear the gesture bar; the recipe drawer's last row is not under it. *(Only simulated so far.)*
+- [ ] **Safe areas on a real Android device**: the tab bar, the toast and the notice bars clear the gesture bar; the recipe drawer's last row is not under it. *(Only simulated so far.)*
 - [ ] **Signal control contrast**: "Start recipe" is legible at arm's length in both themes.
 - [ ] **App icon**: install the PWA and confirm the step-row mark appears; rebuild the APK and confirm the launcher icon is not the old chef's hat.
 - [ ] **Offline fonts**: load with the network off and confirm no request to fonts.googleapis.com and no fallback typeface.
@@ -185,7 +184,7 @@ This is a 1-to-1 mirror of CURRENT_FEATURES.md. Use checkboxes to track manual t
 - [ ] **Scale target**: with a scale connected, a step with any un-weighed ingredient shows no target.
 - [ ] **Reverse schedule**: Arepa's schedule marks steps without a stated time as assumed and explains it above the list.
 - [ ] **Now Baking total**: a running bake of a placeholder-timed recipe shows dashes, not 50 MIN.
-- [ ] **Tablet rail**: at 768–1023px the sidebar is an icon rail with tooltips; at 1024+ it has labels; the running bake's lamp still shows in the rail.
+- [ ] **Tablet width**: at 768–1023px the top bar fits its wordmark, four destinations, New and the avatar on one line with no sideways scroll.
 - [ ] **Recipe Viewer at 768 and 1024**: ingredients read in one column above the method, names on one line; at 1280 they sit side by side.
 - [ ] **Cookbook header**: at 768 and 1024 the search sits full width under the title with Inspire Me beside it; at 1280 they share the title's row; nothing scrolls sideways.
 - [ ] **Sub on a touch tablet**: the ingredient Sub control is visible without hovering.
@@ -196,14 +195,13 @@ This is a 1-to-1 mirror of CURRENT_FEATURES.md. Use checkboxes to track manual t
 - [ ] **Sub-recipe drawer**: rises from the bottom, shows a skeleton then the recipe; with the server down it says so and offers Try again.
 - [ ] **Baking Mode sheets**: Ingredients, Log bake and Voice commands open as sheets; Escape closes the sheet without leaving Baking Mode; the arrow keys do not change the step while one is open.
 - [ ] **Barcode scanner**: the camera view opens in a sheet and closes on Escape.
-- [ ] **Bottom nav More**: on a phone, More opens a sheet; Escape and × close it and focus returns to More.
-- [ ] **Timer prompt and docked timers**: the prompt shows the duration on a segment display; docked timers read on segments, light red only past zero, and their buttons are named.
+- [ ] **Timer prompt and timers sheet**: the prompt shows the duration as plain figures; the timers sheet shows each timer on butter, a minus sign past zero, and named Pause and Remove buttons.
 - [ ] **Recipe Viewer menus**: Share and Start recipe open menus that close on Escape or a click outside and walk with the arrow keys; on a phone, ⋮ opens More actions with share, favorite and edit.
 - [ ] **Reverse scheduler**: drawn as a panel with a timetable; the default target reads 09:00 tomorrow in local time.
 - [ ] **No "Loading" text**: navigating to a new screen and opening the Instagram exporter show skeletons.
 - [ ] **Red means now**: on a recipe, the timer chips in the method are outlined, not red; only the Start key is red.
 - [ ] **New Recipe key**: lit on the cookbook with nothing baking; unlit on every other screen, and unlit on the cookbook while a bake runs.
-- [ ] **Now Baking**: the panel's border, lamp and running key are red; the total and Resume are not; the sidebar shows only the lamp.
+- [ ] **Now Baking**: the panel's border, lamp and running key are red; the total and Resume are not.
 - [ ] **Faults**: an error (e.g. Analytics with the server down) reads in the amber fault colour in both themes, legible in light.
 - [ ] **Offline bar in light theme**: legible amber-brown, not pale orange.
 - [ ] **Delete**: the editor's Delete shows a dark red rule with an ink legend; it fills on hover.
@@ -248,7 +246,7 @@ This is a 1-to-1 mirror of CURRENT_FEATURES.md. Use checkboxes to track manual t
 - [ ] **Unpublished page**: an unpublished slug reads as "Nothing at this address".
 
 ## 12. Public launch — Phase 2: accounts
-- [ ] **Sign up**: More → Account → Create an account with email, handle and a 10+ character password; the account appears in Settings.
+- [ ] **Sign up**: avatar → Sign in → Create an account with email, handle and a 10+ character password; the account appears in Settings.
 - [ ] **Handle rules**: `proof`, `admin` and a taken handle are refused with the reason on the handle field.
 - [ ] **Sign in / out**: signing in on a second browser works; Sign out in Settings signs only that device out.
 - [ ] **Wrong password**: says the email and password don't match, the same as for an unknown email.
@@ -287,7 +285,7 @@ This is a 1-to-1 mirror of CURRENT_FEATURES.md. Use checkboxes to track manual t
 - [ ] **Rejected**: an operator rejection shows "Held back: <reason>" under the recipe's header.
 - [ ] **LIVE tag**: published recipes, and only those, carry LIVE on the cookbook's tiles.
 - [ ] **Discover**: searches by title and baker, filters by tag, sorts four ways; offline it says it needs a connection.
-- [ ] **Navigation**: phone dock is Cookbook · Discover · Gallery · More; Pantry and Account are in More; the operator sees Moderation in the sidebar.
+- [ ] **Navigation**: Discover is one of the four destinations; the operator sees Moderation in the avatar menu.
 - [ ] **Profile**: `/@proof` shows the seeded library; `/@nobody` is the 404.
 - [ ] **Ratings**: signed in, rating and "I baked this" update the counts; the author can't rate their own.
 - [ ] **Comments**: a held comment shows "only you can see it"; a new account is told to wait a day; Delete and Report work.
@@ -336,3 +334,28 @@ This is a 1-to-1 mirror of CURRENT_FEATURES.md. Use checkboxes to track manual t
 - [ ] **Skeletons & Empty States**: Polished animated skeleton loaders for data fetching, custom illustrated 404 pages, and a tailored empty state for the gallery.
 - [ ] **Error Boundary**: Catches unhandled render errors gracefully.
 - [ ] **Server Architecture**: Modular Express server architecture with separated routes and services.
+
+## 17. UI overhaul — Phase 2: the shell and navigation
+- [ ] **Four destinations**: the phone shows four tabs, Cookbook · Bakes · Shop · Discover, each icon over label and at least 44px tall; there is no More and no floating +.
+- [ ] **Tab marks where you are**: on a recipe, an edit page, a new recipe or Loose notes, Cookbook is marked; on Settings no tab is marked.
+- [ ] **Tab haptic**: on the Android build with haptics on, changing tab ticks; pressing the tab you are on does not.
+- [ ] **Desktop top bar**: from 768px a slim bar shows Proof (back to the cookbook), the four destinations with a paper thumb that slides to the one chosen, New and the avatar. No sidebar.
+- [ ] **New**: the Cookbook header (phone) and the top bar (desktop) have a labelled New button; it opens a sheet with "Write it" (blank editor) and "Paste a link or text" (editor with the import open).
+- [ ] **Avatar**: the menu (desktop) or sheet (phone) holds Settings, Sign in or Account, My published recipes, Export or import, Help; the operator also sees Moderation. Signed in, it shows your initials and @handle.
+- [ ] **Export or import**: lands on Settings → Data on this device, scrolled to it.
+- [ ] **Help**: opens a sheet explaining the cookbook, cooking, bakes, shop and that it stays on this device.
+- [ ] **My published recipes** (`/published`): signed out, it asks you to sign in and says why; signed in, it lists each published recipe with where it stands, each opening the recipe.
+- [ ] **Bakes** (`/bakes`): History | Totals switch in place; Totals puts `?view=totals` in the address and survives a reload and Back.
+- [ ] **Shop** (`/shop`): To buy | In the cupboard switch in place; In the cupboard is `?view=cupboard`.
+- [ ] **Old addresses still work**: `/gallery`, `/analytics`, `/grocery` and `/pantry` land on Bakes or Shop in the matching view.
+- [ ] **Loose notes**: General Notes is now "Loose notes", reached from a row in the Cookbook's chapter list, with Back to Cookbook.
+- [ ] **Timer pill**: start a timer in baking mode, leave to Bakes: a butter pill reads "Oven · 12:04" at the top (phone) or in the top bar (desktop), with "+1" for a second timer; pressing it returns to baking mode. It is not shown inside baking mode.
+- [ ] **Timer pill without a bake**: with a timer running and no bake open, pressing the pill opens the timers sheet, where each timer can be paused, resumed and removed.
+- [ ] **Shared pages are chrome-free**: `/r/:slug` and `/@handle` show no tab bar and no top bar, at every width.
+- [ ] **Transitions**: switching tabs cross-fades; opening a recipe slides in from the right; Back slides in from the left; a reload or a deep link does not animate. With reduced motion on, nothing slides.
+- [ ] **Scroll memory**: scroll the cookbook, open a recipe, press Back: you are where you were. Switch to Bakes and back to Cookbook: the cookbook keeps its scroll.
+- [ ] **Sheet detents**: New, Help and the account sheet open at half height; the grabber cycles half and nearly full; dragging the grabber moves between them or, dragged low, closes the sheet; Done is always visible; Tab stays inside the sheet throughout.
+- [ ] **Toast and Undo**: in `/lab`, "Show a toast with Undo" shows the report above the tab bar for six seconds, longer while hovered or focused; Undo works from the keyboard; a screen reader announces the report.
+- [ ] **Undo restores a deleted record**: restoring a deleted recipe, bake, pantry item or note brings it back with its photographs (`repo.restore`).
+- [ ] **Disclosure**: in `/lab`, "5 more chapters and loose notes" opens with a turning chevron and growing height; closed, its links cannot be reached by Tab.
+- [ ] **Component lab**: `/lab` shows the page header, the disclosure, the toast and the sheet with detents.

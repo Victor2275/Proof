@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import TimerManager from './TimerManager';
 import { setAccount, type Account } from '../lib/session';
+import { OPEN_TIMERS_EVENT } from '../lib/timerBus';
 
 const socket = vi.hoisted(() => ({ on: vi.fn(), off: vi.fn(), emit: vi.fn(), disconnect: vi.fn() }));
 vi.mock('socket.io-client', () => ({ io: () => socket }));
@@ -14,6 +15,12 @@ const askForTimer = () =>
   });
 
 const ACCOUNT = { id: 'u1', handle: 'ada', email: 'a@example.com' } as Account;
+
+// The running timers live in a sheet the timer pill opens.
+const openTimers = () =>
+  act(() => {
+    window.dispatchEvent(new Event(OPEN_TIMERS_EVENT));
+  });
 
 describe('TimerManager start prompt', () => {
   beforeEach(() => {
@@ -36,7 +43,9 @@ describe('TimerManager start prompt', () => {
     askForTimer();
     await user.click(await screen.findByRole('button', { name: 'Start' }));
 
-    expect(await screen.findByText('Bulk ferment')).toBeInTheDocument();
+    openTimers();
+    expect(await screen.findByRole('dialog', { name: 'Timers' })).toBeInTheDocument();
+    expect(screen.getByText('Bulk ferment')).toBeInTheDocument();
     // Nothing is sent anywhere for a signed-out device.
     expect(socket.emit).not.toHaveBeenCalled();
     // And a reload mid-bake finds it still running.
@@ -59,7 +68,23 @@ describe('TimerManager start prompt', () => {
       JSON.stringify([{ id: 't1', name: 'Proof', endTime: null, remainingMs: 60_000, hasRung: false }]),
     );
     render(<TimerManager />);
-    expect(screen.getByText(/Proof · paused/)).toBeInTheDocument();
+    openTimers();
+    expect(screen.getByText('· paused')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Resume Proof timer' })).toBeInTheDocument();
+  });
+
+  it('pauses and removes a timer from its sheet', async () => {
+    const user = userEvent.setup();
+    localStorage.setItem(
+      'proof.timers',
+      JSON.stringify([{ id: 't1', name: 'Oven', endTime: Date.now() + 60_000, remainingMs: 60_000, hasRung: false }]),
+    );
+    render(<TimerManager />);
+    openTimers();
+    await user.click(screen.getByRole('button', { name: 'Pause Oven timer' }));
+    expect(screen.getByRole('button', { name: 'Resume Oven timer' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Remove Oven timer' }));
+    expect(JSON.parse(localStorage.getItem('proof.timers')!)).toEqual([]);
   });
 
   // The old prompt was a bare overlay with no Escape.

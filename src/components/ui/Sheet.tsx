@@ -1,7 +1,17 @@
-import { useCallback, useEffect, useId, useRef, useState, type ReactNode, type RefObject } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+  type ReactNode,
+  type RefObject,
+} from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { cn } from '../../lib/cn';
+import { haptic } from '../../lib/haptics';
 
 /*
  * A layer that sits over the interface.
@@ -81,6 +91,15 @@ function isReachable(el: HTMLElement) {
  */
 const sheetStack: symbol[] = [];
 
+/*
+ * Detents: the heights a bottom sheet rests at, as fractions of the screen.
+ * Half, so the page it came from is still in view, and nearly full, for a
+ * long list or a form. A drag that ends below DISMISS_AT closes the sheet.
+ */
+const DETENTS = [0.5, 0.92] as const;
+export type Detent = 0 | 1;
+const DISMISS_AT = 0.3;
+
 export interface SheetProps {
   open: boolean;
   /** Called by the close control, the scrim, and Escape. */
@@ -113,6 +132,14 @@ export interface SheetProps {
    * which fires before the sheet has recorded who opened it.
    */
   initialFocus?: RefObject<HTMLElement | null>;
+  /**
+   * A bottom sheet that rests at half or nearly full height. The grabber
+   * becomes a button that cycles the two, the sheet can be dragged between
+   * them or down to close, and the close control reads "Done".
+   */
+  detents?: boolean;
+  /** Which detent a sheet with `detents` opens at. */
+  initialDetent?: Detent;
   children: ReactNode;
   className?: string;
 }
@@ -130,9 +157,15 @@ export function Sheet({
   dismissible = true,
   layer = 100,
   initialFocus,
+  detents: hasDetents = false,
+  initialDetent = 0,
   children,
   className,
 }: SheetProps) {
+  const [detent, setDetent] = useState<Detent>(initialDetent);
+  // Pixels the sheet has been dragged down (negative: up) from its detent.
+  const [drag, setDrag] = useState<number | null>(null);
+  const dragStart = useRef(0);
   // `mounted` keeps the panel in the tree for the length of its exit, so it can
   // slide out rather than vanish. `entered` drives the transition itself and is
   // set a frame later, because a node cannot transition from a state it was
@@ -148,6 +181,11 @@ export function Sheet({
   const titleId = useId();
   const idRef = useRef<symbol>(undefined as unknown as symbol);
   if (idRef.current === undefined) idRef.current = Symbol('sheet');
+
+  // Each opening starts at its first detent, not wherever the last one was left.
+  useEffect(() => {
+    if (open) setDetent(initialDetent);
+  }, [open, initialDetent]);
 
   useEffect(() => {
     if (open) {
@@ -241,9 +279,60 @@ export function Sheet({
     [],
   );
 
+  /*
+   * The drag. Pointer capture keeps the gesture on the grabber however far the
+   * finger travels, and nothing here moves focus, so the trap is exactly as it
+   * was when the drag began. Every drag has a twin that is not a gesture: the
+   * grabber's own press, and Done.
+   */
+  const onDragStart = (e: ReactPointerEvent<HTMLElement>) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+    dragStart.current = e.clientY;
+    setDrag(0);
+  };
+  const onDragMove = (e: ReactPointerEvent<HTMLElement>) => {
+    if (drag === null) return;
+    setDrag(e.clientY - dragStart.current);
+  };
+  const onDragEnd = (e: ReactPointerEvent<HTMLElement>) => {
+    if (drag === null) return;
+    const moved = e.clientY - dragStart.current;
+    setDrag(null);
+    // A press that barely moved is a press: the click handler cycles instead.
+    if (Math.abs(moved) < 8) return;
+    const height = window.innerHeight || 1;
+    const fraction = DETENTS[detent] - moved / height;
+    if (fraction < DISMISS_AT) {
+      onClose();
+      return;
+    }
+    const nearest: Detent = Math.abs(fraction - DETENTS[0]) <= Math.abs(fraction - DETENTS[1]) ? 0 : 1;
+    if (nearest !== detent) haptic('medium');
+    setDetent(nearest);
+    suppressClick.current = true;
+  };
+  // The click that follows a real drag is not a request to cycle.
+  const suppressClick = useRef(false);
+  const cycleDetent = () => {
+    if (suppressClick.current) {
+      suppressClick.current = false;
+      return;
+    }
+    haptic('medium');
+    setDetent((d) => (d === 0 ? 1 : 0));
+  };
+
   if (!mounted) return null;
 
   const isBottom = placement === 'bottom';
+  const withDetents = hasDetents && isBottom && size !== 'full';
+  const detentStyle = withDetents
+    ? {
+        // Up to the top of the screen and no further.
+        height: `calc(${DETENTS[detent] * 100}dvh - ${Math.max(drag ?? 0, -(0.98 - DETENTS[detent]) * window.innerHeight)}px)`,
+      }
+    : undefined;
 
   return createPortal(
     <div className="fixed inset-0" style={{ zIndex: layer }}>
@@ -277,12 +366,15 @@ export function Sheet({
           aria-labelledby={title ? titleId : undefined}
           tabIndex={-1}
           onKeyDown={handleKeyDown}
+          style={detentStyle}
           className={cn(
             'flex w-full flex-col bg-paper text-ink focus:outline-none',
-            'transition-[transform,opacity] duration-[280ms] ease-[cubic-bezier(0.32,0.72,0,1)]',
+            drag === null &&
+              'transition-[transform,opacity,height] duration-[280ms] ease-[cubic-bezier(0.32,0.72,0,1)]',
             isBottom
               ? [
-                  'max-h-[85vh] rounded-t-sheet pb-safe shadow-[var(--lift-sheet)]',
+                  withDetents ? 'max-h-none' : 'max-h-[85vh]',
+                  'rounded-t-sheet pb-safe shadow-[var(--lift-sheet)]',
                   entered ? 'translate-y-0' : 'translate-y-full',
                 ]
               : [
@@ -294,7 +386,22 @@ export function Sheet({
             className,
           )}
         >
-          {isBottom && size !== 'full' ? (
+          {withDetents ? (
+            /* The grabber is a real control: a press cycles the detents, a drag
+             * moves between them or closes the sheet. */
+            <button
+              type="button"
+              onClick={cycleDetent}
+              onPointerDown={onDragStart}
+              onPointerMove={onDragMove}
+              onPointerUp={onDragEnd}
+              onPointerCancel={() => setDrag(null)}
+              aria-label={detent === 0 ? 'Expand sheet' : 'Shrink sheet'}
+              className="flex h-6 w-full shrink-0 touch-none items-center justify-center rounded-t-sheet"
+            >
+              <span className="h-[5px] w-9 rounded-full bg-rule-strong" aria-hidden="true" />
+            </button>
+          ) : isBottom && size !== 'full' ? (
             /* The grabber says the sheet can be pulled down; Close and Escape
              * are the controls that actually do it. */
             <span className="mx-auto mt-2 h-[5px] w-9 shrink-0 rounded-full bg-rule-strong" aria-hidden="true" />
@@ -311,7 +418,15 @@ export function Sheet({
               </div>
               <div className="flex shrink-0 items-center gap-1">
                 {actions}
-                {dismissible ? (
+                {dismissible && withDetents ? (
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="pressable -mr-2 min-h-11 rounded-full px-3.5 font-sans text-[0.9375rem] font-semibold text-ink hover:bg-paper-sunk"
+                  >
+                    Done
+                  </button>
+                ) : dismissible ? (
                   <button
                     type="button"
                     onClick={onClose}

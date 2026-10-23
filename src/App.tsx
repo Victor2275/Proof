@@ -1,11 +1,14 @@
 import { useState, useEffect, useId, useRef, lazy, Suspense } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
-import { AnimatePresence, MotionConfig } from 'framer-motion';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { MotionConfig } from 'framer-motion';
 import LandingPage from './components/LandingPage';
 import NotFound from './components/NotFound';
-import Sidebar from './components/Sidebar';
 import TimerManager from './components/TimerManager';
-import BottomNav from './components/BottomNav';
+import TabBar from './components/TabBar';
+import TopBar from './components/TopBar';
+import TimerPill from './components/TimerPill';
+import PageTransition from './components/PageTransition';
+import { useScrollMemory } from './lib/navigation';
 import AccountSheet, { type AccountMode } from './components/AccountSheet';
 import { api } from './lib/api';
 import { setOperatorToken } from './lib/session';
@@ -13,8 +16,9 @@ import { useAccountRefresh } from './lib/useAccount';
 import { ACCOUNT_PROMPT_EVENT, type AccountPrompt } from './lib/accountPrompt';
 import ErrorBoundary from './components/ErrorBoundary';
 import { Delete } from 'lucide-react';
-import { Button, Field, Sheet, Skeleton } from './components/ui';
+import { Button, Field, Sheet, Skeleton, ToastProvider, cn } from './components/ui';
 import { readTheme } from './lib/theme';
+import { isChromeFree } from './lib/destinations';
 
 // Route components are split out of the initial bundle: each screen (and the heavy
 // libraries it pulls — the markdown editor, html2canvas/jspdf, framer-motion) now
@@ -22,13 +26,12 @@ import { readTheme } from './lib/theme';
 const Dashboard = lazy(() => import('./components/Dashboard'));
 const RecipeViewer = lazy(() => import('./components/RecipeViewer'));
 const RecipeEditor = lazy(() => import('./components/RecipeEditor'));
-const Gallery = lazy(() => import('./components/Gallery'));
-const Analytics = lazy(() => import('./components/Analytics'));
-const GroceryList = lazy(() => import('./components/GroceryList'));
+const BakesPage = lazy(() => import('./components/BakesPage'));
+const ShopPage = lazy(() => import('./components/ShopPage'));
+const PublishedPage = lazy(() => import('./components/PublishedPage'));
 const GeneralNotes = lazy(() => import('./components/GeneralNotes'));
 const BakingMode = lazy(() => import('./components/BakingMode'));
 const Settings = lazy(() => import('./components/Settings'));
-const Pantry = lazy(() => import('./components/Pantry'));
 const Discover = lazy(() => import('./components/Discover'));
 const Profile = lazy(() => import('./components/Profile'));
 const Moderation = lazy(() => import('./components/Moderation'));
@@ -156,22 +159,30 @@ function RouteSkeleton() {
   );
 }
 
+/*
+ * The four destinations are Cookbook (/), Bakes, Shop and Discover. The old
+ * addresses of the screens they absorbed redirect, so a bookmark, a
+ * notification or an old link still lands in the right place.
+ */
 function AnimatedRoutes() {
   const location = useLocation();
   return (
-    <AnimatePresence mode="wait">
-      <Routes location={location} key={location.pathname}>
+    <PageTransition>
+      <Routes location={location}>
         <Route path="/" element={<Dashboard />} />
+        <Route path="/bakes" element={<BakesPage />} />
+        <Route path="/shop" element={<ShopPage />} />
+        <Route path="/published" element={<PublishedPage />} />
+        <Route path="/gallery" element={<Navigate to="/bakes" replace />} />
+        <Route path="/analytics" element={<Navigate to="/bakes?view=totals" replace />} />
+        <Route path="/grocery" element={<Navigate to="/shop" replace />} />
+        <Route path="/pantry" element={<Navigate to="/shop?view=cupboard" replace />} />
         <Route path="/settings" element={<Settings />} />
-        <Route path="/analytics" element={<Analytics />} />
-        <Route path="/pantry" element={<Pantry />} />
-        <Route path="/grocery" element={<GroceryList />} />
         <Route path="/recipe/:id/bake" element={<BakingMode />} />
         <Route path="/recipe/:id" element={<RecipeViewer />} />
         <Route path="/r/:slug" element={<RecipeViewer />} />
         <Route path="/new" element={<RecipeEditor />} />
         <Route path="/edit/:id" element={<RecipeEditor />} />
-        <Route path="/gallery" element={<Gallery />} />
         <Route path="/notes" element={<GeneralNotes />} />
         <Route path="/discover" element={<Discover />} />
         <Route path="/moderation" element={<Moderation />} />
@@ -182,7 +193,7 @@ function AnimatedRoutes() {
         <Route path="/:at" element={<Profile />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
-    </AnimatePresence>
+    </PageTransition>
   );
 }
 
@@ -291,18 +302,39 @@ function AppShell({
     };
   }, []);
 
+  const { pathname } = useLocation();
+  const chromeFree = isChromeFree(pathname);
+  const mainRef = useRef<HTMLElement>(null);
+  useScrollMemory(mainRef);
+
+  /*
+   * The shell: a slim top bar on a desktop, four tabs along the bottom of a
+   * phone, and the page between them scrolling on its own. A shared page or
+   * baking mode gets none of it (see isChromeFree).
+   */
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-ground text-ink">
+    <ToastProvider>
+    <div className="flex h-screen flex-col overflow-hidden bg-paper text-ink">
+      <TopBar />
       <div className="flex min-h-0 flex-1">
-        <Sidebar className="hidden md:flex" />
-        <main className="flex-1 overflow-y-auto overscroll-y-auto w-full relative pb-24 md:pb-12 pt-safe md:pt-0 px-4 md:px-8 lg:px-12 transition-all duration-300 md:ml-16 lg:ml-64">
-          <ErrorBoundary>
-            <Suspense fallback={<RouteSkeleton />}>
-              <AnimatedRoutes />
-            </Suspense>
-          </ErrorBoundary>
+        <main
+          ref={mainRef}
+          className={cn(
+            'relative w-full flex-1 overflow-y-auto overscroll-y-auto px-4 pt-safe md:px-8 md:pt-0',
+            chromeFree ? 'pb-12' : 'pb-tabbar md:pb-12',
+          )}
+        >
+          {/* The running timer, at the top of a phone screen; a desktop shows it in the top bar. */}
+          <TimerPill dock />
+          <div className="mx-auto w-full max-w-[75rem]">
+            <ErrorBoundary>
+              <Suspense fallback={<RouteSkeleton />}>
+                <AnimatedRoutes />
+              </Suspense>
+            </ErrorBoundary>
+          </div>
         </main>
-        <BottomNav />
+        <TabBar />
         <TimerManager />
         <AuthModal
           open={showAuthModal}
@@ -318,6 +350,7 @@ function AppShell({
         />
       </div>
     </div>
+    </ToastProvider>
   );
 }
 

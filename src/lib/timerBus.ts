@@ -59,3 +59,11 @@ export function formatTimerClock(ms: number): string {
 
   return overtime ? `-${body}` : body;
 }
+
+/** The timer a glance should show: running before paused, then the one with least time left. */
+export function leadTimer(timers: RunningTimer[]): RunningTimer | undefined {
+  return [...timers].sort((a, b) => Number(b.running) - Number(a.running) || a.remainingMs - b.remainingMs)[0];
+}
+
+/** Asks TimerManager to open its sheet of timers. */
+export const OPEN_TIMERS_EVENT = 'open-timers';

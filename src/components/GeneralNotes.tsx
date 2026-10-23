@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import type { Note } from '../lib/types';
 import { repo } from '../lib/repo';
 import { Plus, Trash2, List } from 'lucide-react';
-import { Panel, Button, Field, TextArea, Sheet, cn } from './ui';
+import { BackButton, Panel, Button, Field, TextArea, Sheet, cn } from './ui';
 
 /*
  * General notes.
@@ -153,8 +153,10 @@ export default function GeneralNotes() {
     <div className="mx-auto flex max-w-6xl flex-col gap-8 pb-20">
       <header className="flex flex-wrap items-end justify-between gap-4 border-b border-rule pb-6">
         <div className="flex flex-col gap-2">
+          {/* Loose notes are a page of the Cookbook (change 24), so back leads there. */}
+          <BackButton to="/" label="Cookbook" />
           <h1 className="font-title text-3xl leading-none text-ink sm:text-4xl">
-            General Notes
+            Loose notes
           </h1>
           <p className="max-w-prose text-ink-muted">
             The bench notebook. Anything that is not a recipe — a starter's timing, an oven's

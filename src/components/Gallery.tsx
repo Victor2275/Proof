@@ -132,7 +132,8 @@ function BakeTile({
 const EMPTY_LOGS: BakeLog[] = [];
 const EMPTY_RECIPES: Recipe[] = [];
 
-export default function Gallery() {
+/** `embedded`: drawn inside the Bakes destination, which names the page itself. */
+export default function Gallery({ embedded = false }: { embedded?: boolean } = {}) {
   const logsQuery = useBakeLogs();
   const recipesQuery = useRecipes();
   const logs = logsQuery.data ?? EMPTY_LOGS;
@@ -187,15 +188,23 @@ export default function Gallery() {
 
   return (
     <div className="flex flex-col gap-8 pb-20">
-      <header className="flex flex-col gap-4 border-b border-rule pb-6 md:flex-row md:items-end md:justify-between">
-        <div className="flex flex-col gap-2">
-          <h1 className="font-title text-3xl leading-none text-ink sm:text-4xl">Bake history</h1>
-          <p className="text-ink-muted">
-            {view === 'recipe'
-              ? 'Each row is one recipe, oldest bake on the left.'
-              : 'Every bake, newest first.'}
-          </p>
-        </div>
+      <header
+        className={
+          embedded
+            ? 'flex flex-col gap-3'
+            : 'flex flex-col gap-4 border-b border-rule pb-6 md:flex-row md:items-end md:justify-between'
+        }
+      >
+        {embedded ? null : (
+          <div className="flex flex-col gap-2">
+            <h1 className="font-title text-3xl leading-none text-ink sm:text-4xl">Bake history</h1>
+            <p className="text-ink-muted">
+              {view === 'recipe'
+                ? 'Each row is one recipe, oldest bake on the left.'
+                : 'Every bake, newest first.'}
+            </p>
+          </div>
+        )}
 
         <div className="flex gap-1" role="group" aria-label="How to group the history">
           <Button engaged={view === 'recipe'} onClick={() => setView('recipe')}>

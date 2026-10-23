@@ -15,6 +15,7 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { api, ApiError, type PublishBody } from './api';
 import { repo, type NewBakePhoto } from './repo';
+import type { RecordStore } from './repo/db';
 import type { BakeLog, Draft, Publication, PublishedRecipe, Recipe } from './types';
 import { useSession } from './session';
 
@@ -176,6 +177,22 @@ export const useNotes = () => useQuery({ queryKey: queryKeys.notes(), queryFn: r
 /* ── Folders ────────────────────────────────────────────────────────────── */
 
 export const useFolders = () => useQuery({ queryKey: queryKeys.folders(), queryFn: repo.getFolders, ...LOCAL });
+
+/* ── Undo ───────────────────────────────────────────────────────────────── */
+
+/** Brings a deleted record back (the Undo behind a toast), then rereads what shows it. */
+export const useRestoreRecord = () => {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({ store, id }: { store: RecordStore; id: string }) => repo.restore(store, id),
+    networkMode: 'always',
+    onSuccess: (_done, { store }) => {
+      if (store === 'pantry') void client.invalidateQueries({ queryKey: queryKeys.pantry() });
+      else if (store === 'notes') void client.invalidateQueries({ queryKey: queryKeys.notes() });
+      else refreshCookbook(client);
+    },
+  });
+};
 
 /* ── The shared cookbook ────────────────────────────────────────────────── */
 

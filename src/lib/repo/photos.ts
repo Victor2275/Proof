@@ -95,7 +95,11 @@ export async function collectPhotoGarbage(now = Date.now()): Promise<number> {
     getAll<{ deletedAt: string | null; imageUrls?: string[] }>('recipes'),
     getAll<{ deletedAt: string | null; imageUrls?: string[]; images?: { url: string }[] }>('bakeLogs'),
   ]);
-  const live = referencedPhotoIds([...recipes, ...bakeLogs]);
+  // A record deleted within the grace period may still be undone, and must
+  // come back with its photographs.
+  const recent = (r: { deletedAt: string | null }) =>
+    r.deletedAt && now - new Date(r.deletedAt).getTime() <= PHOTO_GRACE_MS ? { ...r, deletedAt: null } : r;
+  const live = referencedPhotoIds([...recipes, ...bakeLogs].map(recent));
   const orphans = photos
     .filter((p) => !live.has(p._id) && now - new Date(p.createdAt).getTime() > PHOTO_GRACE_MS)
     .map((p) => p._id);

@@ -13,7 +13,6 @@ export const SETTINGS_KEYS = {
   voiceCommands: 'voiceCommands',
   waveToAdvance: 'waveToAdvance',
   defaultBakersMath: 'defaultBakersMath',
-  autoHideSidebar: 'autoHideSidebar',
   theme: 'theme',
 } as const;
 

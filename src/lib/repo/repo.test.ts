@@ -136,6 +136,46 @@ describe('photo garbage collection', () => {
     expect(await getPhotoBlob(orphan)).toBeUndefined();
     expect(await getPhotoBlob(deletedOnly)).toBeUndefined();
   });
+
+  it('keeps the photographs of a record deleted moments ago, so Undo brings it back whole', async () => {
+    const photo = await savePhoto(new Blob(['a'], { type: 'image/webp' }));
+    const later = Date.now() + PHOTO_GRACE_MS + 1000;
+    await seed('recipes', [makeRecipe({ _id: 'just-deleted', imageUrls: [photo], deletedAt: new Date(later - 1000).toISOString() })]);
+    expect(await collectPhotoGarbage(later)).toBe(0);
+    expect(await getPhotoBlob(photo)).toBeDefined();
+  });
+});
+
+describe('undo', () => {
+  it('restores a deleted record by clearing its tombstone', async () => {
+    const recipe = await repo.createRecipe(draft('Rye'));
+    await repo.deleteRecipe(recipe._id);
+    await repo.restore('recipes', recipe._id);
+    const back = await repo.getRecipe(recipe._id);
+    expect(back?.title).toBe('Rye');
+    expect(back?.deletedAt).toBeNull();
+    // A restore is a write: sync must see it as newer than the delete.
+    expect(back!.updatedAt >= recipe.updatedAt).toBe(true);
+  });
+
+  it('restores bake logs, pantry items and notes the same way', async () => {
+    const log = await repo.createBakeLog({ recipeId: 'r1', notes: 'Good crumb' });
+    const item = await repo.addPantryItem({ name: 'Rye flour' });
+    const note = await repo.createNote({ title: 'Oven', content: 'Runs hot' });
+    await repo.deleteBakeLog(log._id);
+    await repo.deletePantryItem(item._id);
+    await repo.deleteNote(note._id);
+    await repo.restore('bakeLogs', log._id);
+    await repo.restore('pantry', item._id);
+    await repo.restore('notes', note._id);
+    expect((await repo.getRecipeBakeLogs('r1')).map((l) => l._id)).toEqual([log._id]);
+    expect((await repo.getPantry()).map((p) => p.name)).toEqual(['Rye flour']);
+    expect((await repo.getNotes()).map((n) => n.title)).toEqual(['Oven']);
+  });
+
+  it('says so when the record is not on this device at all', async () => {
+    await expect(repo.restore('recipes', 'nope')).rejects.toBeInstanceOf(MissingRecordError);
+  });
 });
 
 describe('upgrading from version 1', () => {

@@ -137,9 +137,11 @@ export default function Settings() {
   const { session, signOutOperator } = useSession();
   const { hash } = useLocation();
 
-  // More → Account lands on this page's Account section.
+  // The avatar's Account and Export entries land on their own section.
   useEffect(() => {
-    if (hash === '#account') document.getElementById('account')?.scrollIntoView?.({ block: 'start' });
+    if (hash === '#account' || hash === '#cookbook') {
+      document.getElementById(hash.slice(1))?.scrollIntoView?.({ block: 'start' });
+    }
   }, [hash]);
   const client = useQueryClient();
   const importInput = useRef<HTMLInputElement>(null);
@@ -316,7 +318,7 @@ export default function Settings() {
       </Panel>
 
       <Panel title="Data on this device">
-        <div className="flex flex-col gap-5">
+        <div id="cookbook" className="flex scroll-mt-24 flex-col gap-5">
           <div className="flex flex-col gap-3">
             <p className="text-sm text-ink">{STORED_ON_DEVICE}</p>
             {usage !== null && quota ? (

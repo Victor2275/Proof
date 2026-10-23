@@ -22,6 +22,9 @@ import {
   RecipeTile,
   Tag,
   Prose,
+  Disclosure,
+  PageHeader,
+  useToast,
 } from './ui';
 import { derivePhases } from '../lib/phases';
 import AIReviewSheet from './AIReviewSheet';
@@ -79,7 +82,8 @@ export default function Lab() {
   const [engaged, setEngaged] = useState(false);
   const [favourite, setFavourite] = useState(false);
   const [view, setView] = useState<'chapters' | 'az'>('chapters');
-  const [sheet, setSheet] = useState<'center' | 'bottom' | null>(null);
+  const [sheet, setSheet] = useState<'center' | 'bottom' | 'detents' | null>(null);
+  const toast = useToast();
   const [review, setReview] = useState(false);
 
   return (
@@ -223,9 +227,22 @@ export default function Lab() {
         <div className="flex flex-wrap gap-3">
           <Button onClick={() => setSheet('center')}>Open a dialog</Button>
           <Button onClick={() => setSheet('bottom')}>Open a bottom sheet</Button>
+          <Button onClick={() => setSheet('detents')}>Open a sheet with detents</Button>
         </div>
         <Sheet
-          open={sheet !== null}
+          open={sheet === 'detents'}
+          onClose={() => setSheet(null)}
+          placement="bottom"
+          title="Timers"
+          detents
+        >
+          <p className="text-sm text-ink">
+            Rests at half height. Press the grabber to cycle to nearly full, drag it to move between the two,
+            drag it down to close, or press Done.
+          </p>
+        </Sheet>
+        <Sheet
+          open={sheet === 'center' || sheet === 'bottom'}
           onClose={() => setSheet(null)}
           placement={sheet === 'bottom' ? 'bottom' : 'center'}
           title={sheet === 'bottom' ? 'New recipe' : 'Delete this recipe?'}
@@ -243,6 +260,41 @@ export default function Lab() {
             The page beneath dims but stays in place; this layer is the one you are operating.
           </p>
         </Sheet>
+      </Section>
+
+      <Section name="Page header">
+        <PageHeader
+          title="Bakes"
+          subtitle="17 bakes · 6 recipes · 1 personal best"
+          actions={<Button className="rounded-full">Log bake</Button>}
+        />
+      </Section>
+
+      <Section name="Disclosure">
+        <Disclosure summary="5 more chapters and loose notes" openSummary="Show fewer">
+          <ul className="flex flex-col py-1 font-prose text-lg text-ink">
+            <li className="py-2">Breakfast</li>
+            <li className="py-2">Starter</li>
+            <li className="py-2">Loose notes</li>
+          </ul>
+        </Disclosure>
+      </Section>
+
+      <Section name="Toast">
+        <div className="flex flex-wrap gap-3">
+          <Button
+            onClick={() =>
+              toast.show({ message: 'Recipe deleted', action: { label: 'Undo', onAction: () => undefined } })
+            }
+          >
+            Show a toast with Undo
+          </Button>
+          <Button
+            onClick={() => toast.show({ message: "Couldn't save on this device. Try again.", tone: 'fault' })}
+          >
+            Show a failure
+          </Button>
+        </div>
       </Section>
 
       <Section name="Menu">

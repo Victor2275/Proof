@@ -44,6 +44,16 @@ describe('RecipeEditor', () => {
     expect(screen.getByPlaceholderText(/72-Hour Sourdough/i)).toBeInTheDocument();
   });
 
+  it('opens with the import ready when New was "Paste a link or text"', async () => {
+    renderScreen(<RecipeEditor />, { route: '/new?start=paste', path: '/new' });
+    expect(await screen.findByRole('textbox', { name: 'Recipe URL' })).toBeInTheDocument();
+  });
+
+  it('opens on a blank page when New was "Write it"', async () => {
+    await renderNew();
+    expect(screen.queryByRole('textbox', { name: 'Recipe URL' })).not.toBeInTheDocument();
+  });
+
   it('blocks submission if the title is missing', async () => {
     await renderNew();
     fireEvent.click(screen.getByRole('button', { name: /Create recipe/i }));

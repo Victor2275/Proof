@@ -57,6 +57,14 @@ async function tombstone(store: RecordStore, id: string): Promise<void> {
   await putOne(store, { ...existing, deletedAt: stamp, updatedAt: stamp });
 }
 
+/** Clears a tombstone: the inverse of a delete, for Undo. */
+async function untombstone(store: RecordStore, id: string, what: string): Promise<void> {
+  const existing = await getOne<RecordFields>(store, id);
+  if (!existing) throw new MissingRecordError(what);
+  if (!existing.deletedAt) return;
+  await putOne(store, { ...existing, deletedAt: null, updatedAt: nowIso() });
+}
+
 /** Tidies photographs nobody uses any more, after the write that orphaned them has landed. */
 const tidyPhotos = () => {
   void collectPhotoGarbage().catch(() => undefined);
@@ -217,6 +225,17 @@ export const repo = {
 
   async getFolders(): Promise<Folder[]> {
     return live(await getAll<Folder>('folders')).sort((a, b) => a.name.localeCompare(b.name));
+  },
+
+  /* ── Undo ────────────────────────────────────────────────────────────── */
+
+  /**
+   * Brings a deleted record back. Its photographs are still there: the
+   * photo collector counts a record deleted within the last hour as live.
+   */
+  async restore(store: RecordStore, id: string): Promise<void> {
+    const what = store === 'bakeLogs' ? 'bake log' : store === 'pantry' ? 'pantry item' : store.replace(/s$/, '');
+    await untombstone(store, id, what);
   },
 };
 

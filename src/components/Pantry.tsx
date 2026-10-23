@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Plus, X, ScanBarcode } from 'lucide-react';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import { useAddPantryItem, useDeletePantryItem, usePantry } from '../lib/queries';
-import { Button, Field, Panel, Sheet } from './ui';
+import { Button, Field, Panel, Sheet, cn } from './ui';
 
 /*
  * The pantry — the machine's own inventory panel.
@@ -17,7 +17,8 @@ import { Button, Field, Panel, Sheet } from './ui';
  * instead of one list.
  */
 
-export default function Pantry() {
+/** `embedded`: drawn inside the Shop destination, which names the page itself. */
+export default function Pantry({ embedded = false }: { embedded?: boolean } = {}) {
   const pantry = usePantry();
   const addItem = useAddPantryItem();
   const deleteItem = useDeletePantryItem();
@@ -78,7 +79,8 @@ export default function Pantry() {
   };
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-8 pb-20">
+    <div className={cn('flex max-w-3xl flex-col gap-8 pb-20', !embedded && 'mx-auto')}>
+      {embedded ? null : (
       <header className="flex flex-wrap items-end justify-between gap-4 border-b border-rule pb-6">
         <div className="flex flex-col gap-2">
           <h1 className="font-title text-3xl leading-none text-ink sm:text-4xl">Pantry</h1>
@@ -93,6 +95,7 @@ export default function Pantry() {
           </span>
         )}
       </header>
+      )}
 
       <Panel title="Add to stock">
         <form onSubmit={handleAddItem} className="flex flex-wrap items-end gap-3">

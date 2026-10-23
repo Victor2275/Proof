@@ -340,15 +340,22 @@
   }
 
   /*
-   * Clearance above the mobile bottom nav: 65px of controls plus whatever the
+   * Clearance above the phone's tab bar: 58px of tabs plus whatever the
    * device reserves for its gesture bar, added rather than assumed away.
+   * `.above-nav` places something just over it; `.pb-tabbar` keeps the end
+   * of a page from sitting underneath it.
    */
+  .toast-dock,
   .above-nav {
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 6rem);
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 4.5rem);
+  }
+  .pb-tabbar {
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 6rem);
   }
   @media (min-width: 768px) {
-    .above-nav {
-      bottom: 2.5rem;
+    .above-nav,
+    .toast-dock {
+      bottom: 1.5rem;
     }
   }
 

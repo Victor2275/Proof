@@ -6,8 +6,8 @@ import { API_URL } from '../lib/api';
 import { userToken, useSession } from '../lib/session';
 import { ulid } from '../lib/ulid';
 import { hapticsEnabled, ttsEnabled } from '../lib/settings';
-import { publishRunningTimers, formatTimerClock } from '../lib/timerBus';
-import { Button, Readout, Sheet, cn } from './ui';
+import { publishRunningTimers, formatTimerClock, OPEN_TIMERS_EVENT } from '../lib/timerBus';
+import { Button, IconButton, Readout, Sheet } from './ui';
 
 export interface Timer {
   id: string;
@@ -62,6 +62,8 @@ export default function TimerManager() {
   const [now, setNow] = useState(Date.now());
   const [pendingTimer, setPendingTimer] = useState<{ durationSecs: number, name: string } | null>(null);
   const [isFlashing, setIsFlashing] = useState(false);
+  // The timers' own sheet, opened from the pill when no bake is open.
+  const [listOpen, setListOpen] = useState(false);
   // The websocket used to be opened at module scope, so every page load connected
   // one and nothing ever closed it. Own it here so it's torn down on unmount.
   const socketRef = useRef<Socket | null>(null);
@@ -148,11 +150,15 @@ export default function TimerManager() {
       });
     };
 
+    const handleOpenList = () => setListOpen(true);
+
     window.addEventListener('add-timer', handleAddTimer);
     window.addEventListener('stop-alarms', handleStopAlarms);
+    window.addEventListener(OPEN_TIMERS_EVENT, handleOpenList);
     return () => {
       window.removeEventListener('add-timer', handleAddTimer);
       window.removeEventListener('stop-alarms', handleStopAlarms);
+      window.removeEventListener(OPEN_TIMERS_EVENT, handleOpenList);
     };
   }, []);
 
@@ -207,66 +213,52 @@ export default function TimerManager() {
     socketRef.current?.emit('timer:remove', id);
   };
 
-  if (timers.length === 0 && !pendingTimer) return null;
+  if (timers.length === 0 && !pendingTimer && !isFlashing) return null;
 
   return (
     <>
       {/*
-        * The running timers, docked as small panels. Each reads its time on a
-        * segment display, as every instrument value in the app does; a timer
-        * past zero lights its display and its rule, rather than flooding the
-        * whole panel red.
+        * The running timers. They used to float as a stack of panels over
+        * whatever screen was open; the pill at the top of the screen now
+        * reports them, and this sheet is where they are paused and removed.
+        * A timer past its end keeps the butter of every timer and counts up
+        * with a minus sign.
         */}
-      <div className="fixed top-16 right-4 md:top-auto md:bottom-4 z-50 flex flex-col gap-2 max-h-[80vh] overflow-y-auto w-72" aria-label="Timers">
-        {timers.map(t => {
-          const currentRemaining = t.endTime !== null ? t.endTime - now : t.remainingMs;
-          const isNegative = currentRemaining < 0;
-          const paused = t.endTime === null;
-
-          return (
-            <section
-              key={t.id}
-              className={cn(
-                'flex flex-col rounded-panel border bg-panel',
-                isNegative ? 'border-signal' : 'border-rule',
-              )}
-            >
-              <header className={cn('flex items-center justify-between gap-2 border-b pl-3', isNegative ? 'border-signal' : 'border-rule')}>
-                <h2 className="ui-label min-w-0 truncate">
-                  {t.name}
-                  {paused ? ' · paused' : ''}
-                </h2>
-                <button
-                  type="button"
-                  onClick={() => removeTimer(t.id)}
-                  aria-label={`Remove ${t.name} timer`}
-                  className="flex h-11 w-11 shrink-0 items-center justify-center text-ink-muted transition-colors hover:text-ink"
-                >
-                  <X className="h-4 w-4" aria-hidden="true" />
-                </button>
-              </header>
-
-              <div className="flex items-center justify-between gap-3 py-2 pl-3 pr-1">
-                <Readout
-                  value={formatTimerClock(currentRemaining)}
-                  size="md"
-                  tone={isNegative ? 'accent' : 'ink'}
-                  label={isNegative ? 'Overtime' : undefined}
-                />
-                <button
-                  type="button"
+      <Sheet open={listOpen && timers.length > 0} onClose={() => setListOpen(false)} title="Timers" placement="bottom">
+        <ul className="flex flex-col" aria-label="Running timers">
+          {timers.map((t) => {
+            const currentRemaining = t.endTime !== null ? t.endTime - now : t.remainingMs;
+            const isNegative = currentRemaining < 0;
+            const paused = t.endTime === null;
+            return (
+              <li key={t.id} className="flex items-center gap-3 border-b border-rule py-2 last:border-b-0">
+                <div className="flex min-w-0 flex-1 flex-col">
+                  <span className="truncate text-[0.9375rem] text-ink">
+                    {t.name}
+                    {paused ? <span className="text-ink-muted"> · paused</span> : null}
+                  </span>
+                  <Readout
+                    value={formatTimerClock(currentRemaining).replace(/^-/, '−')}
+                    size="md"
+                    label={isNegative ? 'Over by' : undefined}
+                    className="mt-1 self-start rounded-control bg-butter px-2 py-1"
+                  />
+                </div>
+                <IconButton
+                  label={paused ? `Resume ${t.name} timer` : `Pause ${t.name} timer`}
+                  icon={paused ? <Play className="h-5 w-5" aria-hidden="true" /> : <Pause className="h-5 w-5" aria-hidden="true" />}
                   onClick={() => togglePause(t.id)}
-                  aria-label={paused ? `Resume ${t.name} timer` : `Pause ${t.name} timer`}
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control border border-rule text-ink transition-colors hover:border-ink"
-                >
-                  {paused ? <Play className="h-4 w-4" aria-hidden="true" /> : <Pause className="h-4 w-4" aria-hidden="true" />}
-                </button>
-              </div>
-            </section>
-          );
-        })}
-      </div>
-
+                />
+                <IconButton
+                  label={`Remove ${t.name} timer`}
+                  icon={<X className="h-5 w-5" aria-hidden="true" />}
+                  onClick={() => removeTimer(t.id)}
+                />
+              </li>
+            );
+          })}
+        </ul>
+      </Sheet>
       {isFlashing && (
         <div className="fixed inset-0 z-[9999] bg-ink/30 dark:bg-paper pointer-events-none animate-pulse transition-opacity duration-300" />
       )}

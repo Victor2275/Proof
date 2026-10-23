@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import type { Recipe, BakeLog } from '../lib/types';
 import { useBakeLogs, useRecipes } from '../lib/queries';
-import { Button, Panel, PanelRow, Meter } from './ui';
+import { Button, Panel, PanelRow, Meter, cn } from './ui';
 
 /*
  * Analytics, as an instrument rather than as a dashboard.
@@ -28,7 +28,8 @@ const MONTHS_FOR_A_TREND = 3;
 const EMPTY_RECIPES: Recipe[] = [];
 const EMPTY_LOGS: BakeLog[] = [];
 
-export default function Analytics() {
+/** `embedded`: drawn inside the Bakes destination, which names the page itself. */
+export default function Analytics({ embedded = false }: { embedded?: boolean } = {}) {
   const recipesQuery = useRecipes();
   const logsQuery = useBakeLogs();
   const recipes = recipesQuery.data ?? EMPTY_RECIPES;
@@ -92,8 +93,10 @@ export default function Analytics() {
   const failed = recipesQuery.error ?? logsQuery.error;
   if (failed) {
     return (
-      <div className="mx-auto flex max-w-3xl flex-col gap-8 pb-20">
-        <h1 className="font-title border-b border-rule pb-6 text-3xl leading-none text-ink sm:text-4xl">Analytics</h1>
+      <div className={cn('flex max-w-3xl flex-col gap-8 pb-20', !embedded && 'mx-auto')}>
+        {embedded ? null : (
+          <h1 className="font-title border-b border-rule pb-6 text-3xl leading-none text-ink sm:text-4xl">Analytics</h1>
+        )}
         <Panel title="Bake history">
           <div className="flex flex-col gap-3" role="alert">
             <p className="text-ink">Couldn't read the bake history on this device, so there is nothing to report.</p>
@@ -116,7 +119,8 @@ export default function Analytics() {
   const nothingLogged = reading.totalBakes === 0;
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-8 pb-20">
+    <div className={cn('flex max-w-3xl flex-col gap-8 pb-20', !embedded && 'mx-auto')}>
+      {embedded ? null : (
       <header className="flex flex-wrap items-end justify-between gap-4 border-b border-rule pb-6">
         <div className="flex flex-col gap-2">
           <h1 className="font-title text-3xl leading-none text-ink sm:text-4xl">Analytics</h1>
@@ -129,6 +133,7 @@ export default function Analytics() {
           {reading.totalBakes} {reading.totalBakes === 1 ? 'bake' : 'bakes'} logged
         </span>
       </header>
+      )}
 
       <Panel title="Totals">
         <div className="flex flex-col gap-4">

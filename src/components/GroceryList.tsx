@@ -38,7 +38,8 @@ export interface GroceryItem {
 const EMPTY_RECIPES: Recipe[] = [];
 const EMPTY_PANTRY: PantryItem[] = [];
 
-export default function GroceryList() {
+/** `embedded`: drawn inside the Shop destination, which names the page itself. */
+export default function GroceryList({ embedded = false }: { embedded?: boolean } = {}) {
   const recipesQuery = useRecipes();
   const pantryQuery = usePantry();
   const recipes = recipesQuery.data ?? EMPTY_RECIPES;
@@ -203,7 +204,9 @@ export default function GroceryList() {
   if (failed) {
     return (
       <div className="mx-auto flex max-w-4xl flex-col gap-6 pb-20">
-        <h1 className="font-title border-b border-rule pb-6 text-3xl leading-none text-ink sm:text-4xl">Grocery list</h1>
+        {embedded ? null : (
+          <h1 className="font-title border-b border-rule pb-6 text-3xl leading-none text-ink sm:text-4xl">Grocery list</h1>
+        )}
         <Panel title="This device">
           <div className="flex flex-col gap-3" role="alert">
             <p className="text-ink">Couldn't read the cookbook and pantry on this device, so there is no list to build.</p>
@@ -224,14 +227,22 @@ export default function GroceryList() {
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-8 pb-20">
-      <header className="flex flex-col gap-4 border-b border-rule pb-6 md:flex-row md:items-end md:justify-between">
-        <div className="flex flex-col gap-2">
-          <h1 className="font-title text-3xl leading-none text-ink sm:text-4xl">Grocery list</h1>
-          <p className="max-w-prose text-ink-muted">
-            Pick what you are baking. Everything those recipes need that the pantry does not
-            already hold lands on the list.
-          </p>
-        </div>
+      <header
+        className={
+          embedded
+            ? 'flex flex-wrap gap-2'
+            : 'flex flex-col gap-4 border-b border-rule pb-6 md:flex-row md:items-end md:justify-between'
+        }
+      >
+        {embedded ? null : (
+          <div className="flex flex-col gap-2">
+            <h1 className="font-title text-3xl leading-none text-ink sm:text-4xl">Grocery list</h1>
+            <p className="max-w-prose text-ink-muted">
+              Pick what you are baking. Everything those recipes need that the pantry does not
+              already hold lands on the list.
+            </p>
+          </div>
+        )}
 
         <div className="flex flex-wrap gap-2">
           <Button
