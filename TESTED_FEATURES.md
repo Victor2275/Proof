@@ -171,6 +171,16 @@ Rebuilt as the bake sheet: see section 18.
 - [ ] **Overhaul review set**: `npm run audit:overhaul` writes a fold shot, a full-page shot and a text file per screen into `audit-shots/overhaul/before/`; the desktop page shots run past 800px where the page does.
 - [ ] **Overhaul label**: `OVERHAUL_LABEL=after npm run audit:overhaul` writes into `audit-shots/overhaul/after/` and leaves `before/` untouched.
 - [ ] **Overhaul set separate from the baselines**: `npm run test:visual` does not pick up `e2e/overhaul/`.
+- [ ] **/ui-review stops on a stale DESIGN.md**: with DESIGN.md still describing the Step Row design, `/ui-review` stops at preflight and says to rewrite it.
+- [ ] **Review capture**: `REVIEW_LABEL=x npm run review:capture` writes `fold.png`, `page.png`, `text.txt` and `facts.json` per screen into `audit-shots/review/x/`, each named `<owner>__<screen>__<theme>__<width>`.
+- [ ] **Capture facts**: a screen that calls an endpoint the stand-in doesn't know lists it under `unmocked` in its `facts.json`.
+- [ ] **Review server**: `npm run review:api` answers `/api/published`, `/api/published/index`, a shared slug, profiles, sign-up and URL import on port 3001, and prints `UNMOCKED …` for anything else. It refuses to start, and says why, if the port is taken.
+- [ ] **Review server tests**: `npm run test:review` passes.
+- [ ] **Regular device for live checks**: after `npm run review:seed`, running `.claude/skills/ui-review/scripts/reset-regular.js` in the MCP browser opens the cookbook with the live library. `reset-empty.js` leaves a stranger's device that lands on `/welcome`.
+- [ ] **Newcomers kept new**: the First-Timer and Link Follower agents have only `Read` and browser tools, and their round-1 task does not include `RULES.md`.
+- [ ] **Three checking rounds**: a run leaves `proposals-v1..3.md` and `check-1..3/` in its run folder, and every rule-breaking proposal sits under "Needs your ruling" in `REPORT.md`, never in the plan.
+- [ ] **Demonstration**: a run ends with a published artifact of before/after pairs, linked at the top of `REPORT.md`.
+- [ ] **Review set separate from the baselines**: `npm run test:visual` does not pick up `e2e/review/`.
 
 ## 10. Public launch — Phase 1: the local-first cookbook
 - [ ] **Works offline**: with the network off, create, edit and delete a recipe, log a bake with a photo, add a note and a pantry item; reload; all still there.

@@ -14,6 +14,8 @@
     "module": "preserve",
     "moduleResolution": "bundler",
     "verbatimModuleSyntax": true,
+    // e2e/review/mock-api.ts runs under Node's own type stripping, which needs the extension.
+    "allowImportingTsExtensions": true,
     "moduleDetection": "force",
     "noEmit": true,
 

@@ -17,6 +17,10 @@
     "audit:ui": "playwright test -c playwright.audit.config.ts",
     "audit:report": "node scripts/audit-report.mjs",
     "audit:overhaul": "playwright test -c e2e/overhaul/playwright.config.ts",
+    "review:capture": "playwright test -c e2e/review/playwright.config.ts",
+    "review:api": "node e2e/review/mock-api.ts",
+    "review:seed": "node e2e/review/seed-script.ts",
+    "test:review": "vitest run --config e2e/review/vitest.config.ts",
     "build:apk": "npm run build && npx cap sync android && cd android && ./gradlew assembleDebug",
     "start": "cd server && npm install && npx tsx index.js",
     "adb:reverse": "%LOCALAPPDATA%\\Android\\Sdk\\platform-tools\\adb.exe reverse tcp:3001 tcp:3001"

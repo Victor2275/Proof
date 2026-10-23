@@ -22,8 +22,8 @@ import { defineConfig, devices } from '@playwright/test';
  */
 export default defineConfig({
   testDir: './e2e',
-  // The Phase 0 audit and the overhaul set record rather than compare; each has its own config.
-  testIgnore: ['**/audit/**', '**/overhaul/**'],
+  // The Phase 0 audit and the overhaul and /ui-review sets record rather than compare; each has its own config.
+  testIgnore: ['**/audit/**', '**/overhaul/**', '**/review/**'],
   // The whole point is comparing against a committed image, so a run that
   // silently wrote new baselines would be worthless.
   updateSnapshots: 'missing',
