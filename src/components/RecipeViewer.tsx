@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, lazy, Suspense } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { CalendarClock, Heart, MoreHorizontal, PencilLine, Share } from 'lucide-react';
+import { CalendarClock, Heart, Link2, MoreHorizontal, PencilLine, Printer, Share } from 'lucide-react';
 import type { BakeLog, PublishedRecipe, Recipe, StepNote } from '../lib/types';
 import { ApiError } from '../lib/api';
 import {
@@ -28,6 +28,7 @@ import { LastTimeCard, YourBakes } from './RecipeBakes';
 import LogBakeSheet from './LogBakeSheet';
 import BakeDetailSheet from './BakeDetailSheet';
 import ShareSheet from './ShareSheet';
+import { QRCodeSVG } from 'qrcode.react';
 import PublishSheet from './PublishSheet';
 import PhotoSlider from './PhotoSlider';
 import RecipeDrawer from './RecipeDrawer';
@@ -289,7 +290,7 @@ export default function RecipeViewer() {
   return (
     <div className="@container mx-auto flex w-full max-w-[75rem] flex-col pb-10">
       {/* The nav bar: back to where this page belongs, and the recipe's few actions. */}
-      <div className="flex min-h-11 items-center justify-between gap-2 py-1 md:pt-4" data-html2canvas-ignore="true">
+      <div className="flex min-h-11 items-center justify-between gap-2 py-1 md:pt-4 print:hidden" data-html2canvas-ignore="true">
         <BackButton to={back.to} label={back.label} />
         <div role="toolbar" aria-label="Recipe actions" className="flex items-center">
           {own ? (
@@ -338,15 +339,19 @@ export default function RecipeViewer() {
       </div>
 
       <div id="recipe-export-node" className="bg-paper">
-        <div className="grid grid-cols-1 gap-x-16 gap-y-8 @4xl:grid-cols-[minmax(0,27rem)_minmax(0,1fr)]">
+        <div className="grid grid-cols-1 gap-x-16 gap-y-8 @4xl:grid-cols-[minmax(0,27rem)_minmax(0,1fr)] print:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)] print:gap-x-8">
           {/* The left page. */}
           <div className="flex min-w-0 flex-col gap-6">
             <RecipeHeader recipe={recipe} ownRecipe={own} onPublish={own ? () => setPublishOpen(true) : undefined} />
 
-            {own ? <LastTimeCard recipeId={own._id} bakes={bakes} /> : null}
+            {own ? (
+              <div className="print:hidden">
+                <LastTimeCard recipeId={own._id} bakes={bakes} />
+              </div>
+            ) : null}
 
             {own ? (
-              <div className="flex flex-col gap-2" data-html2canvas-ignore="true">
+              <div className="flex flex-col gap-2 print:hidden" data-html2canvas-ignore="true">
                 <div className="flex gap-2.5">
                   {startCooking}
                   <Button size="lg" onClick={() => setLogOpen(true)} aria-haspopup="dialog">
@@ -370,7 +375,7 @@ export default function RecipeViewer() {
               </div>
             ) : (
               /* A shared recipe's one primary action: make it yours. */
-              <div className="flex flex-col gap-2" data-html2canvas-ignore="true">
+              <div className="flex flex-col gap-2 print:hidden" data-html2canvas-ignore="true">
                 {savedCopy ? (
                   <>
                     <p className="text-sm text-ink-muted">Already in your cookbook.</p>
@@ -380,9 +385,30 @@ export default function RecipeViewer() {
                   </>
                 ) : (
                   <>
-                    <Button variant="primary" size="lg" busy={forkPublished.isPending} onClick={saveToCookbook}>
-                      Save to my cookbook
-                    </Button>
+                    <div className="flex flex-wrap gap-2">
+                      <Button variant="primary" size="lg" className="flex-1" busy={forkPublished.isPending} onClick={saveToCookbook}>
+                        Save to my cookbook
+                      </Button>
+                      {shareUrl ? (
+                        <Button
+                          size="lg"
+                          icon={<Link2 className="h-5 w-5" aria-hidden="true" />}
+                          onClick={async () => {
+                            try {
+                              await navigator.clipboard.writeText(shareUrl);
+                              toast.show({ message: 'Link copied' });
+                            } catch {
+                              toast.show({ message: "Couldn't reach the clipboard.", tone: 'fault' });
+                            }
+                          }}
+                        >
+                          Copy link
+                        </Button>
+                      ) : null}
+                      <Button size="lg" icon={<Printer className="h-5 w-5" aria-hidden="true" />} onClick={() => window.print()}>
+                        Print
+                      </Button>
+                    </div>
                     <p className="text-sm text-ink-muted">Save it to cook it, log your bakes and change it. No account needed.</p>
                   </>
                 )}
@@ -404,10 +430,26 @@ export default function RecipeViewer() {
             <InstructionList recipe={recipe} marginNotes={marginNotes} onOpenSubRecipe={setSubRecipeId} />
           </div>
         </div>
+
+        {/* On paper only: room to write, and the way back to the recipe. */}
+        <div className="hidden print:mt-8 print:flex print:items-start print:gap-6 print:break-inside-avoid">
+          <div className="flex-1">
+            <p className="font-title text-lg text-ink">My notes</p>
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="h-8 border-b border-rule" aria-hidden="true" />
+            ))}
+          </div>
+          {shareUrl ? (
+            <div className="flex w-28 flex-col items-center gap-1 text-center text-[8pt] text-ink-muted">
+              <QRCodeSVG value={shareUrl} size={96} level="M" />
+              Scan to open the recipe
+            </div>
+          ) : null}
+        </div>
       </div>
 
       {own ? (
-        <div className="mt-10 flex flex-col gap-6" data-html2canvas-ignore="true">
+        <div className="mt-10 flex flex-col gap-6 print:hidden" data-html2canvas-ignore="true">
           <YourBakes
             bakes={bakes}
             onOpen={(log) => setOpenBakeId(log._id)}

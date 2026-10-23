@@ -396,57 +396,65 @@
   padding-top: calc(env(safe-area-inset-top, 0px) + 1.5rem);
 }
 
+/*
+ * Printed (change 16): the recipe as a page you can cook from and write on.
+ * Light paper whatever the screen's theme, the app's chrome left off (each
+ * piece of it carries `print:hidden`), the ingredients beside the method, and
+ * at the foot ruled lines for your own notes and a code back to the recipe.
+ * `size: auto` lets the printer's own paper — A5, A4 or Letter — decide.
+ */
 @media print {
   @page {
-    margin: 1cm;
     size: auto;
+    margin: 12mm;
+  }
+
+  :root,
+  .dark {
+    --paper: #ffffff;
+    --paper-raised: #ffffff;
+    --paper-sunk: #f4f1ec;
+    --rule: #cfc8bc;
+    --rule-strong: #a99e91;
+    --ink: #000000;
+    --ink-2: #2b2622;
+    --ink-muted: #4a423c;
+    --pencil: #4a3f1f;
+    color-scheme: light;
   }
 
   body {
-    background-color: white !important;
-    color: black !important;
-    font-size: 11pt;
-    line-height: 1.3;
+    font-size: 10.5pt;
+    line-height: 1.35;
   }
 
-  /* Hide UI components not needed on paper */
-  nav, aside, button, .bg-ground, .bg-panel, a {
-    display: none !important;
+  /* The shell scrolls inside <main> on screen; on paper the page is the document. */
+  .h-screen {
+    height: auto !important;
+    overflow: visible !important;
   }
-
   main {
-    margin: 0 !important;
+    overflow: visible !important;
     padding: 0 !important;
-    max-width: none !important;
   }
 
   img {
-    max-height: 200px !important;
-    width: auto !important;
-    page-break-inside: avoid;
+    max-height: 60mm !important;
+    object-fit: cover;
+    break-inside: avoid;
   }
 
-  /* Empty checkboxes for pen check-offs */
-  input[type='checkbox'] {
-    appearance: none;
-    background-color: transparent !important;
-    border: 1px solid black !important;
-    width: 14px;
-    height: 14px;
-    display: inline-block;
-    position: relative;
-    top: 2px;
+  li,
+  h2,
+  h3 {
+    break-inside: avoid;
   }
-  input[type='checkbox']:checked {
-    background-color: transparent !important;
+  h2,
+  h3 {
+    break-after: avoid;
   }
 
-  .space-y-10 > * + * { margin-top: 1.5rem !important; }
-  .space-y-4 > * + * { margin-top: 0.5rem !important; }
-  .space-y-6 > * + * { margin-top: 0.75rem !important; }
-
-  .pb-20, .pb-6, .pt-10, .pt-8 {
-    padding-bottom: 0 !important;
-    padding-top: 1rem !important;
+  * {
+    box-shadow: none !important;
   }
 }

@@ -46,7 +46,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         <div
           role="status"
           aria-live="polite"
-          className="toast-dock pointer-events-none fixed inset-x-0 z-[90] flex justify-center px-4 md:justify-start md:px-6"
+          className="toast-dock pointer-events-none fixed inset-x-0 z-[90] flex justify-center px-4 md:justify-start md:px-6 print:hidden"
         >
           {toast ? <ToastView key={toast.id} toast={toast} onDone={() => dismiss(toast.id)} /> : null}
         </div>,

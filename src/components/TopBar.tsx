@@ -63,7 +63,7 @@ export default function TopBar() {
   if (isChromeFree(pathname)) return null;
 
   return (
-    <header className="sticky top-0 z-30 hidden border-b border-rule bg-paper px-8 md:block">
+    <header className="sticky top-0 z-30 hidden border-b border-rule bg-paper px-8 md:block print:hidden">
       {/* The same column as the page beneath, so the wordmark lines up with the page's edge. */}
       <div className="mx-auto flex min-h-16 max-w-[75rem] items-center gap-7">
         <Link

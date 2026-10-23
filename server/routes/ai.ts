@@ -19,6 +19,20 @@ const aiLimiter = rateLimit({ windowMs: 60_000, limit: 10, message: { error: 'AI
 /** The longest raw text the restructure will send to the model. */
 export const MAX_RESTRUCTURE_CHARS = 20_000;
 
+/** The largest photograph of a page the reader accepts, after decoding. The app sends ~1 MB. */
+export const MAX_PAGE_PHOTO_BYTES = 4 * 1024 * 1024;
+
+const RECIPE_SHAPE = `{
+  "title": "String",
+  "description": "String",
+  "prepTime": "String (minutes)",
+  "cookTime": "String (minutes)",
+  "servings": Number,
+  "ingredients": [{ "name": "String", "quantity": Number, "unit": "String" }],
+  "instructions": ["String"],
+  "tags": ["String"]
+}`;
+
 // POST /api/extract
 router.post('/extract', aiLimiter, requireAi, async (req: Request, res: Response) => {
   try {
@@ -140,6 +154,36 @@ ${rawText}`;
   } catch (err: any) {
     console.error('AI Restructure Error:', err);
     res.status(500).json({ error: err.message || 'Failed to restructure recipe using AI.' });
+  }
+});
+
+/*
+ * POST /api/ai-photo — a photographed page of a cookbook, or a recipe card,
+ * read into a recipe (change 117, "Photograph a page"). The photograph is
+ * sent to the model once and kept nowhere on the server.
+ */
+router.post('/ai-photo', aiLimiter, requireAi, async (req: Request, res: Response) => {
+  try {
+    const { image } = req.body ?? {};
+    const match = typeof image === 'string' ? image.match(/^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/) : null;
+    if (!match) return res.status(400).json({ error: 'Send the page as a JPEG, PNG or WebP photograph.' });
+    const [, mimeType, data] = match;
+    if (Math.floor((data.length * 3) / 4) > MAX_PAGE_PHOTO_BYTES) {
+      return res.status(413).json({ error: 'That photograph is too large. Take it again a little further away.' });
+    }
+    if (!isGeminiConfigured()) return res.status(503).json({ error: 'AI features are currently unavailable (missing GEMINI_API_KEY in .env).' });
+
+    const model = getFlashJsonModel()!;
+    const prompt = `You are an expert culinary assistant. This is a photograph of a recipe: a page of a cookbook, a handwritten card or a printout. Read it and return ONLY a JSON object in exactly this structure:
+${RECIPE_SHAPE}
+Keep the recipe's own words for the method. Write a heading line as "--- Heading ---". If the photograph holds no recipe, return {"title": ""}.`;
+    const result = await model.generateContent([prompt, { inlineData: { data, mimeType } }]);
+    const recipe = JSON.parse(result.response.text());
+    if (!recipe?.title) return res.status(422).json({ error: "No recipe could be read in that photograph. Try a sharper, flatter picture of the page." });
+    res.json(recipe);
+  } catch (err: any) {
+    console.error('AI Photo Error:', err);
+    res.status(500).json({ error: err.message || 'Failed to read the photograph.' });
   }
 });
 

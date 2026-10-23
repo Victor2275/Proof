@@ -166,16 +166,18 @@ for (const shot of SHOTS) {
   }
 }
 
-test('stranger-02-onboarding dark', async ({ page }, info) => {
-  await serve(page, 'stranger', 'dark');
-  await page.goto('/');
-  await page.waitForURL('**/welcome');
-  await page.getByRole('button', { name: /Open the cookbook/i }).click();
-  await page.waitForURL((u) => u.pathname === '/');
-  await page.getByRole('dialog').first().waitFor({ timeout: 10_000 }).catch(() => undefined);
-  await settle(page);
-  await shoot(page, 'stranger-02-onboarding__dark', info.project.name);
-});
+/* A stranger's first press: the landing page's button, onto the empty cookbook — no tour in between. */
+for (const theme of BOTH) {
+  test(`stranger-02-first-open ${theme}`, async ({ page }, info) => {
+    await serve(page, 'stranger', theme);
+    await page.goto('/');
+    await page.waitForURL('**/welcome');
+    await page.getByRole('button', { name: /Open my cookbook/i }).first().click();
+    await page.waitForURL((u) => u.pathname === '/');
+    await settle(page);
+    await shoot(page, `stranger-02-first-open__${theme}`, info.project.name);
+  });
+}
 
 /* The shell's own states: the avatar's entries, New's ways in, and a bake left running. */
 for (const theme of BOTH) {

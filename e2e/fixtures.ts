@@ -204,11 +204,7 @@ export async function pinEnvironment(page: Page, { emptyCookbook = false } = {})
 export async function useTheme(page: Page, theme: 'dark' | 'light') {
   await page.addInitScript((t) => {
     window.localStorage.setItem('theme', t);
-    // Otherwise the landing page intercepts every first navigation...
+    // Otherwise the landing page intercepts every first navigation.
     window.localStorage.setItem('hasVisited', 'true');
-    // ...and the onboarding modal covers whatever surface is being shot. It is
-    // gated on its own key, which is how the first run of these baselines came
-    // out as ten photographs of the same modal.
-    window.localStorage.setItem('hasSeenOnboarding', 'true');
   }, theme);
 }

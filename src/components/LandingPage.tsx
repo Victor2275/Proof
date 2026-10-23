@@ -1,155 +1,149 @@
-import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight } from 'lucide-react';
-import { derivePhases } from '../lib/phases';
-import { Button, StepRow, Readout, Panel } from './ui';
+import { BookOpen, Link2, Timer, WifiOff } from 'lucide-react';
+import { Button, MarginNote, Stamp, Stars } from './ui';
 
 /*
- * The landing page — the one Persuade surface in an Operate product.
+ * The landing page: the one Persuade surface in an Operate product
+ * (UI overhaul Phase 5, changes 32–38).
  *
- * It is the only screen in Proof that someone who has never seen the app will
- * look at, and it gets one reading before they decide. The previous version
- * spent that reading on three feature cards claiming hands-free control, synced
- * timers and visual bake logs — three assertions, none of them shown, under a
- * blurred stock photograph that could have fronted any cookbook app.
+ * A stranger gets one reading before deciding, and the previous page spent it
+ * on the design's own metaphor — "a recipe is a pattern, a bake is that
+ * pattern running" — over a demonstration of a drum machine. Their guess at
+ * what it was: "a music thing". This one says what the app does, in a cook's
+ * words, over a loaf: you keep your recipes, and what happened every time you
+ * made them, and the next one is better for it.
  *
- * What Proof has that they do not is the thesis: a recipe is a pattern, and a
- * bake is that pattern running. So the hero is the machine running. The step
- * row chases through a real bake's phases, the readout counts the phase down,
- * and the claim is demonstrated rather than stated. Everything below it is
- * something the app can prove.
+ * Under that, the thing itself: a page of the cookbook with a bake note on it,
+ * drawn with the app's own pieces so it cannot promise what the app does not
+ * do. One solid button, said twice — at the top and at the foot. The promise
+ * that matters most to a stranger, no account and nothing leaves the phone,
+ * is a sentence, not small print.
+ *
+ * The photograph is the library's own Danish rye, self-hosted and precached
+ * so the page works offline.
  */
 
-/*
- * A real sourdough, written the way the library writes one, so the row below is
- * derived by exactly the code that derives every other row in the app rather
- * than hand-placed for the demo. If `derivePhases` ever stops recognising a
- * levain, this page stops claiming one.
- */
-const DEMONSTRATION_STEPS = [
-  'Feed the levain and leave it until it domes, about six hours.',
-  'Autolyse the flour and water for one hour.',
-  'Mix in the salt and the ripe levain.',
-  'Bulk ferment for four hours, with a stretch and fold each hour.',
-  'Shape into a boule and bench rest for twenty minutes.',
-  'Proof in the banneton overnight in the fridge.',
-  'Bake at 250C with steam for twenty minutes, then 230C for twenty more.',
-  'Rest on a rack for at least two hours before cutting.',
+const LINES = [
+  { icon: WifiOff, title: 'Works offline', body: 'Your cookbook lives on this device. No signal in the kitchen, no problem.' },
+  { icon: Timer, title: 'Timers in every step', body: 'Tap “20 minutes” in a step and it counts down, even if you leave the page.' },
+  { icon: Link2, title: 'Share a recipe', body: 'Send a link to a recipe you are proud of, or save one someone sent you.' },
 ];
-
-/** How long each phase holds before the chase advances. */
-const CHASE_MS = 1600;
 
 export default function LandingPage() {
   const navigate = useNavigate();
-  const phases = useMemo(() => derivePhases(DEMONSTRATION_STEPS), []);
-  const [phaseIndex, setPhaseIndex] = useState(0);
-
-  /*
-   * The chase is the page's only motion, and it is the same clock the rest of
-   * the world runs on. Under reduced motion it does not run at all: the row
-   * holds on one lit phase, which still says "this is where now is" without
-   * anything moving. The global CSS rule cannot do this for us — it collapses
-   * CSS animation, and this is a timer.
-   */
-  useEffect(() => {
-    const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)');
-    if (reduced?.matches) return;
-
-    const id = setInterval(() => {
-      setPhaseIndex((i) => (i + 1) % phases.length);
-    }, CHASE_MS);
-    return () => clearInterval(id);
-  }, [phases.length]);
-
-  const runningPhase = phases[phaseIndex];
-  const activeStep = runningPhase?.stepIndices[0];
-
-  const handleExplore = () => {
+  const open = () => {
     localStorage.setItem('hasVisited', 'true');
     navigate('/');
   };
 
   return (
-    <div className="min-h-screen bg-ground px-6 py-16 text-ink">
-      <div className="mx-auto flex max-w-3xl flex-col gap-12">
-        <header className="flex flex-col items-center gap-5 text-center">
-          <h1 className="font-title text-5xl leading-none text-ink sm:text-7xl">Proof</h1>
-          <p className="max-w-prose text-lg text-ink-muted sm:text-xl">
-            A recipe is a pattern. A bake is that pattern running. This is the machine that runs
-            it, with a light that always says where <span className="text-ink">now</span> is.
-          </p>
+    <div className="min-h-screen bg-paper text-ink">
+      <div className="mx-auto flex max-w-5xl flex-col px-4 pb-16 pt-safe md:px-8 md:pt-10">
+        <header className="flex min-h-11 items-center">
+          <span className="font-title text-[1.75rem] text-ink" style={{ fontVariationSettings: "'SOFT' 80" }}>
+            Proof
+          </span>
         </header>
 
-        {/* The claim, demonstrated. */}
-        <Panel title="A bake, running" lit>
+        <section className="grid items-center gap-8 pt-4 md:grid-cols-2 md:gap-12 md:pt-10">
+          <img
+            src="/landing/danish-rye.webp"
+            alt="A loaf of Danish rye bread on a board, three slices cut"
+            width={700}
+            height={525}
+            className="-mx-4 aspect-[4/3] w-[calc(100%+2rem)] max-w-none object-cover sm:mx-0 sm:w-full sm:rounded-panel md:order-2"
+          />
           <div className="flex flex-col gap-5">
-            <StepRow
-              phases={phases}
-              activeStep={activeStep}
-              label="A sourdough bake, running"
-            />
-            <div className="flex flex-wrap items-end justify-between gap-4 border-t border-rule pt-4">
-              <div className="flex flex-col gap-1">
-                <span className="ui-label">Now</span>
-                <span className="font-title text-xl text-signal">
-                  {runningPhase?.label ?? '—'}
-                </span>
-              </div>
-              <Readout
-                value={String(phaseIndex + 1).padStart(2, '0')}
-                unit={`OF ${String(phases.length).padStart(2, '0')}`}
-                label="Phase"
-                size="md"
-              />
+            <h1 className="font-title text-[2.75rem] leading-[1.02] text-ink sm:text-6xl">
+              Bake it. Write it down. Bake it better.
+            </h1>
+            <p className="font-prose max-w-prose text-xl leading-snug text-ink-2">
+              Your recipes, and what happened every time you made them — so the note you left last time is waiting when you
+              start the next.
+            </p>
+            <div className="flex flex-col items-start gap-3">
+              <Button variant="primary" size="lg" onClick={open} icon={<BookOpen className="h-5 w-5" aria-hidden="true" />}>
+                Open my cookbook
+              </Button>
+              <p className="text-[0.9375rem] text-ink-2">No account. It stays on your phone.</p>
             </div>
           </div>
-        </Panel>
+        </section>
 
-        <div className="flex flex-col items-center gap-3">
-          {/*
-            * Outlined, though it is the page's only call to action. Signal red
-            * means one thing in this world, and on this page that thing is the
-            * chase light above — which is the entire argument being made. A red
-            * button beside it would put two "nows" on screen and spend the
-            * demonstration to decorate a control. The button carries its weight
-            * through size and position instead.
-            */}
-          <Button
-            variant="secondary"
-            size="lg"
-            onClick={handleExplore}
-            icon={<ArrowRight className="h-5 w-5" />}
+        {/* The thing itself: a page of the cookbook, with a bake note on it. */}
+        <section id="example" aria-labelledby="example-heading" className="mt-16 flex scroll-mt-6 flex-col gap-4">
+          <h2 id="example-heading" className="font-title text-2xl text-ink">
+            Every bake, on the recipe it belongs to
+          </h2>
+          <div
+            role="img"
+            aria-label="An example recipe page: Danish rye bread, serves 10, with last time's bake — four stars, “Dense in the middle, crust perfect” — and a pencilled note for next time: “Proof an hour longer.”"
+            className="grid gap-6 rounded-sheet border border-rule bg-paper-raised p-5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] sm:p-7"
           >
-            Open the cookbook
-          </Button>
-          <p className="ui-label">No account. Nothing to set up.</p>
-        </div>
+            <div className="flex flex-col gap-3" aria-hidden="true">
+              <p className="font-title text-3xl leading-tight text-ink">Danish rye bread</p>
+              <p className="text-sm text-ink-muted">Serves 10 · Prep 40 min · Bake 1 h 15 · Medium</p>
+              <div className="relative flex flex-col gap-2 rounded-panel bg-paper-sunk px-4 pb-3 pt-4">
+                <span className="flex items-baseline justify-between text-[0.8125rem]">
+                  <span className="font-semibold text-ink">Last time · Oct 12</span>
+                  <Stars value={4} />
+                </span>
+                <span className="font-prose text-[1.0625rem] leading-snug text-ink">“Dense in the middle, crust perfect.”</span>
+                <MarginNote lead="Next time">Proof an hour longer.</MarginNote>
+              </div>
+            </div>
+            <div className="flex flex-col gap-3" aria-hidden="true">
+              <p className="font-title text-xl text-ink">Your bakes</p>
+              <div className="flex gap-2.5">
+                {[
+                  { n: 1, note: 'Too wet. Less water.', stars: 2 },
+                  { n: 2, note: 'Better. Still dense.', stars: 3 },
+                  { n: 3, note: 'Crust perfect.', stars: 4, best: true },
+                ].map((b) => (
+                  <div key={b.n} className="relative flex w-1/3 flex-col gap-1.5">
+                    <div className="flex aspect-square flex-col justify-between rounded-key bg-paper-sunk p-2.5">
+                      <span className="font-title text-2xl leading-none text-pencil">{b.n}</span>
+                      <span className="font-prose text-[0.8125rem] italic leading-snug text-ink-2">“{b.note}”</span>
+                    </div>
+                    <Stars value={b.stars} />
+                    {b.best ? <Stamp rating={b.stars} className="absolute -right-1 -top-1 scale-75" /> : null}
+                  </div>
+                ))}
+              </div>
+              <p className="font-prose text-ink-2">
+                Oldest to newest, so the row itself is the progress — and the note you left for next time shows up when you
+                start cooking it again.
+              </p>
+            </div>
+          </div>
+        </section>
 
-        {/*
-          * Three things the app does, each named as a behaviour rather than as a
-          * feature, and each one true of the build behind this page.
-          */}
-        <div className="grid gap-4 sm:grid-cols-3">
-          <Panel title="Hands free">
-            <p className="text-sm text-ink-muted">
-              Floured hands never touch the phone. Say “next”, or wave over the camera, and the
-              row advances.
-            </p>
-          </Panel>
-          <Panel title="Timers that follow">
-            <p className="text-sm text-ink-muted">
-              A timer started on the phone counts down on the laptop too, docked in the head as a
-              readout and turning red once it runs past its end.
-            </p>
-          </Panel>
-          <Panel title="Every bake, kept">
-            <p className="text-sm text-ink-muted">
-              Photograph and note each attempt. A recipe's bakes read as one row, oldest to
-              newest, so the row is the progress.
-            </p>
-          </Panel>
-        </div>
+        <section aria-label="What else it does" className="mt-14 grid gap-6 sm:grid-cols-3">
+          {LINES.map(({ icon: Icon, title, body }) => (
+            <div key={title} className="flex flex-col gap-1.5">
+              <Icon className="h-5 w-5 text-ink-2" strokeWidth={1.7} aria-hidden="true" />
+              <h3 className="font-title text-lg text-ink">{title}</h3>
+              <p className="text-[0.9375rem] text-ink-2">{body}</p>
+            </div>
+          ))}
+        </section>
+
+        <footer className="mt-16 flex flex-col items-start gap-3 border-t border-rule pt-8">
+          <p className="font-title text-2xl text-ink">Start with the next thing you bake.</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="primary" size="lg" onClick={open}>
+              Open my cookbook
+            </Button>
+            <Button
+              size="lg"
+              variant="ghost"
+              onClick={() => document.getElementById('example')?.scrollIntoView({ block: 'start' })}
+            >
+              See an example recipe
+            </Button>
+          </div>
+          <p className="text-sm text-ink-muted">Free, with no account. An account is only for publishing recipes for others.</p>
+        </footer>
       </div>
     </div>
   );

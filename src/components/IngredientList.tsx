@@ -121,13 +121,13 @@ export default function IngredientList({ recipe, servings, onServingsChange, che
             </Button>
           ) : null}
           {onServingsChange ? (
-            <div role="group" aria-label="Servings" className="flex items-center gap-0.5 rounded-full bg-paper-tonal p-[3px] text-sm">
+            <div role="group" aria-label="Servings" className="flex items-center gap-0.5 rounded-full bg-paper-tonal p-[3px] text-sm print:bg-transparent">
               <button
                 type="button"
                 onClick={() => step(-1)}
                 disabled={servings <= 1}
                 aria-label="Fewer servings"
-                className="pressable flex h-[38px] w-[38px] items-center justify-center rounded-full bg-paper-raised text-ink disabled:opacity-40"
+                className="pressable flex h-[38px] w-[38px] items-center justify-center rounded-full bg-paper-raised text-ink disabled:opacity-40 print:hidden"
               >
                 <Minus className="h-4 w-4" aria-hidden="true" />
               </button>
@@ -138,7 +138,7 @@ export default function IngredientList({ recipe, servings, onServingsChange, che
                 type="button"
                 onClick={() => step(1)}
                 aria-label="More servings"
-                className="pressable flex h-[38px] w-[38px] items-center justify-center rounded-full bg-paper-raised text-ink"
+                className="pressable flex h-[38px] w-[38px] items-center justify-center rounded-full bg-paper-raised text-ink print:hidden"
               >
                 <Plus className="h-4 w-4" aria-hidden="true" />
               </button>
@@ -216,7 +216,7 @@ export default function IngredientList({ recipe, servings, onServingsChange, che
                   label={`Substitutes for ${parts.name}`}
                   icon={<Sparkles className="h-4 w-4" aria-hidden="true" />}
                   onClick={() => onSubstitute(parts.name)}
-                  className="self-center text-ink-muted [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:focus-visible:opacity-100"
+                  className="self-center text-ink-muted print:hidden [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:focus-visible:opacity-100"
                 />
               ) : null}
             </li>
@@ -232,7 +232,7 @@ export default function IngredientList({ recipe, servings, onServingsChange, che
         <Button
           variant="tonal"
           onClick={addMissing}
-          className="mt-4 h-auto min-h-14 justify-start gap-3 px-4 py-2 text-left"
+          className="mt-4 h-auto min-h-14 justify-start gap-3 px-4 py-2 text-left print:hidden"
           icon={<ShoppingBasket className="h-5 w-5 shrink-0" aria-hidden="true" />}
         >
           <span className="flex flex-col">

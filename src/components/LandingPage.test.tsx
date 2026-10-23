@@ -1,121 +1,57 @@
-import { render, screen, act } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { MemoryRouter } from 'react-router-dom';
+import { describe, it, expect, beforeEach } from 'vitest';
+import { useLocation } from 'react-router-dom';
 import LandingPage from './LandingPage';
-import NotFound from './NotFound';
+import { renderScreen } from '../test/utils';
 
-const navigate = vi.fn();
-vi.mock('react-router-dom', async () => {
-  const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom');
-  return { ...actual, useNavigate: () => navigate };
-});
-
-function renderLanding() {
-  return render(
-    <MemoryRouter>
-      <LandingPage />
-    </MemoryRouter>,
-  );
+function Where() {
+  return <output data-testid="where">{useLocation().pathname}</output>;
 }
 
-beforeEach(() => {
-  localStorage.clear();
-  navigate.mockClear();
-});
+const render = () =>
+  renderScreen(
+    <>
+      <LandingPage />
+      <Where />
+    </>,
+    { route: '/welcome' },
+  );
 
-describe('LandingPage', () => {
-  it('leads with the thesis rather than with a feature list', () => {
-    renderLanding();
-    expect(screen.getByRole('heading', { name: 'Proof', level: 1 })).toBeInTheDocument();
-    expect(screen.getByText(/A recipe is a pattern/i)).toBeInTheDocument();
+beforeEach(() => localStorage.clear());
+
+describe('the landing page', () => {
+  it('says what the app does in a cook’s words, over a real loaf', () => {
+    render();
+    expect(screen.getByRole('heading', { level: 1, name: 'Bake it. Write it down. Bake it better.' })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'A loaf of Danish rye bread on a board, three slices cut' })).toHaveAttribute('src', '/landing/danish-rye.webp');
+    expect(screen.queryByText(/pattern running/)).not.toBeInTheDocument();
   });
 
-  /*
-   * The page's whole argument is that the claim is demonstrated rather than
-   * asserted, and the demonstration has to be the app's own derivation — not a
-   * hand-placed row that would keep claiming a levain after the parser stopped
-   * finding one.
-   */
-  it('derives its demonstration from the real phase vocabulary', () => {
-    renderLanding();
-    // The row reports, it is not operated, so it is an image naming its phases
-    // rather than a group of controls.
-    const row = screen.getByRole('img', { name: /A sourdough bake, running/i });
-    expect(row).toHaveAccessibleName(/Levain.*Autolyse.*Bulk.*Shape.*Proof.*Bake/i);
-    expect(screen.getAllByText('Levain').length).toBeGreaterThan(0);
+  it('has one solid action, said at the top and at the foot, with the promise as a sentence', () => {
+    render();
+    const opens = screen.getAllByRole('button', { name: /Open my cookbook/ });
+    expect(opens).toHaveLength(2);
+    for (const b of opens) expect(b).toHaveClass('bg-accent');
+    expect(screen.getByText('No account. It stays on your phone.')).toBeInTheDocument();
+  });
+
+  it('shows a recipe with a bake note on it, rather than describing one', () => {
+    render();
+    expect(screen.getByRole('img', { name: /example recipe page.*next time.*Proof an hour longer/i })).toBeInTheDocument();
+  });
+
+  it('leads with the bake log; hands-free and timers are secondary lines', () => {
+    render();
+    const headings = screen.getAllByRole('heading').map((h) => h.textContent);
+    expect(headings.indexOf('Every bake, on the recipe it belongs to')).toBeLessThan(headings.indexOf('Timers in every step'));
   });
 
   it('enters the app and remembers that it has been seen', async () => {
     const user = userEvent.setup();
-    renderLanding();
-
-    await user.click(screen.getByRole('button', { name: /Open the cookbook/i }));
+    render();
+    await user.click(screen.getAllByRole('button', { name: /Open my cookbook/ })[0]);
     expect(localStorage.getItem('hasVisited')).toBe('true');
-    expect(navigate).toHaveBeenCalledWith('/');
-  });
-
-  it('spends signal red on the running phase and not on the button', () => {
-    renderLanding();
-    const cta = screen.getByRole('button', { name: /Open the cookbook/i });
-    // Outlined, not filled: the chase light is the page's one "now".
-    expect(cta.className).not.toMatch(/bg-signal/);
-  });
-
-  describe('the chase light', () => {
-    beforeEach(() => {
-      vi.useFakeTimers();
-    });
-    afterEach(() => {
-      vi.useRealTimers();
-    });
-
-    it('advances on its own', () => {
-      renderLanding();
-      const first = screen.getByText('Levain', { selector: '.font-title' });
-      expect(first).toBeInTheDocument();
-
-      act(() => {
-        vi.advanceTimersByTime(1600);
-      });
-      expect(screen.getByText('Autolyse', { selector: '.font-title' })).toBeInTheDocument();
-    });
-
-    it('holds still under reduced motion', () => {
-      // The global CSS rule collapses animation, not a timer, so the page has
-      // to check for itself.
-      vi.spyOn(window, 'matchMedia').mockReturnValue({ matches: true } as MediaQueryList);
-      renderLanding();
-
-      act(() => {
-        vi.advanceTimersByTime(1600 * 4);
-      });
-      expect(screen.getByText('Levain', { selector: '.font-title' })).toBeInTheDocument();
-    });
-  });
-});
-
-describe('NotFound', () => {
-  it('reads as an unlit instrument rather than an apology', () => {
-    render(
-      <MemoryRouter>
-        <NotFound />
-      </MemoryRouter>,
-    );
-    expect(screen.getByRole('img', { name: /Status 404/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Back to the cookbook/i })).toHaveAttribute(
-      'href',
-      '/',
-    );
-  });
-
-  it('keeps the readout neutral, because nothing here is running', () => {
-    const { container } = render(
-      <MemoryRouter>
-        <NotFound />
-      </MemoryRouter>,
-    );
-    expect(container.querySelector('.text-accent')).toBeNull();
-    expect(container.querySelector('.text-ink.tabular-nums')).not.toBeNull();
+    expect(screen.getByTestId('where')).toHaveTextContent(/^\/$/);
   });
 });

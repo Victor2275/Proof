@@ -1,4 +1,5 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi } from 'vitest';
 import html2canvas from 'html2canvas';
 import InstagramExporter from './InstagramExporter';
@@ -6,123 +7,65 @@ import type { Recipe } from '../lib/types';
 import { makeBakeLog, makeRecipe } from '../test/utils';
 
 vi.mock('html2canvas', () => ({
-  default: vi.fn().mockResolvedValue({
-    toDataURL: () => 'data:image/jpeg;base64,mock',
-  }),
+  default: vi.fn().mockResolvedValue({ toDataURL: () => 'data:image/jpeg;base64,mock' }),
 }));
 
-const mockRecipe: Recipe = makeRecipe({
-  title: 'Test Bread',
-  description: 'A test description',
+const RECIPE: Recipe = makeRecipe({
+  title: 'Country Loaf',
+  description: 'A delicious Danish Bread dish.',
   prepTime: '20',
   cookTime: '40',
-  servings: 1,
-  tags: ['bread', 'test'],
-  ingredients: [{ name: 'Flour', quantity: 500, unit: 'g' }],
-  instructions: ['Mix', 'Bake'],
+  servings: 2,
+  folder: 'Breads',
+  ingredients: [
+    { name: 'Flour (500g)', quantity: 4, unit: 'cup' },
+    { name: 'Salt', quantity: 0.13, unit: 'tsp' },
+  ],
+  instructions: ['--- Dough ---', 'Mix.', 'Bake.'],
   imageUrls: ['https://example.com/img.jpg'],
 });
 
-describe('InstagramExporter', () => {
-  it('renders the carousel by default, with the pattern card first', () => {
-    render(<InstagramExporter recipe={mockRecipe} onClose={vi.fn()} />);
+const cards = () => screen.getAllByText('Proof').filter((el) => el.closest('[style*="1080"]'));
 
-    // The recipe leads the pattern card and the link card, so its name appears
-    // on more than one slide.
-    expect(screen.getAllByRole('heading', { name: 'Test Bread' }).length).toBeGreaterThan(0);
-    // "Ingredients" reads twice: as the count on the pattern card and as the
-    // head of the slide that lists them.
-    expect(screen.getAllByText('Ingredients')).toHaveLength(2);
-    expect(screen.getByText('Method')).toBeInTheDocument();
+describe('sharing as a card', () => {
+  it('opens on one card: the recipe as a page, its facts in a line, nothing the recipe cannot prove', () => {
+    render(<InstagramExporter recipe={RECIPE} onClose={vi.fn()} />);
+    expect(screen.getByRole('dialog', { name: 'Share as a card' })).toBeInTheDocument();
+    expect(cards()).toHaveLength(1);
+    expect(screen.getByText('Serves 2 · Prep 20 min · Cook 40 min · Medium')).toBeInTheDocument();
+    expect(screen.queryByText(/A delicious/)).not.toBeInTheDocument();
   });
 
-  it('exports the pattern card alone in single mode', () => {
-    render(<InstagramExporter recipe={mockRecipe} onClose={vi.fn()} />);
-
-    fireEvent.click(screen.getByText(/Single card/i));
-
-    // Only the pattern card's own ingredient count survives; the slide that
-    // listed them is gone.
-    expect(screen.getAllByText('Ingredients')).toHaveLength(1);
-    expect(screen.queryByText('Method')).not.toBeInTheDocument();
-    expect(screen.getAllByRole('heading', { name: 'Test Bread' }).length).toBe(1);
+  it('draws every page when asked: the recipe, the ingredients in fractions, the method without headings as steps', async () => {
+    const user = userEvent.setup();
+    render(<InstagramExporter recipe={RECIPE} onClose={vi.fn()} />);
+    await user.click(screen.getByRole('radio', { name: 'All 3' }));
+    expect(cards()).toHaveLength(3);
+    expect(screen.getByText('⅛ tsp')).toBeInTheDocument();
+    expect(screen.getByText('Flour')).toBeInTheDocument();
+    expect(screen.queryByText(/---/)).not.toBeInTheDocument();
   });
 
-  it('reads a real timing onto the card', () => {
-    render(<InstagramExporter recipe={mockRecipe} onClose={vi.fn()} />);
-    // 20 prep + 40 cook = 60 minutes, which a display reads as 1:00 HR.
-    expect(screen.getByText('Total')).toBeInTheDocument();
-    expect(screen.getByText('HR')).toBeInTheDocument();
+  it('leads with the bake when sharing one: its stars, its words and its note to next time', () => {
+    const bake = makeBakeLog({ notes: 'Best crumb yet.', rating: 4, nextTime: 'Less salt.' });
+    render(<InstagramExporter recipe={RECIPE} bakeLog={bake} onClose={vi.fn()} />);
+    expect(screen.getByRole('dialog', { name: 'Share this bake' })).toBeInTheDocument();
+    expect(screen.getByText('★★★★☆')).toBeInTheDocument();
+    expect(screen.getByText('“Best crumb yet.”')).toBeInTheDocument();
+    expect(screen.getByText(/Next time: Less salt\./)).toBeInTheDocument();
   });
 
-  it('refuses to print the import placeholder as a timing', () => {
-    render(
-      <InstagramExporter
-        recipe={{ ...mockRecipe, prepTime: '20 mins', cookTime: '30 mins' }}
-        onClose={vi.fn()}
-      />,
-    );
-    // No fabricated 50 MIN on a card someone else will read: the display is
-    // dropped rather than filled in.
-    expect(screen.queryByText('Total')).not.toBeInTheDocument();
-  });
-
-  it('counts a generic recipe in steps rather than inventing phase names', () => {
-    render(<InstagramExporter recipe={mockRecipe} onClose={vi.fn()} />);
-    // "Mix" then "Bake" reads as the generic prep/cook shape, not a bread bake,
-    // so the keys are the steps themselves.
-    expect(screen.getAllByText('2 steps').length).toBeGreaterThan(0);
-  });
-
-  it('labels the keys when the recipe proved its phases', () => {
-    render(
-      <InstagramExporter
-        recipe={{
-          ...mockRecipe,
-          instructions: [
-            'Feed the levain and let it ripen.',
-            'Autolyse the flour and water.',
-            'Bulk ferment with stretch and fold.',
-            'Shape the loaf.',
-            'Proof overnight in a banneton.',
-            'Bake in a dutch oven.',
-          ],
-        }}
-        onClose={vi.fn()}
-      />,
-    );
-    expect(screen.getAllByText('Levain').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('Bulk').length).toBeGreaterThan(0);
-  });
-
-  it('renders every card at 1080, whatever size the preview is showing', async () => {
-    render(<InstagramExporter recipe={mockRecipe} onClose={vi.fn()} />);
-
-    fireEvent.click(screen.getByRole('button', { name: /Download/i }));
-
+  it('draws each card full size, whatever size the preview is showing', async () => {
+    render(<InstagramExporter recipe={RECIPE} onClose={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Download the card' }));
     await waitFor(() => expect(html2canvas).toHaveBeenCalled());
-    // The preview is a scaled copy; captured through that transform a card
-    // exported from a phone came out under 900px square.
-    expect(vi.mocked(html2canvas).mock.calls[0][1]).toMatchObject({
-      width: 1080,
-      height: 1080,
-      scale: 2,
-    });
+    expect(vi.mocked(html2canvas).mock.calls[0][1]).toMatchObject({ width: 1080, height: 1350 });
   });
 
-  it('adds the log slide only when a bake actually has notes', () => {
-    const { rerender } = render(
-      <InstagramExporter recipe={{ ...mockRecipe, description: '' }} onClose={vi.fn()} />,
-    );
-    expect(screen.queryByText(/Baker's log/i)).not.toBeInTheDocument();
-
-    rerender(
-      <InstagramExporter
-        recipe={{ ...mockRecipe, description: '' }}
-        bakeLog={makeBakeLog({ recipeId: 'r1', date: '2026-09-16', notes: 'Longer bulk next time.', imageUrls: [] })}
-        onClose={vi.fn()}
-      />,
-    );
-    expect(screen.getByText(/Baker's log/i)).toBeInTheDocument();
+  it('closes like any sheet', () => {
+    const onClose = vi.fn();
+    render(<InstagramExporter recipe={RECIPE} onClose={onClose} />);
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(onClose).toHaveBeenCalled();
   });
 });

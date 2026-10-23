@@ -73,7 +73,7 @@ export default function TimerPill({ className, dock = false }: { className?: str
   );
 
   return dock ? (
-    <div className="sticky top-[env(safe-area-inset-top)] z-20 -mt-3 flex justify-center pb-1 md:hidden">{pill}</div>
+    <div className="sticky top-[env(safe-area-inset-top)] z-20 -mt-3 flex justify-center pb-1 md:hidden print:hidden">{pill}</div>
   ) : (
     pill
   );

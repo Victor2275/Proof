@@ -8,6 +8,7 @@
 import type { PublishBody } from './api';
 import type { Publication, Recipe } from './types';
 import { getPhotoBlob, isPhotoRef } from './repo/photos';
+import { blobToDataUrl } from './image';
 
 export type PublicationState = 'local' | 'pending' | 'live' | 'edits' | 'rejected';
 
@@ -29,13 +30,6 @@ export function creditFromUrl(url: string | undefined): string {
   }
 }
 
-async function blobToDataUrl(blob: Blob): Promise<string> {
-  const bytes = new Uint8Array(await blob.arrayBuffer());
-  let binary = '';
-  // In chunks: spreading a whole photograph into one call overflows the stack.
-  for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
-  return `data:${blob.type || 'application/octet-stream'};base64,${btoa(binary)}`;
-}
 
 /**
  * The photographs as the server takes them: one stored on this device goes as

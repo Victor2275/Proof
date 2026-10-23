@@ -51,6 +51,8 @@ app.use(cors());
 // A published recipe carries its photographs as compressed data (up to three,
 // ~200 KB each); everything else is small.
 app.use('/api/published', express.json({ limit: '8mb' }));
+// A photographed page of a recipe, as a data URL (routes/ai.ts bounds it again).
+app.use('/api/ai-photo', express.json({ limit: '6mb' }));
 app.use(express.json({ limit: '1mb' }));
 app.use((_req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');

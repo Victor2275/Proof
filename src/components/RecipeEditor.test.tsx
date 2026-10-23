@@ -12,6 +12,7 @@ vi.mock('../lib/api', async (importOriginal) => ({
   api: {
     extractRecipe: vi.fn(),
     restructureRecipe: vi.fn(),
+    readRecipePhoto: vi.fn(),
   },
 }));
 
@@ -136,6 +137,23 @@ describe('RecipeEditor', () => {
         expect(screen.getByPlaceholderText(/72-Hour Sourdough/i)).toHaveValue('Extracted Title');
       });
     });
+
+    it('reads a photographed page into the form', async () => {
+      vi.mocked(api.readRecipePhoto).mockResolvedValue({ title: 'Grandma’s Scones', instructions: ['Rub in the butter.'] });
+      renderScreen(<RecipeEditor />, { route: '/new?start=photo', path: '/new' });
+      const input = await screen.findByLabelText('Photograph a page');
+      fireEvent.change(input, { target: { files: [new File(['jpeg'], 'page.jpg', { type: 'image/jpeg' })] } });
+      await waitFor(() => expect(screen.getByPlaceholderText(/72-Hour Sourdough/i)).toHaveValue('Grandma’s Scones'));
+      expect(vi.mocked(api.readRecipePhoto).mock.calls[0][0]).toMatch(/^data:image\/jpeg;base64,/);
+    });
+  });
+
+  it('explains the photograph import instead of sending it, for someone it is not open to', async () => {
+    renderScreen(<RecipeEditor />, { route: '/new?start=photo', path: '/new' });
+    const input = await screen.findByLabelText('Photograph a page');
+    fireEvent.change(input, { target: { files: [new File(['jpeg'], 'page.jpg', { type: 'image/jpeg' })] } });
+    expect(await screen.findByRole('dialog', { name: 'Photograph a page' })).toBeInTheDocument();
+    expect(api.readRecipePhoto).not.toHaveBeenCalled();
   });
 
   it('links a sub-recipe to a step, searching rather than listing the whole library', async () => {

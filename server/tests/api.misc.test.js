@@ -33,6 +33,13 @@ describe('AI endpoints', () => {
     }
   });
 
+  // Two calls only: the AI routes share a burst limit of ten a minute.
+  it('POST /api/ai-photo - takes only a photograph, and not a huge one', async () => {
+    expect((await request(app).post('/api/ai-photo').send({ image: 'data:text/html;base64,PGgxPg==' })).statusCode).toBe(400);
+    const huge = `data:image/jpeg;base64,${'A'.repeat(5_700_000)}`;
+    expect((await request(app).post('/api/ai-photo').send({ image: huge })).statusCode).toBe(413);
+  });
+
   it('POST /api/ai-substitutions - requires an ingredient', async () => {
     const res = await request(app).post('/api/ai-substitutions').send({});
     expect(res.statusCode).toBe(400);

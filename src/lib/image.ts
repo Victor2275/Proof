@@ -65,3 +65,12 @@ export async function compressImage(input: Blob): Promise<CompressedImage> {
   if (jpeg && jpeg.size < input.size) return { blob: jpeg, width, height };
   return { blob: input, width, height };
 }
+
+/** A blob as a data URL, without a FileReader, so it works the same everywhere. */
+export async function blobToDataUrl(blob: Blob): Promise<string> {
+  const bytes = new Uint8Array(await blob.arrayBuffer());
+  let binary = '';
+  // In chunks: spreading a whole photograph into one call overflows the stack.
+  for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return `data:${blob.type || 'application/octet-stream'};base64,${btoa(binary)}`;
+}

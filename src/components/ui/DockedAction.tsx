@@ -36,7 +36,7 @@ export function DockedAction({ watch, children, className }: DockedActionProps) 
       inert={!shown}
       aria-hidden={!shown || undefined}
       className={cn(
-        'above-nav fixed inset-x-0 z-20 flex items-center gap-3 border-t border-rule bg-paper px-3 py-2 md:hidden',
+        'above-nav fixed inset-x-0 z-20 flex items-center gap-3 border-t border-rule bg-paper px-3 py-2 md:hidden print:hidden',
         'transition-[transform,opacity] duration-200 ease-[cubic-bezier(0.2,0.8,0.2,1)]',
         shown ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-3 opacity-0',
         className,

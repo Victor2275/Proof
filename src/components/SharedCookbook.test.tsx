@@ -103,11 +103,28 @@ describe('a baker\'s page', () => {
       stats: { published: 1, baked: 9 },
     });
     renderScreen(<Profile />, { route: '/@ada', path: '/:at' });
-    expect(await screen.findByRole('heading', { name: 'Ada' })).toBeInTheDocument();
-    expect(screen.getByText('@ada')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: 'Ada' })).toBeInTheDocument();
+    expect(screen.getByText(/@ada · 1 recipe · baked 9 times by others/)).toBeInTheDocument();
     expect(screen.getByText('Pro')).toBeInTheDocument();
     expect(screen.getByText('Rye, mostly.')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'On the shelf' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Focaccia/ })).toHaveAttribute('href', '/r/focaccia');
     expect(api.getProfile).toHaveBeenCalledWith('ada');
+  });
+
+  it('shares the page through the system sheet, or copies its address', async () => {
+    const user = userEvent.setup();
+    vi.mocked(api.getProfile).mockResolvedValue({
+      profile: { handle: 'ada', displayName: '', bio: '', pro: false, joinedAt: '2026-01-01' },
+      recipes: [],
+      stats: { published: 0, baked: 0 },
+    });
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    renderScreen(<Profile />, { route: '/@ada', path: '/:at' });
+    await user.click(await screen.findByRole('button', { name: 'Share profile' }));
+    expect(writeText).toHaveBeenCalledWith(`${window.location.origin}/@ada`);
+    expect(screen.getByText('Nothing published yet.')).toBeInTheDocument();
   });
 
   it('is a 404 for an address without @, and for nobody', async () => {
@@ -129,19 +146,26 @@ describe('a shared recipe\'s conversation', () => {
     vi.mocked(api.getMyRating).mockResolvedValue({ stars: null, baked: false });
   });
 
-  it('prints the readings it has, and says so when it has none', async () => {
-    renderScreen(<SharedRecipeCommunity recipe={RYE} />);
-    expect(screen.getByText('4.5 of 5 · 2 ratings')).toBeInTheDocument();
-    expect(screen.getByText('2 times')).toBeInTheDocument();
+  it('prints the readings it has, and invites a first bake when it has none', async () => {
+    const { unmount } = renderScreen(<SharedRecipeCommunity recipe={RYE} />);
+    expect(screen.getByText(/4\.5 of 5 from 2 ratings · baked 2 times · saved 3 times/)).toBeInTheDocument();
+    unmount();
     renderScreen(<SharedRecipeCommunity recipe={shared({})} />);
-    expect(screen.getByText('Not rated yet')).toBeInTheDocument();
+    expect(screen.getByText('Be the first to bake this.')).toBeInTheDocument();
+    expect(screen.queryByText(/of 5/)).not.toBeInTheDocument();
+  });
+
+  it('sets what bakers wrote as pencilled notes in the margin', async () => {
+    renderScreen(<SharedRecipeCommunity recipe={RYE} />);
+    expect(screen.getByRole('heading', { name: 'What bakers noticed' })).toBeInTheDocument();
+    expect(await screen.findByText('Lovely crumb.')).toHaveClass('text-pencil');
   });
 
   it('asks a stranger to sign in to rate or comment', async () => {
     renderScreen(<SharedRecipeCommunity recipe={RYE} />);
     expect(screen.getByRole('button', { name: 'Sign in to rate it' })).toBeInTheDocument();
     expect(await screen.findByText('Lovely crumb.')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Sign in to comment' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Sign in to add a note' })).toBeInTheDocument();
   });
 
   it('rates, and says "I baked this"', async () => {
@@ -149,7 +173,7 @@ describe('a shared recipe\'s conversation', () => {
     setAccount('tok', ADA);
     vi.mocked(api.rateRecipe).mockResolvedValue({ rating: { stars: 4, baked: false }, stats: RYE.stats! });
     renderScreen(<SharedRecipeCommunity recipe={RYE} />);
-    await user.click(screen.getByRole('button', { name: 'Rate 4 out of 5' }));
+    await user.click(screen.getByRole('radio', { name: '4 stars' }));
     await waitFor(() => expect(api.rateRecipe).toHaveBeenCalledWith('p1', { stars: 4 }));
     await user.click(screen.getByRole('button', { name: 'I baked this' }));
     await waitFor(() => expect(api.rateRecipe).toHaveBeenCalledWith('p1', { baked: true }));
@@ -170,10 +194,10 @@ describe('a shared recipe\'s conversation', () => {
     setAccount('tok', ADA);
     vi.mocked(api.postComment).mockRejectedValue(new ApiError('New accounts can comment after their first day.', 403));
     renderScreen(<SharedRecipeCommunity recipe={RYE} />);
-    await user.type(screen.getByLabelText('Add a comment'), 'Hello');
-    await user.click(screen.getByRole('button', { name: 'Post' }));
+    await user.type(screen.getByLabelText('What you noticed'), 'Hello');
+    await user.click(screen.getByRole('button', { name: 'Add the note' }));
     expect(await screen.findByText(/after their first day/)).toBeInTheDocument();
-    expect(screen.getByLabelText('Add a comment')).toHaveValue('Hello');
+    expect(screen.getByLabelText('What you noticed')).toHaveValue('Hello');
   });
 
   it('reports a comment with a reason', async () => {

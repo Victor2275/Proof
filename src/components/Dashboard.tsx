@@ -27,8 +27,9 @@ import {
 import { firstLine } from '../lib/recipeText';
 import { NewRecipeButton } from './NewRecipeSheet';
 import { AccountSheetButton } from './AccountMenu';
-import OnboardingModal from './OnboardingModal';
 import StarterShelf from './StarterShelf';
+import { NewRecipeDoors } from './NewRecipeSheet';
+import { STORED_ON_DEVICE } from '../lib/storage';
 import CookbookFilterSheet from './CookbookFilterSheet';
 import {
   BackButton,
@@ -106,16 +107,10 @@ export default function Dashboard() {
   const [sort, setSort] = useState<SortKey>(() => readPref(SORT_KEY, ['recent', 'az', 'baked', 'rating'] as const, 'recent'));
   const [filter, setFilter] = useState<CookbookFilter>(NO_FILTER);
   const [filterOpen, setFilterOpen] = useState(false);
-  const [showOnboarding, setShowOnboarding] = useState(false);
 
   const loadError = error instanceof Error ? error.message : null;
   const settled = !isPending && !loadError;
   const emptyCookbook = settled && allRecipes.length === 0;
-
-  // Onboarding goes in Phase 5; until then it opens once, as before.
-  useEffect(() => {
-    if (localStorage.getItem('hasVisited') === 'true' && !localStorage.getItem('hasSeenOnboarding')) setShowOnboarding(true);
-  }, []);
 
   const readings = useMemo(() => readBakes(bakeLogs), [bakeLogs]);
   const byId = useMemo(() => new Map(allRecipes.map((r) => [r._id, r])), [allRecipes]);
@@ -199,14 +194,6 @@ export default function Dashboard() {
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-8 pb-8">
-      <OnboardingModal
-        open={showOnboarding}
-        onClose={() => {
-          localStorage.setItem('hasSeenOnboarding', 'true');
-          setShowOnboarding(false);
-        }}
-      />
-
       <div className="flex flex-col gap-4">
         {header}
         {emptyCookbook ? null : (
@@ -237,7 +224,23 @@ export default function Dashboard() {
           <Button onClick={() => refetch()}>Try again</Button>
         </div>
       ) : emptyCookbook ? (
-        <StarterShelf />
+        /*
+         * The empty cookbook is the welcome (changes 39–42): no tour, just the
+         * three ways in and a shelf of recipes to start from, with where it is
+         * all kept said once, near the top, in plain words.
+         */
+        <div className="flex flex-col gap-10">
+          <section aria-labelledby="start-heading" className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1">
+              <h2 id="start-heading" className="font-title text-2xl text-ink">
+                Your cookbook is empty
+              </h2>
+              <p className="text-ink-2">{STORED_ON_DEVICE}</p>
+            </div>
+            <NewRecipeDoors />
+          </section>
+          <StarterShelf />
+        </div>
       ) : !settled ? null : searching ? (
         /* ── Search results, grouped (change 54) ───────────────────────── */
         <section aria-label="Search results" className="flex flex-col gap-8">

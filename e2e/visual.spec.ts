@@ -74,7 +74,7 @@ for (const theme of ['dark', 'light'] as const) {
     await useTheme(page, theme);
     await pinEnvironment(page, { emptyCookbook: true });
     await page.goto('/');
-    await settle(page, 'text=Start from one of these');
+    await settle(page, 'text=Or start from one of these');
 
     await expect(page).toHaveScreenshot(`starter-shelf-${theme}.png`, { fullPage: true });
   });
@@ -82,9 +82,7 @@ for (const theme of ['dark', 'light'] as const) {
 
 /*
  * The landing page is the one surface routed outside the app shell, and the one
- * a stranger sees. Its chase light runs on a timer, so it is pinned to a known
- * phase by asking for reduced motion — which is also the assertion that the
- * chase actually honours it.
+ * a stranger sees. Shot under reduced motion, as every baseline is held still.
  */
 test.describe('landing page', () => {
   for (const theme of ['dark', 'light'] as const) {
@@ -93,7 +91,7 @@ test.describe('landing page', () => {
       await useTheme(page, theme);
       await pinEnvironment(page);
       await page.goto('/welcome');
-      await settle(page, 'text=A recipe is a pattern');
+      await settle(page, 'text=Bake it. Write it down.');
 
       // No app chrome: a stranger has not entered the product yet.
       await expect(page.getByRole('navigation')).toHaveCount(0);

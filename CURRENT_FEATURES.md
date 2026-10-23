@@ -44,7 +44,7 @@ The bake log lives on its recipe since the UI overhaul, Phase 3 (section 18): "L
 - **Image Architecture**: Photographs are captured via `@capacitor/camera` (or file upload), compressed on the device and kept there as blobs (see §10). Cloudinary holds only the server's own library and, later, published copies.
 - **Export Engine**:
   - `jspdf` and `html2canvas` generate beautiful printable PDFs and square recipe cards.
-  - **Shareable bake card** (`InstagramExporter.tsx`, full redesign in Phase 5): a 1080×1080 card, exported alone or as a carousel of up to five. The composition is the bake as the machine finished it — the photograph mounted as a plate, the name at display scale, the instrument values that are real, and the step row across the foot with every key complete, closed on the right by the site address. Further slides carry the ingredients as an instrument panel, the method, the baker's log (only when there is one), and the link.
+  - **Shareable cards** (`InstagramExporter.tsx`): redesigned in the UI overhaul, Phase 5 — printed pages on paper (section 20).
     - **Provenance applies here too**: no fabricated timing, and the keys are exact in every branch — labelled phase keys where the recipe proved its phases, one key per step for a short generic recipe, and phase keys again past sixteen steps where a key per step stops reading as a row.
     - **Rendered from literals**: html2canvas rasterises outside the document's cascade, so the card's palettes, fonts and seven-segment fills are pinned values rather than tokens. It loads nothing that could fail — no remote logo, no stock fallback photograph.
     - **Fixed**: the card was captured through the preview's CSS transform, so a card exported from a phone came out under 900px square and its size depended on the window width. The scale now comes off for the duration of the capture; every card renders at 1080 (2160 at 2× device scale).
@@ -63,7 +63,7 @@ Rebuilt as the cookbook home in the UI overhaul, Phase 4: see section 19. Still 
 
 ## 2b. Application shell (Phase 2)
 - **Sidebar, bottom nav, More and the floating New**: replaced in the UI overhaul by four destinations, a phone tab bar, a desktop top bar and an avatar menu — see section 17.
-- **Onboarding modal, PIN auth modal, offline/stale bars**: retheme only — the PIN numeric keypad's interaction is unchanged (an explicit favourite), offline/stale banners use the world's amber "due" tone instead of raw Tailwind yellow/amber.
+- **PIN auth modal, offline/stale bars**: retheme only — the PIN numeric keypad's interaction is unchanged (an explicit favourite). The onboarding modal was removed in the UI overhaul, Phase 5 (section 20).
 - **Fixed**: dangling `hover:` / `dark:hover:` Tailwind fragments left by Phase 0's glow-stripping script across 15 files.
 
 ## 2c. Photo plates (Phase 2a)
@@ -95,8 +95,7 @@ Rebuilt as the bake sheet in the UI overhaul, Phase 3 (section 18). Still true: 
 - **Settings as latching keys**: Every preference was an iOS-style sliding pill — a control from a different machine, and the only widget in the app carrying state by a moving dot rather than by light. They are latching keys now, the same key the step row draws, held down. The key prints ON or OFF as well as lighting, so it survives a colour-vision difference, and it carries `aria-pressed` so a screen reader announces a switch rather than a button. Theme is a bank of three keys where exactly one is down.
 - **Fixed — every meter grew an orange tip near full**: `Meter`'s `hotAt` defaults to 1, meaning the scale has no dangerous end, but the warm band 15% below it fired regardless. Any meter running near full showed orange cells it was never asked for. A meter with no hot end now has no warm band either.
 - **Fixed — a real but tiny value read as empty**: 3 of 203 recipes rounds to zero lit cells, so a meter captioned "3 of 203" sat entirely dark. A non-zero value now lights at least one cell: some is not none, and that difference is the reading.
-- **The landing page demonstrates rather than asserts**: The one Persuade surface in an Operate product, and the only screen a stranger sees. It led with three feature cards claiming hands-free control, synced timers and bake logs, over a blurred stock photograph that could have fronted any cookbook app. The hero is now the machine running — a step row chasing through a real sourdough's phases, with the phase counted off on a segment readout. The phases come from `derivePhases`, the app's own vocabulary, so the page cannot claim a levain the parser would not find.
-- **The landing page's one red thing is the chase light**: Its call to action is outlined rather than filled. Signal red means a thing is running now, and on this page that is the demonstration — a red button beside it would put two "nows" on screen and spend the argument to decorate a control.
+- **The landing page**: rewritten in the UI overhaul, Phase 5 (section 20); the drum-machine demonstration is gone.
 - **The chase holds still under reduced motion**: The global CSS rule collapses animation, not a timer, so the page checks `prefers-reduced-motion` itself and leaves the row on one lit phase.
 - **The landing page is routed outside the app shell**: It rendered inside the sidebar and bottom nav — chrome for sections a first-time visitor has not reached, around a product they have not agreed to use. It is a sibling of the shell now, full-bleed.
 - **Removed: `public/hero.jpg`**: 807KB of blurred stock photography, unreferenced once the landing page stopped using it, and precached by the service worker.
@@ -156,7 +155,7 @@ Rebuilt as the bake sheet in the UI overhaul, Phase 3 (section 18). Still true: 
 - **`PublishedRecipe`**: a separate collection of snapshots — publishing copies, it does not flag — with its own ULID, slug, author handle, attribution, moderation state and stats. Only approved, unpublished-null recipes are ever served.
 - **`GET /api/published`** (paged, `featured`, `tag`) and **`GET /api/published/:idOrSlug`**: public, read-only. With the database down they answer 503 with a message that says your own recipes are unaffected.
 - **The seeded library** (`server/scripts/curate-library.js`): an editorial review of all 203 server recipes (`server/data/library-edits.json`) — real timings, servings and difficulty, real descriptions, methods rewritten where they could not be cooked from, and a publish/withhold verdict with a reason. Dry run by default; `--publish` seeds the shared cookbook, `--fix-library` repairs the operator's own records. Both back up the collections they touch to `server/backups/` first, and both are idempotent.
-- **The starter shelf** (B15/B16): an empty cookbook is a shelf of featured shared recipes, each one tap to save. Offline, it says the shared cookbook needs a connection and keeps "Write a recipe" right there.
+- **The starter shelf** (B15/B16): an empty cookbook offers featured shared recipes under its three doors, each one press to add (section 20). Offline, it says the shared cookbook needs a connection and the doors still work.
 - **`/r/:slug`**: a shared recipe in the same viewer (B4) — no edit, favorite or lab notes; "Shared by @handle · from Source"; one primary control, Save to my cookbook. A recipe already saved offers Open my copy instead of a second one. An unpublished recipe reads as a page that no longer exists; an unreachable server says so with a retry.
 - **Fork to local**: saving makes an editable copy on the device that remembers where it came from (`forkedFrom`), and brings the photograph onto the device where the host allows it. The copy's header reads "Adapted from @handle", linked to the original, and its Share menu copies the original's address — a recipe that exists only on this device offers no link at all.
 
@@ -195,8 +194,8 @@ Rebuilt as the bake sheet in the UI overhaul, Phase 3 (section 18). Still true: 
 - **LIVE on the cookbook's tiles**: a recipe in the shared cookbook carries a silkscreen `LIVE` tag; the private default adds nothing.
 - **Discover** (`/discover`, B21, B22): the shared cookbook as its own destination. The whole index comes down once and is searched (title, description, tags, baker), filtered by its most-used tags and sorted (Recent, Most baked, Top rated — unrated recipes after rated ones — and A–Z) on the device. A skeleton while it arrives; offline, it says the shared cookbook needs a connection and that the cookbook works without one.
 - **Navigation** (B21): Discover is a destination of its own, one of the four (section 17); Moderation is in the operator's avatar menu.
-- **Baker profiles** (`/@handle`, B2, B14): display name, handle, a silkscreen `PRO` tag (here only), the bio as printed matter, published and times-baked counts, and their recipes. An unknown handle, or any unknown single-segment address, is the 404.
-- **A shared recipe's conversation**: under the recipe, its rating (an average only when there are votes, otherwise "Not rated yet"), times baked and times saved, in tabular mono. Signed in, a 1–5 bank and an "I baked this" key; the author is told ratings come from other bakers. Comments are printed matter, with the author's held comment marked as visible only to them; a comment's author or the recipe's author can delete it, and anyone can report it. The server's reason for refusing a comment (a day-old account, a confirmed email) is shown on the field, keeping what was typed. "Report this recipe" opens a sheet that asks what is wrong.
+- **Baker profiles** (`/@handle`, B2, B14): a bookshelf since the UI overhaul, Phase 5 (section 20). An unknown handle, or any unknown single-segment address, is the 404.
+- **A shared recipe's conversation**: "What bakers noticed" since the UI overhaul, Phase 5 (section 20). Signed in, stars and an "I baked this" toggle; the author is told ratings come from other bakers. A note's author or the recipe's author can delete it, and anyone can report it. The server's reason for refusing a note (a day-old account, a confirmed email) is shown on the field, keeping what was typed. "Report this recipe" opens a sheet that asks what is wrong.
 - **Shared links come home**: a shared recipe's back link goes to Discover, and its "Shared by @handle" links to the baker's page; a published fork reads "Shared by @ada · adapted from @proof". Saving a recipe counts toward its saves.
 - **The moderation page** (`/moderation`, operator only; linked from Settings → Operator): held recipes with the screen's reason, the source and credit, and the method to read; held comments; open reports with what they are about. Approve, hold back with a reason the author will see, remove, take down, or leave up — one press each.
 - **New primitives**, in `/lab`: `PublishState`, `Tag` and `Prose` (people's own words, B1).
@@ -330,6 +329,30 @@ The cookbook reads like the front of a book — contents, an index, the last bak
 
 **New primitives**, in `/lab`: `Ribbon`, `LetterRail`, `Sparkline`. `RecipeTile` takes its line (`caption`) and a best-bake stamp (`best`).
 
+## 20. UI overhaul — Phase 5: first run and sharing
+
+What a stranger meets — the landing page, an empty cookbook, a shared link, a baker's page, a card on a feed — rewritten in the cookbook's own words (AUDIT_REPORT changes 16, 32–42, 107, 117, 127–130).
+
+**The landing page** (`LandingPage`)
+- **"Bake it. Write it down. Bake it better."** over a real loaf: the library's own Danish rye, cropped to 4:3 and self-hosted (`public/landing/danish-rye.webp`, precached with the other assets), edge to edge on a phone, beside the words on a desktop.
+- **One solid action**, "Open my cookbook", at the top and again at the foot; under it, as a sentence, "No account. It stays on your phone."
+- **The bake log leads**: an example recipe page — facts, last time's bake with its stars and a pencilled note to next time, and three bakes as note cards with the best stamped — drawn with the app's own pieces, so it cannot promise more than the app does. Works offline, timers and sharing follow as three short lines. "See an example recipe" at the foot returns to it. The drum-machine demonstration and its chase light are gone.
+
+**First run** (changes 39–42)
+- **No onboarding tour**: the modal is deleted; the empty cookbook is the welcome.
+- **The empty cookbook**: "Your cookbook is empty", where it is kept in one plain line, and the three ways in as whole cards (`NewRecipeDoors`): Write it, Paste a link or text, Photograph a page.
+- **The starter shelf**: "Or start from one of these" — large photographs with a small "Add" beside each, in place of heavy Save boxes.
+
+**Photograph a page** (change 117)
+- A third way in: the editor's import offers "Photograph a page" (opening the camera on a phone); New and the empty cookbook open on it (`/new?start=photo`). The photograph is shrunk on the device and read into the form by the AI (`POST /api/ai-photo`, Gemini; JPEG, PNG or WebP, at most 4 MB, kept nowhere; behind the same allowance and burst limit as the other AI routes, with a 503 when the AI is not configured and a 422 when no recipe can be read).
+
+**Sharing**
+- **The shared page** (`/r/:slug`, change 128): Save to my cookbook leads under the facts, with Copy link and Print beside it.
+- **What bakers noticed** (`SharedRecipeCommunity`, changes 129–130): the readings print only when there are some ("4.5 of 5 from 2 ratings · baked 2 times · saved 3 times"); with none, "Be the first to bake this." What bakers wrote is set as pencilled notes in the margin under their handles. Stars (`StarRating`) and "I baked this" for an account; "What you noticed" for a confirmed one.
+- **A baker's page as a bookshelf** (`/@handle`, change 127): back to Discover, the baker's initials on a round plate, name, handle and counts, their own words, Share profile (the system sheet, or copies the address), and their recipes "On the shelf".
+- **Cards** (`InstagramExporter`, change 107): printed pages on paper at 4:5 (1080×1350), in light paper or night, as one card or all of them: a bake's own card (its photograph, stars, what happened and the note to next time), the recipe's page (photograph or drop cap, title, headnote, facts), the ingredients in kitchen fractions, and the method. Opened from a recipe's ⋯ or a bake's Share card; it is a full `Sheet`. `lib/sevenSegment` is deleted.
+- **Print** (change 16): the recipe on paper — light whatever the screen's theme, the app's chrome left off, the ingredients beside the method, and at the foot ruled lines for "My notes" and, for a recipe with an address, a QR code back to it. The printer's paper (A5, A4, Letter) decides the size.
+
 ## 7. UI/UX Foundation
 - **Stack**: React, Vite, Tailwind CSS (`@tailwindcss/postcss`), shadcn/ui, TanStack Query for server state management.
 - **"Step Row" Visual World (Phase 0 foundation)**: The Black & Gold glassmorphic world has been replaced by an early-80s rhythm-machine design language: matte panels, silkscreened labels, lit step keys, and seven-segment readouts. Colour is temporal, never decorative — red marks *now*, orange *due*, yellow *queued*, white *complete*, and an unlit key is drawn as deliberately as a lit one.
@@ -344,7 +367,7 @@ The cookbook reads like the front of a book — contents, an index, the last bak
 - **Themed browser surfaces**: Text selection, caret, scrollbars and focus rings are themed from the palette rather than left at browser defaults.
 - **Global reduced-motion support**: `prefers-reduced-motion: reduce` collapses every animation and transition app-wide.
 - **Retired: global font switcher**: The sans/serif/mono `data-font` preference has been removed so the design owns its own typography.
-- **Onboarding & Landing**: A dedicated hero landing page with a 3-step carousel modal to introduce new users to the app functionality.
+- **Landing**: a dedicated landing page for first-time visitors (section 20); there is no onboarding tour — the empty cookbook is the welcome.
 - **Skeletons & Empty States**: Polished animated skeleton loaders for data fetching, custom illustrated 404 pages, and a tailored empty state for the gallery.
 - **Icons**: Standardized clean iconography via `lucide-react`.
 - **Fault Resilience & Crash Protection**: `ErrorBoundary.tsx` wraps the routing tree to catch unhandled rendering exceptions, preventing white-screen crashes.

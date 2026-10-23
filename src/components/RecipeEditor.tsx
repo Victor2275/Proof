@@ -16,7 +16,9 @@ import {
   ArrowUp,
   ArrowDown,
   Link as LinkIcon,
+  ScanText,
 } from 'lucide-react';
+import { blobToDataUrl, compressImage } from '../lib/image';
 import ReactCrop, { type Crop, type PixelCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 
@@ -80,7 +82,8 @@ export default function RecipeEditor() {
   const [extractError, setExtractError] = useState('');
   const [searchParams] = useSearchParams();
   // New → "Paste a link or text" opens the editor with the import already open.
-  const [showExtract, setShowExtract] = useState(() => searchParams.get('start') === 'paste');
+  const [showExtract, setShowExtract] = useState(() => ['paste', 'photo'].includes(searchParams.get('start') ?? ''));
+  const [readingPhoto, setReadingPhoto] = useState(false);
   const [cropImageSrc, setCropImageSrc] = useState<string>('');
   const [crop, setCrop] = useState<Crop>();
   const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
@@ -185,6 +188,31 @@ export default function RecipeEditor() {
       navigate('/');
     } catch {
       setSaveError("Couldn't delete the recipe on this device. Try again.");
+    }
+  };
+
+  /*
+   * "Photograph a page": a cookbook page or a recipe card, photographed and
+   * read into the form by the AI. The photograph is shrunk on the device
+   * first, sent once, and kept nowhere.
+   */
+  const handlePhoto = async (file: File | undefined) => {
+    if (!file) return;
+    if (!can('ai')) {
+      setAiGate('Photograph a page');
+      return;
+    }
+    setReadingPhoto(true);
+    setExtractError('');
+    try {
+      const { blob } = await compressImage(file);
+      const data = await api.readRecipePhoto(await blobToDataUrl(blob));
+      setRecipe((prev) => ({ ...prev, ...data }));
+      void refreshAccount();
+    } catch (err) {
+      setExtractError(err instanceof Error ? err.message : 'Could not read a recipe from that photograph.');
+    } finally {
+      setReadingPhoto(false);
     }
   };
 
@@ -505,6 +533,24 @@ export default function RecipeEditor() {
                   >
                     {extracting ? 'Reading' : 'Extract'}
                   </Button>
+                </div>
+                <div className="flex flex-wrap items-center gap-3 border-t border-rule pt-3">
+                  <label className={buttonClassName({ className: 'cursor-pointer' })} aria-busy={readingPhoto || undefined}>
+                    <ScanText className="h-4 w-4" aria-hidden="true" />
+                    {readingPhoto ? 'Reading the page' : 'Photograph a page'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      className="sr-only"
+                      disabled={readingPhoto}
+                      onChange={(e) => {
+                        void handlePhoto(e.target.files?.[0]);
+                        e.target.value = '';
+                      }}
+                    />
+                  </label>
+                  <span className="text-sm text-ink-muted">A cookbook page or a recipe card, read into the form.</span>
                 </div>
                 <AiAllowance />
               </div>

@@ -48,7 +48,7 @@ The bake log lives on its recipe: see section 18.
 - [ ] **Bake logs grid**: notes on hover, one click opens the make, attempts numbered from the oldest, personal best marked in text as well as an icon.
 - [ ] **Photographs on the device**: a photo added in the editor or a bake log is stored on the device and still shows offline.
 - [ ] **PDF / Recipe Card Export**: jspdf + html2canvas print output.
-- [ ] **Shareable bake card**: 1080×1080 pattern card (photo plate, name, real instrument values, complete key row, site address), alone or as a carousel.
+- [ ] **Shareable cards**: see section 20.
 - [ ] **Card provenance**: no fabricated timing; labelled phase keys where proved, one key per step for a short generic recipe, phase keys past sixteen steps.
 - [ ] **Card resolution**: a card exported from a phone is still 1080 (2160 at 2×), not the size of the preview.
 - [ ] **Log slide**: appears only when the bake or recipe actually has notes.
@@ -66,7 +66,7 @@ Rebuilt as the cookbook home: see section 19.
 
 ## 2b. Application shell (Phase 2)
 - [ ] **Shell**: replaced in the UI overhaul — see section 17.
-- [ ] **Onboarding/PIN/status bars retheme**: PIN keypad still works exactly as before; banners read in the amber "due" tone.
+- [ ] **PIN/status bars retheme**: PIN keypad still works exactly as before.
 
 ## 2c. Photo plates (Phase 2a)
 - [ ] **Bake history by recipe (Phase 5)**: one row per recipe, oldest bake on the left, counting attempts not photographs.
@@ -118,10 +118,9 @@ Rebuilt as the bake sheet: see section 18.
 - [ ] **Backup without a PIN**: names the admin PIN as the recovery rather than failing silently.
 - [ ] **Library meter**: 3 of 203 lights one cell, not zero, and shows no orange at the top.
 - [ ] **Analytics load**: a skeleton, not the word "loading", and no long pause from reading the offline store repeatedly.
-- [ ] **Landing hero**: the step row chases through the phases and the readout counts them off.
-- [ ] **Landing under reduced motion**: with the OS setting on, the row holds on one phase and nothing moves.
+- [ ] **Landing**: see section 20.
 - [ ] **Landing has no app chrome**: no top bar, no tab bar, at every width.
-- [ ] **Landing CTA**: "Open the cookbook" enters the app and the landing page does not reappear on the next visit.
+- [ ] **Landing CTA**: "Open my cookbook" enters the app and the landing page does not reappear on the next visit.
 - [ ] **404**: an unlit panel with the seven-segment 404, readable in both themes, linking back to the cookbook.
 
 ## 7b. Mobile targets and the last alerts
@@ -133,7 +132,7 @@ Rebuilt as the bake sheet: see section 18.
 - [ ] **Copy confirmations**: copying a link or a grocery list shows a status strip that clears itself, with no browser alert.
 
 ## 8. Finish (Phase 8)
-- [ ] **Reduced motion**: with the OS setting on, the landing chase holds still, the recipe drawer does not spring, and the onboarding modal does not slide.
+- [ ] **Reduced motion**: with the OS setting on, pages do not slide, sheets and the recipe drawer do not spring.
 - [ ] **Visual baselines**: `npm run test:visual` passes on a clean checkout; `npm run test:visual:update` regenerates.
 - [ ] **375px floor**: no horizontal scroll on any of the ten routes.
 - [ ] **Safe areas on a real Android device**: the tab bar, the toast and the notice bars clear the gesture bar; the recipe drawer's last row is not under it. *(Only simulated so far.)*
@@ -157,7 +156,6 @@ Rebuilt as the bake sheet: see section 18.
 - [ ] **Cookbook header**: at 768 and 1024 the search sits full width under the title with Inspire Me beside it; at 1280 they share the title's row; nothing scrolls sideways.
 - [ ] **Sub on a touch tablet**: the ingredient Sub control is visible without hovering.
 - [ ] **Phone browser top**: every page's headline has space above it, not flush to the top edge.
-- [ ] **Onboarding**: at 375px nothing overlaps; the step row lights the current screen; Back, Skip, Next, Escape and the × all work; it does not come back after closing.
 - [ ] **PIN prompt**: desktop focuses the PIN field; the phone keypad's C and ⌫ keys clear and delete; a wrong PIN shows the error inside the dialog; reopening starts empty.
 - [ ] **AI substitutions**: a skeleton while waiting; a sentence if nothing comes back; Try again after a failure; Escape closes.
 - [ ] **Sub-recipe drawer**: rises from the bottom, shows a skeleton then the recipe; with the server down it says so and offers Try again.
@@ -166,7 +164,7 @@ Rebuilt as the bake sheet: see section 18.
 - [ ] **Timer prompt and timers sheet**: the prompt shows the duration as plain figures; the timers sheet shows each timer on butter, a minus sign past zero, and named Pause and Remove buttons.
 - [ ] **Recipe Viewer menus**: Share and Start recipe open menus that close on Escape or a click outside and walk with the arrow keys; on a phone, ⋮ opens More actions with share, favorite and edit.
 - [ ] **Reverse scheduler**: drawn as a panel with a timetable; the default target reads 09:00 tomorrow in local time.
-- [ ] **No "Loading" text**: navigating to a new screen and opening the Instagram exporter show skeletons.
+- [ ] **No "Loading" text**: navigating to a new screen and opening the card exporter show skeletons.
 - [ ] **Red means now**: on a recipe, the timer chips in the method are outlined, not red; only the Start key is red.
 - [ ] **New Recipe key**: lit on the cookbook with nothing baking; unlit on every other screen, and unlit on the cookbook while a bake runs.
 - [ ] **Now Baking**: the panel's border, lamp and running key are red; the total and Resume are not.
@@ -207,8 +205,8 @@ Rebuilt as the bake sheet: see section 18.
 - [ ] **Published API**: `/api/published` lists only approved, live recipes; `/api/published/<slug>` returns one; with the database down both answer 503 saying your own recipes are unaffected.
 - [ ] **Seed script dry run**: `npx tsx scripts/curate-library.js` reports the counts and the withheld recipes with reasons, and writes nothing.
 - [ ] **Seed script writes**: `--publish` and `--fix-library` each write a backup to `server/backups/` first, and a second run changes nothing new.
-- [ ] **Starter shelf**: a fresh browser's cookbook shows "Start from one of these" with featured recipes; Save adds one and opens it.
-- [ ] **Starter shelf offline**: with no connection the shelf says so and still offers Write a recipe.
+- [ ] **Starter shelf**: a fresh browser's cookbook shows "Or start from one of these" with featured recipes; Add adds one and opens it.
+- [ ] **Starter shelf offline**: with no connection the shelf says so, and the three doors above it still work.
 - [ ] **Shared recipe page**: `/r/<slug>` shows Shared by @handle, no Edit or Favorite, and Save to my cookbook; once saved, Open my copy.
 - [ ] **Fork attribution**: a saved copy reads "Adapted from @handle", linking to the original; its Share copies the original's address.
 - [ ] **Unpublished page**: an unpublished slug reads as "Nothing at this address".
@@ -256,7 +254,7 @@ Rebuilt as the bake sheet: see section 18.
 - [ ] **Navigation**: Discover is one of the four destinations; the operator sees Moderation in the avatar menu.
 - [ ] **Profile**: `/@proof` shows the seeded library; `/@nobody` is the 404.
 - [ ] **Ratings**: signed in, rating and "I baked this" update the counts; the author can't rate their own.
-- [ ] **Comments**: a held comment shows "only you can see it"; a new account is told to wait a day; Delete and Report work.
+- [ ] **Notes on a shared recipe**: a held note shows "only you can see it"; a new account is told to wait a day; Delete and Report work.
 - [ ] **Report**: reporting a recipe or comment says the operator will look at it, and it appears in the queue.
 - [ ] **Moderation page**: hidden from everyone but the operator; approve, hold back with a reason, take down and leave up all work.
 
@@ -298,7 +296,7 @@ Rebuilt as the bake sheet: see section 18.
 - [ ] **Themed browser surfaces**: Selection, caret, scrollbars and focus rings themed from the palette.
 - [ ] **Global reduced-motion support**: `prefers-reduced-motion` collapses all animation.
 - [ ] **Retired: global font switcher**: sans/serif/mono preference removed.
-- [ ] **Onboarding & Landing**: A dedicated hero landing page with a 3-step carousel modal to introduce new users to the app functionality.
+- [ ] **Landing**: first-time visitors see the landing page; there is no onboarding tour.
 - [ ] **Skeletons & Empty States**: Polished animated skeleton loaders for data fetching, custom illustrated 404 pages, and a tailored empty state for the gallery.
 - [ ] **Error Boundary**: Catches unhandled render errors gracefully.
 - [ ] **Server Architecture**: Modular Express server architecture with separated routes and services.
@@ -394,3 +392,20 @@ Rebuilt as the bake sheet: see section 18.
 - [ ] **Log bake from Bakes**: pick a recipe, and its log sheet opens.
 - [ ] **Old addresses**: `/analytics` and `/gallery` open Bakes.
 - [ ] **Component lab**: `/lab` shows the ribbon, the letter rail and the sparkline.
+
+## 20. UI overhaul — Phase 5: first run and sharing
+- [ ] **Landing**: a fresh browser opens on "Bake it. Write it down. Bake it better." over the rye loaf; the photo shows with the network off after one visit.
+- [ ] **One action**: "Open my cookbook" is the filled button at the top and the foot; "No account. It stays on your phone." reads at body size.
+- [ ] **Example recipe**: the landing shows a recipe page with last time's note and three bakes; "See an example recipe" scrolls to it.
+- [ ] **No tour**: opening the cookbook for the first time shows the empty cookbook, with no modal.
+- [ ] **Empty cookbook**: "Your cookbook is empty", the stored-on-device line, and three doors: Write it, Paste a link or text, Photograph a page.
+- [ ] **Starter shelf**: large photographs with a small Add; Add saves the recipe and opens it.
+- [ ] **Photograph a page**: on a phone the button opens the camera; a photographed cookbook page fills the title, ingredients and method (needs a confirmed account or the operator, and `GEMINI_API_KEY`); without access, the AI sheet explains instead.
+- [ ] **Photo route limits**: `POST /api/ai-photo` refuses a non-image (400) and a photograph over 4 MB (413).
+- [ ] **Shared page**: Save to my cookbook, Copy link and Print sit together under the facts.
+- [ ] **What bakers noticed**: a recipe with ratings prints them in one line; one with none says "Be the first to bake this."; notes show pencilled under handles.
+- [ ] **Rating a shared recipe**: signed in, the stars set a rating and pressing the chosen star again clears it; "I baked this" toggles.
+- [ ] **Profile bookshelf**: `/@proof` shows initials, name, handle and counts, the bio, Share profile and "On the shelf"; Back goes to Discover.
+- [ ] **Bake card**: from a bake's sheet, Share card shows the bake's own card first (photo, stars, note, next time); "All 4" adds the recipe page, ingredients and method; Download saves 1080×1350 JPEGs.
+- [ ] **Card paper**: Paper and Night both read; a recipe without a photo gets its drop cap.
+- [ ] **Print**: print a recipe — paper is white, no top bar, tab bar, buttons or bakes; ingredients sit beside the method; "My notes" lines and (for a published recipe) a QR code at the foot.

@@ -246,6 +246,10 @@ export const api = {
 
   extractRecipe: (url: string) => request<Partial<Recipe>>('/extract', { method: 'POST', body: { url }, auth: 'either' }),
 
+  /** A photographed page of a recipe, as a data URL, read into a recipe. */
+  readRecipePhoto: (image: string) =>
+    request<Partial<Recipe>>('/ai-photo', { method: 'POST', body: { image }, auth: 'either' }),
+
   restructureRecipe: (rawText: string) =>
     request<Partial<Recipe>>('/ai-restructure', { method: 'POST', body: { rawText }, auth: 'either' }),
 

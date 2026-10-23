@@ -239,8 +239,13 @@ describe('when the device will not cooperate', () => {
   it("offers an empty cookbook the shared cookbook's starter shelf instead of an empty list", async () => {
     for (const r of RECIPES) await repo.deleteRecipe(r._id);
     render();
-    expect(await screen.findByRole('heading', { name: /Start from one of these/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Your cookbook is empty' })).toBeInTheDocument();
+    const doors = screen.getByRole('navigation', { name: 'Ways to add a recipe' });
+    expect(within(doors).getAllByRole('link').map((l) => l.getAttribute('href'))).toEqual(['/new', '/new?start=paste', '/new?start=photo']);
+    expect(screen.getByText(/Stored on this device/)).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /Or start from one of these/i })).toBeInTheDocument();
     expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(screen.queryByText('0 recipes')).not.toBeInTheDocument();
   });
 });

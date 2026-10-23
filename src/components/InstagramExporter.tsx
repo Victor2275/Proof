@@ -1,762 +1,283 @@
-import { useState, useRef, useEffect, useMemo, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import html2canvas from 'html2canvas';
-import { Download, LayoutGrid, Image as ImageIcon, X, Sun, Moon } from 'lucide-react';
-import { type Recipe, type BakeLog } from '../lib/types';
-import { derivePhasesWithReading } from '../lib/phases';
+import { Download } from 'lucide-react';
+import type { BakeLog, Recipe } from '../lib/types';
+import { bakePhotoUrls } from '../lib/bakePhotos';
 import { meaningfulDescription } from '../lib/description';
-import { totalRecipeMinutes, formatMinutesForSegments, isPlaceholderTiming } from '../lib/duration';
-import { SEGMENT_GLYPHS, SEGMENT_SHAPES } from '../lib/sevenSegment';
-import { Button } from './ui';
+import { factsLine } from '../lib/facts';
+import { friendlyAmountText, ingredientParts } from '../lib/quantities';
+import { cleanText, headnote, methodSteps } from '../lib/recipeText';
+import { usePhotoSrc } from '../lib/usePhotoSrc';
+import { Button, Segmented, Sheet } from './ui';
 
 /*
- * The shared bake card.
+ * Sharing as a picture (UI overhaul Phase 5, changes 107, 127–130).
  *
- * This is the only surface in Proof that someone who has never opened the app
- * will see, and they see it out of context: a 1080px square on a feed, with no
- * navigation, no hover, and nothing else to explain it. That makes it a
- * Persuade surface inside an Operate product — and it is the reason this file
- * is a redesign rather than a retheme. The old export was a polaroid: a photo,
- * a rotation, a caption. Every food account on earth posts that.
+ * A card is the one piece of Proof a stranger sees out of context — a picture
+ * on a feed, no navigation, nothing to explain it — so it is drawn as what the
+ * app is: a page of a cookbook. Paper, the serif title, one line of facts, the
+ * ingredients in kitchen fractions, the method in the reading face; for a
+ * bake, the bake's own photograph, its stars, what happened and the pencilled
+ * note to next time. The page proportions (4:5) are a recipe card's, and fit a
+ * feed without cropping.
  *
- * What Proof has that they do not is the pattern. So the card is the bake as
- * the machine finished it: the photograph mounted as a plate on a faceplate,
- * the name silkscreened beneath it, the instrument values that are real, and
- * the step row across the foot with every key complete. Someone scrolling past
- * cannot read the recipe, but they can see that this thing was *run*.
- *
- * Three rules follow from being rasterised rather than rendered:
- *
- * 1. Every colour is a literal. html2canvas rebuilds the node outside the
- *    document's cascade, so a token-driven fill arrives with no rule behind it.
- *    The palettes below are the app's own values, pinned.
- * 2. Nothing is loaded that could fail. The old card pulled /logo.png with a
- *    crossOrigin attribute and an unsplash fallback photo; a card that renders
- *    a broken image on someone else's feed is worse than one with no mark at
- *    all, so the identity here is set in type.
- * 3. Nothing is claimed that the recipe cannot prove. The same provenance rules
- *    the cookbook uses apply: the seed script's "20 mins" is not a time, and a
- *    generic prep/cook/finish reading is not a bake's phases.
+ * Rasterised, so three rules hold:
+ * 1. Every colour is a literal: html2canvas rebuilds the node outside the
+ *    cascade, so a token arrives with nothing behind it. These are the
+ *    themes' own values, pinned.
+ * 2. Nothing loads that could fail: no logo file, no stock fallback photo. A
+ *    recipe without a photograph gets its initial as a drop cap, as in the app.
+ * 3. Nothing is claimed that the recipe cannot prove: placeholder times are
+ *    left out, and the seed's template description is not printed.
  */
 
 interface InstagramExporterProps {
   recipe: Recipe;
+  /** A bake to share: its own card leads, with its photograph and notes. */
   bakeLog?: BakeLog;
   onClose: () => void;
 }
 
-const CARD = 1080;
+const W = 1080;
+const H = 1350;
 
-interface Palette {
-  ground: string;
-  panel: string;
-  sunk: string;
-  rule: string;
-  ink: string;
-  silkscreen: string;
-  muted: string;
-  signal: string;
-  /*
-   * A complete key. In the app this is deliberately dim — lit keys have to
-   * dominate a running row. On a card nothing is running, so complete is the
-   * brightest state there is and it is drawn at full ink.
-   */
-  done: string;
-  unlit: string;
-}
-
-const PALETTES: Record<'dark' | 'light', Palette> = {
-  dark: {
-    ground: '#000000',
-    panel: '#161616',
-    sunk: '#0b0b0b',
-    rule: '#2e2e2e',
-    ink: '#f2f2f2',
-    silkscreen: '#bdbdbd',
-    muted: '#8a8a8a',
-    signal: '#ff3b30',
-    done: '#f2f2f2',
-    unlit: '#2a2a2a',
-  },
-  light: {
-    ground: '#e8e4dc',
-    panel: '#f2efe9',
-    sunk: '#dcd7cc',
-    rule: '#c9c4b8',
-    ink: '#171614',
-    silkscreen: '#4a4640',
-    muted: '#63605a',
-    signal: '#c81e14',
-    done: '#171614',
-    unlit: '#c9c4b8',
-  },
+const PALETTES = {
+  light: { paper: '#fbf7f0', sunk: '#f4ecdd', rule: '#e4dccf', ink: '#1f1a17', ink2: '#4a423c', muted: '#6b6159', accent: '#b5391f', pencil: '#6b5a2e' },
+  dark: { paper: '#16120f', sunk: '#221c17', rule: '#2e2620', ink: '#f1e9dc', ink2: '#d8cdbe', muted: '#a99e91', accent: '#e26a4a', pencil: '#d9c78e' },
 };
+type Palette = (typeof PALETTES)['light'];
 
-const DISPLAY = "'Fraunces Variable', Georgia, serif";
-const MONO = "'Inter Tight Variable', ui-sans-serif, system-ui, sans-serif";
+const TITLE = "'Fraunces Variable', Georgia, serif";
+const PROSE = "'Source Serif 4 Variable', Georgia, serif";
+const SANS = "'Inter Tight Variable', ui-sans-serif, system-ui, sans-serif";
 
-const silkscreen = (p: Palette, size = 22): CSSProperties => ({
-  fontFamily: MONO,
-  fontSize: size,
-  fontWeight: 600,
-  letterSpacing: '0.14em',
-  textTransform: 'uppercase',
-  color: p.silkscreen,
-});
+const stars = (n: number | null | undefined) => (n ? '★'.repeat(n) + '☆'.repeat(5 - n) : '');
 
-/** A seven-segment value, filled with literals so the raster keeps its colour. */
-function Segments({
-  value,
-  height,
-  lit,
-  unlit,
-}: {
-  value: string;
-  height: number;
-  lit: string;
-  unlit: string;
-}) {
-  return (
-    <span style={{ display: 'inline-flex', alignItems: 'flex-end', gap: height * 0.09 }}>
-      {value.split('').map((char, i) => {
-        if (char === ':' || char === '.') {
-          return (
-            <svg key={i} viewBox="0 0 20 100" height={height} width={(height * 20) / 100}>
-              {char === ':' ? (
-                <>
-                  <rect x="4" y="30" width="12" height="12" fill={lit} />
-                  <rect x="4" y="60" width="12" height="12" fill={lit} />
-                </>
-              ) : (
-                <rect x="4" y="82" width="12" height="12" fill={lit} />
-              )}
-            </svg>
-          );
-        }
-        const on = SEGMENT_GLYPHS[char] ?? '';
-        return (
-          <svg key={i} viewBox="0 0 60 100" height={height} width={(height * 60) / 100}>
-            {Object.entries(SEGMENT_SHAPES).map(([name, points]) => (
-              <polygon key={name} points={points} fill={on.includes(name) ? lit : unlit} />
-            ))}
-          </svg>
-        );
-      })}
-    </span>
-  );
-}
-
-/** The card's outer plate: ground, padding, and the head rule every slide shares. */
-function Slide({
-  palette,
-  eyebrow,
-  corner,
-  children,
-  innerRef,
-}: {
-  palette: Palette;
-  eyebrow: string;
-  corner?: string;
-  children: ReactNode;
-  innerRef: (el: HTMLDivElement | null) => void;
-}) {
+/** One card: paper, a margin, a running head and a running foot, like a printed page. */
+function Page({ p, head, foot, children, innerRef }: { p: Palette; head: string; foot: string; children: ReactNode; innerRef: (el: HTMLDivElement | null) => void }) {
   return (
     <div
       ref={innerRef}
-      style={{
-        width: CARD,
-        height: CARD,
-        background: palette.ground,
-        color: palette.ink,
-        fontFamily: MONO,
-        padding: 56,
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden',
-      }}
+      style={{ width: W, height: H, background: p.paper, color: p.ink, padding: '64px 72px', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxSizing: 'border-box' }}
     >
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'baseline',
-          justifyContent: 'space-between',
-          borderBottom: `1px solid ${palette.rule}`,
-          paddingBottom: 18,
-        }}
-      >
-        <span style={silkscreen(palette)}>{eyebrow}</span>
-        {corner ? <span style={{ ...silkscreen(palette), color: palette.muted }}>{corner}</span> : null}
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: SANS, fontSize: 24, color: p.muted, paddingBottom: 20, borderBottom: `2px solid ${p.rule}` }}>
+        <span style={{ fontFamily: TITLE, fontSize: 30, color: p.ink }}>Proof</span>
+        <span>{head}</span>
       </div>
-      {children}
+      <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>{children}</div>
+      <div style={{ fontFamily: SANS, fontSize: 22, color: p.muted, paddingTop: 18, borderTop: `2px solid ${p.rule}` }}>{foot}</div>
     </div>
   );
 }
 
-/** A count, set in mono — counts are not instrument values and never get segments. */
-function Stat({ palette, label, value }: { palette: Palette; label: string; value: string }) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      <span style={silkscreen(palette, 20)}>{label}</span>
-      <span
-        style={{
-          fontFamily: MONO,
-          fontSize: 44,
-          fontWeight: 700,
-          fontVariantNumeric: 'tabular-nums',
-          lineHeight: 1,
-          color: palette.ink,
-        }}
-      >
-        {value}
-      </span>
+/** The photograph, or the recipe's initial as a drop cap — never an empty box. */
+function Plate({ p, src, title, height }: { p: Palette; src: string | undefined; title: string; height: number }) {
+  const url = usePhotoSrc(src);
+  return url ? (
+    <div style={{ height, borderRadius: 10, backgroundColor: p.sunk, backgroundImage: `url(${url})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
+  ) : (
+    <div style={{ height, borderRadius: 10, background: p.sunk, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: TITLE, fontStyle: 'italic', fontSize: height * 0.55, color: p.pencil }}>
+      {title.trim().charAt(0).toUpperCase()}
     </div>
   );
 }
 
 export default function InstagramExporter({ recipe, bakeLog, onClose }: InstagramExporterProps) {
-  const [exportMode, setExportMode] = useState<'carousel' | 'single'>('carousel');
-  const [theme, setTheme] = useState<'light' | 'dark'>('dark');
+  const [mode, setMode] = useState<'single' | 'carousel'>('single');
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [exporting, setExporting] = useState(false);
-  // Reported on the panel: this surface is already full-screen, and a system
-  // dialog over it is a second modal the user has to clear before retrying.
   const [exportError, setExportError] = useState('');
   const nodes = useRef<Record<string, HTMLDivElement | null>>({});
+  const scalers = useRef<(HTMLDivElement | null)[]>([]);
+  const p = PALETTES[theme];
 
-  const palette = PALETTES[theme];
+  const steps = useMemo(() => methodSteps(recipe.instructions), [recipe.instructions]);
+  const facts = factsLine(recipe);
+  const about = headnote(meaningfulDescription(recipe.description));
+  const bakePhoto = bakeLog ? bakePhotoUrls(bakeLog)[0] : undefined;
+  const date = (iso: string) => new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+  const host = window.location.host;
 
-  // The bake's own photograph if this is a logged bake, otherwise the recipe's.
-  // No stock fallback: a card that shows a stranger's stock photo of bread is a
-  // card that lies about what came out of the oven.
-  const heroImage = bakeLog?.imageUrls?.[0] || recipe.imageUrls?.[0] || '';
-
-  const { phases, reading } = useMemo(
-    () => derivePhasesWithReading(recipe.instructions),
-    [recipe.instructions],
-  );
-  const steps = recipe.instructions || [];
-  const ingredients = recipe.ingredients || [];
-
-  /*
-   * What the key row counts, and the rule is that it is never approximate.
-   *
-   * A recipe whose text named a levain and a bulk has real phases, and they get
-   * labelled keys. A shorter recipe that proved nothing gets one key per step —
-   * still exact, and better than printing three generic words on a card a
-   * stranger reads. Past sixteen steps a key per step stops being a row and
-   * starts being a bar, so those fall back to the phase keys, which are also
-   * exact. No branch draws a count it cannot stand behind.
-   */
-  const stepKeys = reading !== 'bread' && steps.length > 0 && steps.length <= 16;
-  const keyCount = stepKeys ? steps.length : phases.length;
-  const keyLabels = stepKeys ? null : phases.map((p) => p.label);
-
-  const placeholder = isPlaceholderTiming(recipe);
-  const totalMinutes = placeholder ? null : totalRecipeMinutes(recipe);
-  const totalSegments = totalMinutes === null ? null : formatMinutesForSegments(totalMinutes);
-
-  const dateLabel = new Date(bakeLog?.date || Date.now())
-    .toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' })
-    .toUpperCase();
-
-  // The card claims nothing the recipe cannot prove, and the seed's template
-  // description is not something it can.
-  const noteText = (bakeLog?.notes?.trim()) || meaningfulDescription(recipe.description) || '';
-  const noteHeading = bakeLog?.notes?.trim() ? "Baker's log" : 'About this bake';
-
-  const shareUrl = `${window.location.origin}/recipe/${recipe._id}`;
-  const shareHost = window.location.host;
-
-  const [scale, setScale] = useState(0.4);
+  const [scale, setScale] = useState(0.3);
   useEffect(() => {
-    const updateScale = () => {
-      const padding = window.innerWidth >= 768 ? 64 : 32;
-      const availableWidth = window.innerWidth - padding;
-      const maxScale = 0.8;
-      setScale(Math.min(availableWidth / CARD, maxScale));
-    };
-    updateScale();
-    window.addEventListener('resize', updateScale);
-    return () => window.removeEventListener('resize', updateScale);
+    const update = () => setScale(Math.min((window.innerWidth - (window.innerWidth >= 768 ? 64 : 32)) / W, 0.5));
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
   }, []);
 
-  const wrapperStyle = { width: `${CARD * scale}px`, height: `${CARD * scale}px` };
-  const innerStyle: CSSProperties = { transform: `scale(${scale})`, transformOrigin: 'top left' };
-
-  /*
-   * The preview is a scaled-down copy of a 1080px card, and html2canvas measures
-   * what it is given: captured through that transform, a card exported from a
-   * phone came out 864px square — below what any feed wants, and dependent on
-   * how wide the window happened to be. So the scale comes off for the duration
-   * of the capture and goes straight back on. It is the render that must be
-   * 1080; the preview is only ever a preview.
-   */
-  const scalers = useRef<(HTMLDivElement | null)[]>([]);
-
-  const withFullSizeCards = async <T,>(render: () => Promise<T>): Promise<T> => {
-    const elements = scalers.current.filter(Boolean) as HTMLDivElement[];
-    elements.forEach((el) => { el.style.transform = 'none'; });
-    // Two frames: one for the layout to settle, one for it to have painted.
-    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-    try {
-      return await render();
-    } finally {
-      elements.forEach((el) => { el.style.transform = `scale(${scale})`; });
-    }
+  const pages: { key: string; label: string; node: ReactNode }[] = [];
+  const ref = (key: string) => (el: HTMLDivElement | null) => {
+    nodes.current[key] = el;
   };
 
-  const downloadCanvas = async (element: HTMLElement | null, filename: string) => {
-    if (!element) return;
-    const canvas = await html2canvas(element, {
-      scale: 2,
-      useCORS: true,
-      backgroundColor: palette.ground,
-      width: CARD,
-      height: CARD,
-    });
-    const link = document.createElement('a');
-    link.download = filename;
-    link.href = canvas.toDataURL('image/jpeg', 0.9);
-    link.click();
-  };
-
-  /*
-   * The keys, all complete — this bake has already run.
-   *
-   * Drawn with real gaps and a ceiling on width: a dozen touching bone
-   * rectangles read as one white bar, and a bar is not a row of keys. The gap
-   * is what makes them countable.
-   */
-  const KeyRow = ({ height = 48 }: { height?: number }) => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, flex: 1, minWidth: 0 }}>
-      <div style={{ display: 'flex', gap: 8 }}>
-        {Array.from({ length: Math.max(keyCount, 1) }).map((_, i) => (
-          <div
-            key={i}
-            style={{
-              flex: 1,
-              maxWidth: 80,
-              height,
-              borderRadius: 2,
-              background: keyCount === 0 ? palette.unlit : palette.done,
-            }}
-          />
-        ))}
-      </div>
-      {keyLabels ? (
-        <div style={{ display: 'flex', gap: 8 }}>
-          {keyLabels.map((label) => (
-            <span
-              key={label}
-              style={{
-                ...silkscreen(palette, 18),
-                flex: 1,
-                maxWidth: 80,
-                textAlign: 'center',
-                overflow: 'hidden',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {label}
-            </span>
-          ))}
-        </div>
-      ) : (
-        <span style={silkscreen(palette, 18)}>
-          {steps.length} {steps.length === 1 ? 'step' : 'steps'}
-        </span>
-      )}
-    </div>
-  );
-
-  const slides: { key: string; label: string; node: ReactNode }[] = [];
-
-  /* Slide 1 — the pattern card. On its own it is the whole "single" export. */
-  slides.push({
-    key: 'pattern',
-    label: 'pattern',
-    node: (
-      <Slide
-        palette={palette}
-        eyebrow={bakeLog ? 'Proof · bake log' : 'Proof · recipe'}
-        corner={dateLabel}
-        innerRef={(el) => { nodes.current.pattern = el; }}
-      >
-        {/* The plate. Sunk into the faceplate with a hairline, never floating
-          * on a shadow — the photograph is a specimen mounted on the panel. */}
-        <div
-          style={{
-            flex: 1,
-            minHeight: 0,
-            marginTop: 28,
-            border: `1px solid ${palette.rule}`,
-            background: palette.sunk,
-            backgroundImage: heroImage ? `url(${heroImage})` : undefined,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-          }}
-        />
-
-        <h1
-          style={{
-            fontFamily: DISPLAY,
-            fontWeight: 800,
-            fontStretch: '118%',
-            fontSize: recipe.title.length > 26 ? 64 : 80,
-            lineHeight: 1.02,
-            letterSpacing: '-0.01em',
-            margin: '30px 0 0',
-            color: palette.ink,
-            maxHeight: 176,
-            overflow: 'hidden',
-          }}
-        >
-          {recipe.title}
-        </h1>
-
-        <div style={{ ...silkscreen(palette, 20), marginTop: 12 }}>
-          {[recipe.folder && recipe.folder !== 'Uncategorized' ? recipe.folder : null, recipe.difficulty]
-            .filter(Boolean)
-            .join(' · ')}
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 56, marginTop: 30 }}>
-          {totalSegments ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <span style={silkscreen(palette, 20)}>Total</span>
-              <span style={{ display: 'flex', alignItems: 'flex-end', gap: 10 }}>
-                <Segments value={totalSegments.value} height={52} lit={palette.signal} unlit={palette.unlit} />
-                <span style={{ ...silkscreen(palette, 20), paddingBottom: 4 }}>{totalSegments.unit}</span>
-              </span>
-            </div>
-          ) : null}
-          <Stat palette={palette} label="Serves" value={String(recipe.servings || 4)} />
-          <Stat palette={palette} label="Ingredients" value={String(ingredients.length)} />
-        </div>
-
-        {/*
-          The foot: the pattern on the left, and where to find it on the right.
-          Keys keep their ceiling — a 300px-wide key stops reading as a key —
-          so the line is closed by the address instead of by stretching them.
-        */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'flex-end',
-            justifyContent: 'space-between',
-            gap: 40,
-            marginTop: 30,
-          }}
-        >
-          <KeyRow />
-          <span style={{ ...silkscreen(palette, 20), paddingBottom: 4, textAlign: 'right' }}>
-            {shareHost}
-          </span>
-        </div>
-      </Slide>
-    ),
-  });
-
-  /* Slide 2 — ingredients, as the instrument panel. */
-  slides.push({
-    key: 'ingredients',
-    label: 'ingredients',
-    node: (
-      <Slide
-        palette={palette}
-        eyebrow="Ingredients"
-        corner={`${ingredients.length} total`}
-        innerRef={(el) => { nodes.current.ingredients = el; }}
-      >
-        <div
-          style={{
-            flex: 1,
-            minHeight: 0,
-            marginTop: 32,
-            display: 'grid',
-            gridTemplateColumns: ingredients.length > 9 ? '1fr 1fr' : '1fr',
-            columnGap: 56,
-            alignContent: 'start',
-            overflow: 'hidden',
-          }}
-        >
-          {ingredients.slice(0, 18).map((ing, idx) => (
-            <div
-              key={idx}
-              style={{
-                display: 'flex',
-                alignItems: 'baseline',
-                justifyContent: 'space-between',
-                gap: 24,
-                borderBottom: `1px solid ${palette.rule}`,
-                padding: '16px 0',
-              }}
-            >
-              <span style={{ fontFamily: MONO, fontSize: 28, color: palette.ink }}>{ing.name}</span>
-              <span
-                style={{
-                  fontFamily: MONO,
-                  fontSize: 28,
-                  fontWeight: 700,
-                  fontVariantNumeric: 'tabular-nums',
-                  whiteSpace: 'nowrap',
-                  color: palette.muted,
-                }}
-              >
-                {ing.quantity} {ing.unit}
-              </span>
-            </div>
-          ))}
-        </div>
-        {ingredients.length > 18 ? (
-          <span style={{ ...silkscreen(palette, 20), marginTop: 16 }}>
-            + {ingredients.length - 18} more
-          </span>
-        ) : null}
-        <div style={{ marginTop: 24 }}>
-          <KeyRow height={26} />
-        </div>
-      </Slide>
-    ),
-  });
-
-  /* Slide 3 — the method, under the same phase headings the row draws. */
-  slides.push({
-    key: 'method',
-    label: 'method',
-    node: (
-      <Slide
-        palette={palette}
-        eyebrow="Method"
-        corner={`${steps.length} steps`}
-        innerRef={(el) => { nodes.current.method = el; }}
-      >
-        <div style={{ flex: 1, minHeight: 0, marginTop: 32, overflow: 'hidden' }}>
-          {steps.slice(0, 6).map((step, idx) => (
-            <div key={idx} style={{ display: 'flex', gap: 28, marginBottom: 28 }}>
-              <span
-                style={{
-                  fontFamily: MONO,
-                  fontSize: 28,
-                  fontWeight: 700,
-                  fontVariantNumeric: 'tabular-nums',
-                  color: palette.signal,
-                  paddingTop: 4,
-                }}
-              >
-                {String(idx + 1).padStart(2, '0')}
-              </span>
-              <span style={{ fontFamily: MONO, fontSize: 28, lineHeight: 1.5, color: palette.ink }}>
-                {step}
-              </span>
-            </div>
-          ))}
-        </div>
-        {steps.length > 6 ? (
-          <span style={{ ...silkscreen(palette, 20), marginBottom: 20 }}>
-            + {steps.length - 6} more steps at the link
-          </span>
-        ) : null}
-        <KeyRow height={26} />
-      </Slide>
-    ),
-  });
-
-  /* Slide 4 — the log, only when there is something to say. */
-  if (noteText) {
-    slides.push({
-      key: 'notes',
-      label: 'notes',
+  // The bake, when there is one: the photograph that came out of this oven.
+  if (bakeLog) {
+    pages.push({
+      key: 'bake',
+      label: 'bake',
       node: (
-        <Slide
-          palette={palette}
-          eyebrow={noteHeading}
-          corner={dateLabel}
-          innerRef={(el) => { nodes.current.notes = el; }}
-        >
-          <p
-            style={{
-              flex: 1,
-              minHeight: 0,
-              marginTop: 40,
-              fontFamily: DISPLAY,
-              fontWeight: 400,
-              fontSize: 40,
-              lineHeight: 1.45,
-              color: palette.ink,
-              overflow: 'hidden',
-              whiteSpace: 'pre-wrap',
-            }}
-          >
-            {noteText.length > 520 ? `${noteText.slice(0, 520).trimEnd()}…` : noteText}
-          </p>
-          <KeyRow height={26} />
-        </Slide>
+        <Page p={p} head={date(bakeLog.date)} foot={host} innerRef={ref('bake')}>
+          <div style={{ marginTop: 44 }}>
+            <Plate p={p} src={bakePhoto ?? recipe.imageUrls?.[0]} title={recipe.title} height={560} />
+          </div>
+          <h1 style={{ fontFamily: TITLE, fontWeight: 560, fontSize: recipe.title.length > 28 ? 64 : 80, lineHeight: 1.04, margin: '40px 0 0' }}>{recipe.title}</h1>
+          {bakeLog.rating ? <div style={{ fontFamily: SANS, fontSize: 44, color: p.accent, marginTop: 18, letterSpacing: 4 }}>{stars(bakeLog.rating)}</div> : null}
+          {bakeLog.notes ? (
+            <p style={{ fontFamily: PROSE, fontSize: 38, lineHeight: 1.4, color: p.ink, margin: '24px 0 0', overflow: 'hidden', maxHeight: 220 }}>“{cleanText(bakeLog.notes).slice(0, 220)}”</p>
+          ) : null}
+          {bakeLog.nextTime ? (
+            <p style={{ fontFamily: PROSE, fontStyle: 'italic', fontSize: 32, color: p.pencil, margin: '20px 0 0' }}>✎ Next time: {cleanText(bakeLog.nextTime).slice(0, 120)}</p>
+          ) : null}
+        </Page>
       ),
     });
   }
 
-  /* Slide 5 — where the rest of it lives. */
-  slides.push({
-    key: 'link',
-    label: 'link',
+  // The recipe's own page: its photograph, its title, one line of facts.
+  pages.push({
+    key: 'recipe',
+    label: 'recipe',
     node: (
-      <Slide
-        palette={palette}
-        eyebrow="Proof"
-        corner="The full recipe"
-        innerRef={(el) => { nodes.current.link = el; }}
-      >
-        <div
-          style={{
-            flex: 1,
-            minHeight: 0,
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            gap: 36,
-          }}
-        >
-          <h2
-            style={{
-              fontFamily: DISPLAY,
-              fontWeight: 800,
-              fontStretch: '118%',
-              fontSize: 72,
-              lineHeight: 1.05,
-              margin: 0,
-              color: palette.ink,
-            }}
-          >
-            {recipe.title}
-          </h2>
-          <div
-            style={{
-              border: `1px solid ${palette.rule}`,
-              background: palette.panel,
-              padding: '28px 32px',
-            }}
-          >
-            <span style={{ ...silkscreen(palette, 20), display: 'block', marginBottom: 12 }}>
-              Ingredients, method, timings
-            </span>
-            <span
-              style={{
-                fontFamily: MONO,
-                fontSize: 30,
-                fontWeight: 700,
-                color: palette.ink,
-                wordBreak: 'break-all',
-              }}
-            >
-              {shareUrl}
-            </span>
-          </div>
+      <Page p={p} head={recipe.folder && recipe.folder !== 'Uncategorized' ? recipe.folder : 'A recipe'} foot={host} innerRef={ref('recipe')}>
+        <div style={{ marginTop: 44 }}>
+          <Plate p={p} src={recipe.imageUrls?.[0]} title={recipe.title} height={640} />
         </div>
-
-        {/* An empty pattern is still a pattern: the invitation, unlit. */}
-        <div style={{ display: 'flex', gap: 3 }}>
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} style={{ flex: 1, maxWidth: 96, height: 28, borderRadius: 2, background: palette.unlit }} />
-          ))}
-        </div>
-      </Slide>
+        <h1 style={{ fontFamily: TITLE, fontWeight: 560, fontSize: recipe.title.length > 28 ? 68 : 88, lineHeight: 1.03, margin: '44px 0 0' }}>{recipe.title}</h1>
+        {about ? <p style={{ fontFamily: PROSE, fontStyle: 'italic', fontSize: 36, lineHeight: 1.35, color: p.ink2, margin: '20px 0 0', maxHeight: 100, overflow: 'hidden' }}>{about}</p> : null}
+        {facts ? <p style={{ fontFamily: SANS, fontSize: 28, color: p.muted, margin: '20px 0 0' }}>{facts}</p> : null}
+      </Page>
     ),
   });
 
-  const shownSlides = exportMode === 'single' ? slides.slice(0, 1) : slides;
+  pages.push({
+    key: 'ingredients',
+    label: 'ingredients',
+    node: (
+      <Page p={p} head={recipe.title} foot={`${recipe.ingredients.length} ingredients · ${host}`} innerRef={ref('ingredients')}>
+        <h2 style={{ fontFamily: TITLE, fontWeight: 560, fontSize: 60, margin: '44px 0 16px' }}>Ingredients</h2>
+        <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          {recipe.ingredients.slice(0, 16).map((ing, i) => {
+            const parts = ingredientParts(cleanText(ing.name));
+            return (
+              <div key={i} style={{ display: 'flex', gap: 28, alignItems: 'baseline', padding: '14px 0', borderBottom: `2px solid ${p.rule}` }}>
+                <span style={{ width: 190, flexShrink: 0, fontFamily: SANS, fontWeight: 600, fontSize: 30 }}>{friendlyAmountText(ing.quantity, ing.unit)}</span>
+                <span style={{ fontFamily: PROSE, fontSize: 32 }}>
+                  {parts.name}
+                  {parts.note ? <span style={{ fontStyle: 'italic', color: p.muted }}>, {parts.note}</span> : null}
+                </span>
+              </div>
+            );
+          })}
+          {recipe.ingredients.length > 16 ? <p style={{ fontFamily: SANS, fontSize: 26, color: p.muted }}>and {recipe.ingredients.length - 16} more</p> : null}
+        </div>
+      </Page>
+    ),
+  });
 
-  const handleExport = async () => {
+  pages.push({
+    key: 'method',
+    label: 'method',
+    node: (
+      <Page p={p} head={recipe.title} foot={steps.length > 6 ? `${steps.length - 6} more steps in the recipe · ${host}` : host} innerRef={ref('method')}>
+        <h2 style={{ fontFamily: TITLE, fontWeight: 560, fontSize: 60, margin: '44px 0 16px' }}>Method</h2>
+        <div style={{ overflow: 'hidden' }}>
+          {steps.slice(0, 6).map((s) => (
+            <div key={s.index} style={{ display: 'flex', gap: 26, marginBottom: 26 }}>
+              <span style={{ fontFamily: TITLE, fontSize: 40, color: p.muted, width: 40, flexShrink: 0, lineHeight: 1.2 }}>{s.number}</span>
+              <span style={{ fontFamily: PROSE, fontSize: 32, lineHeight: 1.45 }}>{s.text.length > 240 ? `${s.text.slice(0, 240).trimEnd()}…` : s.text}</span>
+            </div>
+          ))}
+        </div>
+      </Page>
+    ),
+  });
+
+  const shown = mode === 'single' ? pages.slice(0, 1) : pages;
+
+  const download = async () => {
     setExporting(true);
+    setExportError('');
+    const elements = scalers.current.filter(Boolean) as HTMLDivElement[];
+    // The preview is scaled down; the capture must be the full-size page.
+    elements.forEach((el) => (el.style.transform = 'none'));
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
     try {
-      await withFullSizeCards(async () => {
-        for (let i = 0; i < shownSlides.length; i++) {
-          const slide = shownSlides[i];
-          const name =
-            exportMode === 'single'
-              ? `${recipe.title}-proof-card.jpg`
-              : `${recipe.title}-proof-${i + 1}-${slide.label}.jpg`;
-          await downloadCanvas(nodes.current[slide.key], name);
-        }
-      });
-    } catch (err) {
-      console.error(err);
-      setExportError('The cards could not be rendered. Try again — and if it keeps failing, an extension blocking images is the usual cause.');
+      for (let i = 0; i < shown.length; i++) {
+        const node = nodes.current[shown[i].key];
+        if (!node) continue;
+        const canvas = await html2canvas(node, { scale: 1, useCORS: true, backgroundColor: p.paper, width: W, height: H });
+        const link = document.createElement('a');
+        link.download = `${recipe.title}-${shown.length > 1 ? `${i + 1}-` : ''}${shown[i].label}.jpg`;
+        link.href = canvas.toDataURL('image/jpeg', 0.92);
+        link.click();
+      }
+    } catch {
+      setExportError("The card couldn't be drawn. Try again — an extension that blocks images is the usual cause.");
     } finally {
+      elements.forEach((el) => (el.style.transform = `scale(${scale})`));
       setExporting(false);
     }
   };
 
+  const wrapper: CSSProperties = { width: W * scale, height: H * scale };
   return (
-    <div className="fixed inset-0 z-[100] flex flex-col bg-ground">
-      <header className="flex shrink-0 items-center justify-between gap-3 border-b border-rule bg-panel px-4 py-3">
-        <h2 className="ui-label">Share this bake</h2>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onClose}
-          aria-label="Close the exporter"
-          icon={<X className="h-4 w-4" />}
-        />
-      </header>
-
+    <Sheet
+      open
+      onClose={onClose}
+      title={bakeLog ? 'Share this bake' : 'Share as a card'}
+      size="full"
+      flush
+      footer={
+        <Button variant="primary" size="lg" className="mx-auto" busy={exporting} onClick={download} icon={<Download className="h-5 w-5" aria-hidden="true" />}>
+          {exporting ? 'Drawing' : shown.length > 1 ? `Download ${shown.length} cards` : 'Download the card'}
+        </Button>
+      }
+    >
       {exportError ? (
-        <p
-          role="alert"
-          className="shrink-0 border-b border-fault bg-panel px-4 py-2 text-sm text-fault"
-        >
+        <p role="alert" className="shrink-0 border-b border-fault px-4 py-2 text-sm text-fault">
           {exportError}
         </p>
       ) : null}
 
-      <div className="flex flex-1 flex-col items-center gap-8 overflow-y-auto p-4 md:p-8">
+      <div className="flex flex-1 flex-col items-center gap-6 overflow-y-auto p-4 md:p-8">
         <div className="flex flex-wrap items-center justify-center gap-2">
-          <Button
-            engaged={exportMode === 'carousel'}
-            onClick={() => setExportMode('carousel')}
-            icon={<LayoutGrid className="h-4 w-4" />}
-          >
-            Carousel · {slides.length}
-          </Button>
-          <Button
-            engaged={exportMode === 'single'}
-            onClick={() => setExportMode('single')}
-            icon={<ImageIcon className="h-4 w-4" />}
-          >
-            Single card
-          </Button>
-          <Button
-            onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-            icon={theme === 'light' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
-          >
-            {theme === 'light' ? 'Dark card' : 'Light card'}
-          </Button>
+          <Segmented
+            label="How many cards"
+            value={mode}
+            onChange={setMode}
+            options={[
+              { value: 'single', label: 'One card' },
+              { value: 'carousel', label: `All ${pages.length}` },
+            ]}
+          />
+          <Segmented
+            label="Card paper"
+            value={theme}
+            onChange={setTheme}
+            options={[
+              { value: 'light', label: 'Paper' },
+              { value: 'dark', label: 'Night' },
+            ]}
+          />
         </div>
-
         <div className="flex flex-wrap justify-center gap-6">
-          {shownSlides.map((slide, i) => (
-            <div key={slide.key} className="relative overflow-hidden border border-rule" style={wrapperStyle}>
+          {shown.map((page, i) => (
+            <div key={page.key} className="relative overflow-hidden rounded-key border border-rule" style={wrapper}>
               <div
-                ref={(el) => { scalers.current[i] = el; }}
-                style={innerStyle}
+                ref={(el) => {
+                  scalers.current[i] = el;
+                }}
                 className="absolute left-0 top-0"
+                style={{ transform: `scale(${scale})`, transformOrigin: 'top left' }}
               >
-                {slide.node}
+                {page.node}
               </div>
             </div>
           ))}
         </div>
       </div>
 
-      <div className="flex shrink-0 justify-center border-t border-rule bg-panel p-4 pb-safe">
-        <Button
-          variant="primary"
-          size="lg"
-          onClick={handleExport}
-          busy={exporting}
-          icon={<Download className="h-5 w-5" />}
-        >
-          {exporting ? 'Rendering…' : `Download ${shownSlides.length > 1 ? `${shownSlides.length} cards` : 'card'}`}
-        </Button>
-      </div>
-    </div>
+    </Sheet>
   );
 }

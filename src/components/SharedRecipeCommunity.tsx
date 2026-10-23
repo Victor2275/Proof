@@ -4,15 +4,19 @@ import { usePlan, useSession, useOwnership } from '../lib/session';
 import { requestAccount } from '../lib/accountPrompt';
 import { useComments, useDeleteComment, useMyRating, usePostComment, useRateRecipe } from '../lib/queries';
 import type { PublishedRecipe } from '../lib/types';
-import { Button, Panel, PanelRow, Prose, Sheet, TextArea } from './ui';
+import { Button, Prose, Sheet, StarRating, Stars, TextArea } from './ui';
 
 /*
- * The shared recipe's conversation (LAUNCH_PLAN.md, Phase 3 items 7–8, 10).
+ * What other bakers made of a shared recipe (LAUNCH_PLAN Phase 3 items 7–8,
+ * 10; UI overhaul changes 129–130).
  *
- * Ratings and "I baked this" are readings, so they print as counts in mono and
- * say "not rated yet" rather than inventing an average out of nothing. Rating
- * and baking take an account; the comments take a confirmed one. People's
- * words are printed matter (B1). Anything can be reported, by anyone.
+ * Readings print only when there are some: an average of no ratings is not a
+ * number, so a recipe nobody has rated says "Be the first to bake this" and
+ * stops. What bakers wrote is set as marginalia — "What bakers noticed", each
+ * note pencilled under its baker's handle — because that is what a comment on
+ * a recipe is: a note in the margin of someone else's book. People's words are
+ * their own (B1). Rating and "I baked this" take an account; writing a note
+ * takes a confirmed one. Anything can be reported.
  */
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
@@ -22,48 +26,44 @@ export default function SharedRecipeCommunity({ recipe }: { recipe: PublishedRec
   const { isAuthor } = useOwnership(recipe);
   const [reporting, setReporting] = useState<{ type: 'recipe' | 'comment'; id: string } | null>(null);
   const stats = recipe.stats ?? { saves: 0, bakedCount: 0, ratingSum: 0, ratingCount: 0 };
-  const average = stats.ratingCount > 0 ? (stats.ratingSum / stats.ratingCount).toFixed(1) : null;
+  const average = stats.ratingCount > 0 ? stats.ratingSum / stats.ratingCount : null;
+  const readings = [
+    average !== null ? `${average.toFixed(1)} of 5 from ${plural(stats.ratingCount, 'rating')}` : '',
+    stats.bakedCount ? `baked ${plural(stats.bakedCount, 'time')}` : '',
+    stats.saves ? `saved ${plural(stats.saves, 'time')}` : '',
+  ].filter(Boolean);
 
   return (
-    <section className="mt-12 flex flex-col gap-8" aria-label="From other bakers" data-html2canvas-ignore="true">
-      <Panel title="From other bakers">
-        <div className="flex flex-col gap-4">
-          <div>
-            <PanelRow
-              label="Rating"
-              value={
-                <span className="font-sans tabular-nums">
-                  {average ? `${average} of 5 · ${plural(stats.ratingCount, 'rating')}` : 'Not rated yet'}
-                </span>
-              }
-            />
-            <PanelRow label="Baked" value={<span className="font-sans tabular-nums">{plural(stats.bakedCount, 'time')}</span>} />
-            <PanelRow label="Saved" value={<span className="font-sans tabular-nums">{plural(stats.saves, 'time')}</span>} />
-          </div>
-          {isAuthor ? (
-            <p className="text-sm text-ink-muted">Your recipe. Ratings come from other bakers.</p>
-          ) : session.user ? (
-            <RateControl recipe={recipe} />
-          ) : (
-            <Button
-              className="self-start"
-              onClick={() => requestAccount('signin', 'Sign in to rate this recipe or say you baked it.')}
-            >
-              Sign in to rate it
-            </Button>
-          )}
-        </div>
-      </Panel>
+    <section className="flex flex-col gap-6 print:hidden" aria-labelledby="noticed-heading" data-html2canvas-ignore="true">
+      <div className="flex flex-col gap-1 border-b border-rule pb-2.5">
+        <h2 id="noticed-heading" className="font-title text-2xl text-ink">
+          What bakers noticed
+        </h2>
+        {readings.length ? (
+          <p className="flex flex-wrap items-center gap-x-2 text-sm text-ink-2">
+            {average !== null ? <Stars value={Math.round(average)} /> : null}
+            {readings.join(' · ')}
+          </p>
+        ) : (
+          <p className="text-sm text-ink-2">Be the first to bake this.</p>
+        )}
+      </div>
+
+      {isAuthor ? (
+        <p className="text-sm text-ink-muted">Your recipe. Ratings come from other bakers.</p>
+      ) : session.user ? (
+        <RateControl recipe={recipe} />
+      ) : (
+        <Button className="self-start" onClick={() => requestAccount('signin', 'Sign in to rate this recipe or say you baked it.')}>
+          Sign in to rate it
+        </Button>
+      )}
 
       <Comments recipe={recipe} isAuthor={isAuthor} onReport={(id) => setReporting({ type: 'comment', id })} />
 
-      <button
-        type="button"
-        onClick={() => setReporting({ type: 'recipe', id: recipe._id })}
-        className="ui-label flex min-h-11 items-center self-start text-ink-muted underline decoration-1 underline-offset-4 hover:text-ink"
-      >
+      <Button variant="ghost" size="sm" className="self-start text-ink-muted" onClick={() => setReporting({ type: 'recipe', id: recipe._id })}>
         Report this recipe
-      </button>
+      </Button>
 
       <ReportSheet target={reporting} onClose={() => setReporting(null)} />
     </section>
@@ -77,22 +77,9 @@ function RateControl({ recipe }: { recipe: PublishedRecipe }) {
   const baked = mine.data?.baked ?? false;
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-2">
       <div className="flex flex-wrap items-center gap-3">
-        <div className="flex gap-px" role="group" aria-label="Your rating">
-          {[1, 2, 3, 4, 5].map((n) => (
-            <Button
-              key={n}
-              size="sm"
-              engaged={stars !== null && n <= stars}
-              aria-label={`Rate ${n} out of 5`}
-              disabled={rate.isPending}
-              onClick={() => rate.mutate({ stars: n === stars ? null : n })}
-            >
-              {n}
-            </Button>
-          ))}
-        </div>
+        <StarRating label="Your rating" value={stars} onChange={(next) => rate.mutate({ stars: next })} className="-ml-2" />
         <Button engaged={baked} disabled={rate.isPending} onClick={() => rate.mutate({ baked: !baked })}>
           I baked this
         </Button>
@@ -129,71 +116,59 @@ function Comments({ recipe, isAuthor, onReport }: { recipe: PublishedRecipe; isA
   const items = comments.data ?? [];
 
   return (
-    <Panel title="Comments">
-      <div className="flex flex-col gap-5">
-        {comments.isPending ? null : comments.isError ? (
-          <p className="text-sm text-ink-muted">The comments couldn't be loaded. The recipe is all here.</p>
-        ) : items.length === 0 ? (
-          <p className="text-sm text-ink-muted">No comments yet.</p>
-        ) : (
-          <ul className="flex flex-col">
-            {items.map((c) => (
-              <li key={c._id} className="flex flex-col gap-1.5 border-b border-rule py-3 first:pt-0 last:border-b-0">
-                <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <span className="ui-label text-ink">@{c.authorHandle}</span>
-                  <span className="font-sans text-xs tabular-nums text-ink-muted">
-                    {new Date(c.createdAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
-                  </span>
-                </div>
-                <Prose className="text-sm">{c.body}</Prose>
-                <div className="flex flex-wrap items-center gap-4">
-                  {c.pending ? <span className="ui-label text-ink-muted">Waiting for a look · only you can see it</span> : null}
-                  {c.mine || isAuthor ? (
-                    <button
-                      type="button"
-                      className="ui-label flex min-h-11 items-center text-ink-muted hover:text-ink"
-                      onClick={() => remove.mutate(c._id)}
-                    >
-                      Delete
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      className="ui-label flex min-h-11 items-center text-ink-muted hover:text-ink"
-                      onClick={() => onReport(c._id)}
-                    >
-                      Report
-                    </button>
-                  )}
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
+    <div className="flex flex-col gap-5">
+      {comments.isError ? (
+        <p className="text-sm text-ink-muted">The notes couldn't be loaded. The recipe is all here.</p>
+      ) : items.length ? (
+        <ul className="flex flex-col gap-4">
+          {items.map((c) => (
+            <li key={c._id} className="flex flex-col gap-1">
+              <p className="flex flex-wrap items-baseline gap-x-2 text-[0.8125rem]">
+                <span className="font-semibold text-ink">@{c.authorHandle}</span>
+                <span className="tabular-nums text-ink-muted">
+                  {new Date(c.createdAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
+                </span>
+                {c.pending ? <span className="text-ink-muted">· waiting for a look, only you can see it</span> : null}
+              </p>
+              <Prose className="font-prose border-l-2 border-rule pl-3 text-[1.0625rem] italic text-pencil">{c.body}</Prose>
+              {c.mine || isAuthor ? (
+                <Button variant="ghost" size="sm" className="self-start text-ink-muted" onClick={() => remove.mutate(c._id)}>
+                  Delete
+                </Button>
+              ) : (
+                <Button variant="ghost" size="sm" className="self-start text-ink-muted" onClick={() => onReport(c._id)}>
+                  Report
+                </Button>
+              )}
+            </li>
+          ))}
+        </ul>
+      ) : null}
 
-        {!session.user ? (
-          <Button className="self-start" onClick={() => requestAccount('signin', 'Sign in to comment.')}>
-            Sign in to comment
+      {!session.user ? (
+        <Button variant="ghost" className="self-start" onClick={() => requestAccount('signin', 'Sign in to add what you noticed.')}>
+          Sign in to add a note
+        </Button>
+      ) : !can('publish') ? (
+        <p className="text-sm text-ink-muted">Confirm your email to add a note. The link is in the message sent to {session.user.email}.</p>
+      ) : (
+        <form id={formId} onSubmit={submit} className="flex flex-col gap-3">
+          <TextArea
+            label="What you noticed"
+            prose
+            value={body}
+            maxLength={1000}
+            rows={2}
+            onChange={(e) => setBody(e.target.value)}
+            hint="Baked it? What worked, what you would change."
+            error={post.isError ? (post.error instanceof Error ? post.error.message : "That didn't post. Try again.") : undefined}
+          />
+          <Button type="submit" className="self-start" busy={post.isPending} disabled={!body.trim()}>
+            Add the note
           </Button>
-        ) : !can('publish') ? (
-          <p className="text-sm text-ink-muted">Confirm your email to comment. The link is in the message sent to {session.user.email}.</p>
-        ) : (
-          <form id={formId} onSubmit={submit} className="flex flex-col gap-3 border-t border-rule pt-4">
-            <TextArea
-              label="Add a comment"
-              value={body}
-              maxLength={1000}
-              rows={3}
-              onChange={(e) => setBody(e.target.value)}
-              error={post.isError ? (post.error instanceof Error ? post.error.message : "That didn't post. Try again.") : undefined}
-            />
-            <Button type="submit" className="self-start" busy={post.isPending} disabled={!body.trim()}>
-              Post
-            </Button>
-          </form>
-        )}
-      </div>
-    </Panel>
+        </form>
+      )}
+    </div>
   );
 }
 
