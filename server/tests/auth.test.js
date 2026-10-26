@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import request from 'supertest';
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
@@ -11,7 +11,6 @@ import { createSession, readSession } from '../middleware/auth.js';
 let mongoServer;
 
 beforeAll(async () => {
-  delete process.env.ADMIN_PIN;
   mongoServer = await MongoMemoryServer.create({ binary: { checkMD5: false } });
   await mongoose.connect(mongoServer.getUri());
 });
@@ -101,8 +100,8 @@ describe('sessions', () => {
   });
 
   it('survives a server restart, because it is in the database', async () => {
-    const token = await createSession({ kind: 'operator' });
-    expect((await readSession(token)).kind).toBe('operator');
+    const token = await createSession({ userId: 'u1' });
+    expect(await readSession(token)).toMatchObject({ kind: 'user', userId: 'u1' });
   });
 
   it('refuses an expired session before the TTL sweep removes it', async () => {
@@ -165,17 +164,13 @@ describe('the account', () => {
   });
 });
 
-describe('the operator PIN', () => {
-  afterEach(() => {
-    delete process.env.ADMIN_PIN;
-  });
-
-  it('opens an operator session that the operator routes accept, and a user session does not', async () => {
-    process.env.ADMIN_PIN = '4321';
-    const pin = await request(app).post('/api/auth/pin').send({ pin: '4321' });
-    expect((await request(app).get('/api/library').set(auth(pin.body.token))).statusCode).toBe(200);
-
+describe('the owner', () => {
+  it("opens the site's tools to the owner's session, and not to an ordinary account's", async () => {
     const user = (await signup()).body.token;
-    expect((await request(app).get('/api/library').set(auth(user))).statusCode).toBe(401);
+    expect((await request(app).get('/api/library').set(auth(user))).statusCode).toBe(403);
+
+    await User.updateOne({ handle: 'ada_bakes' }, { role: 'owner' });
+    expect((await request(app).get('/api/library').set(auth(user))).statusCode).toBe(200);
+    expect((await request(app).get('/api/auth/me').set(auth(user))).body).toMatchObject({ owner: true, moderator: true });
   });
 });

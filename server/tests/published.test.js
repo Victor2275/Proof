@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vitest';
 import request from 'supertest';
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
@@ -21,11 +21,11 @@ const { Rating } = await import('../models/Rating.js');
 const { Comment } = await import('../models/Comment.js');
 const { Report } = await import('../models/Report.js');
 const { createSession } = await import('../middleware/auth.js');
+const { signedIn } = await import('./signIn.js');
 
 let mongoServer;
 
 beforeAll(async () => {
-  delete process.env.ADMIN_PIN;
   mongoServer = await MongoMemoryServer.create({ binary: { checkMD5: false } });
   await mongoose.connect(mongoServer.getUri());
 });
@@ -41,10 +41,6 @@ beforeEach(async () => {
   await Promise.all([User, Session, PublishedRecipe, Rating, Comment, Report].map((M) => M.deleteMany({})));
 });
 
-afterEach(() => {
-  delete process.env.ADMIN_PIN;
-});
-
 const DAY = 24 * 60 * 60 * 1000;
 
 async function account(handle, { verified = true, ageMs = 2 * DAY } = {}) {
@@ -53,7 +49,7 @@ async function account(handle, { verified = true, ageMs = 2 * DAY } = {}) {
     email: `${handle}@example.com`, handle, passwordHash: 'x',
     emailVerifiedAt: verified ? created : null, createdAt: created,
   });
-  return { user, token: await createSession({ kind: 'user', userId: user._id }) };
+  return { user, token: await createSession({ userId: user._id }) };
 }
 
 const as = (token) => ({ Authorization: `Bearer ${token}` });
@@ -284,8 +280,7 @@ describe('comments', () => {
 });
 
 describe('reports and the moderation queue', () => {
-  it('lets anyone report, and the operator act on it', async () => {
-    process.env.ADMIN_PIN = '1234';
+  it('lets anyone report, and a moderator act on it', async () => {
     const ada = await account('ada');
     const { body } = await publish(ada.token);
     const id = body.recipe._id;
@@ -294,7 +289,7 @@ describe('reports and the moderation queue', () => {
     expect((await request(app).post('/api/reports').send({ targetType: 'recipe', targetId: id, reason: 'Spam' })).statusCode).toBe(201);
 
     expect((await request(app).get('/api/moderation/queue').set(as(ada.token))).statusCode).toBe(403);
-    const op = await createSession({ kind: 'operator' });
+    const op = (await signedIn('mod', { role: 'moderator' })).token;
     const queue = await request(app).get('/api/moderation/queue').set(as(op));
     expect(queue.body.reports[0]).toMatchObject({ reason: 'Spam', target: { title: 'Dark Rye' } });
 
@@ -312,7 +307,7 @@ describe('reports and the moderation queue', () => {
     const ada = await account('ada');
     const bea = await account('bea');
     const { body } = await publish(ada.token);
-    const op = await createSession({ kind: 'operator' });
+    const op = (await signedIn('mod', { role: 'moderator' })).token;
 
     expect((await request(app).get('/api/moderation/queue').set(as(op))).body.recipes).toHaveLength(1);
     await request(app).post(`/api/moderation/recipes/${body.recipe._id}`).set(as(op)).send({ action: 'approve' });
@@ -330,7 +325,7 @@ describe('reports and the moderation queue', () => {
   it('keeps a rejection\'s reason, and a fixed resubmission is screened again', async () => {
     const ada = await account('ada');
     const { body } = await publish(ada.token);
-    const op = await createSession({ kind: 'operator' });
+    const op = (await signedIn('mod', { role: 'moderator' })).token;
     await request(app).post(`/api/moderation/recipes/${body.recipe._id}`).set(as(op)).send({ action: 'reject', reason: 'Credit the source.' });
     expect((await request(app).get('/api/published/dark-rye')).statusCode).toBe(404);
 

@@ -19,7 +19,8 @@ import { describeEntry } from '../lib/moderationLog';
  *
  * A reversible decision — the moderator role, a suspension — happens at once
  * and offers Undo, rather than asking first. Nobody acts on their own account
- * here, so a moderator cannot lock themselves out by a slip.
+ * here, so a moderator cannot lock themselves out by a slip, and nobody acts
+ * on the owner's. Only the owner makes and removes moderators.
  */
 
 const FILTERS: { value: AccountFilter; label: string }[] = [
@@ -35,7 +36,7 @@ function StatusTags({ account }: { account: StaffAccount }) {
   return (
     <>
       {!account.emailVerified ? <Tag>Unconfirmed</Tag> : null}
-      {account.moderator ? <Tag>Moderator</Tag> : null}
+      {account.owner ? <Tag>Owner</Tag> : account.moderator ? <Tag>Moderator</Tag> : null}
       {account.suspended ? <Tag>Suspended</Tag> : null}
     </>
   );
@@ -268,7 +269,7 @@ function AccountSheet({ id, onClose }: { id: string | null; onClose: () => void 
             <PanelRow label="Email" value={account.email} />
             <PanelRow label="Joined" value={date(account.joinedAt)} />
             <PanelRow label="Email confirmed" value={account.emailVerified ? 'Yes' : 'Not yet'} />
-            <PanelRow label="Role" value={account.moderator ? 'Moderator' : 'Baker'} />
+            <PanelRow label="Role" value={account.owner ? 'Owner' : account.moderator ? 'Moderator' : 'Baker'} />
             <PanelRow label="Plan" value={account.plan === 'pro' ? 'Pro' : 'Free'} />
             <PanelRow
               label="Signed in"
@@ -279,8 +280,10 @@ function AccountSheet({ id, onClose }: { id: string | null; onClose: () => void 
             ) : null}
           </div>
 
-          {own ? (
-            <p className="text-sm text-ink-muted">This is your account. Another moderator, or the operator, can change it.</p>
+          {own || account.owner ? (
+            <p className="text-sm text-ink-muted">
+              {account.owner ? "The owner's account. It can't be changed here." : 'This is your account. The owner can change it.'}
+            </p>
           ) : (
             <Section title="Actions">
               <div className="flex flex-wrap gap-2">
@@ -289,7 +292,7 @@ function AccountSheet({ id, onClose }: { id: string | null; onClose: () => void 
                     Confirm email
                   </Button>
                 ) : null}
-                {account.moderator ? (
+                {!session.isOwner ? null : account.moderator ? (
                   <Button
                     busy={busy === 'role'}
                     onClick={() =>

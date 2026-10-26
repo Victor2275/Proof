@@ -177,7 +177,7 @@ describe('email links', () => {
     await user.type(screen.getByLabelText('Handle'), 'ada');
     await user.type(screen.getByLabelText('Password'), 'correct horse battery');
     await user.click(screen.getByRole('button', { name: 'Create account' }));
-    expect(await screen.findByText(/couldn't send the confirmation email/)).toBeInTheDocument();
+    expect(await screen.findByText(/confirmation email couldn't be sent/)).toBeInTheDocument();
     expect(userToken()).toBe('tok');
   });
 

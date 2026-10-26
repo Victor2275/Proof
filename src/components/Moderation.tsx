@@ -10,7 +10,7 @@ import ModerationLog from './ModerationLog';
 import { BackButton, Button, Field, PageHeader, Panel, Prose, Segmented, Skeleton } from './ui';
 
 /*
- * Moderation, for the operator and for moderator accounts.
+ * Moderation, for moderators and the owner.
  *
  * Three views, kept in `?view=` like Shop's: the queue, the accounts, and the
  * log of who decided what. Only staff ever reach this page; anyone else is

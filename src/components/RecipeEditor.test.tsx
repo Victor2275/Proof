@@ -6,8 +6,8 @@ import RecipeEditor from './RecipeEditor';
 import { ToastProvider } from './ui';
 import { api } from '../lib/api';
 import { repo } from '../lib/repo';
-import { setOperatorToken } from '../lib/session';
-import { makeRecipe, renderScreen, seed } from '../test/utils';
+import { setAccount } from '../lib/session';
+import { makeRecipe, renderScreen, seed, signInAs } from '../test/utils';
 import { readRecipeDraft, saveRecipeDraft } from '../lib/recipeDraft';
 
 vi.mock('../lib/api', async (importOriginal) => ({
@@ -147,9 +147,9 @@ describe('RecipeEditor', () => {
     expect(api.extractRecipe).not.toHaveBeenCalled();
   });
 
-  describe('for the operator', () => {
-    beforeEach(() => setOperatorToken('operator-token'));
-    afterEach(() => setOperatorToken(null));
+  describe('for a confirmed account', () => {
+    beforeEach(() => void signInAs());
+    afterEach(() => setAccount(null));
 
     it('calls extractRecipe when a URL is pasted and the button clicked', async () => {
       vi.mocked(api.extractRecipe).mockResolvedValue({ title: 'Extracted Title' });
@@ -225,7 +225,7 @@ describe('RecipeEditor', () => {
   });
 
   it('tidies pasted text into the form', async () => {
-    setOperatorToken('operator-token');
+    signInAs();
     vi.mocked(api.restructureRecipe).mockResolvedValue({ title: 'Lemon drizzle', ingredients: [], instructions: ['Bake.'] });
     renderScreen(<RecipeEditor />, { route: '/new?start=paste', path: '/new' });
     fireEvent.change(await screen.findByRole('textbox', { name: "Or paste the recipe's text" }), {
@@ -233,7 +233,7 @@ describe('RecipeEditor', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: 'Tidy it into a recipe' }));
     await waitFor(() => expect(screen.getByPlaceholderText(/72-Hour Sourdough/i)).toHaveValue('Lemon drizzle'));
-    setOperatorToken(null);
+    setAccount(null);
   });
 
   /*

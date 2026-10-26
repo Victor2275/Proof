@@ -3,6 +3,7 @@ import { render } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { putMany, type RecordStore } from '../lib/repo/db';
+import { setAccount, type Account } from '../lib/session';
 import type { BakeLog, Note, PantryItem, Recipe } from '../lib/types';
 
 /*
@@ -59,6 +60,16 @@ export function makePantryItem(overrides: Partial<PantryItem> = {}): PantryItem 
 }
 
 /** Writes records straight into the device database. */
+/** Signs this device in as a confirmed account — the owner, a moderator, Pro — for screens that ask. */
+export function signInAs(overrides: Partial<Account> = {}): Account {
+  const account: Account = {
+    id: 'u1', email: 'ada@example.com', handle: 'ada', displayName: 'Ada', bio: '', emailVerified: true,
+    plan: 'free', pro: false, joinedAt: '2026-10-01', planExpiresAt: null, ...overrides,
+  };
+  setAccount('token', account);
+  return account;
+}
+
 export async function seed(store: RecordStore, rows: unknown[]) {
   await putMany(store, rows);
 }

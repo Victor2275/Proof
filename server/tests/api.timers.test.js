@@ -19,7 +19,6 @@ let mongoServer;
 let url;
 
 beforeAll(async () => {
-  delete process.env.ADMIN_PIN;
   mongoServer = await MongoMemoryServer.create({ binary: { checkMD5: false } });
   await mongoose.connect(mongoServer.getUri());
   await new Promise((resolve) => server.listen(0, resolve));

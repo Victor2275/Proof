@@ -122,8 +122,8 @@ export default function AccountSheet({ open, mode, onModeChange, onClose, reason
     >
       {unconfirmedNote ? (
         <p className="text-sm text-ink" role="status">
-          Your account is ready, but this Proof site couldn't send the confirmation email. Everything but publishing,
-          comments and the AI works now; the operator can confirm your account.
+          Your account is ready, but the confirmation email couldn't be sent. Publishing, comments and the AI open
+          once a moderator confirms it.
         </p>
       ) : resetSent ? (
         <p className="text-sm text-ink" role="status">

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import request from 'supertest';
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
@@ -21,12 +21,7 @@ afterAll(async () => {
 });
 
 beforeEach(async () => {
-  process.env.ADMIN_PIN = '9999';
   await Promise.all([User.deleteMany({}), Session.deleteMany({})]);
-});
-
-afterEach(() => {
-  delete process.env.ADMIN_PIN;
 });
 
 async function account({ verified = true, plan = 'free' } = {}) {
@@ -34,7 +29,7 @@ async function account({ verified = true, plan = 'free' } = {}) {
     email: 'ada@example.com', handle: 'ada', passwordHash: 'x', plan,
     emailVerifiedAt: verified ? new Date() : null,
   });
-  return { user, token: await createSession({ kind: 'user', userId: user._id }) };
+  return { user, token: await createSession({ userId: user._id }) };
 }
 
 /** A call that reaches the AI route and fails there (a name that does not resolve): it should cost nothing. */
@@ -63,7 +58,7 @@ describe('the AI allowance', () => {
     for (let i = 0; i < FREE_AI_PER_MONTH; i++) expect(await chargeAi(user._id)).toBe(true);
     expect(await chargeAi(user._id)).toBe(false);
 
-    const token = await createSession({ kind: 'user', userId: user._id });
+    const token = await createSession({ userId: user._id });
     const res = await analyse(token);
     expect(res.statusCode).toBe(429);
     expect(res.body.error).toMatch(/resets on the 1st/);
@@ -87,11 +82,10 @@ describe('the AI allowance', () => {
     expect(results.filter(Boolean)).toHaveLength(1);
   });
 
-  it('is unlimited for the operator and for Pro', async () => {
-    const op = await createSession({ kind: 'operator' });
-    expect((await analyse(op)).statusCode).toBe(400); // reached the route
-    const { token } = await account({ plan: 'pro' });
-    expect((await analyse(token)).statusCode).toBe(400);
+  it('is unlimited for Pro', async () => {
+    const { user, token } = await account({ plan: 'pro' });
+    await User.updateOne({ _id: user._id }, { aiQuota: { period: new Date().toISOString().slice(0, 7), used: FREE_AI_PER_MONTH } });
+    expect((await analyse(token)).statusCode).toBe(400); // past the free allowance, still reached the route
   });
 
   it("is reported on the account, so the AI sheets can show what's left", async () => {

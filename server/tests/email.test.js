@@ -11,7 +11,6 @@ let mongoServer;
 let sent;
 
 beforeAll(async () => {
-  delete process.env.ADMIN_PIN;
   mongoServer = await MongoMemoryServer.create({ binary: { checkMD5: false } });
   await mongoose.connect(mongoServer.getUri());
 });
@@ -86,7 +85,7 @@ describe('confirming an email', () => {
     expect(signup.body.verificationSent).toBe(false);
     const resend = await request(app).post('/api/auth/verify/resend').set(auth(signup.body.token));
     expect(resend.statusCode).toBe(503);
-    expect(resend.body.error).toMatch(/Ask its operator/);
+    expect(resend.body.error).toMatch(/A moderator can confirm/);
   });
 });
 

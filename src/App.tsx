@@ -1,4 +1,4 @@
-import { useState, useEffect, useId, useRef, lazy, Suspense } from 'react';
+import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { MotionConfig } from 'framer-motion';
 import LandingPage from './components/LandingPage';
@@ -10,13 +10,10 @@ import TimerPill from './components/TimerPill';
 import PageTransition from './components/PageTransition';
 import { useScrollMemory } from './lib/navigation';
 import AccountSheet, { type AccountMode } from './components/AccountSheet';
-import { api } from './lib/api';
-import { setOperatorToken } from './lib/session';
 import { useAccountRefresh } from './lib/useAccount';
 import { ACCOUNT_PROMPT_EVENT, type AccountPrompt } from './lib/accountPrompt';
 import ErrorBoundary from './components/ErrorBoundary';
-import { Delete } from 'lucide-react';
-import { Button, Field, Sheet, Skeleton, ToastProvider, cn } from './components/ui';
+import { Skeleton, ToastProvider, cn } from './components/ui';
 import { readTheme } from './lib/theme';
 import { isChromeFree } from './lib/destinations';
 
@@ -40,113 +37,6 @@ const ResetPassword = lazy(() => import('./components/EmailLink').then((m) => ({
 // Primitives gallery. Guarded so the chunk is never referenced in a production
 // build; see components/Lab.tsx.
 const Lab = import.meta.env.DEV ? lazy(() => import('./components/Lab')) : null;
-
-/*
- * The operator's PIN. A `Sheet`, so it traps focus, closes on Escape and hands
- * focus back to whatever asked for it.
- *
- * It used to be "Admin access required" and stood in front of every write in
- * the app, so a stranger met it the first time they tried to save anything.
- * Writes go to the device now and need nothing. The PIN opens only the site
- * operator's tools, so this prompt is only ever seen by the operator.
- */
-function AuthModal({ open, onClose, onSuccess }: { open: boolean, onClose: () => void, onSuccess: () => void }) {
-  const [pin, setPin] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const fieldRef = useRef<HTMLInputElement>(null);
-  const formId = useId();
-
-  // A fresh prompt each time: a PIN left in the field from the last attempt,
-  // or the last attempt's error, is not this attempt's state.
-  useEffect(() => {
-    if (open) {
-      setPin('');
-      setError('');
-    }
-  }, [open]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-    try {
-      const { token } = await api.submitPin(pin);
-      setOperatorToken(token);
-      onSuccess();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'That PIN was not accepted.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <Sheet
-      open={open}
-      onClose={onClose}
-      title="Operator sign-in"
-      size="sm"
-      initialFocus={fieldRef}
-      footer={
-        <>
-          <Button type="button" variant="ghost" size="lg" onClick={onClose}>Cancel</Button>
-          <Button type="submit" form={formId} variant="primary" size="lg" className="min-w-32" busy={loading}>
-            {loading ? 'Verifying…' : 'Submit'}
-          </Button>
-        </>
-      }
-    >
-      <form id={formId} onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <p className="text-sm text-ink-muted">
-          The operator PIN opens the site's own tools: server backups, photo re-hosting and the shared
-          cookbook. Your recipes never need it.
-        </p>
-        <Field
-          ref={fieldRef}
-          label="PIN"
-          hideLabel
-          type="password"
-          autoComplete="current-password"
-          value={pin}
-          onChange={(e) => setPin(e.target.value)}
-          placeholder="Enter PIN"
-          error={error || undefined}
-          className="hidden md:flex"
-        />
-        {/* The mobile keypad, with its own readout of how many digits are in. */}
-        <div className="flex flex-col gap-3 md:hidden">
-          <output
-            aria-label={`${pin.length} ${pin.length === 1 ? 'digit' : 'digits'} entered`}
-            className="flex h-12 items-center justify-center rounded-control border border-rule bg-paper-sunk font-sans text-2xl tracking-[0.5em] text-ink"
-          >
-            {pin.replace(/./g, '•')}
-          </output>
-          <div className="grid grid-cols-3 gap-px">
-            {['1', '2', '3', '4', '5', '6', '7', '8', '9', 'C', '0', '<'].map((key) => (
-              <button
-                key={key}
-                type="button"
-                aria-label={key === 'C' ? 'Clear' : key === '<' ? 'Delete last digit' : undefined}
-                onClick={() => {
-                  if (key === 'C') setPin('');
-                  else if (key === '<') setPin(pin.slice(0, -1));
-                  else setPin(pin + key);
-                }}
-                className="h-14 rounded-key border border-rule bg-paper-raised font-sans text-xl text-ink transition-colors active:bg-ink active:text-paper"
-              >
-                {key === '<' ? <Delete className="mx-auto h-5 w-5" aria-hidden="true" /> : key}
-              </button>
-            ))}
-          </div>
-          {error ? (
-            <p role="alert" className="text-sm text-fault">{error}</p>
-          ) : null}
-        </div>
-      </form>
-    </Sheet>
-  );
-}
 
 /* While a screen's code arrives: the shape of a page, never the word "Loading". */
 function RouteSkeleton() {
@@ -202,7 +92,6 @@ function AnimatedRoutes() {
 const SHARED_PATH = /^\/(r\/|@|verify|reset)/;
 
 function App() {
-  const [showAuthModal, setShowAuthModal] = useState(false);
   useEffect(() => {
     const path = window.location.pathname;
     if (!localStorage.getItem('hasVisited') && path !== '/welcome' && !SHARED_PATH.test(path)) {
@@ -221,16 +110,6 @@ function App() {
     return () => {
       mq.removeEventListener('change', handleSystemTheme);
     };
-  }, []);
-
-  // An operator endpoint answered 401: the operator's session has lapsed.
-  useEffect(() => {
-    const handleAuthReq = () => {
-      setOperatorToken(null);
-      setShowAuthModal(true);
-    };
-    window.addEventListener('auth-required', handleAuthReq);
-    return () => window.removeEventListener('auth-required', handleAuthReq);
   }, []);
 
   return (
@@ -258,7 +137,7 @@ function App() {
         <Route path="/welcome" element={<LandingPage />} />
         <Route
           path="*"
-          element={<AppShell showAuthModal={showAuthModal} setShowAuthModal={setShowAuthModal} />}
+          element={<AppShell />}
         />
       </Routes>
     </Router>
@@ -273,13 +152,7 @@ function App() {
  * network feature says so itself when it can't be reached, and Settings
  * reports whether the server is reachable.
  */
-function AppShell({
-  showAuthModal,
-  setShowAuthModal,
-}: {
-  showAuthModal: boolean;
-  setShowAuthModal: (open: boolean) => void;
-}) {
+function AppShell() {
   const [account, setAccountSheet] = useState<{ open: boolean; mode: AccountMode; reason?: string }>({
     open: false,
     mode: 'signin',
@@ -336,11 +209,6 @@ function AppShell({
         </main>
         <TabBar />
         <TimerManager />
-        <AuthModal
-          open={showAuthModal}
-          onClose={() => setShowAuthModal(false)}
-          onSuccess={() => setShowAuthModal(false)}
-        />
         <AccountSheet
           open={account.open}
           mode={account.mode}

@@ -3,7 +3,8 @@ import { MemoryRouter } from 'react-router-dom';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import AISubstitutionsModal from './AISubstitutionsModal';
 import { api } from '../lib/api';
-import { setOperatorToken } from '../lib/session';
+import { setAccount } from '../lib/session';
+import { signInAs } from '../test/utils';
 
 vi.mock('../lib/api', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../lib/api')>()),
@@ -29,20 +30,15 @@ describe('AISubstitutionsModal Component', () => {
     expect(screen.getByText(/Buttermilk/i)).toBeInTheDocument();
   });
 
-  it('explains why the AI is closed, rather than asking a stranger for a PIN', () => {
-    const asked = vi.fn();
-    window.addEventListener('auth-required', asked);
+  it('explains why the AI is closed to a stranger', () => {
     renderModal();
-
     expect(screen.queryByRole('button', { name: /Generate Substitutions/i })).not.toBeInTheDocument();
     expect(screen.getByText(/runs on Proof's server/i)).toBeInTheDocument();
-    expect(asked).not.toHaveBeenCalled();
-    window.removeEventListener('auth-required', asked);
   });
 
-  describe('for the operator', () => {
-    beforeEach(() => setOperatorToken('operator-token'));
-    afterEach(() => setOperatorToken(null));
+  describe('for a confirmed account', () => {
+    beforeEach(() => void signInAs());
+    afterEach(() => setAccount(null));
 
     it('fetches and displays AI substitutions', async () => {
       vi.mocked(api.getAISubstitutions).mockResolvedValue({

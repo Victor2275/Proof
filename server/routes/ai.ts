@@ -8,7 +8,7 @@ import { fetchPublicPage, UnsafeUrlError } from '../services/safeFetch.js';
 
 /*
  * The AI, and the import that sits beside it. Every route here costs money or
- * fetches on a user's behalf, so each is behind requireAi (the operator, or a
+ * fetches on a user's behalf, so each is behind requireAi (a Pro account, or a
  * confirmed account's monthly allowance) and each bounds its input.
  */
 const router = Router();

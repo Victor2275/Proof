@@ -25,7 +25,6 @@ import {
 /*
  * Accounts and sessions (LAUNCH_PLAN.md, Phase 2).
  *
- *   POST   /api/auth/pin         operator PIN → operator session
  *   POST   /api/auth/signup      create an account → user session
  *   POST   /api/auth/login       email + password → user session
  *   POST   /api/auth/logout      end this session
@@ -41,8 +40,7 @@ import {
  */
 const router = Router();
 
-/** The PIN and passwords are guessable by brute force; everything that checks one is throttled. */
-const pinLimiter = rateLimit({ windowMs: 60_000, limit: 5, message: { error: 'Too many attempts. Try again in a minute.' } });
+/** Passwords are guessable by brute force; everything that checks one is throttled. */
 const credentialLimiter = rateLimit({
   windowMs: 15 * 60_000,
   limit: 10,
@@ -83,13 +81,6 @@ const fail = (res: Response, err: unknown) => {
 const guard = (handler: (req: Request, res: Response) => Promise<unknown>) =>
   (req: Request, res: Response, _next: NextFunction) => handler(req, res).catch((err) => fail(res, err));
 
-// POST /api/auth/pin
-router.post('/pin', pinLimiter, guard(async (req, res) => {
-  const configured = process.env.ADMIN_PIN;
-  if (configured && req.body?.pin !== configured) return res.status(401).json({ error: 'Invalid PIN' });
-  res.json({ token: await createSession({ kind: 'operator' }) });
-}));
-
 // POST /api/auth/signup
 router.post('/signup', credentialLimiter, guard(async (req, res) => {
   const email = normaliseEmail(req.body?.email);
@@ -101,7 +92,7 @@ router.post('/signup', credentialLimiter, guard(async (req, res) => {
 
   const displayName = typeof req.body?.displayName === 'string' ? req.body.displayName.trim().slice(0, 60) : '';
   const user = await User.create({ email, handle, displayName, passwordHash: await hashPassword(password) });
-  const token = await createSession({ kind: 'user', userId: user._id });
+  const token = await createSession({ userId: user._id });
   // Best-effort: the account exists whether or not the email goes out.
   const verificationSent = await sendVerification(req, user).catch(() => false);
   res.status(201).json({ token, user: privateUser(user), verificationSent });
@@ -124,7 +115,7 @@ router.post('/login', credentialLimiter, guard(async (req, res) => {
       suspended: true,
     });
   }
-  const token = await createSession({ kind: 'user', userId: user._id });
+  const token = await createSession({ userId: user._id });
   res.json({ token, user: privateUser(user) });
 }));
 
@@ -166,7 +157,7 @@ router.post('/password', requireUser, credentialLimiter, guard(async (req, res) 
   await user.save();
   // Every other device is signed out; this one gets a fresh session.
   await endUserSessions(user._id);
-  res.json({ token: await createSession({ kind: 'user', userId: user._id }) });
+  res.json({ token: await createSession({ userId: user._id }) });
 }));
 
 // GET /api/auth/export
@@ -193,7 +184,7 @@ router.post('/verify/resend', requireUser, emailLimiter, guard(async (req, res) 
     return res.status(503).json({
       error: emailConfigured()
         ? "The email couldn't be sent just now. Try again in a few minutes."
-        : "This Proof site can't send email yet. Ask its operator to confirm your account.",
+        : "This Proof site can't send email yet. A moderator can confirm your account.",
     });
   }
   res.json({ sent: true });

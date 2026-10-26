@@ -6,7 +6,7 @@ import Profile from './Profile';
 import Moderation from './Moderation';
 import SharedRecipeCommunity from './SharedRecipeCommunity';
 import { api, ApiError } from '../lib/api';
-import { setAccount, setOperatorToken, type Account } from '../lib/session';
+import { setAccount, type Account } from '../lib/session';
 import type { PublishedRecipe } from '../lib/types';
 import { renderScreen } from '../test/utils';
 
@@ -50,7 +50,6 @@ const titles = () => screen.getAllByRole('heading', { level: 3 }).map((h) => h.t
 
 afterEach(() => {
   setAccount(null);
-  setOperatorToken(null);
 });
 
 describe('Discover', () => {
@@ -222,20 +221,20 @@ describe('a shared recipe\'s conversation', () => {
     await user.type(await screen.findByLabelText("What's wrong with it?"), 'Spam');
     await user.click(screen.getByRole('button', { name: 'Send report' }));
     await waitFor(() => expect(api.report).toHaveBeenCalledWith({ targetType: 'comment', targetId: 'c1', reason: 'Spam' }));
-    expect(await screen.findByText(/The operator will look at it/)).toBeInTheDocument();
+    expect(await screen.findByText(/A moderator will look at it/)).toBeInTheDocument();
   });
 });
 
 describe('the moderation queue', () => {
-  it('is nothing at all to anyone but the operator', () => {
+  it('is nothing at all to anyone but staff', () => {
     renderScreen(<Moderation />);
     expect(screen.getByText(/That page isn't in this book/)).toBeInTheDocument();
     expect(api.getModerationQueue).not.toHaveBeenCalled();
   });
 
-  it('lets the operator approve a held recipe and hold one back with a reason', async () => {
+  it('lets a moderator approve a held recipe and hold one back with a reason', async () => {
     const user = userEvent.setup();
-    setOperatorToken('op');
+    setAccount('token', { ...ADA, moderator: true });
     vi.mocked(api.getModerationQueue).mockResolvedValue({
       recipes: [
         { ...shared({ _id: 'h1', title: 'Held Rye', authorHandle: 'bea', instructions: ['Mix.'] }), sourceLocalId: 'x', sourceUpdatedAt: null, unpublishedAt: null, moderation: { state: 'pending', reason: 'Looks copied.' } },

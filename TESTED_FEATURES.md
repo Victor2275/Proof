@@ -54,9 +54,9 @@ The bake log lives on its recipe: see section 18.
 - [ ] **QR Code Deep-links**: qrcode.react for recipe sharing.
 
 ## 6. Security & Auth
-- [ ] **Operator PIN**: only the Operator tools and the AI ask for it; saving a recipe, bake, note or pantry item never does.
+- [ ] **No PIN**: nothing asks for a PIN; saving a recipe, bake, note or pantry item needs no account.
 - [ ] **Crypto-Random Session Tokens**: sessions survive a server restart; the `sessions` collection holds hashes, not tokens.
-- [ ] **Rate Limiting**: PIN, sign-in and AI routes throttle repeated attempts from one caller, not from everyone at once.
+- [ ] **Rate Limiting**: sign-in and AI routes throttle repeated attempts from one caller, not from everyone at once.
 
 ## 2a. Dashboard (Phase 2 — hero surface)
 Rebuilt as the cookbook home: see section 19.
@@ -65,7 +65,7 @@ Rebuilt as the cookbook home: see section 19.
 
 ## 2b. Application shell (Phase 2)
 - [ ] **Shell**: replaced in the UI overhaul — see section 17.
-- [ ] **PIN/status bars retheme**: PIN keypad still works exactly as before.
+- [ ] **Status bars retheme**: the offline and stale bars read in both themes.
 
 ## 2c. Photo plates (Phase 2a)
 - [ ] **Bake history by recipe (Phase 5)**: one row per recipe, oldest bake on the left, counting attempts not photographs.
@@ -109,7 +109,7 @@ Rebuilt as the bake sheet: see section 18.
 ## 7a. Analytics, Settings, Landing, 404 (Phase 7)
 - [ ] **Settings**: see section 21.
 - [ ] **Theme**: exactly one of Light/Dark/System is chosen; picking System forgets the stored preference and follows the device.
-- [ ] **Backup without a PIN**: names the admin PIN as the recovery rather than failing silently.
+- [ ] **Backup without the owner**: Server backup is not offered to anyone but the owner account.
 - [ ] **Library meter**: 3 of 203 lights one cell, not zero, and shows no orange at the top.
 - [ ] **Landing**: see section 20.
 - [ ] **Landing has no app chrome**: no top bar, no tab bar, at every width.
@@ -149,7 +149,6 @@ Rebuilt as the bake sheet: see section 18.
 - [ ] **Cookbook header**: at 768 and 1024 the search sits full width under the title with Inspire Me beside it; at 1280 they share the title's row; nothing scrolls sideways.
 - [ ] **Sub on a touch tablet**: the ingredient Sub control is visible without hovering.
 - [ ] **Phone browser top**: every page's headline has space above it, not flush to the top edge.
-- [ ] **PIN prompt**: desktop focuses the PIN field; the phone keypad's C and ⌫ keys clear and delete; a wrong PIN shows the error inside the dialog; reopening starts empty.
 - [ ] **AI substitutions**: a skeleton while waiting; a sentence if nothing comes back; Try again after a failure; Escape closes.
 - [ ] **Sub-recipe drawer**: rises from the bottom, shows a skeleton then the recipe; with the server down it says so and offers Try again.
 - [ ] **Baking Mode sheets**: Ingredients, Log bake and Voice commands open as sheets; Escape closes the sheet without leaving Baking Mode; the arrow keys do not change the step while one is open.
@@ -202,7 +201,7 @@ Rebuilt as the bake sheet: see section 18.
 - [ ] **String-id migration**: a dry run against a copy of the database reports the counts and writes nothing; `--apply` backs up first, then every record and reference is a string; a second run reports nothing to do.
 - [ ] **Published photos kept**: after the nightly sweep, a published recipe whose library record was deleted still shows its photograph.
 - [ ] **Photographed legacy bake**: a bake whose photos are only in its labelled list shows them in the gallery and on the recipe's previous makes.
-- [ ] **AI gate**: as a stranger, Import from a URL, Restructure and Substitutions explain why they are closed instead of asking for a PIN.
+- [ ] **AI gate**: as a stranger, Import from a URL, Restructure and Substitutions explain why they are closed.
 
 ## 11. Public launch — the shared cookbook, read side
 - [ ] **Published API**: `/api/published` lists only approved, live recipes; `/api/published/<slug>` returns one; with the database down both answer 503 saying your own recipes are unaffected.
@@ -429,7 +428,7 @@ Rebuilt as the bake sheet: see section 18.
 - [ ] **Old addresses**: `/grocery` and `/pantry` still open the matching Shop view.
 - [ ] **Discover layout**: one search and Sort; Tags opens a sheet; the chosen tag shows as a chip that removes itself; the first recipe spans the page with its headnote, the rest two to a row.
 - [ ] **Bylines**: a shared recipe that has been baked reads "@handle · baked N times"; one never baked shows only the handle.
-- [ ] **Settings order**: Appearance, While you bake, Your cookbook, Account, Help, then Operator (for the operator).
+- [ ] **Settings order**: Appearance, While you bake, Your cookbook, Account, Help, then Owner (for the owner account).
 - [ ] **Switches**: every on/off is a switch; pressing the words toggles it; a screen reader announces "switch, on/off" with the label alone; each persists across a reload.
 - [ ] **Handwritten notes**: switching it on sets margin notes, bake-sheet notes, baking mode's last-time note and community notes in a handwriting face, with no flash of the old face on reload; off returns them.
 - [ ] **404**: `/nowhere` reads "That page isn't in this book."; searching "rye" opens the cookbook searching rye; "Back to the cookbook" goes home.
@@ -450,13 +449,13 @@ Rebuilt as the bake sheet: see section 18.
 
 ## 23. Moderators
 - [ ] **Moderator role**: a moderator's `/api/auth/me` says `moderator: true`; its `/@handle` page shows a Moderator tag.
-- [ ] **Who may moderate**: a moderator account opens `/moderation` without the operator PIN; an ordinary account sees the 404 there and stays signed in.
+- [ ] **Who may moderate**: a moderator account opens `/moderation`; an ordinary account sees the 404 there and stays signed in.
 - [ ] **First moderator script**: `make-moderator.js --handle=<handle>` confirms the account and makes it a moderator; `--remove` takes it away; both appear in the log.
 - [ ] **Viewing accounts**: Moderation → Accounts lists accounts newest first with email and tags; search finds by handle, email and name; Show narrows to unconfirmed, moderators and suspended.
 - [ ] **Account details**: opening an account shows its facts, devices signed in, published recipes with their state, recent comments, reports against it and its history.
 - [ ] **Confirming**: Confirm on an unconfirmed row confirms the account; the account can then publish and comment.
-- [ ] **Making moderators**: Make moderator on a confirmed account works and offers Undo; an unconfirmed account has no Make moderator; your own account shows no actions.
-- [ ] **Removing moderators**: Remove moderator on another moderator works and offers Undo; they lose the Moderation page.
+- [ ] **Making moderators**: as the owner, Make moderator on a confirmed account works and offers Undo; an unconfirmed account has no Make moderator; your own account shows no actions; a moderator sees no Make moderator at all.
+- [ ] **Removing moderators**: as the owner, Remove moderator on a moderator works and offers Undo; they lose the Moderation page.
 - [ ] **Suspending**: Suspend asks for a reason first; once suspended the account is signed out, its sign-in shows the reason, its recipes, comments and profile page are gone from view; Lift suspension (or Undo) puts them back.
 - [ ] **No suspending moderators**: a moderator's sheet has no Suspend.
 - [ ] **Sign out everywhere**: ends every session of the account; its devices are signed out on their next request.
@@ -475,4 +474,14 @@ Rebuilt as the bake sheet: see section 18.
 - [ ] **Back after leaving**: Start cooking → × → Stop this bake (or Leave for now) → browser Back: you are not returned to baking mode.
 - [ ] **Back after logging**: finish a bake and log it, then press Back: baking mode does not reopen.
 - [ ] **Avatar entries**: no Account or Export or import entry; signed in, the name at the top opens your `/@handle` page.
+
+## 25. The owner account (the PIN retired)
+- [ ] **Make the owner**: in `server/`, `npm run make-owner -- --handle=madboy2275` prints that the account is confirmed (if it wasn't), on Pro with no end date, and the owner; running it again says it already was.
+- [ ] **No PIN anywhere**: Settings has no Operator panel or PIN sign-in signed out or as an ordinary account; `POST /api/auth/pin` answers 404.
+- [ ] **Owner panel**: signed in as the owner, Settings shows Owner with Moderation, Copy the server library here, Server backup and Re-host photographs, and each works.
+- [ ] **Owner's AI**: the owner's AI sheets say "AI · Unlimited".
+- [ ] **Owner protected**: as a moderator, the owner's account in Moderation → Accounts shows an Owner tag and "The owner's account. It can't be changed here." with no actions.
+- [ ] **Owner tag on the profile**: `/@madboy2275` shows Owner.
+- [ ] **Moderators filter**: Moderation → Accounts → Show moderators lists the owner too.
+- [ ] **Log**: an action by the owner reads "@madboy2275 …" in Moderation → Log.
 

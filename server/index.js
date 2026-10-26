@@ -76,7 +76,7 @@ app.get(['/api', '/api/health'], (_req, res) => {
 
 // ── Routes ─────────────────────────────────────────────────────────────────
 // The cookbook lives on each device. The server keeps the shared cookbook,
-// the operator's pre-Phase-1 library (read once per device), and the AI.
+// the owner's pre-Phase-1 library (read once per device), and the AI.
 app.use('/api/library', libraryRouter);
 app.use('/api/timers', timersRouter);
 app.use('/api/published', publishedRouter);

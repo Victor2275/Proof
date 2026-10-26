@@ -4,11 +4,11 @@
  * The cookbook itself is not here: it lives on the device and is read and
  * written through src/lib/repo. What remains is what only a server can do —
  * the shared cookbook, accounts, the AI, the live kitchen timers, and the
- * operator's tools — and every caller of it has to be ready for the network
+ * owner's tools — and every caller of it has to be ready for the network
  * not to be there, because now that is the normal case rather than an outage.
  */
 import type { Profile, Publication, PublishedComment, PublishedRecipe, PublishedStats, Recipe } from './types';
-import { operatorToken, setAccount, userToken, type Account } from './session';
+import { setAccount, userToken, type Account } from './session';
 
 export const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:3001/api');
 
@@ -31,23 +31,12 @@ export class ApiError extends Error {
 export const OFFLINE_MESSAGE = "Can't reach the server. Your cookbook is unaffected; try again when you're online.";
 
 /*
- * Which session a request carries:
- *
- *   operator  the operator PIN's session; a 401 asks for the PIN again
- *   user      the signed-in account; a 401 means it ended elsewhere, so the
- *             device signs out and asks the person to sign in again
- *   either    the operator's if held, else the account's (the AI and moderation, which both may use)
- *   none      nothing
+ * Whether a request carries the signed-in account's session. A 401 on one
+ * means the session ended elsewhere, so the device signs out and asks the
+ * person to sign in again. What the account may do — moderate, the owner's
+ * tools — the server decides from its role.
  */
-type Auth = 'operator' | 'user' | 'either' | 'none';
-
-function tokenFor(auth: Auth): { token: string | null; as: 'operator' | 'user' | null } {
-  const op = operatorToken();
-  const user = userToken();
-  if (auth === 'operator' || (auth === 'either' && op)) return { token: op, as: 'operator' };
-  if (auth === 'user' || auth === 'either') return { token: user, as: 'user' };
-  return { token: null, as: null };
-}
+type Auth = 'user' | 'none';
 
 interface Options {
   method?: string;
@@ -58,7 +47,7 @@ interface Options {
 async function call(path: string, { method = 'GET', body, auth = 'none' }: Options): Promise<Response> {
   const headers: Record<string, string> = {};
   if (body !== undefined) headers['Content-Type'] = 'application/json';
-  const { token, as } = tokenFor(auth);
+  const token = auth === 'user' ? userToken() : null;
   if (token) headers.Authorization = `Bearer ${token}`;
 
   let res: Response;
@@ -67,9 +56,7 @@ async function call(path: string, { method = 'GET', body, auth = 'none' }: Optio
   } catch {
     throw new ApiError(OFFLINE_MESSAGE, 0);
   }
-  if (res.status === 401 && as === 'operator') {
-    window.dispatchEvent(new Event('auth-required'));
-  } else if (res.status === 401 && as === 'user' && token) {
+  if (res.status === 401 && token) {
     // The session ended on the server: a password change elsewhere, a deleted
     // account, or it simply expired. This device stops pretending otherwise.
     setAccount(null);
@@ -103,7 +90,7 @@ export interface PublishedPage {
   limit: number;
 }
 
-/** What the server's legacy library endpoints hold: the operator's records from before Phase 1. */
+/** What the server's legacy library endpoints hold: the owner's records from before Phase 1. */
 export interface ServerLibrary {
   recipes: unknown[];
   bakeLogs: unknown[];
@@ -153,6 +140,7 @@ export interface StaffAccount {
   email: string;
   emailVerified: boolean;
   moderator: boolean;
+  owner?: boolean;
   pro: boolean;
   plan: 'free' | 'pro';
   joinedAt: string;
@@ -173,7 +161,8 @@ export interface AccountPage {
 /** One line of the moderation log. */
 export interface LogEntry {
   _id: string;
-  actorKind: 'operator' | 'moderator';
+  /** 'operator': a script run on the server, or the retired PIN in older entries. */
+  actorKind: 'operator' | 'moderator' | 'owner';
   actorHandle: string;
   action: string;
   targetType: 'account' | 'recipe' | 'comment' | 'report';
@@ -307,71 +296,69 @@ export const api = {
 
   /* ── AI ──────────────────────────────────────────────────────────────── */
 
-  extractRecipe: (url: string) => request<Partial<Recipe>>('/extract', { method: 'POST', body: { url }, auth: 'either' }),
+  extractRecipe: (url: string) => request<Partial<Recipe>>('/extract', { method: 'POST', body: { url }, auth: 'user' }),
 
   /** A photographed page of a recipe, as a data URL, read into a recipe. */
   readRecipePhoto: (image: string) =>
-    request<Partial<Recipe>>('/ai-photo', { method: 'POST', body: { image }, auth: 'either' }),
+    request<Partial<Recipe>>('/ai-photo', { method: 'POST', body: { image }, auth: 'user' }),
 
   restructureRecipe: (rawText: string) =>
-    request<Partial<Recipe>>('/ai-restructure', { method: 'POST', body: { rawText }, auth: 'either' }),
+    request<Partial<Recipe>>('/ai-restructure', { method: 'POST', body: { rawText }, auth: 'user' }),
 
   getAISubstitutions: (ingredientName: string, recipeTitle?: string) =>
     request<{ substitutions: { substitute: string; ratio: string; notes: string }[] }>('/ai-substitutions', {
       method: 'POST',
       body: { ingredientName, recipeTitle },
-      auth: 'either',
+      auth: 'user',
     }),
 
-  /* ── Operator ────────────────────────────────────────────────────────── */
-
-  submitPin: (pin: string) => request<{ token: string }>('/auth/pin', { method: 'POST', body: { pin } }),
+  /* ── The owner's tools ───────────────────────────────────────────────── */
 
   rehostImages: () =>
     request<{ recipesUpdated: number; bakeLogsUpdated: number; rehostedCount: number }>('/maintenance/rehost-images', {
       method: 'POST',
-      auth: 'operator',
+      auth: 'user',
     }),
 
   /** The server's whole database as one JSON file. */
-  downloadServerBackup: () => download('/backup', 'operator'),
+  downloadServerBackup: () => download('/backup', 'user'),
 
-  /** The operator's pre-Phase-1 library, to bring onto this device. */
-  getServerLibrary: () => request<ServerLibrary>('/library', { auth: 'operator' }),
+  /** The owner's pre-Phase-1 library, to bring onto this device. */
+  getServerLibrary: () => request<ServerLibrary>('/library', { auth: 'user' }),
 
-  /* ── Moderation: the operator, or a moderator account ────────────────── */
+  /* ── Moderation: moderators and the owner ────────────────────────────── */
 
-  getModerationQueue: () => request<ModerationQueue>('/moderation/queue', { auth: 'either' }),
+  getModerationQueue: () => request<ModerationQueue>('/moderation/queue', { auth: 'user' }),
 
   moderateRecipe: (id: string, action: 'approve' | 'reject' | 'takedown', reason = '') =>
-    request<{ ok: true }>(`/moderation/recipes/${encodeURIComponent(id)}`, { method: 'POST', body: { action, reason }, auth: 'either' }),
+    request<{ ok: true }>(`/moderation/recipes/${encodeURIComponent(id)}`, { method: 'POST', body: { action, reason }, auth: 'user' }),
 
   moderateComment: (id: string, action: 'approve' | 'remove', reason = '') =>
-    request<{ ok: true }>(`/moderation/comments/${encodeURIComponent(id)}`, { method: 'POST', body: { action, reason }, auth: 'either' }),
+    request<{ ok: true }>(`/moderation/comments/${encodeURIComponent(id)}`, { method: 'POST', body: { action, reason }, auth: 'user' }),
 
   resolveReport: (id: string, resolution: string) =>
-    request<{ ok: true }>(`/moderation/reports/${encodeURIComponent(id)}`, { method: 'POST', body: { resolution }, auth: 'either' }),
+    request<{ ok: true }>(`/moderation/reports/${encodeURIComponent(id)}`, { method: 'POST', body: { resolution }, auth: 'user' }),
 
   getModerationLog: (offset = 0) =>
-    request<{ items: LogEntry[]; total: number }>(`/moderation/log?offset=${offset}`, { auth: 'either' }),
+    request<{ items: LogEntry[]; total: number }>(`/moderation/log?offset=${offset}`, { auth: 'user' }),
 
   listAccounts: (filter: AccountFilter, q = '', offset = 0) =>
-    request<AccountPage>(`/accounts?${new URLSearchParams({ filter, q, offset: String(offset) })}`, { auth: 'either' }),
+    request<AccountPage>(`/accounts?${new URLSearchParams({ filter, q, offset: String(offset) })}`, { auth: 'user' }),
 
-  getAccount: (id: string) => request<AccountDetail>(`/accounts/${encodeURIComponent(id)}`, { auth: 'either' }),
+  getAccount: (id: string) => request<AccountDetail>(`/accounts/${encodeURIComponent(id)}`, { auth: 'user' }),
 
   confirmAccount: (id: string) =>
-    request<{ account: StaffAccount }>(`/accounts/${encodeURIComponent(id)}/confirm`, { method: 'POST', auth: 'either' }),
+    request<{ account: StaffAccount }>(`/accounts/${encodeURIComponent(id)}/confirm`, { method: 'POST', auth: 'user' }),
 
   setAccountRole: (id: string, role: 'moderator' | 'user') =>
-    request<{ account: StaffAccount }>(`/accounts/${encodeURIComponent(id)}/role`, { method: 'POST', body: { role }, auth: 'either' }),
+    request<{ account: StaffAccount }>(`/accounts/${encodeURIComponent(id)}/role`, { method: 'POST', body: { role }, auth: 'user' }),
 
   suspendAccount: (id: string, reason: string) =>
-    request<{ account: StaffAccount }>(`/accounts/${encodeURIComponent(id)}/suspend`, { method: 'POST', body: { reason }, auth: 'either' }),
+    request<{ account: StaffAccount }>(`/accounts/${encodeURIComponent(id)}/suspend`, { method: 'POST', body: { reason }, auth: 'user' }),
 
   unsuspendAccount: (id: string) =>
-    request<{ account: StaffAccount }>(`/accounts/${encodeURIComponent(id)}/unsuspend`, { method: 'POST', auth: 'either' }),
+    request<{ account: StaffAccount }>(`/accounts/${encodeURIComponent(id)}/unsuspend`, { method: 'POST', auth: 'user' }),
 
   signOutAccount: (id: string) =>
-    request<{ ok: true }>(`/accounts/${encodeURIComponent(id)}/signout`, { method: 'POST', auth: 'either' }),
+    request<{ ok: true }>(`/accounts/${encodeURIComponent(id)}/signout`, { method: 'POST', auth: 'user' }),
 };

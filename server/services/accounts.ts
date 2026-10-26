@@ -92,7 +92,9 @@ export const publicUser = (user: UserDoc) => ({
   displayName: user.displayName,
   bio: user.bio,
   pro: user.plan === 'pro',
-  moderator: user.role === 'moderator',
+  /** Staff: a moderator, or the owner. */
+  moderator: user.role === 'moderator' || user.role === 'owner',
+  owner: user.role === 'owner',
   joinedAt: user.createdAt,
 });
 

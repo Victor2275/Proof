@@ -6,10 +6,9 @@ import { User } from '../models/User.js';
 /*
  * Who is calling.
  *
- * Two kinds of session, both opaque 256-bit tokens sent as a bearer header:
- *
- *   user      an account (Phase 2) — publishing, and later sync
- *   operator  whoever holds ADMIN_PIN — moderation, backups, takedowns
+ * One kind of session: an account's, an opaque 256-bit token sent as a bearer
+ * header. What an account may do follows from its role — a moderator works
+ * the queue, and the owner also holds the site's tools. There is no PIN.
  *
  * A bearer header rather than a cookie because the Android app is a WebView
  * on another origin, where Android blocks third-party cookies by default; a
@@ -19,7 +18,6 @@ import { User } from '../models/User.js';
  */
 
 export const USER_SESSION_MS = 30 * 24 * 60 * 60 * 1000;
-export const OPERATOR_SESSION_MS = 24 * 60 * 60 * 1000;
 
 const hashToken = (token) => crypto.createHash('sha256').update(token).digest('hex');
 
@@ -28,10 +26,9 @@ export const bearerToken = (req) => {
   return typeof header === 'string' && header.startsWith('Bearer ') ? header.slice(7).trim() : null;
 };
 
-export async function createSession({ kind, userId = null }) {
+export async function createSession({ userId }) {
   const token = crypto.randomBytes(32).toString('base64url');
-  const ttl = kind === 'operator' ? OPERATOR_SESSION_MS : USER_SESSION_MS;
-  await Session.create({ _id: hashToken(token), kind, userId, expiresAt: new Date(Date.now() + ttl) });
+  await Session.create({ _id: hashToken(token), kind: 'user', userId, expiresAt: new Date(Date.now() + USER_SESSION_MS) });
   return token;
 }
 
@@ -54,17 +51,32 @@ export async function endUserSessions(userId) {
 const unavailable = (res) =>
   res.status(503).json({ error: 'Sign-in is unavailable right now. Your cookbook is unaffected; try again shortly.', degraded: true });
 
-/*
- * The site operator: moderation, backups, takedowns. Not a user role — the PIN
- * proves it. With no ADMIN_PIN set (local development) every caller is the
- * operator.
- */
-export const requireOperator = async (req, res, next) => {
-  if (!process.env.ADMIN_PIN) return next();
-  if (mongoose.connection.readyState !== 1) return unavailable(res);
+/** The signed-in, unsuspended account calling, or null. */
+async function callerOf(req) {
   const session = await readSession(bearerToken(req));
-  if (session?.kind === 'operator') return next();
-  res.status(401).json({ error: 'That needs the operator PIN.' });
+  const user = session?.kind === 'user' ? await User.findById(session.userId) : null;
+  return user && !user.suspendedAt ? user : null;
+}
+
+export const isStaff = (user) => user?.role === 'moderator' || user?.role === 'owner';
+
+/*
+ * The owner account: the site's tools — backups, the server library, photo
+ * re-hosting — and making moderators. Sets req.user and req.staff.
+ *
+ * Another account gets 403, not 401: its session is fine, and a 401 would
+ * sign the device out.
+ */
+export const requireOwner = async (req, res, next) => {
+  if (mongoose.connection.readyState !== 1) return unavailable(res);
+  const user = await callerOf(req);
+  if (user?.role === 'owner') {
+    req.user = user;
+    req.staff = { kind: 'owner', userId: user._id, handle: user.handle };
+    return next();
+  }
+  if (!user) return res.status(401).json({ error: 'Sign in as the owner to do that.' });
+  res.status(403).json({ error: "That is for the site's owner." });
 };
 
 /**
@@ -83,28 +95,19 @@ export const loadUser = async (req, _res, next) => {
 };
 
 /*
- * The operator or a moderator account: the moderation queue, accounts, the
- * log. Sets req.staff (services/moderationLog.ts) to say which, for the log.
- * With no ADMIN_PIN set (local development) every caller is the operator, as
- * for requireOperator.
- *
- * An account that is not a moderator gets 403, not 401: its session is fine,
- * and a 401 would sign the device out.
+ * A moderator or the owner: the moderation queue, accounts, the log. Sets
+ * req.staff (services/moderationLog.ts) to say who, for the log. Refuses as
+ * requireOwner does.
  */
 export const requireModerator = async (req, res, next) => {
   if (mongoose.connection.readyState !== 1) return unavailable(res);
-  const session = await readSession(bearerToken(req));
-  const user = session?.kind === 'user' ? await User.findById(session.userId) : null;
-  if (user && !user.suspendedAt && user.role === 'moderator') {
+  const user = await callerOf(req);
+  if (isStaff(user)) {
     req.user = user;
-    req.staff = { kind: 'moderator', userId: user._id, handle: user.handle };
+    req.staff = { kind: user.role, userId: user._id, handle: user.handle };
     return next();
   }
-  if (session?.kind === 'operator' || !process.env.ADMIN_PIN) {
-    req.staff = { kind: 'operator', userId: null, handle: '' };
-    return next();
-  }
-  if (!user || user.suspendedAt) return res.status(401).json({ error: 'Sign in as a moderator to do that.' });
+  if (!user) return res.status(401).json({ error: 'Sign in as a moderator to do that.' });
   res.status(403).json({ error: 'That needs a moderator account.' });
 };
 

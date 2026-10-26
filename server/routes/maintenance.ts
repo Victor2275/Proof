@@ -3,7 +3,7 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import cron from 'node-cron';
-import { requireOperator } from '../middleware/auth.js';
+import { requireOwner } from '../middleware/auth.js';
 import { cloudinary, cloudinaryConfigured, rehostImageUrls } from '../services/cloudinary.js';
 import { Recipe } from '../models/Recipe.js';
 import { Note } from '../models/Note.js';
@@ -21,7 +21,7 @@ const sendDegraded = (res: Response) =>
   res.status(503).json({ error: 'The recipe database is unavailable.', degraded: true });
 
 // GET /api/backup
-router.get('/backup', requireOperator, async (_req: Request, res: Response) => {
+router.get('/backup', requireOwner, async (_req: Request, res: Response) => {
   try {
     const [recipes, notes, bakeLogs, pantry] = await Promise.all([
       Recipe.find({}), Note.find({}), BakeLog.find({}), Pantry.find({}),
@@ -36,7 +36,7 @@ router.get('/backup', requireOperator, async (_req: Request, res: Response) => {
 });
 
 // POST /api/maintenance/rehost-images
-router.post('/maintenance/rehost-images', requireOperator, async (_req: Request, res: Response) => {
+router.post('/maintenance/rehost-images', requireOwner, async (_req: Request, res: Response) => {
   if (!dbReady()) return sendDegraded(res);
   if (!cloudinaryConfigured()) return res.status(503).json({ error: 'Cloudinary is not configured on the server.' });
   try {

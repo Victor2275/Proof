@@ -12,9 +12,12 @@ import { ulid } from '../services/ulid.js';
  * unique case-insensitively, so it is stored lowercased.
  *
  * `role` is the one distinction among accounts: a moderator confirms accounts,
- * works the moderation queue and may suspend. The site operator is not a role
- * — the ADMIN_PIN proves it (middleware/auth.js). A suspended account cannot
- * sign in, and what it published is hidden until the suspension is lifted.
+ * works the moderation queue and may suspend. The owner is the site's own
+ * account: a moderator who also holds the site's tools (backups, the library,
+ * photo re-hosting), alone makes and removes moderators, and cannot be
+ * demoted, suspended or signed out by anyone. It is set only by
+ * scripts/make-owner.js. A suspended account cannot sign in, and what it
+ * published is hidden until the suspension is lifted.
  */
 const userSchema = new mongoose.Schema({
   _id: { type: String, default: () => ulid() },
@@ -24,7 +27,7 @@ const userSchema = new mongoose.Schema({
   displayName: { type: String, default: '' },
   bio: { type: String, default: '' },
   emailVerifiedAt: { type: Date, default: null },
-  role: { type: String, enum: ['user', 'moderator'], default: 'user' },
+  role: { type: String, enum: ['user', 'moderator', 'owner'], default: 'user' },
   suspendedAt: { type: Date, default: null },
   suspendedReason: { type: String, default: '' },
   plan: { type: String, enum: ['free', 'pro'], default: 'free' },

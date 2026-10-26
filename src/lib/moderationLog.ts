@@ -21,7 +21,7 @@ const SENTENCE: Record<string, string> = {
   'report.resolve': 'closed a report (%)',
 };
 
-/** "@mod suspended @ada", or "The operator approved Dark Rye". */
+/** "@mod suspended @ada", or "The operator approved Dark Rye" for a server script. */
 export function describeEntry(e: LogEntry) {
   const who = e.actorKind === 'operator' ? 'The operator' : `@${e.actorHandle}`;
   const sentence = SENTENCE[e.action] ?? `${e.action} %`;

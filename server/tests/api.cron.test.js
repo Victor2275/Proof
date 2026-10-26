@@ -5,6 +5,8 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import { app } from '../index.js';
 import { Recipe } from '../models/Recipe.js';
 import { Pantry } from '../models/Pantry.js';
+import { User } from '../models/User.js';
+import { signedIn } from './signIn.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -15,7 +17,6 @@ const __dirname = path.dirname(__filename);
 let mongoServer;
 
 beforeAll(async () => {
-  delete process.env.ADMIN_PIN;
   mongoServer = await MongoMemoryServer.create({ binary: { checkMD5: false } });
   const mongoUri = mongoServer.getUri();
   await mongoose.connect(mongoUri);
@@ -29,6 +30,7 @@ afterAll(async () => {
 beforeEach(async () => {
   await Recipe.deleteMany({});
   await Pantry.deleteMany({});
+  await User.deleteMany({});
 });
 
 describe('Backup API & Maintenance Endpoints', () => {
@@ -36,7 +38,9 @@ describe('Backup API & Maintenance Endpoints', () => {
     await Recipe.create({ title: 'Backup Test Sourdough' });
     await Pantry.create({ name: 'Active Yeast' });
 
-    const res = await request(app).get('/api/backup');
+    const { auth } = await signedIn('owner', { role: 'owner' });
+    expect((await request(app).get('/api/backup')).statusCode).toBe(401);
+    const res = await request(app).get('/api/backup').set(auth);
     expect(res.statusCode).toBe(200);
     expect(res.headers['content-type']).toContain('application/json');
 

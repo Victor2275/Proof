@@ -14,7 +14,7 @@ import { destinationOf, isChromeFree, isDestinationRoot } from '../lib/destinati
 import { transitionKind } from '../lib/navigation';
 import { leadTimer, OPEN_TIMERS_EVENT, publishRunningTimers } from '../lib/timerBus';
 import { clearActiveBake, startActiveBake } from '../lib/activeBake';
-import { setAccount, setOperatorToken, type Account } from '../lib/session';
+import { setAccount, type Account } from '../lib/session';
 import { api } from '../lib/api';
 import type { Publication } from '../lib/types';
 import { makeRecipe, renderScreen, seed, testQueryClient } from '../test/utils';
@@ -49,7 +49,6 @@ const at = (path: string, ui: React.ReactNode) =>
 beforeEach(() => {
   localStorage.clear();
   setAccount(null);
-  setOperatorToken(null);
   publishRunningTimers([]);
 });
 
@@ -172,10 +171,9 @@ describe('the avatar', () => {
     ]);
   });
 
-  it('leads with the name, opening the public profile, signed in; the operator also gets the queue', async () => {
+  it('leads with the name, opening the public profile, signed in; the owner also gets the queue', async () => {
     const user = userEvent.setup();
-    setAccount('token', ADA);
-    setOperatorToken('op');
+    setAccount('token', { ...ADA, moderator: true, owner: true });
     at('/', <TopBar />);
     expect(screen.getByRole('button', { name: 'Your account and settings' })).toHaveTextContent('AL');
     await user.click(screen.getByRole('button', { name: 'Your account and settings' }));
@@ -187,7 +185,7 @@ describe('the avatar', () => {
     expect(screen.getByRole('menuitem', { name: 'Moderation' })).toHaveAttribute('href', '/moderation');
   });
 
-  it('gives a moderator account the queue without the operator PIN, and an ordinary one not', async () => {
+  it('gives a moderator account the queue, and an ordinary one not', async () => {
     const user = userEvent.setup();
     setAccount('token', { ...ADA, moderator: true });
     at('/', <TopBar />);

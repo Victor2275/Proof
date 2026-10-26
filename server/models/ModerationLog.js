@@ -11,7 +11,7 @@ import { ulid } from '../services/ulid.js';
  */
 const moderationLogSchema = new mongoose.Schema({
   _id: { type: String, default: () => ulid() },
-  actorKind: { type: String, enum: ['operator', 'moderator'], required: true },
+  actorKind: { type: String, enum: ['operator', 'moderator', 'owner'], required: true },
   actorId: { type: String, default: null },
   actorHandle: { type: String, default: '' },
   action: { type: String, required: true },

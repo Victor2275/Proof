@@ -43,8 +43,8 @@ Recipe apps store recipes. Proof runs the bake and records what happened. The co
 
 **Technical and product constraints:**
 
-- A user's own cookbook lives on the device and needs no account and no PIN. Accounts (email and password, argon2id) are for publishing; `ADMIN_PIN` means the site operator only. Sessions are crypto-random tokens, stored hashed with a TTL. No hardcoded secrets.
-- AI endpoints serve the operator and confirmed accounts as a monthly allowance, and are rate-limited, deliberately, to prevent paid-quota abuse.
+- A user's own cookbook lives on the device and needs no account and no PIN. Accounts (email and password, argon2id) are for publishing and sync; there is no PIN — the site's tools belong to the owner account. Sessions are crypto-random tokens, stored hashed with a TTL. No hardcoded secrets.
+- AI endpoints serve confirmed accounts as a monthly allowance (unlimited on Pro), and are rate-limited, deliberately, to prevent paid-quota abuse.
 - Local-first: the free tier stores nothing server-side. The server holds only recipes deliberately published to the shared cookbook and, later, paid cloud sync (LAUNCH_PLAN.md).
 - Image storage runs on a free Cloudinary tier; an orphan-cleanup job and nightly JSON DB backup exist because that ceiling is real.
 - Every new feature requires a unit test; E2E is Playwright.

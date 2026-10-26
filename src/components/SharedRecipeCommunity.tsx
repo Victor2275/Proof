@@ -222,7 +222,7 @@ function ReportSheet({ target, onClose }: { target: { type: 'recipe' | 'comment'
     >
       {state === 'sent' ? (
         <p className="text-sm text-ink" role="status">
-          Sent. The operator will look at it.
+          Sent. A moderator will look at it.
         </p>
       ) : (
         <form id={formId} onSubmit={submit} className="flex flex-col gap-3">

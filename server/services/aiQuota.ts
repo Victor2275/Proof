@@ -2,8 +2,9 @@
  * Who may use the AI, and how much (LAUNCH_PLAN.md §5: "a small free monthly
  * quota, unlimited on paid").
  *
- * Every AI call costs money, so the routes are open to the site operator, and
- * to accounts with a confirmed email as an allowance of FREE_AI_PER_MONTH
+ * Every AI call costs money, so the routes are open without limit to Pro
+ * accounts (the owner's among them), and to other accounts with a confirmed
+ * email as an allowance of FREE_AI_PER_MONTH
  * actions — import, restructure and substitutions all draw on the one count.
  * A call is charged before it runs and refunded if it fails, so two requests
  * racing cannot both spend the last action, and an outage costs nothing.
@@ -50,15 +51,11 @@ export async function refundAi(userId: string, now = new Date()) {
 }
 
 export async function requireAi(req: Request, res: Response, next: NextFunction) {
-  // Local development, with no PIN configured: everyone is the operator.
-  if (!process.env.ADMIN_PIN) return next();
   if (mongoose.connection.readyState !== 1) {
     return res.status(503).json({ error: "The AI can't be reached right now. Your cookbook is unaffected.", degraded: true });
   }
 
   const session = await readSession(bearerToken(req)).catch(() => null);
-  if (session?.kind === 'operator') return next();
-
   const user = session?.kind === 'user' ? await User.findById(session.userId) : null;
   if (!user) {
     return res.status(401).json({ error: 'The AI runs on the server, so it needs an account. Sign in to use it.', account: true });

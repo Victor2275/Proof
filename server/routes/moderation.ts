@@ -7,8 +7,8 @@ import { ModerationLog } from '../models/ModerationLog.js';
 import { logAction, type Staff } from '../services/moderationLog.js';
 
 /*
- * The moderation queue (LAUNCH_PLAN.md, Phase 3 item 10), for the operator
- * and for moderator accounts.
+ * The moderation queue (LAUNCH_PLAN.md, Phase 3 item 10), for moderators and
+ * the owner.
  *
  *   GET  /api/moderation/queue              held recipes, held comments, open reports
  *   POST /api/moderation/recipes/:id        { action: approve | reject | takedown, reason }

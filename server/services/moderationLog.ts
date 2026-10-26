@@ -7,9 +7,12 @@
  */
 import { ModerationLog } from '../models/ModerationLog.js';
 
-/** Who is acting, as requireModerator (middleware/auth.js) sets it on req.staff. */
+/**
+ * Who is acting, as requireModerator (middleware/auth.js) sets it on req.staff.
+ * 'operator' is a server script, or the retired PIN in older entries.
+ */
 export interface Staff {
-  kind: 'operator' | 'moderator';
+  kind: 'operator' | 'moderator' | 'owner';
   userId: string | null;
   handle: string;
 }

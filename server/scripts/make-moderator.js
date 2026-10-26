@@ -5,9 +5,10 @@
  *   npx tsx scripts/make-moderator.js --email=<address>
  *   ... --remove                                          back to an ordinary account
  *
- * For the first moderator: after that, moderators make each other from the
- * Accounts tab on the Moderation page. The change is written to the
- * moderation log as the operator's.
+ * The owner makes moderators from the Accounts tab on the Moderation page;
+ * this is for when that page can't be reached. The change is written to the
+ * moderation log as the operator's (a script run on the server). The owner's
+ * own role is changed only by make-owner.js.
  */
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -38,6 +39,9 @@ try {
   const user = await User.findOne(handle ? { handle } : { email });
   if (!user) {
     process.stderr.write(`No account has the ${handle ? `handle @${handle}` : `email ${email}`}.\n`);
+    process.exitCode = 1;
+  } else if (user.role === 'owner') {
+    process.stderr.write(`@${user.handle} is the owner. Run make-owner.js on another account to move the role.\n`);
     process.exitCode = 1;
   } else if (remove) {
     if (user.role !== 'moderator') {

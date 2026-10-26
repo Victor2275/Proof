@@ -3,11 +3,11 @@ import request from 'supertest';
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { app, rehostImageUrl, isCloudinaryUrl } from '../index.js';
+import { signedIn } from './signIn.js';
 
 let mongoServer;
 
 beforeAll(async () => {
-  delete process.env.ADMIN_PIN;
   // No Cloudinary credentials in the test env — re-hosting must degrade gracefully.
   delete process.env.CLOUDINARY_CLOUD_NAME;
   delete process.env.CLOUDINARY_API_KEY;
@@ -40,7 +40,8 @@ describe('image re-hosting', () => {
   });
 
   it('POST /api/maintenance/rehost-images reports 503 when Cloudinary is unconfigured', async () => {
-    const res = await request(app).post('/api/maintenance/rehost-images');
+    const { auth } = await signedIn('owner', { role: 'owner' });
+    const res = await request(app).post('/api/maintenance/rehost-images').set(auth);
     expect(res.statusCode).toBe(503);
     expect(res.body.error).toMatch(/cloudinary/i);
   });

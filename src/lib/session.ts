@@ -8,7 +8,7 @@ import type { PublishedRecipe, Recipe } from './types';
  * multi-user app that is three different questions, and they have different
  * shapes (LAUNCH_PLAN.md, Phase 0 C2):
  *
- *   useSession()     who am I — anonymous, an account, and/or the site operator
+ *   useSession()     who am I — anonymous or an account, and whether it is staff
  *   useOwnership(r)  is this record mine — per record
  *   usePlan()        what may I do — per feature
  *
@@ -18,7 +18,6 @@ import type { PublishedRecipe, Recipe } from './types';
  * ended elsewhere — a password change, a deleted account — reaches this device.
  */
 
-const OPERATOR_TOKEN_KEY = 'adminToken';
 const USER_TOKEN_KEY = 'proof.session';
 const ACCOUNT_KEY = 'proof.account';
 const CHANGE_EVENT = 'session-changed';
@@ -33,8 +32,10 @@ export interface Account {
   emailVerified: boolean;
   plan: 'free' | 'pro';
   pro: boolean;
-  /** Confirms accounts and works the moderation queue (server/routes/accounts.ts). */
+  /** Confirms accounts and works the moderation queue (server/routes/accounts.ts). True for the owner too. */
   moderator?: boolean;
+  /** The site's own account: its tools, and making moderators. */
+  owner?: boolean;
   joinedAt: string;
   planExpiresAt: string | null;
   ai?: { used: number; limit: number | null; period: string };
@@ -59,13 +60,10 @@ const write = (key: string, value: string | null) => {
 
 const changed = () => window.dispatchEvent(new Event(CHANGE_EVENT));
 
-export const operatorToken = (): string | null => read(OPERATOR_TOKEN_KEY);
-export const userToken = (): string | null => read(USER_TOKEN_KEY);
+// The retired operator PIN's session, still held by devices that signed in with it.
+write('adminToken', null);
 
-export function setOperatorToken(token: string | null) {
-  write(OPERATOR_TOKEN_KEY, token);
-  changed();
-}
+export const userToken = (): string | null => read(USER_TOKEN_KEY);
 
 /** Signs this device in (token + account) or out (null). */
 export function setAccount(token: string | null, account: Account | null = null) {
@@ -93,21 +91,20 @@ const subscribe = (onChange: () => void) => {
 export interface Session {
   /** The signed-in account, or null. */
   user: Account | null;
-  /** Holds the operator PIN: moderation, backups, takedowns. Not a user role. */
-  isOperator: boolean;
-  /** May open the Moderation page: the operator, or a moderator account. */
+  /** The site's owner account: backups, the server library, photo re-hosting, making moderators. */
+  isOwner: boolean;
+  /** May open the Moderation page: a moderator, or the owner. */
   canModerate: boolean;
 }
 
 // useSyncExternalStore needs the same object back while nothing has changed.
 let snapshotKey = '';
-let snapshot: Session = { user: null, isOperator: false, canModerate: false };
+let snapshot: Session = { user: null, isOwner: false, canModerate: false };
 
 function readSession(): Session {
-  const op = operatorToken();
   const token = userToken();
   const account = token ? read(ACCOUNT_KEY) : null;
-  const key = `${op ? 1 : 0}|${account ?? ''}`;
+  const key = account ?? '';
   if (key !== snapshotKey) {
     let user: Account | null = null;
     try {
@@ -116,17 +113,16 @@ function readSession(): Session {
       user = null;
     }
     snapshotKey = key;
-    snapshot = { user, isOperator: !!op, canModerate: !!op || !!user?.moderator };
+    snapshot = { user, isOwner: !!user?.owner, canModerate: !!user?.moderator || !!user?.owner };
   }
   return snapshot;
 }
 
-const SERVER_SESSION: Session = { user: null, isOperator: false, canModerate: false };
+const SERVER_SESSION: Session = { user: null, isOwner: false, canModerate: false };
 
 export function useSession() {
   const session = useSyncExternalStore(subscribe, readSession, () => SERVER_SESSION);
-  const signOutOperator = useCallback(() => setOperatorToken(null), []);
-  return { session, signOutOperator };
+  return { session };
 }
 
 /**
@@ -158,21 +154,21 @@ export type Feature = 'ai' | 'sync' | 'postBakeResults' | 'publish';
 /**
  * What the current person may use.
  *
- * The AI costs money per call, so it is open to the operator, and to accounts
- * with a confirmed email as a monthly allowance the server counts. Publishing
- * needs a confirmed email too: it puts words in front of strangers. Sync and
- * posting bake results are Pro features (Phase 4).
+ * The AI costs money per call, so it is open to accounts with a confirmed
+ * email, as a monthly allowance the server counts (unlimited on Pro).
+ * Publishing needs a confirmed email too: it puts words in front of strangers.
+ * Sync is a Pro feature; posting bake results is not built yet.
  */
 export function usePlan() {
   const { session } = useSession();
   const verified = !!session.user?.emailVerified;
   const can = useCallback(
     (feature: Feature) => {
-      if (feature === 'ai') return session.isOperator || verified;
-      if (feature === 'publish') return verified;
+      if (feature === 'ai' || feature === 'publish') return verified;
+      if (feature === 'sync') return verified && session.user?.plan === 'pro';
       return false;
     },
-    [session.isOperator, verified],
+    [verified, session.user?.plan],
   );
   return { plan: session.user?.plan ?? ('free' as const), can };
 }

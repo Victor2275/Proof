@@ -44,11 +44,11 @@ export function AiGateNotice({ feature }: { feature: string }) {
   );
 }
 
-/** "3 of 5 left this month", in the foot of an AI sheet (B11). Nothing for the operator or a stranger. */
+/** "3 of 5 left this month", in the foot of an AI sheet (B11). Nothing for a stranger. */
 export function AiAllowance() {
   const { session } = useSession();
   const line = aiAllowanceLine(session.user);
-  if (!line || session.isOperator) return null;
+  if (!line) return null;
   return <p className="ui-label font-sans tabular-nums text-ink-muted">AI · {line}</p>;
 }
 

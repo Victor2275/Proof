@@ -1,7 +1,8 @@
 import mongoose from 'mongoose';
 
 /*
- * A signed-in session: a user's, or the site operator's.
+ * A signed-in account's session. (There was an operator kind, proved by a PIN;
+ * the owner account replaced it.)
  *
  * Sessions used to live in a Map in memory, so every restart of the server —
  * every deploy, every Render spin-down — signed everyone out. They live here
@@ -13,7 +14,7 @@ import mongoose from 'mongoose';
  */
 const sessionSchema = new mongoose.Schema({
   _id: { type: String },
-  kind: { type: String, enum: ['user', 'operator'], required: true },
+  kind: { type: String, enum: ['user'], required: true },
   userId: { type: String, default: null, index: true },
   createdAt: { type: Date, default: Date.now },
   expiresAt: { type: Date, required: true },

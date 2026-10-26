@@ -4,7 +4,7 @@ import { ulid, isUlid } from './ulid';
 import { fitWithin, compressImage, MAX_EDGE } from './image';
 import { formatAmount, formatIngredient, scaledQuantity } from './ingredients';
 import { ensurePersistentStorage, formatBytes, resetPersistenceRequest, storageReport } from './storage';
-import { aiAllowanceLine, setAccount, setOperatorToken, useOwnership, usePlan, useSession } from './session';
+import { aiAllowanceLine, setAccount, useOwnership, usePlan, useSession } from './session';
 import { makeRecipe } from '../test/utils';
 import type { PublishedRecipe } from './types';
 
@@ -84,15 +84,29 @@ describe('storage', () => {
 });
 
 describe('session, ownership and plan', () => {
-  afterEach(() => setOperatorToken(null));
+  afterEach(() => setAccount(null));
 
-  it('follows the operator token as it is set and cleared', () => {
+  const ME = {
+    id: 'u1', email: 'ada@example.com', handle: 'ada', displayName: 'Ada', bio: '', emailVerified: true,
+    plan: 'free' as const, pro: false, joinedAt: '2026-10-01', planExpiresAt: null,
+  };
+
+  it('knows the owner and staff from the signed-in account, and nothing else', () => {
     const { result } = renderHook(() => useSession());
-    expect(result.current.session.isOperator).toBe(false);
-    act(() => setOperatorToken('t'));
-    expect(result.current.session.isOperator).toBe(true);
-    act(() => result.current.signOutOperator());
-    expect(result.current.session.isOperator).toBe(false);
+    expect(result.current.session).toMatchObject({ isOwner: false, canModerate: false });
+    act(() => setAccount('t', { ...ME, moderator: true }));
+    expect(result.current.session).toMatchObject({ isOwner: false, canModerate: true });
+    act(() => setAccount('t', { ...ME, moderator: true, owner: true }));
+    expect(result.current.session).toMatchObject({ isOwner: true, canModerate: true });
+    act(() => setAccount(null));
+    expect(result.current.session).toMatchObject({ isOwner: false, canModerate: false });
+  });
+
+  it("forgets the retired operator PIN's session left on the device", async () => {
+    localStorage.setItem('adminToken', 'old');
+    vi.resetModules();
+    await import('./session');
+    expect(localStorage.getItem('adminToken')).toBeNull();
   });
 
   it("calls a record in this device's cookbook mine, and a shared one someone else's", () => {
@@ -106,12 +120,14 @@ describe('session, ownership and plan', () => {
     expect(renderHook(() => useOwnership(shared)).result.current.isMine).toBe(false);
   });
 
-  it('opens the AI to the operator only, until accounts carry a quota', () => {
+  it('opens the AI to a confirmed account, and sync to a Pro one', () => {
     const { result } = renderHook(() => usePlan());
     expect(result.current.can('ai')).toBe(false);
-    act(() => setOperatorToken('t'));
+    act(() => setAccount('t', ME));
     expect(result.current.can('ai')).toBe(true);
     expect(result.current.can('sync')).toBe(false);
+    act(() => setAccount('t', { ...ME, plan: 'pro', pro: true }));
+    expect(result.current.can('sync')).toBe(true);
   });
 });
 

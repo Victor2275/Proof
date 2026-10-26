@@ -84,8 +84,9 @@ describe('Moderation', () => {
     expect(await screen.findByText('Every account is confirmed.')).toBeInTheDocument();
   });
 
-  it('opens an account and makes it a moderator', async () => {
+  it('lets the owner open an account and make it a moderator', async () => {
     const user = userEvent.setup();
+    setAccount('tok', { ...MOD, owner: true });
     const ada = staff();
     mocked.listAccounts.mockResolvedValue({ items: [ada], total: 1, offset: 0, limit: 50 });
     mocked.getAccount.mockResolvedValue(
@@ -100,6 +101,33 @@ describe('Moderation', () => {
     expect(within(sheet).getByText('1 device')).toBeInTheDocument();
     await user.click(within(sheet).getByRole('button', { name: 'Make moderator' }));
     expect(mocked.setAccountRole).toHaveBeenCalledWith('u1', 'moderator');
+  });
+
+  it('gives a moderator no say over roles', async () => {
+    const user = userEvent.setup();
+    const ada = staff();
+    mocked.listAccounts.mockResolvedValue({ items: [ada], total: 1, offset: 0, limit: 50 });
+    mocked.getAccount.mockResolvedValue(detail(ada));
+    renderScreen(<Moderation />, { route: '/moderation?view=accounts' });
+
+    await user.click(await screen.findByRole('button', { name: /Ada/ }));
+    const sheet = await screen.findByRole('dialog', { name: 'Ada' });
+    expect(await within(sheet).findByRole('button', { name: 'Suspend' })).toBeInTheDocument();
+    expect(within(sheet).queryByRole('button', { name: 'Make moderator' })).not.toBeInTheDocument();
+  });
+
+  it("offers nothing on the owner's account, and names it", async () => {
+    const user = userEvent.setup();
+    const boss = staff({ id: 'o1', handle: 'boss', displayName: 'Boss', moderator: true, owner: true });
+    mocked.listAccounts.mockResolvedValue({ items: [boss], total: 1, offset: 0, limit: 50 });
+    mocked.getAccount.mockResolvedValue(detail(boss));
+    renderScreen(<Moderation />, { route: '/moderation?view=accounts' });
+
+    expect(await screen.findByText('Owner')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /Boss/ }));
+    const sheet = await screen.findByRole('dialog', { name: 'Boss' });
+    expect(await within(sheet).findByText("The owner's account. It can't be changed here.")).toBeInTheDocument();
+    expect(within(sheet).queryByRole('button', { name: /Suspend|Remove moderator|Sign out/ })).not.toBeInTheDocument();
   });
 
   it('will not suspend without a reason, and sends the reason when given', async () => {

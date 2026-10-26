@@ -2,9 +2,9 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import Settings from './Settings';
-import { setOperatorToken } from '../lib/session';
+import { setAccount } from '../lib/session';
 import { exportCookbook } from '../lib/repo/backup';
-import { makeRecipe, renderScreen, seed } from '../test/utils';
+import { makeRecipe, renderScreen, seed, signInAs } from '../test/utils';
 
 vi.mock('../lib/api', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../lib/api')>()),
@@ -59,7 +59,7 @@ describe('Settings', () => {
     expect(document.documentElement.dataset.hand).toBeUndefined();
   });
 
-  it('is laid out as Appearance, While you bake, Your cookbook, Account, Help', () => {
+  it('is laid out as Appearance, While you bake, Your cookbook, Account, Help, with no tools for a stranger', () => {
     renderScreen(<Settings />);
     expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)).toEqual([
       'Appearance',
@@ -67,7 +67,6 @@ describe('Settings', () => {
       'Your cookbook',
       'Account',
       'Help',
-      'Operator',
     ]);
   });
 
@@ -112,25 +111,19 @@ describe('Settings', () => {
     expect(localStorage.getItem('theme')).toBe('system');
   });
 
-  it('keeps the operator tools behind the operator PIN', async () => {
-    const user = userEvent.setup();
-    const asked = vi.fn();
-    window.addEventListener('auth-required', asked);
-    renderScreen(<Settings />);
-
-    // A stranger sees what the tools are for, not the tools.
+  it("shows the site's tools to the owner account alone, and asks nobody for a PIN", async () => {
+    signInAs({ moderator: true });
+    const { unmount } = renderScreen(<Settings />);
+    expect(screen.queryByRole('heading', { name: 'Owner' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Re-host/i })).not.toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Operator sign-in' }));
-    expect(asked).toHaveBeenCalled();
-    window.removeEventListener('auth-required', asked);
-  });
+    expect(screen.queryByText(/PIN/)).not.toBeInTheDocument();
+    unmount();
 
-  it('shows the operator tools once the PIN has been given', async () => {
-    setOperatorToken('token');
+    signInAs({ moderator: true, owner: true });
     renderScreen(<Settings />);
     expect(screen.getByRole('button', { name: /Re-host/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Copy/i })).toBeInTheDocument();
-    setOperatorToken(null);
+    setAccount(null);
   });
 
   it('says where the cookbook lives, and that the server is not needed for it', async () => {

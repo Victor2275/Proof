@@ -6,6 +6,7 @@
   "scripts": {
     "start": "npx tsx index.js",
     "test": "vitest run",
+    "make-owner": "npx tsx scripts/make-owner.js",
     "seed:recipes": "node scripts/seed_200_recipes.js"
   },
   "keywords": [],

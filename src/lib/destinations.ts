@@ -5,7 +5,7 @@
  * sidebar and a More drawer (UI overhaul, changes 19–25). A screen that is not
  * itself a destination still belongs to one — a recipe is a page of the
  * cookbook, so the Cookbook tab stays lit while you read it — and a few belong
- * to none: Settings and the operator's queue sit behind the avatar.
+ * to none: Settings and the moderation queue sit behind the avatar.
  */
 
 export type Destination = 'cookbook' | 'bakes' | 'shop' | 'discover';

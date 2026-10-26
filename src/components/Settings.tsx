@@ -21,8 +21,7 @@ import { applyTheme, readTheme, type ThemeChoice } from '../lib/theme';
  * help. One plain line under each setting says what it does, and every on/off
  * is the platform's own switch (`Switch`) rather than a latching key.
  *
- * The site operator's tools come last and do nothing without the operator PIN
- * (decision B23).
+ * The owner's tools come last, and only the owner account sees them.
  */
 
 /** Saves a Blob as a download. */
@@ -100,10 +99,10 @@ export default function Settings() {
   const [handwriting, setHandwriting] = useState(handwritingEnabled);
   const [helpOpen, setHelpOpen] = useState(false);
 
-  const { session, signOutOperator } = useSession();
+  const { session } = useSession();
   const { hash } = useLocation();
 
-  // The avatar's Account and Export entries land on their own section.
+  // An address naming #account or #cookbook lands on that section.
   useEffect(() => {
     if (hash === '#account' || hash === '#cookbook') {
       document.getElementById(hash.slice(1))?.scrollIntoView?.({ block: 'start' });
@@ -377,8 +376,8 @@ export default function Settings() {
       </Panel>
       <HelpSheet open={helpOpen} onClose={() => setHelpOpen(false)} />
 
-      <Panel title="Operator">
-        {session.isOperator ? (
+      {session.isOwner ? (
+        <Panel title="Owner">
           <div className="flex flex-col gap-5">
             <ActionRow
               title="Moderation"
@@ -438,21 +437,9 @@ export default function Settings() {
                 {rehostBusy ? 'Working' : 'Re-host'}
               </Button>
             </ActionRow>
-
-            <Button variant="ghost" className="self-start" onClick={signOutOperator}>
-              Sign out
-            </Button>
           </div>
-        ) : (
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <p className="min-w-0 flex-1 text-sm text-ink-muted">
-              Tools for whoever runs this Proof site: server backups, photo re-hosting, and the server
-              library. They need the operator PIN. Your own cookbook never does.
-            </p>
-            <Button onClick={() => window.dispatchEvent(new Event('auth-required'))}>Operator sign-in</Button>
-          </div>
-        )}
-      </Panel>
+        </Panel>
+      ) : null}
     </div>
   );
 }

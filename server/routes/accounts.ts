@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { requireModerator, endUserSessions } from '../middleware/auth.js';
+import { requireModerator, requireOwner, endUserSessions } from '../middleware/auth.js';
 import { User } from '../models/User.js';
 import { Session } from '../models/Session.js';
 import { PublishedRecipe } from '../models/PublishedRecipe.js';
@@ -10,19 +10,20 @@ import { liftSuspension, staffUser, suspendAccount } from '../services/accounts.
 import { logAction, type Staff } from '../services/moderationLog.js';
 
 /*
- * Accounts, as moderators and the operator see them.
+ * Accounts, as moderators and the owner see them.
  *
  *   GET  /api/accounts                  ?q= &filter=all|unconfirmed|moderators|suspended &offset=
  *   GET  /api/accounts/:id              the account, what it published and wrote, reports against it, its log
  *   POST /api/accounts/:id/confirm      confirm the email by hand (while the site cannot send mail)
- *   POST /api/accounts/:id/role         { role: moderator | user }
+ *   POST /api/accounts/:id/role         { role: moderator | user } — the owner only
  *   POST /api/accounts/:id/suspend      { reason } — signs out, hides its recipes and comments
  *   POST /api/accounts/:id/unsuspend
  *   POST /api/accounts/:id/signout      end every session it has
  *
  * Nobody changes, suspends or signs out their own account here, so a
- * moderator cannot lock themselves out by a slip. Moderators are not
- * suspended: remove the role first, which leaves a line in the log.
+ * moderator cannot lock themselves out by a slip, and nobody acts on the
+ * owner's account at all. Moderators are not suspended: the owner removes the
+ * role first, which leaves a line in the log.
  */
 const router = Router();
 
@@ -40,7 +41,7 @@ const PAGE = 50;
 const FILTERS: Record<string, Record<string, unknown>> = {
   all: {},
   unconfirmed: { emailVerifiedAt: null },
-  moderators: { role: 'moderator' },
+  moderators: { role: { $in: ['moderator', 'owner'] } },
   suspended: { suspendedAt: { $ne: null } },
 };
 
@@ -60,7 +61,7 @@ router.get('/', guard(async (req, res) => {
   res.json({ items: users.map(staffUser), total, offset, limit: PAGE });
 }));
 
-/** The account an action names, or a 404 already sent. Refuses the caller's own account. */
+/** The account an action names, or a refusal already sent. Refuses the caller's own account, and the owner's. */
 async function target(req: Request, res: Response) {
   const user = await User.findById(req.params.id);
   if (!user) {
@@ -68,7 +69,11 @@ async function target(req: Request, res: Response) {
     return null;
   }
   if (user._id === staffOf(req).userId) {
-    res.status(400).json({ error: "That's your own account. Ask another moderator, or the operator." });
+    res.status(400).json({ error: "That's your own account. Ask the owner." });
+    return null;
+  }
+  if (user.role === 'owner') {
+    res.status(403).json({ error: "That's the owner's account. It can't be changed here." });
     return null;
   }
   return user;
@@ -124,7 +129,7 @@ router.post('/:id/confirm', guard(async (req, res) => {
 }));
 
 // POST /api/accounts/:id/role
-router.post('/:id/role', guard(async (req, res) => {
+router.post('/:id/role', requireOwner, guard(async (req, res) => {
   const role = req.body?.role;
   if (role !== 'moderator' && role !== 'user') return res.status(400).json({ error: 'Make a moderator, or remove the role.' });
   const user = await target(req, res);
