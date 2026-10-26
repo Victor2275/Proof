@@ -48,7 +48,7 @@ const RECIPE = makeRecipe({
   ],
 });
 
-const renderBaking = (entry = '/recipe/1/bake') =>
+const renderBaking = (entry: string | { pathname: string; state: unknown } = '/recipe/1/bake') =>
   render(
     <QueryClientProvider client={testQueryClient()}>
       <ToastProvider>
@@ -221,7 +221,7 @@ describe('notes and the last bake', () => {
     const [log] = await repo.getRecipeBakeLogs('1');
     expect(log).toMatchObject({ rating: 4, stepNotes: [expect.objectContaining({ stepIndex: 1, text: 'Butter too cold.' })] });
     expect(getActiveBake()).toBeNull();
-    expect(navigate).toHaveBeenCalledWith(`/recipe/1?logged=${log._id}`);
+    expect(navigate).toHaveBeenCalledWith(`/recipe/1?logged=${log._id}`, { replace: true });
   });
 
   it('reports a failed log in the sheet, keeping what was written', async () => {
@@ -237,14 +237,56 @@ describe('notes and the last bake', () => {
     expect(screen.getByRole('textbox', { name: 'What happened' })).toHaveValue('Good.');
   });
 
-  it('can stop a bake without logging it', async () => {
+  it('can stop a bake without logging it, and undo the stop', async () => {
     const user = userEvent.setup();
     renderBaking();
     await screen.findByText('Mix the flour and the butter.');
+    await user.click(screen.getByRole('button', { name: 'Note on step 1' }));
+    const noteSheet = await screen.findByRole('dialog', { name: 'A note on step 1' });
+    await user.type(within(noteSheet).getByRole('textbox', { name: 'What you noticed' }), 'Butter too cold.');
+    await user.click(screen.getAllByRole('button', { name: 'Save the note' }).at(-1)!);
     await user.click(screen.getByRole('button', { name: 'Ingredients, all steps, scale and voice' }));
     await user.click(screen.getByRole('menuitem', { name: 'Stop without logging' }));
     expect(getActiveBake()).toBeNull();
-    expect(navigate).toHaveBeenCalledWith('/recipe/1');
+    expect(navigate).toHaveBeenCalledWith('/recipe/1', { replace: true });
+    await user.click(await screen.findByRole('button', { name: 'Undo' }));
+    expect(getActiveBake()).toMatchObject({ recipeId: '1', notes: [expect.objectContaining({ text: 'Butter too cold.' })] });
+  });
+});
+
+describe('leaving baking mode', () => {
+  it('asks whether to leave the bake running or stop it, from the X and from Escape', async () => {
+    const user = userEvent.setup();
+    renderBaking();
+    await screen.findByText('Mix the flour and the butter.');
+    await user.click(screen.getByRole('button', { name: 'Leave baking mode' }));
+    const sheet = await screen.findByRole('dialog', { name: 'Leave baking mode?' });
+    await user.click(within(sheet).getByRole('button', { name: 'Keep baking' }));
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Leave baking mode?' })).not.toBeInTheDocument());
+    expect(navigate).not.toHaveBeenCalled();
+
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(await screen.findByRole('dialog', { name: 'Leave baking mode?' })).toBeInTheDocument();
+  });
+
+  it('leaves the bake running, replacing its history entry so Back does not reopen it', async () => {
+    const user = userEvent.setup();
+    renderBaking();
+    await screen.findByText('Mix the flour and the butter.');
+    await user.click(screen.getByRole('button', { name: 'Leave baking mode' }));
+    await user.click(within(await screen.findByRole('dialog', { name: 'Leave baking mode?' })).getByRole('button', { name: 'Leave for now' }));
+    expect(getActiveBake()).toMatchObject({ recipeId: '1' });
+    expect(navigate).toHaveBeenCalledWith('/recipe/1', { replace: true });
+  });
+
+  it('goes back to the recipe page it was started from, rather than opening it again', async () => {
+    const user = userEvent.setup();
+    renderBaking({ pathname: '/recipe/1/bake', state: { fromRecipe: true } });
+    await screen.findByText('Mix the flour and the butter.');
+    await user.click(screen.getByRole('button', { name: 'Leave baking mode' }));
+    await user.click(within(await screen.findByRole('dialog', { name: 'Leave baking mode?' })).getByRole('button', { name: 'Stop this bake' }));
+    expect(getActiveBake()).toBeNull();
+    expect(navigate).toHaveBeenCalledWith(-1);
   });
 });
 

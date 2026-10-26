@@ -99,3 +99,8 @@ export function subscribeActiveBake(onChange: () => void): () => void {
     window.removeEventListener('storage', onChange);
   };
 }
+
+/** Puts back a bake just stopped — the Undo of "Stop this bake", notes and all. */
+export function restoreActiveBake(bake: ActiveBake): void {
+  write(bake);
+}

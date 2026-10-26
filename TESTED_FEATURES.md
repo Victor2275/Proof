@@ -306,7 +306,7 @@ Rebuilt as the bake sheet: see section 18.
 - [ ] **Tab haptic**: on the Android build with haptics on, changing tab ticks; pressing the tab you are on does not.
 - [ ] **Desktop top bar**: from 768px a slim bar shows Proof (back to the cookbook), the four destinations with a paper thumb that slides to the one chosen, New and the avatar. No sidebar.
 - [ ] **New**: the Cookbook header (phone) and the top bar (desktop) have a labelled New button; it opens a sheet with "Write it" (blank editor) and "Paste a link or text" (editor with the import open).
-- [ ] **Avatar**: the menu (desktop) or sheet (phone) holds Settings, Sign in or Account, My published recipes, Export or import, Help; the operator and moderators also see Moderation. Signed in, it shows your initials and @handle.
+- [ ] **Avatar**: the menu (desktop) or sheet (phone) holds Settings, Sign in (signed out), My published recipes, Help; staff also see Moderation. Signed in, it shows your initials, and the menu leads with your name and @handle.
 - [ ] **Export or import**: lands on Settings → Data on this device, scrolled to it.
 - [ ] **Help**: opens a sheet explaining the cookbook, cooking, bakes, shop and that it stays on this device.
 - [ ] **My published recipes** (`/published`): signed out, it asks you to sign in and says why; signed in, it lists each published recipe with where it stands, each opening the recipe.
@@ -362,7 +362,7 @@ Rebuilt as the bake sheet: see section 18.
 - [ ] **Note mid-bake**: Note → type → Save files it; it shows under the step and arrives in "How did it go?".
 - [ ] **Back on step 1**: not shown, and the Next button does not move.
 - [ ] **How did it go?**: the last Next opens the log; saving it ends the bake (the pill goes) and opens the recipe with the new bake.
-- [ ] **Stop without logging**: from ⋯, ends the bake without a log.
+- [ ] **Stop without logging**: from ⋯, ends the bake without a log, and Undo in the toast brings it back.
 - [ ] **Desktop side panel**: at 1280, You need, Last time and a quick note sit beside the step.
 - [ ] **Hands-free kept**: swipe, arrows, voice commands, wave to advance, the scale's auto-advance, wake lock.
 - [ ] **Export includes the shopping list**: Settings → Export, then Import on a fresh device, brings the list back.
@@ -461,3 +461,18 @@ Rebuilt as the bake sheet: see section 18.
 - [ ] **No suspending moderators**: a moderator's sheet has no Suspend.
 - [ ] **Sign out everywhere**: ends every session of the account; its devices are signed out on their next request.
 - [ ] **Log**: Moderation → Log lists each decision as a sentence with who made it, the time and the reason.
+
+## 24. Drafts, leaving a bake, and the trimmed avatar
+- [ ] **Draft kept**: type a title and a few ingredients into a new recipe, go to Bakes, come back through New → Continue your draft: everything is there, under "Unsaved draft from …".
+- [ ] **Draft of an edit**: change an existing recipe, leave without saving, open Edit again: the change is there with Discard draft.
+- [ ] **Discard draft**: puts the form back as saved; Undo in the toast brings the draft back.
+- [ ] **Draft cleared on save**: saving the recipe removes the draft; New no longer offers Continue your draft.
+- [ ] **Stale draft**: with a draft of an edit open in one tab, save the recipe in another; reopening the draft says the recipe has been saved since.
+- [ ] **Fresh start**: with a draft waiting, New → Write it opens a blank form; the draft is still offered until you type.
+- [ ] **Draft photographs**: a photograph added to a draft is still there after an hour and a reload.
+- [ ] **Leave baking mode**: × (and Escape) ask; Leave for now returns to the recipe with the bake still running; Keep baking closes the sheet.
+- [ ] **Stop this bake**: from the × sheet, stops the bake and returns to the recipe; Undo brings it back with its step notes.
+- [ ] **Back after leaving**: Start cooking → × → Stop this bake (or Leave for now) → browser Back: you are not returned to baking mode.
+- [ ] **Back after logging**: finish a bake and log it, then press Back: baking mode does not reopen.
+- [ ] **Avatar entries**: no Account or Export or import entry; signed in, the name at the top opens your `/@handle` page.
+

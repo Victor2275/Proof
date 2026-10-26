@@ -132,7 +132,11 @@ export default function TimerManager() {
             if (from) {
               note.onclick = () => {
                 window.focus();
-                navigateRef.current(timerHref(from));
+                // Already in that bake: move the step in place, keeping how it was reached.
+                const href = timerHref(from);
+                const inBake = window.location.pathname === href.split('?')[0];
+                if (inBake) navigateRef.current(href, { replace: true, state: window.history.state?.usr });
+                else navigateRef.current(href);
                 note.close();
               };
             }

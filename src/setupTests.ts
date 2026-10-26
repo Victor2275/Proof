@@ -24,6 +24,8 @@ globalThis.File = NodeFile as unknown as typeof File;
 beforeEach(async () => {
   await closeDB();
   globalThis.indexedDB = new IDBFactory();
+  // The device's small state (drafts, the running bake, the session) starts empty too.
+  localStorage.clear();
 });
 
 afterEach(() => {

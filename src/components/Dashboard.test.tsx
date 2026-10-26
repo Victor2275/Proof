@@ -241,7 +241,7 @@ describe('when the device will not cooperate', () => {
     render();
     expect(await screen.findByRole('heading', { name: 'Your cookbook is empty' })).toBeInTheDocument();
     const doors = screen.getByRole('navigation', { name: 'Ways to add a recipe' });
-    expect(within(doors).getAllByRole('link').map((l) => l.getAttribute('href'))).toEqual(['/new', '/new?start=paste', '/new?start=photo']);
+    expect(within(doors).getAllByRole('link').map((l) => l.getAttribute('href'))).toEqual(['/new?start=blank', '/new?start=paste', '/new?start=photo']);
     expect(screen.getByText(/Stored on this device/)).toBeInTheDocument();
     expect(await screen.findByRole('heading', { name: /Or start from one of these/i })).toBeInTheDocument();
     expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();

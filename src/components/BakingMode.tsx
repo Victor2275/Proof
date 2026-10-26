@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Link as LinkIcon, MoreHorizontal, PencilLine, Timer as TimerIcon, X } from 'lucide-react';
 import 'regenerator-runtime/runtime';
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
@@ -11,8 +11,9 @@ import { cleanText, methodSteps } from '../lib/recipeText';
 import { bakePhases } from '../lib/method';
 import { scaleService, type WeightMeasurement } from '../lib/bluetoothScale';
 import { haptic } from '../lib/haptics';
+import { useUndoableAction } from '../lib/useUndoableAction';
 import { voiceCommandsEnabled, waveToAdvanceEnabled } from '../lib/settings';
-import { addActiveBakeNote, clearActiveBake, getActiveBake, startActiveBake } from '../lib/activeBake';
+import { addActiveBakeNote, clearActiveBake, getActiveBake, restoreActiveBake, startActiveBake } from '../lib/activeBake';
 import { useActiveBake } from '../lib/useActiveBake';
 import { ingredientsForStep, scaleTargetGrams } from '../lib/stepIngredients';
 import { findTimers, startTimer } from '../lib/stepTimers';
@@ -33,7 +34,8 @@ import { Button, IconButton, MarginNote, Menu, MenuItem, Readout, Sheet, StepRow
  * did it go?" and opens the bake log with the step notes already filed.
  *
  * The head is four things: leave, the recipe, "3 of 12", and ⋯ for the rest
- * (every ingredient, every step, the scale, voice, the camera). Under it, a
+ * (every ingredient, every step, the scale, voice, the camera). Leaving asks
+ * whether the bake waits or stops, since a stopped bake loses its notes. Under it, a
  * thin line of the bake's named phases: where you are, and a way to jump.
  *
  * Kept from before, all of it: swipe, the arrow keys, voice commands, wave to
@@ -50,13 +52,15 @@ export default function BakingMode() {
   const [searchParams, setSearchParams] = useSearchParams();
   const askedStep = Number(searchParams.get('step')) || 0;
   const navigate = useNavigate();
+  const location = useLocation();
   const toast = useToast();
+  const undoable = useUndoableAction();
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
   const [position, setPosition] = useState(0);
   const [view, setView] = useState<'focus' | 'all'>('focus');
-  const [sheet, setSheet] = useState<null | 'ingredients' | 'note' | 'voice' | 'finish' | 'log'>(null);
+  const [sheet, setSheet] = useState<null | 'ingredients' | 'note' | 'voice' | 'finish' | 'log' | 'leave'>(null);
   const [noteDraft, setNoteDraft] = useState('');
   const [quickNote, setQuickNote] = useState('');
   const [checked, setChecked] = useState<Record<number, boolean>>({});
@@ -293,7 +297,7 @@ export default function BakingMode() {
     const onKey = (e: KeyboardEvent) => {
       // An open sheet owns the keyboard.
       if (sheet || subRecipeId) return;
-      if (e.key === 'Escape') navigate(`/recipe/${id}`);
+      if (e.key === 'Escape') setSheet('leave');
       if (view !== 'focus') return;
       if (e.key === 'ArrowRight') next();
       if (e.key === 'ArrowLeft') back();
@@ -323,10 +327,32 @@ export default function BakingMode() {
     return true;
   };
 
-  const leave = () => navigate(`/recipe/${id}`);
+  /*
+   * Out to the recipe without adding a history entry, or Back would open
+   * baking mode again. Started from the recipe page, that page is the entry
+   * behind this one; arrived some other way, the recipe takes this entry's place.
+   */
+  const exit = (to = `/recipe/${id}`) => {
+    if ((location.state as { fromRecipe?: boolean } | null)?.fromRecipe && to === `/recipe/${id}`) navigate(-1);
+    else navigate(to, { replace: true });
+  };
+  const leave = () => {
+    setSheet(null);
+    exit();
+  };
   const stopBake = () => {
-    clearActiveBake(id);
-    navigate(`/recipe/${id}`);
+    const running = getActiveBake();
+    setSheet(null);
+    void undoable({
+      message: 'Bake stopped',
+      run: async () => {
+        clearActiveBake(id);
+        exit();
+      },
+      undo: async () => {
+        if (running && running.recipeId === id) restoreActiveBake(running);
+      },
+    });
   };
 
   if (loading) return <div className="fixed inset-0 z-50 bg-paper" />;
@@ -421,7 +447,7 @@ export default function BakingMode() {
 
       <header className="shrink-0 px-1 pt-[env(safe-area-inset-top)]">
         <div className="flex items-center gap-1">
-          <IconButton label="Leave baking mode" onClick={leave} icon={<X className="h-[22px] w-[22px]" strokeWidth={1.7} aria-hidden="true" />} />
+          <IconButton label="Leave baking mode" onClick={() => setSheet('leave')} icon={<X className="h-[22px] w-[22px]" strokeWidth={1.7} aria-hidden="true" />} />
           <h1 className="font-title min-w-0 flex-1 truncate text-lg">{recipe.title}</h1>
           <span className="px-1 text-sm tabular-nums text-ink-muted" aria-live="polite">
             {step ? `${step.number} of ${steps.length}` : ''}
@@ -665,6 +691,21 @@ export default function BakingMode() {
         <p>Finish and log how this one went?</p>
       </Sheet>
 
+      <Sheet open={sheet === 'leave'} onClose={() => setSheet(null)} title="Leave baking mode?" size="sm">
+        <p>The bake can wait for you in the cookbook, or stop here without being logged.</p>
+        <div className="flex flex-col gap-2 pt-4">
+          <Button variant="primary" size="lg" onClick={leave}>
+            Leave for now
+          </Button>
+          <Button variant="danger" size="lg" onClick={stopBake}>
+            Stop this bake
+          </Button>
+          <Button size="lg" onClick={() => setSheet(null)}>
+            Keep baking
+          </Button>
+        </div>
+      </Sheet>
+
       <LogBakeSheet
         open={sheet === 'log'}
         onClose={() => setSheet(null)}
@@ -672,7 +713,7 @@ export default function BakingMode() {
         stepNotes={notesThisBake}
         onSaved={(log) => {
           clearActiveBake(id);
-          navigate(`/recipe/${id}?logged=${log._id}`);
+          exit(`/recipe/${id}?logged=${log._id}`);
         }}
       />
 

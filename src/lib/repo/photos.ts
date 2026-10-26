@@ -7,6 +7,7 @@
  * of image data.
  */
 import { compressImage } from '../image';
+import { allRecipeDrafts } from '../recipeDraft';
 import { ulid } from '../ulid';
 import { deleteMany, getAll, getOne, putOne } from './db';
 
@@ -99,7 +100,9 @@ export async function collectPhotoGarbage(now = Date.now()): Promise<number> {
   // come back with its photographs.
   const recent = (r: { deletedAt: string | null }) =>
     r.deletedAt && now - new Date(r.deletedAt).getTime() <= PHOTO_GRACE_MS ? { ...r, deletedAt: null } : r;
-  const live = referencedPhotoIds([...recipes, ...bakeLogs].map(recent));
+  // A draft in the editor (lib/recipeDraft.ts) holds photographs no record does yet.
+  const drafts = allRecipeDrafts().map((d) => ({ deletedAt: null, imageUrls: d.recipe.imageUrls }));
+  const live = referencedPhotoIds([...recipes, ...bakeLogs, ...drafts].map(recent));
   const orphans = photos
     .filter((p) => !live.has(p._id) && now - new Date(p.createdAt).getTime() > PHOTO_GRACE_MS)
     .map((p) => p._id);

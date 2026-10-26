@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { repo, MissingRecordError } from './index';
 import { DB_NAME, getAll, getOne, openDB, closeDB } from './db';
 import { collectPhotoGarbage, PHOTO_GRACE_MS, savePhoto, getPhotoBlob, isPhotoRef } from './photos';
+import { saveRecipeDraft } from '../recipeDraft';
 import { isUlid } from '../ulid';
 import type { PublishedRecipe, Recipe } from '../types';
 import { makeRecipe, seed } from '../../test/utils';
@@ -135,6 +136,13 @@ describe('photo garbage collection', () => {
     expect(await getPhotoBlob(kept)).toBeDefined();
     expect(await getPhotoBlob(orphan)).toBeUndefined();
     expect(await getPhotoBlob(deletedOnly)).toBeUndefined();
+  });
+
+  it('keeps a photograph only an unsaved draft uses', async () => {
+    const photo = await savePhoto(new Blob(['a'], { type: 'image/webp' }));
+    saveRecipeDraft('new', { ...makeRecipe({ imageUrls: [photo] }) });
+    expect(await collectPhotoGarbage(Date.now() + PHOTO_GRACE_MS + 1000)).toBe(0);
+    expect(await getPhotoBlob(photo)).toBeDefined();
   });
 
   it('keeps the photographs of a record deleted moments ago, so Undo brings it back whole', async () => {

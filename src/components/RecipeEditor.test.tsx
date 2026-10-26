@@ -8,6 +8,7 @@ import { api } from '../lib/api';
 import { repo } from '../lib/repo';
 import { setOperatorToken } from '../lib/session';
 import { makeRecipe, renderScreen, seed } from '../test/utils';
+import { readRecipeDraft, saveRecipeDraft } from '../lib/recipeDraft';
 
 vi.mock('../lib/api', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../lib/api')>()),
@@ -297,6 +298,76 @@ describe('RecipeEditor', () => {
 
       await screen.findByTestId('elsewhere');
       expect((await repo.getRecipe('r1'))?.prepTime).toBe('45');
+    });
+  });
+
+  describe('drafts', () => {
+    const withToasts = (route: string) =>
+      renderScreen(
+        <ToastProvider>
+          <Routes>
+            <Route path="/new" element={<RecipeEditor />} />
+            <Route path="/edit/:id" element={<RecipeEditor />} />
+            <Route path="*" element={<div data-testid="elsewhere" />} />
+          </Routes>
+        </ToastProvider>,
+        { route },
+      );
+
+    it('keeps a new recipe left unsaved, and reopens on it', async () => {
+      const user = userEvent.setup();
+      const first = await renderNew();
+      await user.type(screen.getByPlaceholderText(/72-Hour Sourdough/i), 'Rye loaf');
+      first.unmount();
+
+      expect(readRecipeDraft('new')?.recipe.title).toBe('Rye loaf');
+      await renderNew();
+      expect(screen.getByPlaceholderText(/72-Hour Sourdough/i)).toHaveValue('Rye loaf');
+      expect(screen.getByRole('status')).toHaveTextContent(/Unsaved draft from/);
+    });
+
+    it('forgets the draft once the recipe is saved', async () => {
+      const user = userEvent.setup();
+      await renderNew();
+      await user.type(screen.getByPlaceholderText(/72-Hour Sourdough/i), 'Rye loaf');
+      await user.click(screen.getByRole('button', { name: /Create recipe/i }));
+      await screen.findByTestId('elsewhere');
+      expect(readRecipeDraft('new')).toBeNull();
+    });
+
+    it('discards a draft with Undo, putting the recipe back as it was saved', async () => {
+      const user = userEvent.setup();
+      await seed('recipes', [STIR_FRY]);
+      saveRecipeDraft('r1', { ...STIR_FRY, title: 'Prawn stir-fry, hotter' }, STIR_FRY.updatedAt);
+      withToasts('/edit/r1');
+
+      const title = await screen.findByDisplayValue('Prawn stir-fry, hotter');
+      await user.click(screen.getByRole('button', { name: 'Discard draft' }));
+      expect(title).toHaveValue('Prawn stir-fry');
+      expect(readRecipeDraft('r1')).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Discard draft' })).not.toBeInTheDocument();
+
+      await user.click(await screen.findByRole('button', { name: 'Undo' }));
+      expect(title).toHaveValue('Prawn stir-fry, hotter');
+      expect(readRecipeDraft('r1')?.recipe.title).toBe('Prawn stir-fry, hotter');
+    });
+
+    it('says when the recipe was saved again after the draft began', async () => {
+      await seed('recipes', [{ ...STIR_FRY, updatedAt: '2026-10-25T10:00:00.000Z' }]);
+      saveRecipeDraft('r1', { ...STIR_FRY, title: 'Older idea' }, '2026-10-20T10:00:00.000Z');
+      withToasts('/edit/r1');
+      expect(await screen.findByText(/The recipe has been saved since it was started./)).toBeInTheDocument();
+    });
+
+    it('starts afresh from a chosen start, leaving the old draft until something is typed', async () => {
+      const user = userEvent.setup();
+      saveRecipeDraft('new', { ...STIR_FRY, title: 'Half-written' });
+      renderScreen(<RecipeEditor />, { route: '/new?start=blank', path: '/new' });
+      const title = await screen.findByPlaceholderText(/72-Hour Sourdough/i);
+      expect(title).toHaveValue('');
+      expect(readRecipeDraft('new')?.recipe.title).toBe('Half-written');
+      await user.type(title, 'B');
+      expect(readRecipeDraft('new')?.recipe.title).toBe('B');
     });
   });
 });

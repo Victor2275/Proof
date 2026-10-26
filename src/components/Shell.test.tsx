@@ -148,7 +148,7 @@ describe('the desktop top bar', () => {
     at('/', <TopBar />);
     await user.click(screen.getByRole('button', { name: 'New' }));
     const sheet = await screen.findByRole('dialog', { name: 'New recipe' });
-    expect(within(sheet).getByRole('link', { name: /Write it/ })).toHaveAttribute('href', '/new');
+    expect(within(sheet).getByRole('link', { name: /Write it/ })).toHaveAttribute('href', '/new?start=blank');
     expect(within(sheet).getByRole('link', { name: /Paste a link or text/ })).toHaveAttribute('href', '/new?start=paste');
   });
 
@@ -159,7 +159,7 @@ describe('the desktop top bar', () => {
 });
 
 describe('the avatar', () => {
-  it('holds settings, account, published recipes, export and help, signed out', async () => {
+  it('holds one entry per place, signed out: settings, sign in, published recipes, help', async () => {
     const user = userEvent.setup();
     at('/', <TopBar />);
     await user.click(screen.getByRole('button', { name: 'Your account and settings' }));
@@ -168,21 +168,22 @@ describe('the avatar', () => {
       'Settings',
       'Sign in',
       'My published recipes',
-      'Export or import',
       'Help',
     ]);
-    expect(within(menu).getByRole('menuitem', { name: 'Export or import' })).toHaveAttribute('href', '/settings#cookbook');
   });
 
-  it('names the account and links to it, signed in; the operator also gets the queue', async () => {
+  it('leads with the name, opening the public profile, signed in; the operator also gets the queue', async () => {
     const user = userEvent.setup();
     setAccount('token', ADA);
     setOperatorToken('op');
     at('/', <TopBar />);
     expect(screen.getByRole('button', { name: 'Your account and settings' })).toHaveTextContent('AL');
     await user.click(screen.getByRole('button', { name: 'Your account and settings' }));
-    expect(screen.getByText('@ada')).toBeInTheDocument();
-    expect(screen.getByRole('menuitem', { name: 'Account' })).toHaveAttribute('href', '/settings#account');
+    const items = within(screen.getByRole('menu')).getAllByRole('menuitem');
+    expect(items[0]).toHaveTextContent('@ada');
+    expect(items[0]).toHaveAttribute('href', '/@ada');
+    expect(screen.queryByRole('menuitem', { name: 'Account' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: 'Sign in' })).not.toBeInTheDocument();
     expect(screen.getByRole('menuitem', { name: 'Moderation' })).toHaveAttribute('href', '/moderation');
   });
 

@@ -12,6 +12,7 @@ import { printedSections } from '../lib/method';
 import { factsLine } from '../lib/facts';
 import { friendlyAmountText } from '../lib/quantities';
 import { usePlan } from '../lib/session';
+import { clearRecipeDraft, draftKeyFor, readRecipeDraft, saveRecipeDraft, sameRecipe, type RecipeDraft } from '../lib/recipeDraft';
 import {
   Trash2,
   Plus,
@@ -52,6 +53,10 @@ import { Panel, Button, Disclosure, Field, Menu, MenuItem, Photo, TextArea, Shee
  * hand-rolled scrims. They are all `Sheet` now, which is where focus trapping,
  * Escape and the scroll lock come from.
  *
+ * Nothing typed is lost by leaving: every change is kept as a draft on this
+ * device (lib/recipeDraft.ts) and the editor reopens on it, with a way to
+ * discard it. "New" with a chosen start (`?start=`) begins afresh instead.
+ *
  * Editing an existing recipe never shows a form until the recipe is in it. It
  * used to render an empty "Untitled recipe" form, with live Save and Delete,
  * over a recipe it had failed to load; saving that wrote the blank over the
@@ -79,6 +84,15 @@ function draftOf(recipe: Recipe): Draft<Recipe> {
   const { _id, createdAt, updatedAt, deletedAt, ...draft } = recipe;
   void _id; void createdAt; void updatedAt; void deletedAt;
   return draft;
+}
+
+/** "3:42 pm" today, "Oct 24, 3:42 pm" before. */
+function draftTime(iso: string) {
+  const at = new Date(iso);
+  const time = at.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  return at.toDateString() === new Date().toDateString()
+    ? time
+    : `${at.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}, ${time}`;
 }
 
 export default function RecipeEditor() {
@@ -119,10 +133,16 @@ export default function RecipeEditor() {
   const undoable = useUndoableAction();
   const restore = useRestoreRecord();
 
-  const [recipe, setRecipe] = useState<Draft<Recipe>>(() => location.state?.recipe ?? BLANK);
+  const draftKey = draftKeyFor(id);
+  // "New" with a start chosen begins afresh; plain /new picks up the draft.
+  const freshStart = !id && searchParams.has('start');
+  const [resumed, setResumed] = useState<RecipeDraft | null>(() => (id || freshStart ? null : readRecipeDraft(draftKey)));
+  const [recipe, setRecipe] = useState<Draft<Recipe>>(() => location.state?.recipe ?? resumed?.recipe ?? BLANK);
   // The stored recipe is copied into the form once, when it arrives; after
   // that the form is the author's.
   const [hydrated, setHydrated] = useState(!id);
+  // What the form holds before any change: the draft is what differs from it.
+  const baseline = useMemo(() => (id ? (stored.data ? draftOf(stored.data) : null) : BLANK), [id, stored.data]);
 
   const [draggedIngredientIdx, setDraggedIngredientIdx] = useState<number | null>(null);
   const [draggedInstructionIdx, setDraggedInstructionIdx] = useState<number | null>(null);
@@ -166,10 +186,46 @@ export default function RecipeEditor() {
 
   useEffect(() => {
     if (id && !hydrated && stored.data) {
-      setRecipe(draftOf(stored.data));
+      const draft = readRecipeDraft(draftKey);
+      setResumed(draft);
+      setRecipe(draft?.recipe ?? draftOf(stored.data));
       setHydrated(true);
     }
-  }, [id, hydrated, stored.data]);
+  }, [id, hydrated, stored.data, draftKey]);
+
+  // Every change is kept; a form back where it started keeps nothing. Opening
+  // the form is not a change, so a fresh start leaves an old draft alone
+  // until something is typed.
+  const opened = useRef<Draft<Recipe> | null>(null);
+  useEffect(() => {
+    if (!hydrated || !baseline) return;
+    if (opened.current === null) {
+      opened.current = recipe;
+      return;
+    }
+    if (sameRecipe(recipe, baseline)) clearRecipeDraft(draftKey);
+    else saveRecipeDraft(draftKey, recipe, resumed?.baseUpdatedAt ?? stored.data?.updatedAt);
+    // Only a change to the form writes; the stored recipe arriving does not.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recipe, hydrated]);
+
+  const discardDraft = () => {
+    if (!baseline) return;
+    const kept = recipe;
+    const was = resumed;
+    void undoable({
+      message: 'Draft discarded',
+      run: async () => {
+        setRecipe(baseline);
+        setResumed(null);
+      },
+      undo: async () => {
+        setRecipe(kept);
+        setResumed(was);
+      },
+    });
+  };
+  const draftIsStale = !!(resumed?.baseUpdatedAt && stored.data && stored.data.updatedAt > resumed.baseUpdatedAt);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -181,6 +237,7 @@ export default function RecipeEditor() {
       const saved = id
         ? await updateRecipe.mutateAsync({ id, data: recipe })
         : await createRecipe.mutateAsync(recipe);
+      clearRecipeDraft(draftKey);
       navigate(`/recipe/${saved._id}`);
     } catch (err) {
       setSaveError(
@@ -204,6 +261,7 @@ export default function RecipeEditor() {
       message: `${recipe.title || 'Recipe'} deleted`,
       run: async () => {
         await deleteRecipe.mutateAsync(id);
+        clearRecipeDraft(draftKey);
         navigate('/', { replace: true });
       },
       undo: () => restore.mutateAsync({ store: 'recipes', id }),
@@ -541,6 +599,18 @@ export default function RecipeEditor() {
           <p className="rounded-control border border-fault p-3 text-sm text-fault" role="alert">
             {aiError}
           </p>
+        ) : null}
+
+        {resumed ? (
+          <div role="status" className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-control bg-paper-sunk px-4 py-3 text-sm">
+            <p className="min-w-0 flex-1 text-ink-2">
+              Unsaved draft from {draftTime(resumed.savedAt)}.
+              {draftIsStale ? ' The recipe has been saved since it was started.' : ''}
+            </p>
+            <Button variant="danger" size="sm" onClick={discardDraft}>
+              Discard draft
+            </Button>
+          </div>
         ) : null}
 
         {/* A new recipe can start from somewhere else (change 117). */}

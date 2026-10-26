@@ -282,6 +282,7 @@ export default function RecipeViewer() {
     <Link
       ref={startRef}
       to={`/recipe/${recipe._id}/bake`}
+      state={{ fromRecipe: true }}
       onClick={() => haptic('medium')}
       className={buttonClassName({ variant: 'primary', size: 'lg', className: 'flex-1' })}
     >
@@ -487,6 +488,7 @@ export default function RecipeViewer() {
           <span className="font-title min-w-0 flex-1 truncate text-base text-ink">{recipe.title}</span>
           <Link
             to={`/recipe/${recipe._id}/bake`}
+            state={{ fromRecipe: true }}
             tabIndex={-1}
             onClick={() => haptic('medium')}
             className={buttonClassName({ variant: 'primary' })}
