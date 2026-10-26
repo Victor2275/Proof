@@ -62,7 +62,7 @@ describe('the account sheet', () => {
     expect(await screen.findByRole('dialog', { name: 'Create an account' })).toBeInTheDocument();
     expect(screen.getByLabelText('Handle')).toBeInTheDocument();
     // Before anyone has to wonder: nothing moves.
-    expect(screen.getByText(/Your cookbook stays on this device exactly as it is/)).toBeInTheDocument();
+    expect(screen.getByText(/Only needed to publish recipes or sync/)).toBeInTheDocument();
   });
 
   it('puts the server\'s objection on the field it names', async () => {
@@ -104,7 +104,7 @@ describe('Settings → Account', () => {
     window.addEventListener(ACCOUNT_PROMPT_EVENT, asked);
     renderScreen(<AccountPanel />);
 
-    expect(screen.getByText(/Your own cookbook never needs one/)).toBeInTheDocument();
+    expect(screen.getByText(/Only needed to publish recipes or sync/)).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Sign in' }));
     expect(asked).toHaveBeenCalled();
     window.removeEventListener(ACCOUNT_PROMPT_EVENT, asked);

@@ -23,7 +23,7 @@ export default function NotFound() {
         </p>
         <h1 className="font-title text-3xl leading-tight text-ink">That page isn't in this book.</h1>
         <p className="font-prose text-[1.0625rem] text-ink-2">
-          It may have been deleted, or the link may have been mistyped. If it was a recipe, look for it by name.
+          It may have been deleted, or the link is wrong.
         </p>
       </div>
 

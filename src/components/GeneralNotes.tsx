@@ -159,8 +159,7 @@ export default function GeneralNotes() {
             Loose notes
           </h1>
           <p className="max-w-prose text-ink-muted">
-            The bench notebook. Anything that is not a recipe — a starter's timing, an oven's
-            true temperature, what to try next.
+            Anything that isn't a recipe.
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">

@@ -224,7 +224,7 @@ export default function Settings() {
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-8 pb-20">
-      <PageHeader title="Settings" subtitle="How Proof looks and behaves on this device, and the cookbook it keeps here." />
+      <PageHeader title="Settings" />
 
       <Panel title="Appearance">
         <div className="flex flex-col gap-3">
@@ -243,7 +243,7 @@ export default function Settings() {
           <div className="border-t border-rule">
             <Switch
               label="Handwritten notes"
-              description="Set your bake notes in a handwriting face instead of the book's italic."
+              description="Bake notes in a handwriting face."
               checked={handwriting}
               onChange={setHandwriting}
             />
@@ -255,31 +255,31 @@ export default function Settings() {
         <div className="divide-y divide-rule px-4">
           <Switch
             label="Baker's math"
-            description="Show baker's percentages on every recipe without asking."
+            description="Show baker's percentages on every recipe."
             checked={defaultBakersMath}
             onChange={setDefaultBakersMath}
           />
           <Switch
             label="Haptics"
-            description="A small buzz when a step advances or a timer ends. Phones only."
+            description="A buzz when a step moves on or a timer ends. Phones only."
             checked={haptics}
             onChange={setHaptics}
           />
           <Switch
             label="Spoken timers"
-            description="Say a timer's name aloud when it ends, for hands that are busy."
+            description="Say a timer's name aloud when it ends."
             checked={ttsEnabled}
             onChange={setTtsEnabled}
           />
           <Switch
             label="Wave to advance"
-            description="Move a hand over the camera to reach the next step."
+            description="Wave at the camera for the next step."
             checked={waveToAdvance}
             onChange={setWaveToAdvance}
           />
           <Switch
             label="Voice commands"
-            description="Say next, back, read, ingredients or start timer instead of tapping."
+            description="Say next, back, read or start timer."
             checked={voiceCommands}
             onChange={setVoiceCommands}
           />
@@ -313,7 +313,7 @@ export default function Settings() {
               * than a bar across every screen (B29). */}
             {server.isError ? (
               <p className="text-sm text-ink-muted">
-                The shared cookbook and the AI need the server; your own cookbook does not.
+                Discover and the AI need the server. Your cookbook doesn't.
               </p>
             ) : null}
             {persisted === false ? (
@@ -331,7 +331,7 @@ export default function Settings() {
 
           <ActionRow
             title="Export"
-            description="The whole cookbook as one .zip: recipes, bakes, notes, pantry and photographs. The free backup."
+            description="The whole cookbook, photos included, as one .zip."
             status={exportMsg}
           >
             <Button onClick={handleExport} busy={exporting} icon={<Download className="h-4 w-4" />}>
@@ -341,7 +341,7 @@ export default function Settings() {
 
           <ActionRow
             title="Import"
-            description="Bring back an export. Anything newer on this device is kept, so importing twice changes nothing."
+            description="Restore an export. Newer changes here are kept."
             status={importMsg}
             error={importError}
           >
@@ -381,7 +381,7 @@ export default function Settings() {
           <div className="flex flex-col gap-5">
             <ActionRow
               title="Moderation"
-              description="Recipes and comments the screen held back, and what people reported."
+              description="Held recipes, held comments and reports."
             >
               <Link to="/moderation" className={buttonClassName({})}>
                 Open the queue
@@ -390,7 +390,7 @@ export default function Settings() {
 
             <ActionRow
               title="Copy the server library here"
-              description="Brings the recipes, bakes, notes and pantry stored on the server onto this device. Run it once per device; running it again changes nothing."
+              description="Copies the server's recipes, bakes, notes and pantry onto this device. Safe to run twice."
               status={libraryMsg}
               error={libraryError}
             >
@@ -411,7 +411,7 @@ export default function Settings() {
 
             <ActionRow
               title="Re-host photographs"
-              description="Copy any server-side photograph still pointing at another site onto Cloudinary, so the library does not depend on it staying up."
+              description="Moves photos hosted on other sites to Cloudinary."
               status={rehostMsg}
             >
               <Button

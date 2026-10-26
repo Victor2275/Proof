@@ -48,8 +48,7 @@ export default function StarterShelf() {
       ) : featured.isError ? (
         <div className="flex flex-col items-start gap-3">
           <p className="text-ink-2">
-            The shared cookbook needs a connection, and this device can't reach it right now. Your own cookbook works
-            offline: start one with the doors above.
+            Can't reach the shared cookbook right now.
           </p>
           <Button onClick={() => featured.refetch()}>Try again</Button>
         </div>

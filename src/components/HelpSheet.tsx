@@ -12,19 +12,19 @@ const TOPICS: { title: string; body: string }[] = [
   },
   {
     title: 'Cooking',
-    body: 'Open a recipe and press Start cooking. One step at a time, large enough to read from the counter, with its timers ready to start.',
+    body: 'Open a recipe and press Start cooking: one step at a time, with its timers ready.',
   },
   {
     title: 'Bakes',
-    body: 'Each time you make something, log it: a photo, how it went, and what to change next time. The note comes back the next time you open the recipe.',
+    body: 'Log each bake: a photo, how it went, what to change. The note shows up next time.',
   },
   {
     title: 'Shop',
-    body: "What to buy, and what's already in the cupboard. Add a recipe's missing ingredients from the recipe itself.",
+    body: "What to buy, and what's in the cupboard.",
   },
   {
     title: 'It stays on this device',
-    body: 'Nothing needs an account. Export the whole cookbook from Settings to keep a copy. An account is only for publishing recipes for others to find.',
+    body: 'No account needed. Export a copy from Settings. An account is for publishing and sync.',
   },
 ];
 

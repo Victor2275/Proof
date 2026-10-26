@@ -81,7 +81,7 @@ export function NewRecipeSheet({ open, onClose }: { open: boolean; onClose: () =
           <DoorLink key={door.to} door={door} onChoose={onClose} />
         ))}
       </nav>
-      <p className="mt-6 text-[0.8125rem] text-ink-muted">{hasDraft ? REPLACES : 'Saved on this device. No account needed.'}</p>
+      {hasDraft ? <p className="mt-6 text-[0.8125rem] text-ink-muted">{REPLACES}</p> : null}
     </Sheet>
   );
 }

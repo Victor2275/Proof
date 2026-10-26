@@ -92,7 +92,7 @@ describe('the publish sheet', () => {
     renderScreen(<PublishSheet open onClose={() => {}} recipe={RYE} />);
 
     expect(screen.getByText(/goes into the shared cookbook as @ada/)).toBeInTheDocument();
-    expect(screen.getByText(/stay private until you push them/)).toBeInTheDocument();
+    expect(screen.getByText(/stay private until you publish again/)).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Publish' }));
 
     expect(await screen.findByText('Live in the shared cookbook.')).toBeInTheDocument();

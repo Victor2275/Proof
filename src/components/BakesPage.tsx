@@ -144,7 +144,7 @@ export default function BakesPage() {
           <p className="max-w-prose text-ink-2">
             {only
               ? "This recipe hasn't been baked yet."
-              : 'No bakes yet. Each time you make something, log it — a photograph, how it went, what to change — and it is kept here, and on the recipe.'}
+              : 'No bakes yet.'}
           </p>
           <Button variant="primary" onClick={() => (filtered ? navigate(`/recipe/${filtered._id}?log=1`) : setPicking(true))}>
             Log a bake

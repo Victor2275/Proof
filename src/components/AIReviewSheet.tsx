@@ -159,7 +159,7 @@ export default function AIReviewSheet({
     >
       {changed.length === 0 ? (
         <p className="text-sm text-ink-muted">
-          The model read the recipe and proposed nothing different. Nothing has been altered.
+          No changes suggested.
         </p>
       ) : (
         <div className="flex flex-col gap-3">

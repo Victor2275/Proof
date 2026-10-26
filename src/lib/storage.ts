@@ -8,7 +8,7 @@
  */
 
 /** How the cookbook's home is described wherever it comes up (decision B17): honest, not alarming. */
-export const STORED_ON_DEVICE = 'Stored on this device. Export any time; an account adds backup.';
+export const STORED_ON_DEVICE = 'Stored on this device.';
 
 export interface StorageReport {
   /** Whether the browser has promised not to evict the cookbook. null when it can't say. */

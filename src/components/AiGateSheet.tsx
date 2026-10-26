@@ -22,8 +22,7 @@ export function AiGateNotice({ feature }: { feature: string }) {
       {!user ? (
         <>
           <p className="text-ink">
-            {feature} runs on Proof's server, where every request costs money to answer. An account with a
-            confirmed email gets a free allowance each month.
+            {feature} needs an account. Free accounts get a monthly allowance.
           </p>
           <div className="flex flex-wrap gap-2">
             <Button onClick={() => requestAccount('signin', `Sign in to use ${feature.toLowerCase()}.`)}>Sign in</Button>
@@ -37,9 +36,6 @@ export function AiGateNotice({ feature }: { feature: string }) {
           {feature} opens once your email is confirmed. The link is in the message sent to {user.email}.
         </p>
       )}
-      <p className="text-ink-muted">
-        Everything else works now, free and offline: your recipes, bakes, photographs and notes stay on this device.
-      </p>
     </div>
   );
 }

@@ -115,7 +115,7 @@ describe('AIReviewSheet', () => {
       />,
     );
     expect(screen.getByRole('dialog', { name: /Nothing to change/i })).toBeInTheDocument();
-    expect(screen.getByText(/proposed nothing different/i)).toBeInTheDocument();
+    expect(screen.getByText(/No changes suggested/)).toBeInTheDocument();
   });
 
   it('reads ingredients and steps as lines rather than as JSON', () => {

@@ -168,7 +168,7 @@ export default function ToBuy() {
         <p className="max-w-prose text-ink-2">
           {basket.length
             ? 'Everything is in the basket.'
-            : 'Add what a recipe needs from its page or with “Add from a recipe”, or type anything above.'}
+            : 'Nothing to buy.'}
         </p>
       ) : (
         aisles.map((aisle) => (

@@ -89,8 +89,7 @@ export default function PublishSheet({ open, onClose, recipe, publication }: Pub
       <Sheet open={open} onClose={onClose} title={title} size="sm" footer={<Button onClick={onClose}>Close</Button>}>
         <div className="flex flex-col gap-3 text-sm">
           <p className="text-ink">
-            Publishing puts a copy of this recipe in the shared cookbook, under your name. It needs an account with a
-            confirmed email.
+            Publishing needs an account with a confirmed email.
           </p>
           {!session.user ? (
             <div className="flex flex-wrap gap-2">
@@ -189,7 +188,7 @@ export default function PublishSheet({ open, onClose, recipe, publication }: Pub
             : `A copy of "${recipe.title}" goes into the shared cookbook as @${session.user.handle}.`}
         </p>
         <p className="text-sm text-ink-muted">
-          The recipe here stays yours and private. Edits you make later stay private until you push them.
+          Later edits stay private until you publish again.
         </p>
         <p className="ui-label text-ink-muted">
           {photos === 0

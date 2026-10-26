@@ -19,7 +19,7 @@ const SURFACES = [
   { name: 'recipe-viewer', path: '/recipe/r-sourdough', settle: 'text=Ingredients' },
   { name: 'editor', path: '/edit/r-sourdough', settle: 'h2#edit-method' },
   { name: 'editor-new', path: '/new', settle: 'text=Start from a link, text or a photograph' },
-  { name: 'notes', path: '/notes', settle: 'text=The bench notebook' },
+  { name: 'notes', path: '/notes', settle: "text=Anything that isn't a recipe" },
   { name: 'settings', path: '/settings', settle: 'text=Appearance' },
   { name: 'bakes', path: '/bakes', settle: 'body' },
   { name: 'bakes-by-recipe', path: '/bakes?view=recipe', settle: 'body' },
@@ -118,7 +118,7 @@ test.describe('overlays', () => {
       await useTheme(page, 'dark');
       await pinEnvironment(page);
       await page.goto('/notes');
-      await settle(page, 'text=The bench notebook');
+      await settle(page, "text=Anything that isn't a recipe");
 
       await page.getByRole('button', { name: 'Delete Starter timing' }).click();
       await expect(page.getByRole('dialog', { name: 'Delete note' })).toBeVisible();
@@ -149,7 +149,7 @@ test.describe('overlays', () => {
       await useTheme(page, 'dark');
       await pinEnvironment(page);
       await page.goto('/notes');
-      await settle(page, 'text=The bench notebook');
+      await settle(page, "text=Anything that isn't a recipe");
 
       await page.getByRole('button', { name: /All notes/i }).click();
       await expect(page.getByRole('dialog', { name: /Notes/ })).toBeVisible();

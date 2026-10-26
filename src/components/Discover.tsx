@@ -93,7 +93,7 @@ export default function Discover() {
     <div className="mx-auto flex max-w-5xl flex-col gap-6 pb-20">
       <PageHeader
         title="Discover"
-        subtitle="Recipes other bakers have published. Save one and it becomes yours to bake, log and change."
+        subtitle="Recipes from other bakers."
         actions={<AccountSheetButton className="md:hidden" />}
       />
 

@@ -33,7 +33,7 @@ describe('AISubstitutionsModal Component', () => {
   it('explains why the AI is closed to a stranger', () => {
     renderModal();
     expect(screen.queryByRole('button', { name: /Generate Substitutions/i })).not.toBeInTheDocument();
-    expect(screen.getByText(/runs on Proof's server/i)).toBeInTheDocument();
+    expect(screen.getByText(/needs an account/i)).toBeInTheDocument();
   });
 
   describe('for a confirmed account', () => {

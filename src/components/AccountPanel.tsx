@@ -45,7 +45,7 @@ export default function AccountPanel() {
       <Panel title="Account">
         <div id="account" className="flex flex-col gap-3">
           <p className="text-sm text-ink-muted">
-            An account lets you publish recipes to the shared cookbook. Your own cookbook never needs one.
+            Only needed to publish recipes or sync between devices.
           </p>
           <div className="flex flex-wrap gap-2">
             <Button onClick={() => requestAccount('signin')}>Sign in</Button>

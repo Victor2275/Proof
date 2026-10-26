@@ -669,7 +669,6 @@ export default function BakingMode() {
           onChange={(e) => setNoteDraft(e.target.value)}
           placeholder="Crust pale at 10 min. Give it 12."
         />
-        <p className="pt-2 text-sm text-ink-muted">Filed with this bake, against this step. Next time it shows here.</p>
       </Sheet>
 
       <Sheet
@@ -692,8 +691,7 @@ export default function BakingMode() {
       </Sheet>
 
       <Sheet open={sheet === 'leave'} onClose={() => setSheet(null)} title="Leave baking mode?" size="sm">
-        <p>The bake can wait for you in the cookbook, or stop here without being logged.</p>
-        <div className="flex flex-col gap-2 pt-4">
+        <div className="flex flex-col gap-2">
           <Button variant="primary" size="lg" onClick={leave}>
             Leave for now
           </Button>

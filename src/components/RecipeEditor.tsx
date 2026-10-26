@@ -451,7 +451,7 @@ export default function RecipeEditor() {
 
   const handleOpenPastBakes = async () => {
     if (!id) {
-      setSaveError('Save the recipe first, and its past bakes become available here.');
+      setSaveError('Save the recipe first.');
       return;
     }
     setShowPastBakesModal(true);
@@ -865,7 +865,7 @@ export default function RecipeEditor() {
             value={recipe.labNotes || ''}
             onChange={(e) => setRecipe({ ...recipe, labNotes: e.target.value })}
             placeholder="Used rosemary instead of thyme. Next time: half the salt."
-            hint="Not shown while cooking. Also the raw text that Tidy up with AI reads."
+            hint="Not shown while cooking."
           />
         </section>
       </div>

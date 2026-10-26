@@ -485,3 +485,5 @@ Rebuilt as the bake sheet: see section 18.
 - [ ] **Moderators filter**: Moderation → Accounts → Show moderators lists the owner too.
 - [ ] **Log**: an action by the owner reads "@madboy2275 …" in Moderation → Log.
 
+## 26. Plainer copy
+- [ ] **No over-explaining**: Bakes, a recipe's bakes, Shop's list, My published recipes, Settings, Discover, Loose notes, Help, the AI gate, the publish sheet, Not found and the landing page read as short plain lines, with no sentence explaining what the app is about to do or that the cookbook is safe.

@@ -24,9 +24,9 @@ import { Button, MarginNote, Stamp, Stars } from './ui';
  */
 
 const LINES = [
-  { icon: WifiOff, title: 'Works offline', body: 'Your cookbook lives on this device. No signal in the kitchen, no problem.' },
-  { icon: Timer, title: 'Timers in every step', body: 'Tap “20 minutes” in a step and it counts down, even if you leave the page.' },
-  { icon: Link2, title: 'Share a recipe', body: 'Send a link to a recipe you are proud of, or save one someone sent you.' },
+  { icon: WifiOff, title: 'Works offline', body: 'Your cookbook lives on this device.' },
+  { icon: Timer, title: 'Timers in every step', body: 'Tap “20 minutes” in a step and it counts down.' },
+  { icon: Link2, title: 'Share a recipe', body: 'Send a link, or save one someone sent you.' },
 ];
 
 export default function LandingPage() {
@@ -58,8 +58,7 @@ export default function LandingPage() {
               Bake it. Write it down. Bake it better.
             </h1>
             <p className="font-prose max-w-prose text-xl leading-snug text-ink-2">
-              Your recipes, and what happened every time you made them — so the note you left last time is waiting when you
-              start the next.
+              Your recipes, and what happened each time you made them.
             </p>
             <div className="flex flex-col items-start gap-3">
               <Button variant="primary" size="lg" onClick={open} icon={<BookOpen className="h-5 w-5" aria-hidden="true" />}>
@@ -111,8 +110,7 @@ export default function LandingPage() {
                 ))}
               </div>
               <p className="font-prose text-ink-2">
-                Oldest to newest, so the row itself is the progress — and the note you left for next time shows up when you
-                start cooking it again.
+                Oldest to newest. Your note for next time is waiting when you start again.
               </p>
             </div>
           </div>

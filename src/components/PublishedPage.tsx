@@ -43,7 +43,7 @@ export default function PublishedPage() {
         </div>
       ) : items.length === 0 ? (
         <p className="text-ink-2">
-          Nothing published yet. Open a recipe and choose Publish to share it with other bakers.
+          Nothing published yet.
         </p>
       ) : (
         <ul className="flex flex-col">

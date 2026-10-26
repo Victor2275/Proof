@@ -73,7 +73,7 @@ export function YourBakes({ bakes, onOpen, onLog, freshId }: YourBakesProps) {
       </div>
       {bakes.length === 0 ? (
         <p className="text-ink-2">
-          None yet. Start cooking, or log a bake you&apos;ve already made, and it will be kept here, oldest first.
+          None yet.
         </p>
       ) : null}
       <ol className="no-scrollbar -mx-4 flex gap-2.5 overflow-x-auto px-4 pb-1 pt-1 sm:mx-0 sm:px-0">

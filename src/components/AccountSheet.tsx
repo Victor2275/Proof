@@ -134,7 +134,7 @@ export default function AccountSheet({ open, mode, onModeChange, onClose, reason
         {reason ? <p className="text-sm text-ink">{reason}</p> : null}
         <p className="text-sm text-ink-muted">
           {signup
-            ? 'An account lets you publish to the shared cookbook. Your cookbook stays on this device exactly as it is.'
+            ? 'Only needed to publish recipes or sync between devices.'
             : forgot
               ? "We'll email a link to set a new password."
               : STORED_ON_DEVICE}

@@ -33,7 +33,7 @@ describe('Settings', () => {
     // Haptics is on by default in this build.
     const haptics = screen.getByRole('switch', { name: 'Haptics' });
     expect(haptics).toHaveAttribute('aria-checked', 'true');
-    expect(haptics).toHaveAccessibleDescription(/A small buzz/);
+    expect(haptics).toHaveAccessibleDescription(/A buzz when a step moves on/);
 
     expect(screen.getByRole('switch', { name: 'Wave to advance' })).toHaveAttribute('aria-checked', 'false');
   });
@@ -129,7 +129,7 @@ describe('Settings', () => {
   it('says where the cookbook lives, and that the server is not needed for it', async () => {
     renderScreen(<Settings />);
     expect(screen.getByText(/Stored on this device/)).toBeInTheDocument();
-    expect(await screen.findByText(/your own cookbook does not/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Your cookbook doesn't/)).toBeInTheDocument();
   });
 
   it('imports an export, and reports what it brought in', async () => {
