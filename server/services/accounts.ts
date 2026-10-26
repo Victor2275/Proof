@@ -92,6 +92,7 @@ export const publicUser = (user: UserDoc) => ({
   displayName: user.displayName,
   bio: user.bio,
   pro: user.plan === 'pro',
+  moderator: user.role === 'moderator',
   joinedAt: user.createdAt,
 });
 
@@ -105,6 +106,45 @@ export const privateUser = (user: UserDoc) => ({
   planExpiresAt: user.planExpiresAt,
   ai: aiAllowance(user),
 });
+
+/** What a moderator sees of an account: enough to decide it, never the password or the AI count. */
+export const staffUser = (user: UserDoc) => ({
+  ...publicUser(user),
+  id: user._id,
+  email: user.email,
+  emailVerified: !!user.emailVerifiedAt,
+  plan: user.plan,
+  suspended: !!user.suspendedAt,
+  suspendedAt: user.suspendedAt,
+  suspendedReason: user.suspendedReason,
+});
+
+/*
+ * Suspends an account: signs it out everywhere, and hides what it published
+ * and the comments it left until the suspension is lifted. Nothing is deleted,
+ * so lifting it puts everything back as it was.
+ */
+export async function suspendAccount(user: UserDoc, reason: string) {
+  const now = new Date();
+  user.suspendedAt = now;
+  user.suspendedReason = reason;
+  await user.save();
+  await Promise.all([
+    Session.deleteMany({ kind: 'user', userId: user._id }),
+    PublishedRecipe.updateMany({ authorId: user._id, hiddenAt: null }, { $set: { hiddenAt: now } }),
+    Comment.updateMany({ userId: user._id, hiddenAt: null }, { $set: { hiddenAt: now } }),
+  ]);
+}
+
+export async function liftSuspension(user: UserDoc) {
+  user.suspendedAt = null;
+  user.suspendedReason = '';
+  await user.save();
+  await Promise.all([
+    PublishedRecipe.updateMany({ authorId: user._id }, { $set: { hiddenAt: null } }),
+    Comment.updateMany({ userId: user._id }, { $set: { hiddenAt: null } }),
+  ]);
+}
 
 /** Everything the server holds about an account, as one document (GDPR access). */
 export async function exportAccount(user: UserDoc) {

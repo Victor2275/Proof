@@ -10,6 +10,11 @@ import { ulid } from '../services/ulid.js';
  *
  * `handle` is the public name — /@handle, "Adapted from @handle" — and is
  * unique case-insensitively, so it is stored lowercased.
+ *
+ * `role` is the one distinction among accounts: a moderator confirms accounts,
+ * works the moderation queue and may suspend. The site operator is not a role
+ * — the ADMIN_PIN proves it (middleware/auth.js). A suspended account cannot
+ * sign in, and what it published is hidden until the suspension is lifted.
  */
 const userSchema = new mongoose.Schema({
   _id: { type: String, default: () => ulid() },
@@ -19,6 +24,9 @@ const userSchema = new mongoose.Schema({
   displayName: { type: String, default: '' },
   bio: { type: String, default: '' },
   emailVerifiedAt: { type: Date, default: null },
+  role: { type: String, enum: ['user', 'moderator'], default: 'user' },
+  suspendedAt: { type: Date, default: null },
+  suspendedReason: { type: String, default: '' },
   plan: { type: String, enum: ['free', 'pro'], default: 'free' },
   planExpiresAt: { type: Date, default: null },
   /** AI actions used in `period` (YYYY-MM). A new month starts the count again. */

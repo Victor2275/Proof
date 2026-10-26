@@ -186,6 +186,19 @@ describe('the avatar', () => {
     expect(screen.getByRole('menuitem', { name: 'Moderation' })).toHaveAttribute('href', '/moderation');
   });
 
+  it('gives a moderator account the queue without the operator PIN, and an ordinary one not', async () => {
+    const user = userEvent.setup();
+    setAccount('token', { ...ADA, moderator: true });
+    at('/', <TopBar />);
+    await user.click(screen.getByRole('button', { name: 'Your account and settings' }));
+    expect(screen.getByRole('menuitem', { name: 'Moderation' })).toHaveAttribute('href', '/moderation');
+    await user.keyboard('{Escape}');
+
+    setAccount('token', { ...ADA, moderator: false });
+    await user.click(screen.getByRole('button', { name: 'Your account and settings' }));
+    expect(screen.queryByRole('menuitem', { name: 'Moderation' })).not.toBeInTheDocument();
+  });
+
   it('opens Help', async () => {
     const user = userEvent.setup();
     at('/', <TopBar />);

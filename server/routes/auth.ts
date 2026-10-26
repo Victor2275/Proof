@@ -117,6 +117,13 @@ router.post('/login', credentialLimiter, guard(async (req, res) => {
   if (!(await checkPasswordAgainst(user?.passwordHash ?? null, password)) || !user) {
     return res.status(401).json({ error: "That email and password don't match an account." });
   }
+  // Only after the password matched, so this can't be used to find suspended accounts.
+  if (user.suspendedAt) {
+    return res.status(403).json({
+      error: `This account is suspended${user.suspendedReason ? `: ${user.suspendedReason}` : '.'} Your cookbook on this device is unaffected.`,
+      suspended: true,
+    });
+  }
   const token = await createSession({ kind: 'user', userId: user._id });
   res.json({ token, user: privateUser(user) });
 }));

@@ -33,6 +33,8 @@ export interface Account {
   emailVerified: boolean;
   plan: 'free' | 'pro';
   pro: boolean;
+  /** Confirms accounts and works the moderation queue (server/routes/accounts.ts). */
+  moderator?: boolean;
   joinedAt: string;
   planExpiresAt: string | null;
   ai?: { used: number; limit: number | null; period: string };
@@ -93,11 +95,13 @@ export interface Session {
   user: Account | null;
   /** Holds the operator PIN: moderation, backups, takedowns. Not a user role. */
   isOperator: boolean;
+  /** May open the Moderation page: the operator, or a moderator account. */
+  canModerate: boolean;
 }
 
 // useSyncExternalStore needs the same object back while nothing has changed.
 let snapshotKey = '';
-let snapshot: Session = { user: null, isOperator: false };
+let snapshot: Session = { user: null, isOperator: false, canModerate: false };
 
 function readSession(): Session {
   const op = operatorToken();
@@ -112,12 +116,12 @@ function readSession(): Session {
       user = null;
     }
     snapshotKey = key;
-    snapshot = { user, isOperator: !!op };
+    snapshot = { user, isOperator: !!op, canModerate: !!op || !!user?.moderator };
   }
   return snapshot;
 }
 
-const SERVER_SESSION: Session = { user: null, isOperator: false };
+const SERVER_SESSION: Session = { user: null, isOperator: false, canModerate: false };
 
 export function useSession() {
   const session = useSyncExternalStore(subscribe, readSession, () => SERVER_SESSION);

@@ -1,30 +1,65 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api';
 import { useSession } from '../lib/session';
 import { queryKeys, useModerationQueue } from '../lib/queries';
 import NotFound from './NotFound';
-import { Button, Field, Panel, Prose, Skeleton } from './ui';
+import ModerationAccounts from './ModerationAccounts';
+import ModerationLog from './ModerationLog';
+import { BackButton, Button, Field, PageHeader, Panel, Prose, Segmented, Skeleton } from './ui';
 
 /*
- * The operator's moderation queue (LAUNCH_PLAN.md, Phase 3 item 10).
+ * Moderation, for the operator and for moderator accounts.
+ *
+ * Three views, kept in `?view=` like Shop's: the queue, the accounts, and the
+ * log of who decided what. Only staff ever reach this page; anyone else is
+ * shown nothing at this address.
+ */
+type View = 'queue' | 'accounts' | 'log';
+
+export default function Moderation() {
+  const { session } = useSession();
+  const [params, setParams] = useSearchParams();
+  const raw = params.get('view');
+  const view: View = raw === 'accounts' || raw === 'log' ? raw : 'queue';
+
+  if (!session.canModerate) return <NotFound />;
+
+  return (
+    <div className="mx-auto flex max-w-4xl flex-col gap-6 pb-20">
+      <PageHeader back={<BackButton to="/settings" label="Settings" />} title="Moderation" />
+      <Segmented
+        label="Moderation view"
+        value={view}
+        block
+        className="sm:w-96"
+        options={[
+          { value: 'queue', label: 'Queue' },
+          { value: 'accounts', label: 'Accounts' },
+          { value: 'log', label: 'Log' },
+        ]}
+        onChange={(next) => setParams(next === 'queue' ? {} : { view: next }, { replace: true })}
+      />
+      {view === 'queue' ? <Queue /> : view === 'accounts' ? <ModerationAccounts /> : <ModerationLog />}
+    </div>
+  );
+}
+
+/*
+ * The queue (LAUNCH_PLAN.md, Phase 3 item 10).
  *
  * Three lists, oldest first: recipes the screen held, comments the screen
  * held, and reports. Each item carries what is needed to decide it, and each
  * decision is one press. A rejection takes a reason, because the author sees
- * it and needs to know what to fix (B7). Only the operator ever reaches this
- * page; anyone else is shown nothing at this address.
+ * it and needs to know what to fix (B7).
  */
-export default function Moderation() {
-  const { session } = useSession();
-  const queue = useModerationQueue(session.isOperator);
+function Queue() {
+  const queue = useModerationQueue(true);
   const client = useQueryClient();
   const [reasons, setReasons] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState('');
-
-  if (!session.isOperator) return <NotFound />;
 
   const act = async (key: string, action: () => Promise<unknown>) => {
     setBusy(key);
@@ -50,12 +85,7 @@ export default function Moderation() {
   );
 
   return (
-    <div className="mx-auto flex max-w-4xl flex-col gap-8 pb-20">
-      <header className="flex flex-col gap-2 border-b border-rule pb-6">
-        <h1 className="font-title text-3xl text-ink sm:text-4xl">Moderation</h1>
-        <p className="text-ink-muted">What the screen held back, and what people reported, oldest first.</p>
-      </header>
-
+    <div className="flex flex-col gap-8">
       {error ? (
         <p className="text-sm text-fault" role="alert">
           {error}

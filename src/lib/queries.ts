@@ -12,8 +12,8 @@
  * - The shared cookbook is remote. It is cached briefly and fails with a
  *   message that says the cookbook itself is unaffected.
  */
-import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
-import { api, ApiError, type PublishBody } from './api';
+import { keepPreviousData, useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
+import { api, ApiError, type AccountFilter, type PublishBody } from './api';
 import { repo, type NewBakeLog, type NewBakePhoto } from './repo';
 import type { RecordStore } from './repo/db';
 import type { BakeLog, Draft, Publication, PublishedRecipe, Recipe, ShoppingItem } from './types';
@@ -36,6 +36,10 @@ export const queryKeys = {
   comments: (id: string) => ['published', 'comments', id] as const,
   profile: (handle: string) => ['profile', handle] as const,
   moderation: () => ['moderation'] as const,
+  moderationQueue: () => ['moderation', 'queue'] as const,
+  moderationLog: () => ['moderation', 'log'] as const,
+  accounts: (filter: string, q: string) => ['moderation', 'accounts', filter, q] as const,
+  account: (id: string) => ['moderation', 'account', id] as const,
 };
 
 const LOCAL = { staleTime: Infinity, networkMode: 'always' as const, retry: false };
@@ -353,5 +357,22 @@ export const useProfile = (handle: string | undefined) =>
     ...REMOTE,
   });
 
+/* Everything under ['moderation'], so one invalidation after a decision refreshes every tab. */
 export const useModerationQueue = (enabled: boolean) =>
-  useQuery({ queryKey: queryKeys.moderation(), queryFn: api.getModerationQueue, enabled, ...REMOTE, staleTime: 0 });
+  useQuery({ queryKey: queryKeys.moderationQueue(), queryFn: api.getModerationQueue, enabled, ...REMOTE, staleTime: 0 });
+
+export const useModerationLog = (enabled: boolean) =>
+  useQuery({ queryKey: queryKeys.moderationLog(), queryFn: () => api.getModerationLog(), enabled, ...REMOTE, staleTime: 0 });
+
+export const useAccounts = (filter: AccountFilter, q: string, enabled: boolean) =>
+  useQuery({
+    queryKey: queryKeys.accounts(filter, q),
+    queryFn: () => api.listAccounts(filter, q),
+    enabled,
+    ...REMOTE,
+    staleTime: 0,
+    placeholderData: keepPreviousData,
+  });
+
+export const useAccountDetail = (id: string | null) =>
+  useQuery({ queryKey: queryKeys.account(id ?? ''), queryFn: () => api.getAccount(id!), enabled: !!id, ...REMOTE, staleTime: 0 });

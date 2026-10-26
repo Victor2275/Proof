@@ -293,7 +293,7 @@ describe('reports and the moderation queue', () => {
     expect((await request(app).post('/api/reports').send({ targetType: 'recipe', targetId: id })).statusCode).toBe(400);
     expect((await request(app).post('/api/reports').send({ targetType: 'recipe', targetId: id, reason: 'Spam' })).statusCode).toBe(201);
 
-    expect((await request(app).get('/api/moderation/queue').set(as(ada.token))).statusCode).toBe(401);
+    expect((await request(app).get('/api/moderation/queue').set(as(ada.token))).statusCode).toBe(403);
     const op = await createSession({ kind: 'operator' });
     const queue = await request(app).get('/api/moderation/queue').set(as(op));
     expect(queue.body.reports[0]).toMatchObject({ reason: 'Spam', target: { title: 'Dark Rye' } });

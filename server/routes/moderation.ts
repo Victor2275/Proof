@@ -1,39 +1,42 @@
 import { Router, Request, Response } from 'express';
-import mongoose from 'mongoose';
-import { requireOperator } from '../middleware/auth.js';
+import { requireModerator } from '../middleware/auth.js';
 import { PublishedRecipe } from '../models/PublishedRecipe.js';
 import { Comment } from '../models/Comment.js';
 import { Report } from '../models/Report.js';
+import { ModerationLog } from '../models/ModerationLog.js';
+import { logAction, type Staff } from '../services/moderationLog.js';
 
 /*
- * The operator's moderation queue (LAUNCH_PLAN.md, Phase 3 item 10).
+ * The moderation queue (LAUNCH_PLAN.md, Phase 3 item 10), for the operator
+ * and for moderator accounts.
  *
  *   GET  /api/moderation/queue              held recipes, held comments, open reports
  *   POST /api/moderation/recipes/:id        { action: approve | reject | takedown, reason }
  *   POST /api/moderation/comments/:id       { action: approve | remove, reason }
  *   POST /api/moderation/reports/:id        { resolution } — close a report
+ *   GET  /api/moderation/log                ?offset= — who did what, newest first
  *
+ * Every decision is written to the log (services/moderationLog.ts).
  * A rejection keeps the recipe with its reason, so the author sees what to fix
  * and can resubmit (B7); a takedown also removes a live recipe from view.
  */
 const router = Router();
 
-router.use(requireOperator);
-router.use((_req, res, next) =>
-  mongoose.connection.readyState === 1 ? next() : res.status(503).json({ error: 'The database is unavailable.', degraded: true }));
+router.use(requireModerator);
 
 const guard = (handler: (req: Request, res: Response) => Promise<unknown>) =>
   (req: Request, res: Response) => handler(req, res).catch((err) => res.status(500).json({ error: err.message }));
 
+const staffOf = (req: Request) => (req as Request & { staff: Staff }).staff;
 const reasonOf = (req: Request) => (typeof req.body?.reason === 'string' ? req.body.reason.trim().slice(0, 300) : '');
 
 // GET /api/moderation/queue
 router.get('/queue', guard(async (_req, res) => {
   const [recipes, comments, reports] = await Promise.all([
-    PublishedRecipe.find({ 'moderation.state': 'pending', unpublishedAt: null })
+    PublishedRecipe.find({ 'moderation.state': 'pending', unpublishedAt: null, hiddenAt: null })
       .select('slug title description authorHandle sourceUrl sourceAttribution ownWords moderation imageUrls instructions publishedAt updatedAt')
       .sort({ updatedAt: 1 }).limit(100).lean(),
-    Comment.find({ 'moderation.state': 'pending', deletedAt: null }).sort({ createdAt: 1 }).limit(100).lean(),
+    Comment.find({ 'moderation.state': 'pending', deletedAt: null, hiddenAt: null }).sort({ createdAt: 1 }).limit(100).lean(),
     Report.find({ resolvedAt: null }).sort({ createdAt: 1 }).limit(100).lean(),
   ]);
 
@@ -62,14 +65,21 @@ router.post('/recipes/:id', guard(async (req, res) => {
   if (action === 'approve') {
     recipe.moderation = { state: 'approved', reason: '', checkedAt: now };
   } else if (action === 'reject') {
-    recipe.moderation = { state: 'rejected', reason: reasonOf(req) || 'Held back by the operator.', checkedAt: now };
+    recipe.moderation = { state: 'rejected', reason: reasonOf(req) || 'Held back by a moderator.', checkedAt: now };
   } else if (action === 'takedown') {
-    recipe.moderation = { state: 'rejected', reason: reasonOf(req) || 'Taken down by the operator.', checkedAt: now };
+    recipe.moderation = { state: 'rejected', reason: reasonOf(req) || 'Taken down by a moderator.', checkedAt: now };
     recipe.unpublishedAt = now;
   } else {
     return res.status(400).json({ error: 'Approve, reject or take down.' });
   }
   await recipe.save();
+  await logAction(staffOf(req), {
+    action: `recipe.${action}`,
+    targetType: 'recipe',
+    targetId: recipe._id,
+    label: recipe.title,
+    reason: action === 'approve' ? '' : recipe.moderation.reason,
+  });
   res.json({ ok: true, state: recipe.moderation.state });
 }));
 
@@ -82,6 +92,13 @@ router.post('/comments/:id', guard(async (req, res) => {
   else if (action === 'remove') comment.moderation = { state: 'removed', reason: reasonOf(req) };
   else return res.status(400).json({ error: 'Approve or remove.' });
   await comment.save();
+  await logAction(staffOf(req), {
+    action: `comment.${action}`,
+    targetType: 'comment',
+    targetId: comment._id,
+    label: `@${comment.authorHandle}: ${comment.body.slice(0, 80)}`,
+    reason: comment.moderation.reason,
+  });
   res.json({ ok: true, state: comment.moderation.state });
 }));
 
@@ -92,7 +109,24 @@ router.post('/reports/:id', guard(async (req, res) => {
   report.resolvedAt = new Date();
   report.resolution = typeof req.body?.resolution === 'string' ? req.body.resolution.slice(0, 300) : 'Resolved';
   await report.save();
+  await logAction(staffOf(req), {
+    action: 'report.resolve',
+    targetType: 'report',
+    targetId: report._id,
+    label: report.reason.slice(0, 80),
+    reason: report.resolution,
+  });
   res.json({ ok: true });
+}));
+
+// GET /api/moderation/log
+router.get('/log', guard(async (req, res) => {
+  const offset = Math.max(0, Number(req.query.offset) || 0);
+  const [items, total] = await Promise.all([
+    ModerationLog.find().sort({ createdAt: -1 }).skip(offset).limit(100).lean(),
+    ModerationLog.countDocuments(),
+  ]);
+  res.json({ items, total, offset, limit: 100 });
 }));
 
 export default router;

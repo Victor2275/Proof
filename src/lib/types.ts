@@ -170,7 +170,7 @@ export interface PublishedComment {
 }
 
 export interface Profile {
-  profile: { handle: string; displayName: string; bio: string; pro: boolean; joinedAt: string | null };
+  profile: { handle: string; displayName: string; bio: string; pro: boolean; moderator?: boolean; joinedAt: string | null };
   recipes: PublishedRecipe[];
   stats: { published: number; baked: number };
 }

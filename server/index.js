@@ -29,6 +29,7 @@ import maintenanceRouter, { startMaintenanceCron } from './routes/maintenance.js
 import publishedRouter from './routes/published.js';
 import reportsRouter from './routes/reports.js';
 import moderationRouter from './routes/moderation.js';
+import accountsRouter from './routes/accounts.js';
 import profilesRouter from './routes/profiles.js';
 
 // ── Bootstrap ──────────────────────────────────────────────────────────────
@@ -81,6 +82,7 @@ app.use('/api/timers', timersRouter);
 app.use('/api/published', publishedRouter);
 app.use('/api/reports', reportsRouter);
 app.use('/api/moderation', moderationRouter);
+app.use('/api/accounts', accountsRouter);
 app.use('/api/profiles', profilesRouter);
 app.use('/api', aiRouter);                  // rate-limited per route
 app.use('/api', maintenanceRouter);         // /api/backup + /api/maintenance/*

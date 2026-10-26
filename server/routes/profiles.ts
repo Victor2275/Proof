@@ -17,6 +17,7 @@ export const SUMMARY_FIELDS = 'slug title description imageUrls folder tags prep
 export async function loadProfile(rawHandle: string) {
   const handle = rawHandle.replace(/^@/, '').toLowerCase();
   const user = await User.findOne({ handle });
+  if (user?.suspendedAt) return null;
   const recipes = await PublishedRecipe.find({ ...LIVE, authorHandle: handle }).select(SUMMARY_FIELDS).sort({ publishedAt: -1 }).lean();
   // The seeded library is published under a handle that may have no account yet.
   if (!user && recipes.length === 0) return null;

@@ -66,6 +66,8 @@ const publishedRecipeSchema = new mongoose.Schema({
 
   publishedAt: { type: Date, default: Date.now },
   unpublishedAt: { type: Date, default: null },
+  /** Set while the author's account is suspended; lifting the suspension clears it. */
+  hiddenAt: { type: Date, default: null },
 }, { timestamps: { createdAt: false, updatedAt: true } });
 
 publishedRecipeSchema.index({ 'moderation.state': 1, unpublishedAt: 1, publishedAt: -1 });
@@ -73,5 +75,5 @@ publishedRecipeSchema.index({ authorId: 1, sourceLocalId: 1 });
 
 export const PublishedRecipe = mongoose.model('PublishedRecipe', publishedRecipeSchema);
 
-/** The filter for what a stranger may see: approved and still published. */
-export const LIVE = { 'moderation.state': 'approved', unpublishedAt: null };
+/** The filter for what a stranger may see: approved, still published, and its author not suspended. */
+export const LIVE = { 'moderation.state': 'approved', unpublishedAt: null, hiddenAt: null };

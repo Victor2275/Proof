@@ -36,7 +36,7 @@ export const OFFLINE_MESSAGE = "Can't reach the server. Your cookbook is unaffec
  *   operator  the operator PIN's session; a 401 asks for the PIN again
  *   user      the signed-in account; a 401 means it ended elsewhere, so the
  *             device signs out and asks the person to sign in again
- *   either    the operator's if held, else the account's (the AI, which both may use)
+ *   either    the operator's if held, else the account's (the AI and moderation, which both may use)
  *   none      nothing
  */
 type Auth = 'operator' | 'user' | 'either' | 'none';
@@ -143,6 +143,69 @@ export interface ModerationQueue {
     createdAt: string;
     target: { title?: string; slug?: string; body?: string; authorHandle?: string; publishedId?: string } | null;
   }[];
+}
+
+/** An account as a moderator sees it (server/services/accounts.ts staffUser). */
+export interface StaffAccount {
+  id: string;
+  handle: string;
+  displayName: string;
+  email: string;
+  emailVerified: boolean;
+  moderator: boolean;
+  pro: boolean;
+  plan: 'free' | 'pro';
+  joinedAt: string;
+  suspended: boolean;
+  suspendedAt: string | null;
+  suspendedReason: string;
+}
+
+export type AccountFilter = 'all' | 'unconfirmed' | 'moderators' | 'suspended';
+
+export interface AccountPage {
+  items: StaffAccount[];
+  total: number;
+  offset: number;
+  limit: number;
+}
+
+/** One line of the moderation log. */
+export interface LogEntry {
+  _id: string;
+  actorKind: 'operator' | 'moderator';
+  actorHandle: string;
+  action: string;
+  targetType: 'account' | 'recipe' | 'comment' | 'report';
+  targetId: string;
+  label: string;
+  reason: string;
+  createdAt: string;
+}
+
+export interface AccountDetail {
+  account: StaffAccount;
+  /** Devices signed in now. */
+  sessions: number;
+  published: {
+    _id: string;
+    slug: string;
+    title: string;
+    moderation: { state: 'approved' | 'pending' | 'rejected'; reason: string };
+    unpublishedAt: string | null;
+    hiddenAt: string | null;
+    publishedAt: string;
+  }[];
+  comments: {
+    _id: string;
+    body: string;
+    moderation: { state: 'approved' | 'pending' | 'removed' };
+    deletedAt: string | null;
+    createdAt: string;
+    recipe: { title: string; slug: string } | null;
+  }[];
+  reports: { _id: string; targetType: 'recipe' | 'comment'; reason: string; resolvedAt: string | null; resolution: string; createdAt: string }[];
+  log: LogEntry[];
 }
 
 export interface SignedIn {
@@ -276,14 +339,39 @@ export const api = {
   /** The operator's pre-Phase-1 library, to bring onto this device. */
   getServerLibrary: () => request<ServerLibrary>('/library', { auth: 'operator' }),
 
-  getModerationQueue: () => request<ModerationQueue>('/moderation/queue', { auth: 'operator' }),
+  /* ── Moderation: the operator, or a moderator account ────────────────── */
+
+  getModerationQueue: () => request<ModerationQueue>('/moderation/queue', { auth: 'either' }),
 
   moderateRecipe: (id: string, action: 'approve' | 'reject' | 'takedown', reason = '') =>
-    request<{ ok: true }>(`/moderation/recipes/${encodeURIComponent(id)}`, { method: 'POST', body: { action, reason }, auth: 'operator' }),
+    request<{ ok: true }>(`/moderation/recipes/${encodeURIComponent(id)}`, { method: 'POST', body: { action, reason }, auth: 'either' }),
 
   moderateComment: (id: string, action: 'approve' | 'remove', reason = '') =>
-    request<{ ok: true }>(`/moderation/comments/${encodeURIComponent(id)}`, { method: 'POST', body: { action, reason }, auth: 'operator' }),
+    request<{ ok: true }>(`/moderation/comments/${encodeURIComponent(id)}`, { method: 'POST', body: { action, reason }, auth: 'either' }),
 
   resolveReport: (id: string, resolution: string) =>
-    request<{ ok: true }>(`/moderation/reports/${encodeURIComponent(id)}`, { method: 'POST', body: { resolution }, auth: 'operator' }),
+    request<{ ok: true }>(`/moderation/reports/${encodeURIComponent(id)}`, { method: 'POST', body: { resolution }, auth: 'either' }),
+
+  getModerationLog: (offset = 0) =>
+    request<{ items: LogEntry[]; total: number }>(`/moderation/log?offset=${offset}`, { auth: 'either' }),
+
+  listAccounts: (filter: AccountFilter, q = '', offset = 0) =>
+    request<AccountPage>(`/accounts?${new URLSearchParams({ filter, q, offset: String(offset) })}`, { auth: 'either' }),
+
+  getAccount: (id: string) => request<AccountDetail>(`/accounts/${encodeURIComponent(id)}`, { auth: 'either' }),
+
+  confirmAccount: (id: string) =>
+    request<{ account: StaffAccount }>(`/accounts/${encodeURIComponent(id)}/confirm`, { method: 'POST', auth: 'either' }),
+
+  setAccountRole: (id: string, role: 'moderator' | 'user') =>
+    request<{ account: StaffAccount }>(`/accounts/${encodeURIComponent(id)}/role`, { method: 'POST', body: { role }, auth: 'either' }),
+
+  suspendAccount: (id: string, reason: string) =>
+    request<{ account: StaffAccount }>(`/accounts/${encodeURIComponent(id)}/suspend`, { method: 'POST', body: { reason }, auth: 'either' }),
+
+  unsuspendAccount: (id: string) =>
+    request<{ account: StaffAccount }>(`/accounts/${encodeURIComponent(id)}/unsuspend`, { method: 'POST', auth: 'either' }),
+
+  signOutAccount: (id: string) =>
+    request<{ ok: true }>(`/accounts/${encodeURIComponent(id)}/signout`, { method: 'POST', auth: 'either' }),
 };

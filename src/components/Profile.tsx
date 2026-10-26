@@ -93,6 +93,7 @@ export default function Profile() {
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="font-title text-[2rem] leading-tight text-ink md:text-4xl">{name}</h1>
               {profile.pro ? <Tag>Pro</Tag> : null}
+              {profile.moderator ? <Tag>Moderator</Tag> : null}
             </div>
             <p className="text-sm text-ink-muted">
               {profile.displayName ? `@${profile.handle} · ` : ''}

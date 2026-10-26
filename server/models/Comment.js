@@ -19,6 +19,8 @@ const commentSchema = new mongoose.Schema({
     reason: { type: String, default: '' },
   },
   deletedAt: { type: Date, default: null },
+  /** Set while the author's account is suspended; lifting the suspension clears it. */
+  hiddenAt: { type: Date, default: null },
 }, { timestamps: true });
 
 commentSchema.index({ publishedId: 1, createdAt: 1 });

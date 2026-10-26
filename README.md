@@ -43,7 +43,7 @@ Designed like a physical high-end culinary lab notebook, **Proof** focuses on pr
 ---
 
 ### 5. 🤖 AI Culinary Assistant (Admin Required)
-- **URL & Photo Recipe Importer**: Paste any recipe blog link or upload a photo of a handwritten recipe card—Gemini 2.5 Flash automatically extracts title, description, ingredients, prep/cook times, and steps into structured fields.
+- **URL & Photo Recipe Importer**: Paste any recipe blog link or upload a photo of a handwritten recipe card—Gemini Flash automatically extracts title, description, ingredients, prep/cook times, and steps into structured fields.
 - **AI Ingredient Substitutions**: Hover over any ingredient in a recipe and tap **Sub** to get instant substitution recommendations (ratios, flavor profile adjustments, and baking impact).
 - **Natural Language Search**: Search your library with natural phrases like *"dense sourdough under 4 hours"* or *"gluten-free breakfast"*.
 

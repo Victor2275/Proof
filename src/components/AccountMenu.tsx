@@ -34,7 +34,7 @@ function useEntries(openHelp: () => void): Entry[] {
     { key: 'published', label: 'My published recipes', icon: icon(BookUp), to: '/published' },
     { key: 'export', label: 'Export or import', icon: icon(FolderInput), to: '/settings#cookbook' },
     { key: 'help', label: 'Help', icon: icon(CircleHelp), onSelect: openHelp },
-    ...(session.isOperator
+    ...(session.canModerate
       ? [{ key: 'moderation', label: 'Moderation', icon: icon(ShieldCheck), to: '/moderation' }]
       : []),
   ];

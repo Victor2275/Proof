@@ -182,7 +182,7 @@ router.get('/:id/comments', loadUser, guard(async (req, res) => {
   const visible = viewerId
     ? { $or: [{ 'moderation.state': 'approved' }, { 'moderation.state': 'pending', userId: viewerId }] }
     : { 'moderation.state': 'approved' };
-  const comments = await Comment.find({ publishedId: req.params.id, deletedAt: null, ...visible }).sort({ createdAt: 1 }).limit(500).lean();
+  const comments = await Comment.find({ publishedId: req.params.id, deletedAt: null, hiddenAt: null, ...visible }).sort({ createdAt: 1 }).limit(500).lean();
   res.json({ items: comments.map((c) => publicComment(c, viewerId)) });
 }));
 

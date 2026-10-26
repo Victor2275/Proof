@@ -23,4 +23,4 @@ Upload a bake photo and Gemini Vision will auto-generate descriptive hashtags fo
    ```
    GEMINI_API_KEY=your_key_here
    ```
-3. The free Gemini 1.5 Flash tier supports 15 requests/minute — more than enough for personal use.
+3. Use a key from a free-tier project. A key from a prepaid project stops with `402 Payment Required` once its credits run out, on every model.

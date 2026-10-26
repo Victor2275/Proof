@@ -67,12 +67,45 @@ export const requireOperator = async (req, res, next) => {
   res.status(401).json({ error: 'That needs the operator PIN.' });
 };
 
-/** Sets req.user when a signed-in account is calling; never refuses. */
+/**
+ * Sets req.user when a signed-in account is calling; never refuses. A
+ * suspended account is treated as signed out, in case a session outlived the
+ * suspension.
+ */
 export const loadUser = async (req, _res, next) => {
   req.user = null;
   const session = await readSession(bearerToken(req)).catch(() => null);
-  if (session?.kind === 'user') req.user = await User.findById(session.userId);
+  if (session?.kind === 'user') {
+    const user = await User.findById(session.userId);
+    req.user = user && !user.suspendedAt ? user : null;
+  }
   next();
+};
+
+/*
+ * The operator or a moderator account: the moderation queue, accounts, the
+ * log. Sets req.staff (services/moderationLog.ts) to say which, for the log.
+ * With no ADMIN_PIN set (local development) every caller is the operator, as
+ * for requireOperator.
+ *
+ * An account that is not a moderator gets 403, not 401: its session is fine,
+ * and a 401 would sign the device out.
+ */
+export const requireModerator = async (req, res, next) => {
+  if (mongoose.connection.readyState !== 1) return unavailable(res);
+  const session = await readSession(bearerToken(req));
+  const user = session?.kind === 'user' ? await User.findById(session.userId) : null;
+  if (user && !user.suspendedAt && user.role === 'moderator') {
+    req.user = user;
+    req.staff = { kind: 'moderator', userId: user._id, handle: user.handle };
+    return next();
+  }
+  if (session?.kind === 'operator' || !process.env.ADMIN_PIN) {
+    req.staff = { kind: 'operator', userId: null, handle: '' };
+    return next();
+  }
+  if (!user || user.suspendedAt) return res.status(401).json({ error: 'Sign in as a moderator to do that.' });
+  res.status(403).json({ error: 'That needs a moderator account.' });
 };
 
 export const requireUser = [

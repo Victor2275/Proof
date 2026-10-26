@@ -33,6 +33,7 @@ The bake log lives on its recipe: see section 18.
 - [ ] **AI Recipe Extraction**: URL → structured recipe via Gemini.
 - [ ] **AI Recipe Restructuring**: Raw text → structured recipe with diff preview.
 - [ ] **AI Ingredient Substitutions**: Gemini-powered swap suggestions.
+- [ ] **The model chain**: an AI feature still answers when the first model in `MODELS` is out of quota or overloaded; a bad request fails at once rather than trying every model.
 - [ ] **The cupboard**: a thing in the cupboard marks the recipe's ingredient "have it"; see section 21 for the page.
 - [ ] **Barcode Scanning**: UPC scan to add a thing to the cupboard.
 - [ ] **The shopping list**: a recipe's missing ingredients go onto Shop → To buy; see section 21.
@@ -242,7 +243,7 @@ Rebuilt as the bake sheet: see section 18.
 - [ ] **Browse**: sorting by most baked and by recent, and filtering by tag and author, return the right recipes.
 - [ ] **Ratings**: rating twice replaces the first; the author can't rate their own; "I baked this" counts.
 - [ ] **Comments**: a day-old confirmed account can comment; a new one is told to wait; a held comment shows only to its author.
-- [ ] **Reports & queue**: a report reaches the operator's queue with its target; take down, approve and resolve all work.
+- [ ] **Reports & queue**: a report reaches the queue (operator or moderator) with its target; take down, approve and resolve all work.
 - [ ] **Profiles**: `/api/profiles/<handle>` lists live recipes and bake counts, with no email.
 - [ ] **Link previews**: pasting `/r/<slug>` into a chat shows the recipe's title, description and photo; Google's Rich Results Test reads the Recipe data.
 
@@ -253,17 +254,17 @@ Rebuilt as the bake sheet: see section 18.
 - [ ] **Rejected**: an operator rejection shows "Held back: <reason>" under the recipe's header.
 - [ ] **LIVE tag**: published recipes, and only those, carry LIVE on the cookbook's tiles.
 - [ ] **Discover**: searches by title and baker, filters by tag, sorts four ways; offline it says it needs a connection (layout: section 21).
-- [ ] **Navigation**: Discover is one of the four destinations; the operator sees Moderation in the avatar menu.
+- [ ] **Navigation**: Discover is one of the four destinations; the operator and moderators see Moderation in the avatar menu.
 - [ ] **Profile**: `/@proof` shows the seeded library; `/@nobody` is the 404.
 - [ ] **Ratings**: signed in, rating and "I baked this" update the counts; the author can't rate their own.
 - [ ] **Notes on a shared recipe**: a held note shows "only you can see it"; a new account is told to wait a day; Delete and Report work.
 - [ ] **Report**: reporting a recipe or comment says the operator will look at it, and it appears in the queue.
-- [ ] **Moderation page**: hidden from everyone but the operator; approve, hold back with a reason, take down and leave up all work.
+- [ ] **Moderation page**: hidden from everyone but the operator and moderators; approve, hold back with a reason, take down and leave up all work.
 
 ## 15. Public launch — Phase 2: account email
 - [ ] **Confirm**: with Resend configured, signing up sends a link; opening it says the email is confirmed and Publish opens; opening it again says it expired or was used.
 - [ ] **Resend**: Settings → Account → Send the link again sends a fresh one, and the old link stops working.
-- [ ] **No email yet**: without `RESEND_API_KEY`, sign-up says the confirmation couldn't be sent; `verify-account.js` confirms the account.
+- [ ] **No email yet**: without `RESEND_API_KEY`, sign-up says the confirmation couldn't be sent; a moderator's Confirm, or `verify-account.js`, confirms the account.
 - [ ] **Forgot password**: the sheet gives the same message for a real and an unknown address; the reset link sets a new password, signs every device out, and works once.
 
 ## 16. UI overhaul — Phase 1: the cookbook foundation
@@ -305,7 +306,7 @@ Rebuilt as the bake sheet: see section 18.
 - [ ] **Tab haptic**: on the Android build with haptics on, changing tab ticks; pressing the tab you are on does not.
 - [ ] **Desktop top bar**: from 768px a slim bar shows Proof (back to the cookbook), the four destinations with a paper thumb that slides to the one chosen, New and the avatar. No sidebar.
 - [ ] **New**: the Cookbook header (phone) and the top bar (desktop) have a labelled New button; it opens a sheet with "Write it" (blank editor) and "Paste a link or text" (editor with the import open).
-- [ ] **Avatar**: the menu (desktop) or sheet (phone) holds Settings, Sign in or Account, My published recipes, Export or import, Help; the operator also sees Moderation. Signed in, it shows your initials and @handle.
+- [ ] **Avatar**: the menu (desktop) or sheet (phone) holds Settings, Sign in or Account, My published recipes, Export or import, Help; the operator and moderators also see Moderation. Signed in, it shows your initials and @handle.
 - [ ] **Export or import**: lands on Settings → Data on this device, scrolled to it.
 - [ ] **Help**: opens a sheet explaining the cookbook, cooking, bakes, shop and that it stays on this device.
 - [ ] **My published recipes** (`/published`): signed out, it asks you to sign in and says why; signed in, it lists each published recipe with where it stands, each opening the recipe.
@@ -446,3 +447,17 @@ Rebuilt as the bake sheet: see section 18.
 - [ ] **DESIGN.md**: describes the printed cookbook as built — tokens for both themes, the faces, the primitives including `Switch`, the motion table — and nothing of the Step Row.
 - [ ] **Old token names gone**: searching `src/` for `bg-panel`, `bg-ground`, `text-ground`, `silkscreen` or `signal` classes finds nothing; `index.css` has no mapping for them.
 - [ ] **Screens unchanged by the retirement**: the visual suite passes with no baseline regenerated for the token change.
+
+## 23. Moderators
+- [ ] **Moderator role**: a moderator's `/api/auth/me` says `moderator: true`; its `/@handle` page shows a Moderator tag.
+- [ ] **Who may moderate**: a moderator account opens `/moderation` without the operator PIN; an ordinary account sees the 404 there and stays signed in.
+- [ ] **First moderator script**: `make-moderator.js --handle=<handle>` confirms the account and makes it a moderator; `--remove` takes it away; both appear in the log.
+- [ ] **Viewing accounts**: Moderation → Accounts lists accounts newest first with email and tags; search finds by handle, email and name; Show narrows to unconfirmed, moderators and suspended.
+- [ ] **Account details**: opening an account shows its facts, devices signed in, published recipes with their state, recent comments, reports against it and its history.
+- [ ] **Confirming**: Confirm on an unconfirmed row confirms the account; the account can then publish and comment.
+- [ ] **Making moderators**: Make moderator on a confirmed account works and offers Undo; an unconfirmed account has no Make moderator; your own account shows no actions.
+- [ ] **Removing moderators**: Remove moderator on another moderator works and offers Undo; they lose the Moderation page.
+- [ ] **Suspending**: Suspend asks for a reason first; once suspended the account is signed out, its sign-in shows the reason, its recipes, comments and profile page are gone from view; Lift suspension (or Undo) puts them back.
+- [ ] **No suspending moderators**: a moderator's sheet has no Suspend.
+- [ ] **Sign out everywhere**: ends every session of the account; its devices are signed out on their next request.
+- [ ] **Log**: Moderation → Log lists each decision as a sentence with who made it, the time and the reason.
