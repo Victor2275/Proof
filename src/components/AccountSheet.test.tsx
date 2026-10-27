@@ -24,6 +24,8 @@ vi.mock('../lib/api', async (importOriginal) => ({
     verifyEmail: vi.fn(),
     resetPassword: vi.fn(),
     resendVerification: vi.fn(),
+    sync: vi.fn().mockResolvedValue({ accepted: 0, newer: [], changes: [], cursor: 'c', more: false, photos: {} }),
+    syncPhoto: vi.fn(),
   },
 }));
 
@@ -116,6 +118,23 @@ describe('Settings → Account', () => {
     expect(screen.getByText('@ada')).toBeInTheDocument();
     expect(screen.getByText(/ada@example.com · unconfirmed/)).toBeInTheDocument();
     expect(await screen.findByText(/Your 2 recipes and 1 bake stay on this device/)).toBeInTheDocument();
+  });
+
+  it('shows a Pro account its sync, and syncs on asking', async () => {
+    const user = userEvent.setup();
+    setAccount('tok', { ...ADA, emailVerified: true, plan: 'pro', pro: true });
+    renderScreen(<AccountPanel />);
+    expect(screen.getByText('Sync')).toBeInTheDocument();
+    expect(screen.queryByText(/stay on this device/)).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Sync now' }));
+    await waitFor(() => expect(api.sync).toHaveBeenCalled());
+    expect(await screen.findByText(/Up to date/)).toBeInTheDocument();
+  });
+
+  it('offers no sync to a free account', () => {
+    setAccount('tok', { ...ADA, emailVerified: true });
+    renderScreen(<AccountPanel />);
+    expect(screen.queryByRole('button', { name: 'Sync now' })).not.toBeInTheDocument();
   });
 
   it('shows the month\'s AI once the email is confirmed', () => {

@@ -65,6 +65,11 @@ write('adminToken', null);
 
 export const userToken = (): string | null => read(USER_TOKEN_KEY);
 
+/** The signed-in account, read outside React (the sync engine). */
+export function currentAccount(): Account | null {
+  return readSession().user;
+}
+
 /** Signs this device in (token + account) or out (null). */
 export function setAccount(token: string | null, account: Account | null = null) {
   write(USER_TOKEN_KEY, token);

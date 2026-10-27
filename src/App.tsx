@@ -11,6 +11,7 @@ import PageTransition from './components/PageTransition';
 import { useScrollMemory } from './lib/navigation';
 import AccountSheet, { type AccountMode } from './components/AccountSheet';
 import { useAccountRefresh } from './lib/useAccount';
+import { useAutoSync } from './lib/useSync';
 import { ACCOUNT_PROMPT_EVENT, type AccountPrompt } from './lib/accountPrompt';
 import ErrorBoundary from './components/ErrorBoundary';
 import { Skeleton, ToastProvider, cn } from './components/ui';
@@ -152,6 +153,12 @@ function App() {
  * network feature says so itself when it can't be reached, and Settings
  * reports whether the server is reachable.
  */
+/** Keeps a Pro account's devices in step; inside the toasts, so a sync can report. */
+function SyncKeeper() {
+  useAutoSync();
+  return null;
+}
+
 function AppShell() {
   const [account, setAccountSheet] = useState<{ open: boolean; mode: AccountMode; reason?: string }>({
     open: false,
@@ -187,6 +194,7 @@ function AppShell() {
    */
   return (
     <ToastProvider>
+    <SyncKeeper />
     <div className="flex h-screen flex-col overflow-hidden bg-paper text-ink">
       <TopBar />
       <div className="flex min-h-0 flex-1">

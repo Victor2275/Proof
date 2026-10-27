@@ -7,14 +7,16 @@
  * The server is asked only for what is genuinely remote — the shared
  * cookbook, and the AI — and that goes through src/lib/api.ts.
  *
- * Deletes are tombstones: the record stays with `deletedAt` set, so a future
- * sync can tell "deleted here" from "never existed here". Reads skip them.
+ * Deletes are tombstones: the record stays with `deletedAt` set, so sync can
+ * tell "deleted here" from "never existed here". Reads skip them. Every write
+ * marks its record in the outbox for the next sync (outbox.ts).
  */
 import { ulid } from '../ulid';
 import { ensurePersistentStorage } from '../storage';
 import type { BakeLog, Draft, Folder, Note, PantryItem, PublishedRecipe, Recipe, RecordFields, ShoppingItem, StepNote } from '../types';
 import { getAll, getByIndex, getOne, putOne, type RecordStore } from './db';
 import { adoptRemotePhoto, collectPhotoGarbage, savePhoto } from './photos';
+import { markDirty } from './outbox';
 
 const nowIso = () => new Date().toISOString();
 
@@ -35,6 +37,7 @@ async function create<T extends RecordFields>(store: RecordStore, draft: Draft<T
   const stamp = nowIso();
   const record = { ...draft, _id: ulid(), createdAt: stamp, updatedAt: stamp, deletedAt: null } as unknown as T;
   await putOne(store, record);
+  await markDirty(store, [record._id]);
   return record;
 }
 
@@ -47,6 +50,7 @@ async function update<T extends RecordFields>(store: RecordStore, id: string, pa
   void _id; void createdAt; void updatedAt; void deletedAt;
   const next = { ...existing, ...content, updatedAt: nowIso() } as T;
   await putOne(store, next);
+  await markDirty(store, [id]);
   return next;
 }
 
@@ -55,6 +59,7 @@ async function tombstone(store: RecordStore, id: string): Promise<void> {
   if (!existing || existing.deletedAt) return;
   const stamp = nowIso();
   await putOne(store, { ...existing, deletedAt: stamp, updatedAt: stamp });
+  await markDirty(store, [id]);
 }
 
 /** Clears a tombstone: the inverse of a delete, for Undo. */
@@ -63,6 +68,7 @@ async function untombstone(store: RecordStore, id: string, what: string): Promis
   if (!existing) throw new MissingRecordError(what);
   if (!existing.deletedAt) return;
   await putOne(store, { ...existing, deletedAt: null, updatedAt: nowIso() });
+  await markDirty(store, [id]);
 }
 
 /** Tidies photographs nobody uses any more, after the write that orphaned them has landed. */

@@ -15,6 +15,10 @@ import { aiAllowance } from './aiQuota.js';
 import { Rating } from '../models/Rating.js';
 import { Comment } from '../models/Comment.js';
 import { recountRatings } from './publishing.js';
+import { SyncRecord } from '../models/SyncRecord.js';
+import { SyncPhoto } from '../models/SyncPhoto.js';
+import { syncedCookbook } from './sync.js';
+import { cloudinary, cloudinaryConfigured } from './cloudinary.js';
 
 export const PASSWORD_MIN = 10;
 const PASSWORD_MAX = 200;
@@ -150,7 +154,7 @@ export async function liftSuspension(user: UserDoc) {
 
 /** Everything the server holds about an account, as one document (GDPR access). */
 export async function exportAccount(user: UserDoc) {
-  const [published, ratings, comments, recipes, bakeLogs, notes, pantry] = await Promise.all([
+  const [published, ratings, comments, recipes, bakeLogs, notes, pantry, cookbook] = await Promise.all([
     PublishedRecipe.find({ authorId: user._id }).lean(),
     Rating.find({ userId: user._id }).lean(),
     Comment.find({ userId: user._id }).lean(),
@@ -158,6 +162,7 @@ export async function exportAccount(user: UserDoc) {
     BakeLog.find({ ownerId: user._id }).lean(),
     Note.find({ ownerId: user._id }).lean(),
     Pantry.find({ ownerId: user._id }).lean(),
+    syncedCookbook(user._id),
   ]);
   return {
     exportedAt: new Date().toISOString(),
@@ -166,6 +171,8 @@ export async function exportAccount(user: UserDoc) {
     ratings,
     comments,
     synced: { recipes, bakeLogs, notes, pantry },
+    /** The cookbook as Pro sync keeps it, by store. */
+    cookbook,
   };
 }
 
@@ -188,7 +195,13 @@ export async function deleteAccount(user: UserDoc) {
     Pantry.deleteMany({ ownerId: user._id }),
     Session.deleteMany({ userId: user._id }),
     EmailToken.deleteMany({ userId: user._id }),
+    SyncRecord.deleteMany({ userId: user._id }),
+    SyncPhoto.deleteMany({ userId: user._id }),
   ]);
+  if (cloudinaryConfigured()) {
+    // Its synced photographs too; a failure here leaves files nobody can reach, not data.
+    await cloudinary.api.delete_resources_by_prefix(`sync/${user._id}/`).catch(() => undefined);
+  }
   await User.deleteOne({ _id: user._id });
   await Promise.all(rated.map((id) => recountRatings(String(id))));
 }

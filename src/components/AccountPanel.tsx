@@ -3,6 +3,8 @@ import { api, ApiError } from '../lib/api';
 import { aiAllowanceLine, setAccount, updateAccount, useSession, type Account } from '../lib/session';
 import { requestAccount } from '../lib/accountPrompt';
 import { useBakeLogs, useRecipes } from '../lib/queries';
+import { syncNow, type SyncStatus } from '../lib/sync';
+import { useSyncStatus } from '../lib/useSync';
 import { Button, Field, Panel, PanelRow, Sheet, TextArea } from './ui';
 
 /*
@@ -29,11 +31,22 @@ function saveFile(blob: Blob, name: string) {
 
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
+/** "Up to date · 3:42 pm", "Syncing", "Not synced yet". */
+function syncLine(status: SyncStatus) {
+  if (status.state === 'syncing') return 'Syncing';
+  if (!status.lastSyncedAt) return 'Not synced yet';
+  const at = new Date(status.lastSyncedAt);
+  const time = at.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  const day = at.toDateString() === new Date().toDateString() ? '' : `${at.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}, `;
+  return `Up to date · ${day}${time}`;
+}
+
 export default function AccountPanel() {
   const { session } = useSession();
   const user = session.user;
   const { data: recipes = [] } = useRecipes();
   const { data: bakes = [] } = useBakeLogs();
+  const sync = useSyncStatus();
   const [sheet, setSheet] = useState<'profile' | 'password' | 'delete' | null>(null);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -92,6 +105,8 @@ export default function AccountPanel() {
   };
 
   const allowance = aiAllowanceLine(user);
+  // A confirmed Pro account syncs its cookbook (lib/sync.ts).
+  const syncs = user.emailVerified && user.plan === 'pro';
 
   return (
     <Panel title="Account">
@@ -101,7 +116,14 @@ export default function AccountPanel() {
           <PanelRow label="Email" value={user.emailVerified ? user.email : `${user.email} · unconfirmed`} />
           <PanelRow label="Plan" value={user.plan === 'pro' ? 'Pro' : 'Free'} />
           {allowance ? <PanelRow label="AI" value={allowance} /> : null}
+          {syncs ? <PanelRow label="Sync" value={syncLine(sync)} /> : null}
         </div>
+        {syncs && sync.state === 'error' ? <p className="text-sm text-fault" role="alert">{sync.error}</p> : null}
+        {syncs && sync.photosWaiting > 0 ? (
+          <p className="text-sm text-ink-muted">
+            {plural(sync.photosWaiting, 'photograph', 'photographs')} waiting to upload.
+          </p>
+        ) : null}
         {!user.emailVerified ? (
           <div className="flex flex-wrap items-center justify-between gap-3 border-y border-rule py-3">
             <p className="min-w-0 flex-1 text-sm text-ink">
@@ -112,13 +134,19 @@ export default function AccountPanel() {
             </Button>
           </div>
         ) : null}
-        <p className="text-sm text-ink">
-          Your {plural(recipes.length, 'recipe', 'recipes')} and {plural(bakes.length, 'bake', 'bakes')} stay on this
-          device. An account doesn't move them.
-        </p>
+        {syncs ? null : (
+          <p className="text-sm text-ink">
+            Your {plural(recipes.length, 'recipe', 'recipes')} and {plural(bakes.length, 'bake', 'bakes')} stay on this device.
+          </p>
+        )}
         {message ? <p className="text-sm text-ink" role="status">{message}</p> : null}
         {error ? <p className="text-sm text-fault" role="alert">{error}</p> : null}
         <div className="flex flex-wrap gap-2">
+          {syncs ? (
+            <Button onClick={() => void syncNow()} busy={sync.state === 'syncing'}>
+              Sync now
+            </Button>
+          ) : null}
           <Button onClick={() => setSheet('profile')}>Profile</Button>
           <Button onClick={() => setSheet('password')}>Change password</Button>
           <Button onClick={exportAccount} busy={exporting}>

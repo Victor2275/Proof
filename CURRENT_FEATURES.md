@@ -475,3 +475,15 @@ The design system as built is recorded in [DESIGN.md](DESIGN.md), rewritten at t
 
 ## 26. Plainer copy
 - **Explanations cut to what is needed** across the app: empty states say what is empty ("No bakes yet.", "Nothing to buy.", "Nothing published yet."); Settings drops its subtitle and each switch says what it does in a few words; the AI and publish gates say what they need and nothing about cost or reassurance; Loose notes, Discover, Help, Not found, the starter shelf, the AI review and the landing page each lose their second sentence. Errors still name the problem and the way out.
+
+## 27. Sync, for Pro accounts (LAUNCH_PLAN Phase 4, item 1–2)
+- **Two-way sync** (`src/lib/sync.ts`, `server/routes/sync.ts`, `server/services/sync.ts`): a confirmed Pro account's cookbook — recipes, bakes, notes, pantry, folders, the shopping list, tombstones included — is kept in step across its devices. The device stays the source of truth and works the same offline; sync runs after the fact.
+- **When**: on opening the app and on signing in, two seconds after any change, on coming back online, and on returning to the app; and from **Sync now** in Settings → Account.
+- **How**: every repository write (and every import) marks its record in an outbox (`repo/outbox.ts`, the `meta` store). A sync uploads the photographs records use, pushes marked records 200 at a time, then pulls everything changed since the device's cursor, a page of 500 at a time. Last write wins on the record's own `updatedAt`; the server orders pulls by its own clock (`<time>|<id>` cursors) and re-reads the last ten seconds so a write still landing is never missed. Records taken from the server are never marked, so nothing echoes.
+- **An account's first sync from a device** sends the whole cookbook, so signing in on a new device brings everything down and an existing cookbook merges in.
+- **An edit that loses is kept**: when a recipe edited here loses to a newer one from another device, the edit becomes the recipe's draft (section 24) — the editor offers it under "Unsaved draft …" — and a toast says "Rye changed on another device. Your edit is kept as a draft."
+- **Photographs** go up to Cloudinary (`POST /api/sync/photos`, `sync/<userId>/<photoId>`) and come down by address into the device's photo store under the same id, so no record is rewritten; a tile waiting for one draws it when it arrives. If the server has no Cloudinary, records still sync and Settings says how many photographs are waiting.
+- **Who**: a confirmed account on Pro whose plan has not run out (`requirePro`, 403 "Sync is part of Pro." otherwise). Free accounts see no sync anywhere; nothing of theirs is stored server-side.
+- **Settings → Account** (Pro): a Sync row ("Up to date · 3:42 pm", "Syncing", "Not synced yet"), Sync now, and any error with what happens next.
+- **The account**: account export includes the synced cookbook (`cookbook`, by store); deleting the account deletes it and its synced photographs.
+- **Not built**: billing (Stripe) — Pro is set by hand (`make-owner.js` for the owner); a sync-status mark in the app chrome.

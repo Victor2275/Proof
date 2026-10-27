@@ -23,6 +23,9 @@ export interface PhotoRecord {
 
 export const PHOTO_PREFIX = 'photo:';
 
+/** Photographs arrived on the device (lib/sync.ts): `detail` is their `photo:<id>` references. */
+export const PHOTOS_ARRIVED = 'photos-arrived';
+
 export const isPhotoRef = (ref: string | undefined | null): ref is string =>
   typeof ref === 'string' && ref.startsWith(PHOTO_PREFIX);
 

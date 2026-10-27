@@ -24,8 +24,8 @@ export class PublishError extends Error {
 }
 
 const MAX_PHOTOS = 3;
-const MAX_PHOTO_BYTES = 2 * 1024 * 1024;
-const DATA_URL = /^data:image\/(webp|jpeg|png);base64,([A-Za-z0-9+/=]+)$/;
+export const MAX_PHOTO_BYTES = 2 * 1024 * 1024;
+export const DATA_URL = /^data:image\/(webp|jpeg|png);base64,([A-Za-z0-9+/=]+)$/;
 
 const text = (v: unknown, max: number) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
 

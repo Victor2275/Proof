@@ -7,7 +7,8 @@
  * owner's tools — and every caller of it has to be ready for the network
  * not to be there, because now that is the normal case rather than an outage.
  */
-import type { Profile, Publication, PublishedComment, PublishedRecipe, PublishedStats, Recipe } from './types';
+import type { Profile, Publication, PublishedComment, PublishedRecipe, PublishedStats, Recipe, RecordFields } from './types';
+import type { RecordStore } from './repo/db';
 import { setAccount, userToken, type Account } from './session';
 
 export const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:3001/api');
@@ -204,6 +205,24 @@ export interface SignedIn {
   verificationSent?: boolean;
 }
 
+/** One record as sync carries it (server/services/sync.ts). */
+export interface SyncChange {
+  store: RecordStore;
+  record: RecordFields & Record<string, unknown>;
+}
+
+export interface SyncResponse {
+  accepted: number;
+  /** Copies the server holds that were newer than what was pushed. */
+  newer: SyncChange[];
+  /** Present when the request asked to pull. */
+  changes?: SyncChange[];
+  cursor?: string;
+  more?: boolean;
+  /** Photograph id → its address, for photographs uploaded since the cursor. */
+  photos?: Record<string, string>;
+}
+
 export const api = {
   /** Whether the server answers at all. The cookbook doesn't need it to. */
   health: () => request<{ status: string; database: string }>('/health'),
@@ -361,4 +380,13 @@ export const api = {
 
   signOutAccount: (id: string) =>
     request<{ ok: true }>(`/accounts/${encodeURIComponent(id)}/signout`, { method: 'POST', auth: 'user' }),
+
+  /* ── Sync, for Pro accounts (lib/sync.ts) ──────────────────────────────── */
+
+  /** Pushes `changes`; with `since` (null the first time), also pulls a page. */
+  sync: (body: { changes?: SyncChange[]; since?: string | null }) =>
+    request<SyncResponse>('/sync', { method: 'POST', body, auth: 'user' }),
+
+  syncPhoto: (id: string, data: string) =>
+    request<{ url: string }>('/sync/photos', { method: 'POST', body: { id, data }, auth: 'user' }),
 };

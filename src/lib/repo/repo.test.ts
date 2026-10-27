@@ -3,6 +3,7 @@ import { repo, MissingRecordError } from './index';
 import { DB_NAME, getAll, getOne, openDB, closeDB } from './db';
 import { collectPhotoGarbage, PHOTO_GRACE_MS, savePhoto, getPhotoBlob, isPhotoRef } from './photos';
 import { saveRecipeDraft } from '../recipeDraft';
+import { clearDirty, dirtyRecords } from './outbox';
 import { isUlid } from '../ulid';
 import type { PublishedRecipe, Recipe } from '../types';
 import { makeRecipe, seed } from '../../test/utils';
@@ -115,6 +116,20 @@ describe('the repository', () => {
     expect((await repo.getPantry()).map((p) => p.name)).toEqual(['Flour', 'Salt']);
     await repo.deletePantryItem(flour._id);
     expect((await repo.getPantry()).map((p) => p.name)).toEqual(['Salt']);
+  });
+});
+
+describe('the sync outbox', () => {
+  it('marks every write for the next sync: create, edit and delete', async () => {
+    const marked = async () => (await dirtyRecords()).map((d) => `${d.store}:${d.id}`);
+    const note = await repo.createNote({ title: 'Oven', content: 'Runs cold' });
+    expect(await marked()).toEqual([`notes:${note._id}`]);
+    await clearDirty('notes', [note._id]);
+    await repo.updateNote(note._id, { content: 'Runs colder' });
+    expect(await marked()).toEqual([`notes:${note._id}`]);
+    await clearDirty('notes', [note._id]);
+    await repo.deleteNote(note._id);
+    expect(await marked()).toEqual([`notes:${note._id}`]);
   });
 });
 

@@ -31,6 +31,7 @@ import reportsRouter from './routes/reports.js';
 import moderationRouter from './routes/moderation.js';
 import accountsRouter from './routes/accounts.js';
 import profilesRouter from './routes/profiles.js';
+import syncRouter from './routes/sync.js';
 
 // ── Bootstrap ──────────────────────────────────────────────────────────────
 const __filename = fileURLToPath(import.meta.url);
@@ -54,6 +55,8 @@ app.use(cors());
 app.use('/api/published', express.json({ limit: '8mb' }));
 // A photographed page of a recipe, as a data URL (routes/ai.ts bounds it again).
 app.use('/api/ai-photo', express.json({ limit: '6mb' }));
+// A sync push carries up to 500 records; a sync photograph is one compressed image.
+app.use('/api/sync', express.json({ limit: '8mb' }));
 app.use(express.json({ limit: '1mb' }));
 app.use((_req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -76,7 +79,8 @@ app.get(['/api', '/api/health'], (_req, res) => {
 
 // ── Routes ─────────────────────────────────────────────────────────────────
 // The cookbook lives on each device. The server keeps the shared cookbook,
-// the owner's pre-Phase-1 library (read once per device), and the AI.
+// Pro accounts' synced copies, the owner's pre-Phase-1 library (read once per
+// device), and the AI.
 app.use('/api/library', libraryRouter);
 app.use('/api/timers', timersRouter);
 app.use('/api/published', publishedRouter);
@@ -84,6 +88,7 @@ app.use('/api/reports', reportsRouter);
 app.use('/api/moderation', moderationRouter);
 app.use('/api/accounts', accountsRouter);
 app.use('/api/profiles', profilesRouter);
+app.use('/api/sync', syncRouter);
 app.use('/api', aiRouter);                  // rate-limited per route
 app.use('/api', maintenanceRouter);         // /api/backup + /api/maintenance/*
 

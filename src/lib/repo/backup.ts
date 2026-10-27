@@ -14,6 +14,7 @@
 import { strFromU8, strToU8, unzipSync, zipSync, type Zippable } from 'fflate';
 import type { RecordFields } from '../types';
 import { getAll, getOne, putMany, putOne, RECORD_STORES, type RecordStore } from './db';
+import { markDirty } from './outbox';
 import type { PhotoRecord } from './photos';
 
 export const BACKUP_FORMAT = 'proof-cookbook';
@@ -125,6 +126,7 @@ export async function mergeRecords(store: RecordStore, incoming: unknown[], resu
     }
   }
   await putMany(store, toWrite);
+  await markDirty(store, toWrite.map((r) => r._id));
 }
 
 export async function importCookbook(archive: Blob): Promise<ImportResult> {

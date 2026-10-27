@@ -487,3 +487,13 @@ Rebuilt as the bake sheet: see section 18.
 
 ## 26. Plainer copy
 - [ ] **No over-explaining**: Bakes, a recipe's bakes, Shop's list, My published recipes, Settings, Discover, Loose notes, Help, the AI gate, the publish sheet, Not found and the landing page read as short plain lines, with no sentence explaining what the app is about to do or that the cookbook is safe.
+
+## 27. Sync, for Pro accounts
+- [ ] **First sync**: signed in as the owner (Pro), Settings → Account shows Sync and, after a moment, "Up to date"; the server's `syncrecords` collection holds the cookbook.
+- [ ] **Second device**: sign in as the owner in another browser profile: the whole cookbook arrives, photographs included (with Cloudinary configured).
+- [ ] **Edits travel**: rename a recipe on one device; within a few seconds of the other device being opened or refocused, it shows the new name. Deletes travel too.
+- [ ] **Offline**: edit while offline; on reconnecting the edit syncs on its own.
+- [ ] **Losing edit kept**: edit the same recipe on both devices while one is offline; when it reconnects, the older edit loses, the toast says it is kept as a draft, and Edit shows it under "Unsaved draft".
+- [ ] **Photographs waiting**: with no Cloudinary on the server, Settings says how many photographs are waiting; records still sync.
+- [ ] **Free account**: no Sync row or Sync now; no `/api/sync` requests in the network tab.
+- [ ] **Account export and delete**: export includes `cookbook`; deleting the account removes its synced records.
