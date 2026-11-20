@@ -1,0 +1,36 @@
+# Keeper, checking round 2
+
+## Verdicts
+| Proposal | Verdict | My findings it addresses | What it breaks for me | Amendment that would earn my ADOPT | Score 1–5 |
+|---|---|---|---|---|---|
+| P-01 Start cooking on the first phone screen | ADOPT | Protects K-1, K-17, K-10, K-18 | Nothing now. K-1 is first after the meta line, the crop is focal and at least 200 px, "Log a bake" is outlined, and the chip's words survive. Acceptance check: at 375 px, "Last time" plus the keys must be seen without the tab bar covering the card. | None. | 4 |
+| P-02 Index card (RULE-BREAK) | REJECT | Would address F-01 and F-11 | HARMS K-17: the photo stops being the opening image. HARMS K-10 and K-2: the two widths stop being the same page. Unchanged, so my verdict is unchanged. P-01 and P-21 do the job without this harm. | None. | 2 |
+| P-03 Honest "ready in" | ADOPT | Protects K-10 | Nothing. The trailing item is separate and never summed. The one-wrapped-line check at 375 px is written in. | None. | 4 |
+| P-04 Empty rows vanish on save | ADOPT | Protects K-12 | Nothing. | None. | 3 |
+| P-05 Phone editor opens on the recipe | ADOPT | Protects K-12, K-9 | Nothing. The desktop header is untouched. The summary, two-line rows, paste hint and the three doors are all named as kept. | None. | 4 |
+| P-06 Log sheet leads with the writing | ADOPT | Protects K-18, K-4 | Nothing. Stars are visible, and "Mark as my best" stays one tap away. | None. | 4 |
+| P-07 Next time follows you | ADOPT | Protects K-4, K-1 | Nothing. The growth is capped (three lines in the Journal, one "Changed:" line only when it exists), and pencil colour is on "Next time" only. It ships together with P-01. | None. | 4 |
+| P-08 Kitchen measures | ADOPT | None | Nothing. | None. | 3 |
+| P-09 "Best" says which best | ADOPT | Protects K-4 | Nothing. The stamp keeps its shape and ring, and the R11 tie rule is stated. | None. | 3 |
+| P-10 By recipe numbers every bake | ADOPT | Completes K-5 | Nothing. The tile height stays, and the heading, count and Compare row stay in place. | None. | 5 |
+| P-11 Vertical ladder (RULE-BREAK) | REJECT | Would address F-08, F-27, F-28 | HARMS K-5: it replaces the strip, which is the iteration view. HARMS K-4 by duplicating the Journal row. It also adds a new primitive (R20). Unchanged, so my verdict is unchanged. P-22 answers the same finding without these harms. | None. | 2 |
+| P-12 The cupboard says what it saved | ADOPT | Protects K-14 | Nothing. The quick-add, the segmented control and the one-line empty state are unchanged. The chips are ink, and the line hides when nothing was skipped. | None. | 4 |
+| P-13 Sort and filter by the search | ADOPT | Protects K-6, K-16 | Nothing. The order of resume card, Recently baked, Contents and All recipes is stated unchanged, and the real-count search stays. | None. | 4 |
+| P-14 Somewhere to go next | ADOPT | Protects K-11, K-10 | Nothing. The actions row is untouched, "More from @proof" is at the foot, the credit row is ink, and there is no sign-up prompt. | None. | 3 |
+| P-15 Sign-up receipt | ADOPT | None | Nothing. It is a toast, and K-13 is untouched. | None. | 3 |
+| P-16 Labels that say where and how many | ADOPT | Protects K-6, K-8 | Nothing. The card's label changes in the same slot and weight, and the phone landing line is untouched. | None. | 3 |
+| P-17 Baking mode says where you are | ADOPT | Protects K-3, K-15 | Nothing. It adds one label line, a warm neutral for the lifted segment, and no new keys. | None. | 3 |
+| P-18 Backup first | ADOPT | None | Nothing. | None. | 3 |
+| P-19 One search on every destination (RULE-BREAK) | REJECT | Would address F-20 and F-10 | HARMS K-6, K-7 and K-16: the page titles and count go on a phone. Unchanged, so my verdict is unchanged. P-23 answers the same finding with an icon key and keeps the titles. | None. | 2 |
+| P-20 Dial (RULE-BREAK) | REJECT | Would address F-11 and F-26 | HARMS K-10 and K-18 by risk: a bespoke control with a coloured ring. Unchanged, so my verdict is unchanged. P-24 answers the same finding with a plain line. | None. | 2 |
+| P-21 Docked Start cooking from the first frame (new) | AMEND | Addresses F-01 | HARMS K-1, in part: a dock above the tab bar sits over the bottom of the first screen, which is where "Last time" shows at present. HARMS K-18, in part: the dock and the in-page "Start cooking" must never be filled at once. | (1) Take it as the alternative to P-01 items 1–3, not on top of P-01, because two stacked bars (dock plus tab bar) take about 130 px of the fold. (2) The dock hides as soon as the in-page key is on screen, with no overlap frame. (3) The dock is the only filled key at that moment, and "Log a bake" stays out of it. (4) Own recipe only, as filed. Prefer P-01 if the two compete. | 3 |
+| P-22 One recipe's bakes, read down the page (new) | ADOPT | Protects K-5, K-4 | Nothing. The strip is untouched, it uses the existing Journal row and `?recipe=`, and it adds no primitive. This is the converged version I suggested. | None. | 4 |
+| P-23 A search key on every phone destination; one search per desktop page (new) | AMEND | Addresses F-20 | HARMS K-7, in part (desktop item 2 only): the top bar's search field gives way to the page's own field on the cookbook only. That makes the shell differ from page to page, and Ctrl K stops opening the palette that finds chapters and places. The phone item 1 is fine: titles, "+ Log bake" and the summary line stay (K-6, K-16). | Keep item 1 as filed. For item 2, leave the top bar search the same on every page, and drop the second field's duplication a different way. Either the cookbook page field becomes the only place the count shows and the top bar field on that page shows the same "Search 203 recipes…" placeholder, or the top bar stays and the page field stays. Do not make Ctrl K behave differently on one page. | 3 |
+| P-24 "Ready by…?" as one line (new) | ADOPT | Protects K-10, K-18 | Nothing. It has no dial and no ring, the time is a plain `Field`, and the answer is plain text. The meta line is untouched. Acceptance check: the line must not use paprika, and on a shared page the one filled key stays "Save to my cookbook". | None. | 4 |
+| P-25 Search understands when (new) | ADOPT | Protects K-6 | Nothing. The field and the count are unchanged, and behaviour is unchanged without a date word. | None. | 3 |
+
+## What changed my mind
+- **P-01, P-03, P-05, P-07, P-09, P-12, P-13, P-14, P-16, P-17: AMEND → ADOPT.** Each one's v2 text now carries the amendment I attached (focal crop and the first-block rule for P-01; trailing item for P-03; desktop header untouched for P-05; capped growth and pencil on one line for P-07; shape and ring kept for P-09; unchanged quick-add and ink chips for P-12; kept order and count for P-13; foot placement and ink credit for P-14; same slot and weight for P-16; one label line and warm neutral for P-17). The k-list risk lines now name the exact keep item and the mitigation.
+- **P-02, P-11, P-19, P-20: REJECT held.** The text is unchanged. The within-rules replacements are P-21, P-22, P-23 and P-24, and I judge those on their own.
+- **P-04, P-06, P-08, P-10, P-15, P-18: ADOPT held.** Only wording changed.
+- **New this round.** P-22 and P-24 are ADOPT. P-21 and the desktop half of P-23 are AMEND, for the reasons in the table.

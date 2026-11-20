@@ -62,6 +62,10 @@ async function serve(page: Page, screen: Screen, theme: 'light' | 'dark', facts:
 /** Waits for fonts, the network, and every image — lazy ones included, which the last audit shot blank. */
 async function settle(page: Page, facts: Facts) {
   await page.waitForLoadState('domcontentloaded');
+  // A lazy route shows its "Opening" skeleton until the chunk arrives; on a cold dev server that outlasts networkidle.
+  await page
+    .waitForFunction(() => !document.querySelector('[role="status"][aria-label="Opening"]'), undefined, { timeout: 15_000 })
+    .catch(() => undefined);
   await page.evaluate(() => document.fonts.ready);
   await page.waitForLoadState('networkidle', { timeout: 8_000 }).catch(() => undefined);
   await page.evaluate(async () => {
@@ -92,6 +96,17 @@ async function shoot(page: Page, name: string, facts: Facts) {
     content: '.h-screen,.h-dvh{height:auto!important;overflow:visible!important} main{overflow:visible!important}',
   });
   await page.waitForTimeout(300);
+  // Stretched, the page brings lazy images into view that were never requested; the 2026-11-18 run shot them blank.
+  await page.evaluate(async () => {
+    const pending = [...document.images]
+      .map((img) => { img.loading = 'eager'; return img; })
+      .filter((img) => !img.complete)
+      .map((img) => new Promise((done) => {
+        img.addEventListener('load', done, { once: true });
+        img.addEventListener('error', done, { once: true });
+      }));
+    await Promise.race([Promise.all(pending), new Promise((done) => setTimeout(done, 8_000))]);
+  });
   const height = await page.evaluate(() => document.documentElement.scrollHeight);
   const width = page.viewportSize()!.width;
   await page.screenshot({

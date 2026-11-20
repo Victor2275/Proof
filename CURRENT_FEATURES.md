@@ -408,6 +408,7 @@ The editor, Shop, Discover, Settings and the 404 in the cookbook's own words, wi
 - A timer started from a step — baking mode's big timer press, its "start timer" voice command, or a time in a step on your own recipe's page — remembers the recipe and step (`startTimer(…, { from })`).
 - Its notification reads "Step 4 · 12 min is up" with "Tap to go back to step 4."; pressing it focuses Proof and opens baking mode at that step (`/recipe/:id/bake?step=4`). Baking mode reads `?step=` over a resumed position, also while it is already open, and clears it once read.
 - The origin stays on the device: it is never sent over the timer socket, and a sync from the server keeps the origin this device already knew. A shared recipe's timers have no origin.
+- **Running past zero never crashes**: a timer that reaches zero is marked rung and saved first, then rings outside React's render, each part (sound, speech, notification, buzz) guarded on its own. A browser that refuses `new Notification` (Chrome on Android) gets it through the service worker instead. Before, that refusal took the whole app down at zero, and again on every reload.
 
 **The shared photograph** (APP_FEEL_DEBATE §5, `lib/sharedPhoto`)
 - Pressing a recipe's tile in your cookbook grows its photograph into the recipe page's over 340 ms, while the rest of the page fades across in 200 ms (the View Transitions API; `::view-transition-*` in `index.css`).

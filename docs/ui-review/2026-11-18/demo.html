@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Proof review: before and after</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT@0,9..144,400..700,0..100;1,9..144,400..700,0..100&family=Inter+Tight:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..600;1,8..60,400..600&display=swap" rel="stylesheet">
+<style>
+/* VOICE work: a review the owner decides from, quiet and exact
+   IDEA a printer's proof sheet: each page of the book pulled twice, as set and as corrected, side by side
+   PICTURE the pairs themselves: real phone captures beside hand-set mocks of the same screen
+   COLOUR Proof's own paper, ink and one paprika; sage for an adopt; dark is the same book at night
+   TYPE Fraunces titles, Source Serif 4 reading text, Inter Tight for labels and figures
+   LAYOUT notes column, then before and after phones; two phones side by side to 600px, stacked below */
+:root{color-scheme:light dark;--bg:light-dark(#FBF7F0,#16120F);--raised:light-dark(#FFFDF9,#2A231D);--sunk:light-dark(#F4ECDD,#221C17);--rule:light-dark(#E4DCCF,#2E2620);--rule2:light-dark(#CDBFA9,#4A3F35);--ink:light-dark(#1F1A17,#F1E9DC);--ink2:light-dark(#4A423C,#D8CDBE);--muted:light-dark(#6B6159,#A99E91);--accent:light-dark(#B5391F,#E26A4A);--sage:light-dark(#4E6A3C,#9DB887)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 "Inter Tight",system-ui,sans-serif;overflow-x:clip}
+.band{padding:clamp(28px,4vw,56px) max(5vw,16px)}
+.wrap{max-width:1240px;margin:0 auto}
+h1,h2,h3{font-family:Fraunces,Georgia,serif;font-variation-settings:"SOFT" 60;font-weight:560;letter-spacing:-.02em;line-height:1.05;margin:0}
+h1{font-size:clamp(32px,4.4vw,50px);text-wrap:balance;max-width:20ch}
+.lede{font-family:"Source Serif 4",Georgia,serif;font-size:18px;line-height:1.55;color:var(--ink2);max-width:62ch;margin:18px 0 0}
+.figs{display:grid;grid-template-columns:repeat(auto-fit,minmax(9.5em,1fr));gap:0;margin-top:28px;border-top:1px solid var(--rule2)}
+.figs div{padding:14px 16px 4px 0}
+.figs b{display:block;font:600 clamp(28px,3.4vw,40px)/1 "Inter Tight",sans-serif;font-variant-numeric:tabular-nums}
+.figs span{font-size:14px;color:var(--muted)}
+.where{font-size:14px;color:var(--muted);margin:18px 0 0}
+.where code{font-size:13px;overflow-wrap:anywhere}
+.pair{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,330px) minmax(0,330px);gap:clamp(16px,2.6vw,36px);align-items:start;padding-block:clamp(28px,4vw,48px);border-top:1px solid var(--rule)}
+.notes .rank{font:600 14px "Inter Tight",sans-serif;color:var(--muted)}
+.notes h2{font-size:clamp(26px,2.6vw,32px);margin:6px 0 12px}
+.notes p{font-family:"Source Serif 4",Georgia,serif;font-size:17px;line-height:1.55;margin:0 0 14px;color:var(--ink2)}
+.meta{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;font-size:14px;align-items:baseline}
+.meta dt{color:var(--muted)}
+.meta dd{margin:0}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:13px;padding:2px 9px;border-radius:999px;background:var(--sunk);color:var(--ink2);white-space:nowrap}
+.chip.ok{background:color-mix(in srgb,var(--sage) 16%,transparent);color:var(--sage);font-weight:600}
+.chip.ok::before{content:"✓"}
+.chip.na{color:var(--muted)}
+figure{margin:0}
+figcaption{font:600 13px "Inter Tight",sans-serif;color:var(--muted);margin:0 0 8px}
+.frame{position:relative;width:100%;aspect-ratio:375/812;border-radius:18px;overflow:hidden;border:1px solid var(--rule2);background:#FBF7F0;box-shadow:0 1px 2px rgba(31,26,23,.14)}
+.frame>img{display:block;width:100%;height:100%;object-fit:cover;object-position:top}
+.frame>.app{position:absolute;left:0;top:0;transform-origin:0 0}
+.mark{font-size:13px;color:var(--muted);margin-top:8px}
+.foot h2{font-size:clamp(24px,2.4vw,30px);margin-bottom:10px}
+.foot p{font-family:"Source Serif 4",Georgia,serif;font-size:17px;color:var(--ink2);max-width:70ch;margin:0 0 12px}
+@media(max-width:1000px){.pair{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.notes{grid-column:1/-1}}
+@media(max-width:600px){.pair{grid-template-columns:minmax(0,1fr)}.frame{max-width:340px}}
+
+/* The app, as Proof draws it (light theme, 375 × 812, from DESIGN.md and src/index.css) */
+.app{width:375px;height:812px;overflow:hidden;background:#FBF7F0;color:#1F1A17;font:15px/1.4 "Inter Tight",sans-serif;font-variant-numeric:tabular-nums;color-scheme:light}
+.app .t{font-family:Fraunces,Georgia,serif;font-variation-settings:"SOFT" 60;font-weight:560;letter-spacing:-.015em;line-height:1.08}
+.app .pr{font-family:"Source Serif 4",Georgia,serif}
+.app .i2{color:#4A423C}.app .mu{color:#6B6159}
+.app .pad{padding:0 16px}
+.app .top{height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 12px}
+.app .ico{width:44px;height:44px;display:grid;place-items:center}
+.app .ico svg,.app .tab svg{width:22px;height:22px;fill:none;stroke:#1F1A17;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.app .btn{height:48px;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:0 18px;font-weight:600;font-size:16px;border:1px solid #CDBFA9;background:transparent;color:#1F1A17;white-space:nowrap}
+.app .btn.p{background:#B5391F;border-color:#B5391F;color:#fff}
+.app .btn.g{border-color:transparent;height:44px;padding:0 10px;font-weight:500}
+.app .pill{height:44px;border-radius:999px;border:1px solid #CDBFA9;padding:0 16px;display:inline-flex;align-items:center;gap:6px;font-weight:600;font-size:16px}
+.app .ava{width:38px;height:38px;border-radius:50%;background:#EFE7D9;display:grid;place-items:center}
+.app .ava svg{width:18px;height:18px;fill:none;stroke:#4A423C;stroke-width:1.7}
+.app .field{border:1px solid #CDBFA9;border-radius:6px;background:#FFFDF9;height:48px;display:flex;align-items:center;gap:8px;padding:0 12px;color:#6B6159;font-size:15px}
+.app .field.focus{border-color:#1F1A17;box-shadow:0 0 0 2px #1F1A17 inset}
+.app .lbl{font-size:13px;font-weight:500;color:#4A423C;margin:14px 0 6px}
+.app .panel{background:#F4ECDD;border-radius:8px;padding:14px 16px}
+.app .stars{color:#B5391F;letter-spacing:1px;font-size:15px}
+.app .stars i{font-style:normal;color:#CDBFA9}
+.app .seg{display:flex;background:#EFE7D9;border-radius:999px;padding:4px;height:48px}
+.app .seg span{flex:1;display:grid;place-items:center;border-radius:999px;font-size:16px;color:#4A423C}
+.app .seg .on{background:#FFFDF9;color:#1F1A17;font-weight:600;box-shadow:0 1px 2px rgba(31,26,23,.14)}
+.app .tabs{position:absolute;left:0;right:0;bottom:0;height:72px;border-top:1px solid #E4DCCF;background:#FBF7F0;display:grid;grid-template-columns:repeat(4,1fr)}
+.app .tab{display:grid;justify-items:center;align-content:center;gap:2px;font-size:13px;color:#6B6159}
+.app .tab.on{color:#1F1A17;font-weight:600}
+.app .tab svg{stroke:#6B6159}.app .tab.on svg{stroke:#1F1A17;stroke-width:2.1}
+.app .crop{background-repeat:no-repeat;border-radius:4px}
+.app .h{font-size:13px;font-weight:500;color:#6B6159}
+.app .new{outline:2px dashed #B5391F;outline-offset:3px;border-radius:6px}
+.app .toast{position:absolute;left:12px;right:12px;bottom:84px;background:#1F1A17;color:#F1E9DC;border-radius:8px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;font-size:15px}
+.app .toast b{color:#F1E9DC;font-weight:600}
+</style>
+</head>
+<body>
+<header class="band">
+  <div class="wrap">
+    <h1>Put the bake log on the first screen</h1>
+    <p class="lede">After three checking rounds, five reviewers agreed on a plan of 19 changes for Proof. These are the eight that change what a phone shows, each set beside the capture it fixes. The recipe page leads: its "Last time" note and "Start cooking" key move onto the first screen.</p>
+    <div class="figs">
+      <div><b>29</b><span>verified findings</span></div>
+      <div><b>13</b><span>of them major, none blockers</span></div>
+      <div><b>19</b><span>proposals in the plan</span></div>
+      <div><b>0</b><span>rule-breaks waiting on a ruling</span></div>
+      <div><b>10</b><span>claims thrown out as artifacts</span></div>
+    </div>
+    <p class="where">Review run 2026-11-18 on <code>feat/drafts-owner-sync</code> at <code>08728e0</code>. The full reasoning is in <code>docs/ui-review/2026-11-18/REPORT.md</code>. Before: the capture, or a live check, at 375 px. After: a hand-set mock using the same recipes, dates and notes. A dashed paprika outline marks what changed.</p>
+  </div>
+</header>
+
+<main class="band" style="padding-top:0">
+  <div class="wrap" id="pairs"></div>
+</main>
+
+<footer class="band foot" style="background:var(--sunk)">
+  <div class="wrap">
+    <h2>Rule-breaking proposals: none to rule on</h2>
+    <p>Four ideas that broke a project rule went into checking: the recipe as an index card, a vertical ladder of bakes, one search field replacing page titles, and a planning dial. Each was rejected twice by the people whose screens it touched, and their useful parts survive inside the plan as within-rules proposals (P-01, P-22, P-24, and P-23, which is still open).</p>
+    <p>Not drawn here: P-07, which makes "Next time" follow you. The review's data holds no "Next time" or "What I changed" entries for the regular baker, so drawing it would mean inventing them.</p>
+  </div>
+</footer>
+
+<script>
+{
+const S={
+  book:'<svg viewBox="0 0 24 24"><path d="M2 5c3-1 7-1 10 1v14c-3-2-7-2-10-1z"/><path d="M22 5c-3-1-7-1-10 1v14c3-2 7-2 10-1z"/></svg>',
+  log:'<svg viewBox="0 0 24 24"><rect x="5" y="3" width="13" height="18" rx="2"/><path d="M3 7h3M3 12h3M3 17h3M15 3l5 5-7 7h-3v-3z"/></svg>',
+  shop:'<svg viewBox="0 0 24 24"><path d="M3 10h18l-2 10H5z"/><path d="M8 10l4-6 4 6M9 14v3M12 14v3M15 14v3"/></svg>',
+  disc:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></svg>',
+  user:'<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg>',
+  back:'<svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>',
+  heart:'<svg viewBox="0 0 24 24"><path d="M12 20s-8-5-8-11a4.5 4.5 0 0 1 8-2.5A4.5 4.5 0 0 1 20 9c0 6-8 11-8 11z"/></svg>',
+  share:'<svg viewBox="0 0 24 24"><path d="M12 15V3M7 8l5-5 5 5M5 13v7h14v-7"/></svg>',
+  more:'<svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/></svg>',
+  x:'<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+  search:'<svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:none;stroke:#4A423C;stroke-width:1.8"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>',
+  sliders:'<svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>',
+  pencil:'<svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13 7l4 4"/></svg>'
+};
+const tabs=on=>'<div class="tabs">'+[['Cookbook','book'],['Bakes','log'],['Shop','shop'],['Discover','disc']].map(([n,i])=>`<div class="tab${n===on?' on':''}">${S[i]}<span>${n}</span></div>`).join('')+'</div>';
+const stars=n=>'<span class="stars">'+'★'.repeat(n)+'<i>'+'★'.repeat(5-n)+'</i></span>';
+const crop=(img,w,h,x,y,scale=1,extra='')=>`<div class="crop" style="width:${w}px;height:${h}px;background-image:url(shots/${img});background-size:${375*scale}px auto;background-position:${-x*scale}px ${-y*scale}px;${extra}"></div>`;
+
+const tile=([k,a,b,d,r,pb])=>{const n=k==='img'?b:a;const face=k==='img'?`<img src="shots/${a}" alt="" style="width:150px;height:150px;object-fit:cover;border-radius:4px;display:block">`:`<div style="width:150px;height:150px;background:#F4ECDD;border-radius:4px;padding:10px;overflow:hidden"><div class="t" style="font-size:30px;color:#6B5A2E">${a}</div><div class="pr" style="font-style:italic;font-size:14px;line-height:1.35;color:#4A423C;margin-top:12px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden">${b}</div></div>`;
+ const stamp=pb?'<div style="position:absolute;right:-4px;top:-4px;width:46px;height:46px;border-radius:50%;border:1.5px solid #B5391F;color:#B5391F;display:grid;place-items:center;font-size:11px;line-height:1.1;text-align:center;font-weight:600;background:#FBF7F0">Best<br>★3</div>':'';
+ return `<div style="width:150px;flex:none;position:relative">${face}${stamp}<div style="font-size:13px;margin-top:6px;white-space:nowrap"><b class="new" style="font-weight:600">Bake ${n}</b> · ${d} <span class="stars" style="font-size:11px">${'★'.repeat(r)}<i>${'★'.repeat(5-r)}</i></span></div></div>`;};
+const row=ts=>`<div style="display:flex;gap:12px;margin-top:12px;justify-content:flex-end;padding-right:16px;overflow:hidden">${ts.map(tile).join('')}</div>`;
+const mocks={
+recipe:`<div class="top"><div style="display:flex;align-items:center;gap:2px;font-size:17px">${S.back.replace('<svg','<svg style="width:24px;height:24px;stroke:#1F1A17;fill:none;stroke-width:1.8"')}Dessert</div><div style="display:flex"><div class="ico">${S.heart}</div><div class="ico">${S.share}</div><div class="ico">${S.more}</div></div></div>
+${crop('recipe.png',375,234,0,99,1,'border-radius:0')}
+<div class="pad" style="padding-top:14px">
+<div class="t" style="font-size:30px">The BEST Cheesecake Recipe</div>
+<div class="pr i2" style="font-style:italic;font-size:16.5px;line-height:1.45;margin-top:8px">How to make the creamiest, BEST Cheesecake Recipe! Oh, and there's no water bath… <span style="font-style:normal;font-family:'Inter Tight';font-weight:600;color:#1F1A17">more</span></div>
+<div class="i2 new" style="font-size:14px;margin-top:8px">Serves 12 · Prep 20 min · Cook 1 h 15 · Chills overnight · Medium · Oven 160 °C · Private</div>
+<div class="panel" style="margin-top:14px"><div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:14px;font-weight:600">Last time · Oct 17</b>${stars(3)}</div><div class="pr" style="font-size:17px;line-height:1.42;margin-top:6px">“Bulk ran warm (26C) — over-proofed slightly, crumb open but flat. Next: cooler water.”</div></div>
+<div class="new" style="display:grid;grid-template-columns:1.25fr 1fr;gap:10px;margin-top:12px"><span class="btn p">Start cooking</span><span class="btn">Log a bake</span></div>
+<div class="new" style="display:flex;gap:4px;margin-top:6px"><span class="btn g">Ingredients ↓</span><span class="btn g">Method ↓</span></div>
+</div>${tabs('Cookbook')}`,
+
+log:`<div style="position:absolute;inset:0;background:rgba(31,26,23,.38)"></div>
+<div style="position:absolute;left:0;right:0;bottom:0;top:40px;background:#FFFDF9;border-radius:16px 16px 0 0;padding:8px 16px 0">
+<div style="width:40px;height:4px;border-radius:2px;background:#CDBFA9;margin:0 auto 10px"></div>
+<div style="display:flex;justify-content:space-between;align-items:center"><div><div class="t" style="font-size:26px">How did it go?</div><div class="mu" style="font-size:14px;margin-top:2px">The BEST Cheesecake Recipe</div></div><div class="ico new" title="Close">${S.x}</div></div>
+<div class="lbl" style="margin-top:16px">What happened</div>
+<div class="new"><div class="field focus" style="height:112px;align-items:flex-start;padding-top:10px"><span class="pr" style="color:#6B6159">How the dough felt, how it baked…</span></div>
+<div style="display:flex;justify-content:flex-end;margin-top:6px"><span class="btn" style="height:44px;font-size:15px">Dictate</span></div></div>
+<div class="lbl" style="margin-top:4px">Stars</div><div class="stars" style="font-size:30px;letter-spacing:6px"><i>★★★★★</i></div>
+<div class="lbl">Next time</div><div class="field" style="height:64px"></div>
+<div class="lbl">What I changed</div><div class="field" style="height:64px"></div>
+<div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;height:44px;border-top:1px solid #E4DCCF;border-bottom:1px solid #E4DCCF"><span style="font-weight:500">Photographs</span><span class="btn g">+ Add</span></div>
+<div style="display:flex;justify-content:space-between;align-items:center;height:48px;border-bottom:1px solid #E4DCCF"><span style="font-weight:500">When · Mark as my best</span><span class="mu">Today ⌄</span></div>
+</div>
+<div style="position:absolute;left:0;right:0;bottom:0;padding:12px 16px 20px;background:#FFFDF9;border-top:1px solid #E4DCCF"><span class="btn p" style="width:100%">Log this bake</span></div>`,
+
+byrecipe:`<div class="pad" style="padding-top:28px;display:flex;justify-content:space-between;align-items:center"><div class="t" style="font-size:40px">Bakes</div><div style="display:flex;gap:10px;align-items:center"><span class="pill">+ Log bake</span><span class="ava">${S.user}</span></div></div>
+<div class="pad i2" style="font-size:15px;margin-top:6px">17 bakes · 6 recipes · best: Braised stuffed cabbage</div>
+<div class="pad" style="display:grid;grid-template-columns:1fr auto;gap:10px;margin-top:16px"><div class="seg"><span>Journal</span><span class="on">By recipe</span></div><span class="btn">Compare</span></div>
+<div class="pad" style="margin-top:24px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #E4DCCF;padding-bottom:10px"><div class="t" style="font-size:22px;max-width:190px">The BEST Cheesecake Recipe</div><div style="text-align:right;font-size:14px"><span class="new" style="display:inline-block;padding:0 4px">3★ every time</span><div class="mu">5 bakes</div></div></div>
+${row([['img','ck-b3.jpg','3','Sep 23',3],['num','4','“Personal best — even crumb, crackling crust….”','Oct 5',3,1],['img','ck-b5.jpg','5','Oct 17',3]])}
+<div class="pad" style="margin-top:22px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #E4DCCF;padding-bottom:10px"><div class="t" style="font-size:22px">Prawn stir-fry</div><div style="text-align:right;font-size:14px"><span class="new" style="display:inline-block;padding:0 4px">4★ every time</span><div class="mu">5 bakes</div></div></div>
+${row([['num','3','“Cut hydration to 72%. Much better shape, ear on two loaves.”','Sep 19',4],['img','pr-b4.jpg','4','Oct 1',4],['num','5','“Cut hydration to 72%. Much better shape, ear on two loaves.”','Oct 13',4]])}
+${tabs('Bakes')}`,
+
+editor:`<div class="top" style="border-bottom:1px solid #E4DCCF"><div style="display:flex;align-items:center;gap:2px;font-size:17px">${S.back.replace('<svg','<svg style="width:24px;height:24px;stroke:#1F1A17;fill:none;stroke-width:1.8"')}Cookbook</div><span class="btn p">Create recipe</span></div>
+<div class="pad">
+<div class="lbl" style="margin-top:18px">Title</div><div class="field">72-Hour Sourdough</div>
+<div class="lbl">A line about it</div><div class="field pr" style="height:64px;align-items:flex-start;padding-top:10px;font-size:16px">What it is, and what makes this version yours.</div>
+<div class="new" style="display:flex;gap:8px;margin-top:14px"><span class="pill" style="font-weight:500">Ingredients</span><span class="pill" style="font-weight:500">Method</span></div>
+<div class="t" style="font-size:26px;margin-top:22px">Ingredients</div>
+<div class="mu" style="font-size:14px;margin-top:4px">Paste a whole list into a name and it splits into rows.</div>
+<div class="field" style="margin-top:10px">Ingredient</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px"><div class="field">Amount</div><div class="field">Unit</div></div>
+<div class="btn g" style="margin-top:6px;padding-left:0">+ Add an ingredient</div>
+<div class="t" style="font-size:26px;margin-top:14px">Method</div>
+<div style="display:flex;gap:10px;margin-top:10px"><span class="t mu" style="font-size:18px;padding-top:10px">1</span><div class="field pr" style="flex:1;height:64px;align-items:flex-start;padding-top:10px;font-size:16px">What to do</div></div>
+</div>${tabs('Cookbook')}`,
+
+baking:`<div style="display:flex;align-items:center;gap:8px;padding:8px 8px 0"><div class="ico">${S.x}</div><div class="t" style="font-size:19px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">The BEST Cheesecake Recipe</div><span class="new" style="font-size:15px;color:#4A423C;white-space:nowrap;padding:0 2px">Step 1 of 11</span><div class="ico">${S.more}</div></div>
+<div style="padding:4px 20px 0;font-size:14px"><b style="font-weight:600">Start</b> <span class="mu">· now</span></div>
+<div style="display:flex;gap:8px;padding:14px 20px 0"><div style="flex:3;height:6px;border-radius:3px;background:#B5391F"></div><div style="flex:8;height:6px;border-radius:3px;background:#CDBFA9"></div></div>
+<div class="new" style="margin:10px 20px 0;font-size:13px;font-weight:500;color:#6B6159;display:inline-block;padding:0 3px">Start · step 1 of 3 in this part</div>
+<div class="pr" style="font-size:31px;line-height:1.3;padding:56px 20px 0">Preheat oven to 325F (160C).</div>
+<div style="position:absolute;left:0;right:0;bottom:0;border-top:1px solid #E4DCCF;padding:12px;display:grid;grid-template-columns:64px 1fr;gap:110px;align-items:center"><div class="btn" style="height:66px;padding:0;display:grid;font-size:12px;font-weight:500">${S.pencil.replace('<svg','<svg style="width:20px;height:20px;fill:none;stroke:#1F1A17;stroke-width:1.7"')}Note</div><span class="btn p" style="height:66px;font-size:20px">Next →</span></div>`,
+
+cookbook:`<div class="pad" style="padding-top:28px;display:flex;justify-content:space-between;align-items:center"><div class="t" style="font-size:42px">Cookbook</div><div style="display:flex;gap:10px;align-items:center"><span class="pill">+ New</span><span class="ava">${S.user}</span></div></div>
+<div class="pad i2" style="font-size:15px;margin-top:4px">203 recipes</div>
+<div class="pad" style="display:grid;grid-template-columns:1fr 48px;gap:8px;margin-top:16px"><div class="field">${S.search}<span style="white-space:nowrap;overflow:hidden">Search 203 recipes, ingredients…</span></div><div class="new" style="position:relative;width:48px;height:48px;border:1px solid #CDBFA9;border-radius:6px;display:grid;place-items:center">${S.sliders.replace('<svg','<svg style="width:22px;height:22px;fill:none;stroke:#1F1A17;stroke-width:1.7"')}<span style="position:absolute;top:8px;right:8px;width:8px;height:8px;border-radius:50%;background:#1F1A17"></span></div></div>
+<div class="pad new" style="margin:10px 16px 0;padding:0 2px;display:flex;justify-content:space-between;font-size:14px"><span class="i2">Rating · Dessert</span><b style="font-weight:600">Clear</b></div>
+<div class="pad" style="margin-top:14px"><div class="panel" style="display:grid;grid-template-columns:96px 1fr;gap:14px;position:relative">${crop('cookbook.png',96,96,30,208)}<div><div style="font-size:13px;font-weight:500;color:#6B5A2E">Pick up where you left off</div><div class="t" style="font-size:20px;margin-top:4px">The BEST Cheesecake Recipe</div><div style="font-size:14px;margin-top:4px" class="i2">Oct 17 ${stars(3)} · 5 bakes</div></div><div style="position:absolute;right:18px;top:0;width:16px;height:40px;background:#B5391F;clip-path:polygon(0 0,100% 0,100% 100%,50% 78%,0 100%)"></div></div></div>
+<div class="pad t" style="font-size:22px;font-style:italic;margin-top:26px">Recently baked</div>
+<div style="display:flex;gap:12px;padding-left:16px;margin-top:12px">${crop('cookbook.png',144,108,16,482)}${crop('cookbook.png',144,108,172,482)}${crop('cookbook.png',60,108,329,482,1,'border-radius:4px 0 0 4px')}</div>
+<div style="display:flex;gap:12px;padding-left:16px;margin-top:8px"><div style="width:144px"><div class="t" style="font-size:17px">Prawn stir-fry</div><div class="mu" style="font-size:13px">Baked on Oct 13 · ★4</div></div><div style="width:144px"><div class="t" style="font-size:17px">Braised stuffed cabbage</div><div class="mu" style="font-size:13px">Baked on Oct 9 · ★5</div></div></div>
+${tabs('Cookbook')}`,
+
+shop:`<div class="pad" style="padding-top:28px;display:flex;justify-content:space-between;align-items:center"><div class="t" style="font-size:42px">Shop</div><span class="ava">${S.user}</span></div>
+<div class="pad" style="margin-top:16px"><div class="seg"><span class="on">To buy</span><span>In the cupboard</span></div></div>
+<div class="pad" style="display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:14px"><div class="field">2 lemons, baking paper…</div><span class="btn">Add</span></div>
+<div class="pad" style="display:flex;justify-content:space-between;align-items:center;margin-top:14px"><span class="i2">15 to buy</span><span style="display:flex"><span class="btn g">Add from recipes</span><span class="btn g">Share list</span></span></div>
+${[['Fruit and veg',[['1 pinch','Pepper','French Omelette'],['4 unit','Apples','Apple Pie'],['1 large','Banana','Banana Pancakes']]],['Dairy and eggs',[['1 tsp','Butter','French Omelette'],['1 slice','Cheese (optional)','French Omelette'],['250 ml','Sour Milk','Apple Pie']]]].map(([a,rows])=>`<div class="pad h" style="margin-top:14px">${a}</div>`+rows.map(([q,n,f])=>`<div class="pad" style="display:grid;grid-template-columns:26px 74px 1fr;align-items:center;min-height:50px;border-bottom:1px solid #E4DCCF;margin:0 16px;padding:0"><span style="width:20px;height:20px;border:1.5px solid #CDBFA9;border-radius:50%"></span><span class="i2" style="font-size:14px">${q}</span><span>${n} <span class="mu" style="font-size:13px">for ${f}</span></span></div>`).join('')).join('')}
+<div class="toast new"><span><b>Added 15</b> · 4 already in your cupboard</span><b>Undo</b></div>${tabs('Shop')}`,
+
+journal:`<div class="pad" style="padding-top:28px;display:flex;justify-content:space-between;align-items:center"><div class="t" style="font-size:40px">Bakes</div><div style="display:flex;gap:10px;align-items:center"><span class="pill">+ Log bake</span><span class="ava">${S.user}</span></div></div>
+<div class="pad i2" style="font-size:15px;margin-top:6px">17 bakes · 6 recipes · <span class="new" style="padding:0 2px">top rated: Braised stuffed cabbage</span></div>
+<div class="pad" style="display:grid;grid-template-columns:1fr auto;gap:10px;margin-top:16px"><div class="seg"><span class="on">Journal</span><span>By recipe</span></div><span class="btn">Compare</span></div>
+<div class="pad t" style="font-size:22px;font-style:italic;margin-top:22px">October 2026</div>
+${[['P','Prawn stir-fry','Oct 13 · Bake 5',4,'“Cut hydration to 72%. Much better shape, ear on…'],['B','Braised stuffed cabbage','Oct 9 · Bake 4',5,'“Swapped 10% for rye. Flavour deeper, a touch…'],['T','The BEST Cheesecake Recipe','Oct 5 · Bake 4',3,'“Personal best — even crumb, crackling crust.…',1]].map(([l,t,d,s,n,pb])=>`<div style="display:grid;grid-template-columns:64px 1fr;gap:14px;margin:12px 16px 0;padding-bottom:12px;border-bottom:1px solid #E4DCCF;position:relative"><div style="width:64px;height:64px;border-radius:4px;background:#F4ECDD;display:grid;place-items:center" class="t"><span style="font-style:italic;font-size:30px;color:#6B5A2E">${l}</span></div><div><div class="t" style="font-size:18px;${pb?'max-width:180px':''}">${t}</div><div class="i2" style="font-size:13px;margin-top:2px">${d} ${stars(s)}</div><div class="pr i2" style="font-style:italic;font-size:15px;margin-top:4px">${n}</div></div>${pb?'<div class="new" style="position:absolute;right:2px;top:0;width:54px;height:54px;border-radius:50%;border:1.5px solid #B5391F;color:#B5391F;display:grid;place-items:center;text-align:center;font-size:11px;font-weight:600;line-height:1.15;background:#FBF7F0">My best<br>★3</div>':''}</div>`).join('')}
+${tabs('Bakes')}`
+};
+
+const V=(a)=>['First-Timer','Link Follower','Mid-Bake','Librarian','Keeper'].map((p,i)=>a[i]==='A'?`<span class="chip ok">${p}</span>`:`<span class="chip na">${p} ·</span>`).join('');
+const pairs=[
+ {r:'1',id:'P-01',n:'Start cooking on the first phone screen',why:'"Start cooking" began at 845 px on an 812 px screen, under the photo, headnote and chip. A 16:10 hero puts "Last time" and both keys above the tab bar, and a jump row reaches the quantities in one tap. The meta line also shows P-03\'s "Chills overnight" and the oven temperature.',f:'F-01 · F-11 (via P-03)',v:'AAA-A',c:'S',b:'recipe.png',bl:'Before · recipe, w375 fold',m:'recipe'},
+ {r:'2',id:'P-06',n:'The log sheet leads with the writing',why:'The sheet opened on stars, a date and photographs, with "Done" beside "Log this bake". Now the note comes first, the close is an ×, Dictate is 44 px, and "When · Mark as my best" folds away.',f:'F-04',v:'A-A-A',c:'S',b:'logsheet.png',bl:'Before · live check, log sheet at 375',m:'log'},
+ {r:'3= (tie)',id:'P-10',n:'By recipe numbers every bake',why:'Photo tiles carried only a date, and bakes 3 to 5 sat off-screen. Every tile gets "Bake n", the row opens on the newest, and a flat sparkline becomes "3★ every time".',f:'F-08 · F-27',v:'--A-A',c:'S',b:'byrecipe.png',bl:'Before · Bakes › By recipe, w375 fold',m:'byrecipe'},
+ {r:'6',id:'P-05',n:'The phone editor opens on the recipe',why:'"Write it" opened under an import panel, with "Tidy up" in the header and Prep 30 / Cook 60 placeholders that read like values. Now Title, a line, jump chips and Ingredients come first; "More details" starts closed.',f:'F-03 · F-14',v:'A-AAA',c:'M',b:'newrecipe.png',bl:'Before · new recipe, w375 fold',m:'editor'},
+ {r:'7',id:'P-17',n:'Baking mode says where you are',why:'Two bars for eleven steps read like a counter and weren\'t one. The header says "Step 1 of 11", and one label line names the part. The middle stays empty, and Next keeps its size.',f:'F-15',v:'A-A-A',c:'S',b:'baking.png',bl:'Before · baking mode, w375 fold',m:'baking'},
+ {r:'8= (tie)',id:'P-13',n:'Sort and filter sit by the search',why:'Filter sat about 1,320 px down, below the resume card, Recently baked and all the chapters. A labelled button now sits beside the search, and a line shows any active sort or filter. The mock shows it set to Rating and Dessert.',f:'F-10 · F-21 · F-23',v:'A-AAA',c:'S',b:'cookbook.png',bl:'Before · cookbook, w375 fold',m:'cookbook'},
+ {r:'13= (tie)',id:'P-12',n:'The cupboard says what it saved you',why:'Adding French Omelette, Apple Pie and Banana Pancakes skipped Eggs and Flour without a word, and each recipe meant reopening the picker. Now one sheet adds all three, and the toast names what the cupboard covered.',f:'F-09',v:'--AAA',c:'M',b:'shop.png',bl:'Before · live check, the same three recipes added',m:'shop'},
+ {r:'15',id:'P-09',n:'"Best" says which best',why:'"best: Braised stuffed cabbage" sat above a "Best ★3" stamp on a cheesecake bake. The summary now says "top rated", and the stamp says "My best". Shape, ring and the no-tie rule stay.',f:'F-06',v:'--A-A',c:'S',b:'journal.png',bl:'Before · Bakes › Journal, w375 fold',m:'journal'}
+];
+document.getElementById('pairs').innerHTML=pairs.map(p=>`<section class="pair" aria-labelledby="${p.id}">
+ <div class="notes"><div class="rank">Rank ${p.r} in the plan</div><h2 id="${p.id}">${p.id}: ${p.n}</h2><p>${p.why}</p>
+ <dl class="meta"><dt>Fixes</dt><dd>${p.f}</dd><dt>Round 3</dt><dd class="chips">${V(p.v)}</dd><dt>Cost</dt><dd>${p.c}</dd></dl></div>
+ <figure><figcaption>${p.bl}</figcaption><div class="frame"><img src="shots/${p.b}" alt="${p.bl}" loading="lazy"></div></figure>
+ <figure><figcaption>After · ${p.id} applied</figcaption><div class="frame"><div class="app" role="img" aria-label="Mock-up of the screen with ${p.id} applied">${mocks[p.m]}</div></div></figure>
+</section>`).join('');
+const fit=()=>{for(const f of document.querySelectorAll('.frame>.app')){const k=f.parentElement.clientWidth/375;f.style.transform=`scale(${k})`;}};
+const ro=new ResizeObserver(fit);
+document.querySelectorAll('.frame').forEach(f=>ro.observe(f));
+fit();
+}
+</script>
+</body>
+</html>

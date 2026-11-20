@@ -436,6 +436,7 @@ Rebuilt as the bake sheet: see section 18.
 - [ ] **Timer deep-link**: start a step's timer in baking mode, move to another step or another page, and press the notification when it rings; baking mode opens at the timer's step.
 - [ ] **Deep-link from the recipe page**: a time in a step on your own recipe's page starts a timer whose notification opens baking mode at that step; a shared recipe's timer notification opens nothing.
 - [ ] **Timer origin stays local**: signed in, the timer synced to another device carries no recipe id (check the socket frames); the timer still deep-links on the device that started it.
+- [ ] **Timer past zero**: in Chrome on Android with notifications allowed, a 1-minute timer reaches zero: the app stays up, the notification shows, the timer counts on with a minus sign, and a reload does not ring it again.
 - [ ] **Shared photograph**: in Chrome, pressing a tile in your cookbook grows its photo into the recipe page's; Back has no morph; a Discover tile fades.
 - [ ] **Shared photograph, reduced motion**: with reduced motion on, the same press opens the recipe with no morph.
 - [ ] **Shared photograph on Android**: on a mid-range Android phone, the morph runs without visible stutter.

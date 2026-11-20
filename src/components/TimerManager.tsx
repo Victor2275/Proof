@@ -65,6 +65,55 @@ function saveTimers(timers: Timer[]) {
   }
 }
 
+/** Runs one part of an alarm; a part the device refuses must not silence the rest. */
+function attempt(part: () => void) {
+  try {
+    part();
+  } catch {
+    // Unsupported here: the other parts of the alarm still sound.
+  }
+}
+
+/** The alarm for a timer that has reached zero: sound, speech, a notification, a buzz. */
+function ring(t: Timer, open: (href: string, inBake: boolean) => void) {
+  // A browser that blocks autoplay still gets the speech, the notification and the flash.
+  attempt(() => void new Audio('/alarm.mp3').play().catch(() => undefined));
+
+  attempt(() => {
+    if (window.speechSynthesis && ttsEnabled()) {
+      window.speechSynthesis.speak(new SpeechSynthesisUtterance(`${t.name} timer has completed.`));
+    }
+  });
+
+  // The notification says what is done and, pressed, opens the step (change 31).
+  if ('Notification' in window && Notification.permission === 'granted') {
+    const title = `${t.name} is up`;
+    const body = t.from ? `Tap to go back to step ${t.from.step}.` : 'Back to the kitchen.';
+    try {
+      const note = new Notification(title, { body });
+      const from = t.from;
+      if (from) {
+        note.onclick = () => {
+          window.focus();
+          // Already in that bake: move the step in place, keeping how it was reached.
+          const href = timerHref(from);
+          open(href, window.location.pathname === href.split('?')[0]);
+          note.close();
+        };
+      }
+    } catch {
+      // Chrome on Android shows notifications only through the service worker.
+      void navigator.serviceWorker?.ready.then((reg) => reg.showNotification(title, { body })).catch(() => undefined);
+    }
+  }
+
+  if (hapticsEnabled()) {
+    const buzz = () => attempt(() => void Haptics.impact({ style: ImpactStyle.Heavy })?.catch(() => undefined));
+    buzz();
+    [200, 400, 600].forEach((ms) => setTimeout(buzz, ms));
+  }
+}
+
 export default function TimerManager() {
   const [timers, setTimersState] = useState<Timer[]>(loadTimers);
   const timersRef = useRef(timers);
@@ -107,61 +156,33 @@ export default function TimerManager() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accountId]);
 
+  /*
+   * A timer reaching zero is marked rung first — saved, so a reload never
+   * rings it again — and only then rings. The ringing used to run inside the
+   * state update, during render, so one alarm that threw (a browser that
+   * refuses `new Notification`) took the whole app down, and the unsaved
+   * timer brought it down again on every reload.
+   */
   useEffect(() => {
     const interval = setInterval(() => {
-      setNow(Date.now());
-      
-      setTimers(prev => prev.map(t => {
-        if (t.endTime !== null && !t.hasRung && Date.now() >= t.endTime) {
-          const audio = new Audio('/alarm.mp3');
-          // A browser that blocks autoplay still gets the speech, the
-          // notification and the flash below.
-          audio.play().catch(() => {});
-          
-          if (window.speechSynthesis && ttsEnabled()) {
-            const msg = new SpeechSynthesisUtterance(`${t.name} timer has completed.`);
-            window.speechSynthesis.speak(msg);
-          }
-
-          // The notification says what is done and, pressed, opens the step (change 31).
-          if ('Notification' in window && Notification.permission === 'granted') {
-            const note = new Notification(`${t.name} is up`, {
-              body: t.from ? `Tap to go back to step ${t.from.step}.` : 'Back to the kitchen.',
-            });
-            const from = t.from;
-            if (from) {
-              note.onclick = () => {
-                window.focus();
-                // Already in that bake: move the step in place, keeping how it was reached.
-                const href = timerHref(from);
-                const inBake = window.location.pathname === href.split('?')[0];
-                if (inBake) navigateRef.current(href, { replace: true, state: window.history.state?.usr });
-                else navigateRef.current(href);
-                note.close();
-              };
-            }
-          }
-
-          try {
-            if (hapticsEnabled()) {
-              Haptics.impact({ style: ImpactStyle.Heavy });
-              setTimeout(() => Haptics.impact({ style: ImpactStyle.Heavy }), 200);
-              setTimeout(() => Haptics.impact({ style: ImpactStyle.Heavy }), 400);
-              setTimeout(() => Haptics.impact({ style: ImpactStyle.Heavy }), 600);
-            }
-          } catch(e) {}
-
-          setIsFlashing(true);
-          setTimeout(() => setIsFlashing(false), 1500);
-
-          const updatedTimer = { ...t, hasRung: true };
-          socketRef.current?.emit('timer:update', forServer(updatedTimer));
-          return updatedTimer;
-        }
-        return t;
-      }));
+      const at = Date.now();
+      setNow(at);
+      const due = timersRef.current.filter((t) => t.endTime !== null && !t.hasRung && at >= t.endTime);
+      if (due.length === 0) return;
+      const rung = new Set(due.map((t) => t.id));
+      setTimers((prev) => prev.map((t) => (rung.has(t.id) ? { ...t, hasRung: true } : t)));
+      for (const t of due) {
+        socketRef.current?.emit('timer:update', forServer({ ...t, hasRung: true }));
+        ring(t, (href, inBake) =>
+          inBake ? navigateRef.current(href, { replace: true, state: window.history.state?.usr }) : navigateRef.current(href),
+        );
+      }
+      setIsFlashing(true);
+      setTimeout(() => setIsFlashing(false), 1500);
     }, 1000);
     return () => clearInterval(interval);
+    // setTimers is stable in behaviour; the clock is set up once.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

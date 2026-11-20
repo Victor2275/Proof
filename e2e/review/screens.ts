@@ -30,16 +30,15 @@ export interface Screen {
 export const SCREENS: Screen[] = [
   { name: 'stranger-landing', who: 'stranger', path: '/welcome', owner: 'first-timer', themes: ['light', 'dark'] },
   {
-    name: 'stranger-onboarding',
+    name: 'stranger-first-open',
     who: 'stranger',
     path: '/',
     owner: 'first-timer',
     themes: ['light'],
     steps: async (page) => {
       await page.waitForURL('**/welcome');
-      await page.getByRole('button', { name: /open the cookbook|get started|start/i }).first().click();
+      await page.getByRole('button', { name: /open my cookbook/i }).first().click();
       await page.waitForURL((u) => u.pathname === '/');
-      await page.getByRole('dialog').first().waitFor({ timeout: 10_000 }).catch(() => undefined);
     },
   },
   { name: 'stranger-empty-cookbook', who: 'stranger', path: '/', owner: 'first-timer', themes: ['light'], visited: true },
@@ -47,31 +46,42 @@ export const SCREENS: Screen[] = [
   { name: 'stranger-shared-link', who: 'stranger', path: `/r/${sharedSlug}`, owner: 'link-follower', themes: ['light', 'dark'] },
   { name: 'stranger-discover', who: 'stranger', path: '/discover', owner: 'link-follower', themes: ['light'], visited: true },
   { name: 'stranger-profile', who: 'stranger', path: '/@proof', owner: 'link-follower', themes: ['light'] },
+  {
+    name: 'stranger-sign-up',
+    who: 'stranger',
+    path: '/discover',
+    owner: 'link-follower',
+    themes: ['light'],
+    visited: true,
+    steps: async (page) => {
+      await page.getByRole('button', { name: 'Your account and settings' }).first().click();
+      await page.getByRole('menuitem', { name: 'Sign in' }).or(page.getByRole('link', { name: 'Sign in' })).or(page.getByRole('button', { name: 'Sign in' })).first().click();
+      await page.getByRole('button', { name: 'Create an account' }).first().click();
+      await page.getByRole('dialog').first().waitFor();
+    },
+  },
   { name: 'regular-recipe', who: 'regular', path: `/recipe/${regularRecipeId}`, owner: 'mid-bake', themes: ['light', 'dark'] },
   { name: 'regular-baking-mode', who: 'regular', path: `/recipe/${regularRecipeId}/bake`, owner: 'mid-bake', themes: ['light', 'dark'] },
-  { name: 'regular-gallery', who: 'regular', path: '/gallery', owner: 'mid-bake', themes: ['light'] },
-  { name: 'regular-analytics', who: 'regular', path: '/analytics', owner: 'mid-bake', themes: ['light'] },
+  { name: 'regular-bakes-journal', who: 'regular', path: '/bakes', owner: 'mid-bake', themes: ['light', 'dark'] },
+  { name: 'regular-bakes-by-recipe', who: 'regular', path: '/bakes?view=recipe', owner: 'mid-bake', themes: ['light'] },
   { name: 'regular-cookbook', who: 'regular', path: '/', owner: 'librarian', themes: ['light', 'dark'] },
   { name: 'regular-editor', who: 'regular', path: `/edit/${regularRecipeId}`, owner: 'librarian', themes: ['light'] },
-  { name: 'regular-pantry', who: 'regular', path: '/pantry', owner: 'librarian', themes: ['light'] },
-  { name: 'regular-grocery', who: 'regular', path: '/grocery', owner: 'librarian', themes: ['light'] },
+  { name: 'regular-shop', who: 'regular', path: '/shop', owner: 'librarian', themes: ['light'] },
+  { name: 'regular-cupboard', who: 'regular', path: '/shop?view=cupboard', owner: 'librarian', themes: ['light'] },
+  { name: 'regular-published', who: 'regular', path: '/published', owner: 'link-follower', themes: ['light'] },
   { name: 'regular-notes', who: 'regular', path: '/notes', owner: 'librarian', themes: ['light'] },
   { name: 'regular-settings', who: 'regular', path: '/settings', owner: 'librarian', themes: ['light'] },
   { name: 'regular-discover', who: 'regular', path: '/discover', owner: 'link-follower', themes: ['light'] },
   { name: 'regular-not-found', who: 'regular', path: '/no-such-page', owner: 'librarian', themes: ['light'] },
   {
-    name: 'regular-phone-menu',
+    name: 'regular-account-menu',
     who: 'regular',
     path: '/',
     owner: 'librarian',
     themes: ['light'],
-    only: 'w375',
     steps: async (page) => {
-      const opener = page.getByRole('button', { name: /^(more|menu)$/i }).first();
-      if (await opener.count()) {
-        await opener.click();
-        await page.waitForTimeout(600);
-      }
+      await page.getByRole('button', { name: 'Your account and settings' }).first().click();
+      await page.waitForTimeout(600);
     },
   },
 ];

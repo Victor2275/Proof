@@ -155,6 +155,35 @@ describe('a timer that leads back to its step (change 31)', () => {
     expect(notes[0]).toMatchObject({ title: 'Proof is up', onclick: null });
   });
 
+  // Chrome on Android refuses `new Notification`; reaching zero used to crash the app there, on every reload.
+  it('runs past zero without crashing where the browser refuses a notification', async () => {
+    const shown = vi.fn(() => Promise.resolve());
+    vi.stubGlobal(
+      'Notification',
+      class {
+        static permission = 'granted';
+        static requestPermission = vi.fn();
+        constructor() {
+          throw new TypeError('Illegal constructor');
+        }
+      },
+    );
+    vi.stubGlobal('navigator', { ...navigator, serviceWorker: { ready: Promise.resolve({ showNotification: shown }) } });
+
+    ring({ name: 'Oven' });
+    act(() => {
+      vi.advanceTimersByTime(64_000);
+    });
+    vi.useRealTimers();
+
+    openTimers();
+    expect(screen.getByText('Oven')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Over by −01:05' })).toBeInTheDocument();
+    // Marked rung and saved, so a reload does not ring it again.
+    expect(JSON.parse(localStorage.getItem('proof.timers')!)[0]).toMatchObject({ hasRung: true });
+    await waitFor(() => expect(shown).toHaveBeenCalledWith('Oven is up', { body: 'Back to the kitchen.' }));
+  });
+
   it("keeps where a timer came from across a server sync, and never sends it", async () => {
     setAccount('token', ACCOUNT);
     render(<TimerManager />);
